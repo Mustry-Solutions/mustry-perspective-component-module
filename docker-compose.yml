@@ -1,0 +1,49 @@
+# Local development gateway for testing the Mustry Solutions Perspective Components module.
+#
+# This runs a disposable Ignition 8.3.6 gateway in Docker. It is configured for
+# DEVELOPMENT ONLY: it accepts the EULA, uses a fixed weak admin password, and
+# allows unsigned modules. Do NOT use this configuration in production.
+#
+# Drive it with the scripts in ./ops (setup.sh / deploy.sh / teardown.sh / ...).
+
+services:
+  gateway:
+    image: inductiveautomation/ignition:8.3.6
+    container_name: msc-ignition
+    ports:
+      # Host port is configurable via .env (GATEWAY_HTTP_PORT/GATEWAY_HTTPS_PORT).
+      # The gateway always listens on 8088/8043 INSIDE the container.
+      - "${GATEWAY_HTTP_PORT:-9088}:8088"    # Gateway web UI (http://localhost:<host port>)
+      - "${GATEWAY_HTTPS_PORT:-9043}:8043"   # Gateway web UI over HTTPS
+    environment:
+      # Accept the Inductive Automation license agreement (required to start).
+      ACCEPT_IGNITION_EULA: "Y"
+      # Initial gateway admin credentials. Fine for local dev; never reuse in prod.
+      GATEWAY_ADMIN_USERNAME: "admin"
+      GATEWAY_ADMIN_PASSWORD: "password"
+      # "standard" edition includes Perspective (runs in trial mode without a license).
+      IGNITION_EDITION: "standard"
+      TZ: "UTC"
+    volumes:
+      # Persists gateway configuration/state across restarts (survives `up`/`down`,
+      # removed by `teardown.sh --purge`).
+      - gateway-data:/usr/local/bin/ignition/data
+      # Any .modl placed here is auto-linked into the gateway at startup.
+      - ./ops/modules:/modules
+    # Everything after "--" is passed to the JVM / service wrapper.
+    # -Dignition.allowunsignedmodules=true lets the gateway load our unsigned dev build.
+    command:
+      - "-n"
+      - "msc-dev"
+      - "--"
+      - "-Dignition.allowunsignedmodules=true"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8088/StatusPing"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  gateway-data:

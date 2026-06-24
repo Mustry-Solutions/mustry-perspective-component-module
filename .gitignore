@@ -1,0 +1,23 @@
+# --- Ignition module generator tool (kept on disk for convenience, not part of this repo) ---
+ignition-module-tools/
+
+# --- Local Claude Code tooling (not part of the module) ---
+.claude/
+
+# --- Gradle ---
+.gradle/
+build/
+**/build/
+
+# --- Staged module artifacts for the local dev gateway ---
+ops/modules/*.modl
+
+# --- IDE / editor ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# --- macOS ---
+.DS_Store

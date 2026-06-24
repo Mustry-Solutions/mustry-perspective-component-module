@@ -1,0 +1,3 @@
+# Built module files are staged here at runtime; don't commit them.
+*.modl
+!.gitignore
