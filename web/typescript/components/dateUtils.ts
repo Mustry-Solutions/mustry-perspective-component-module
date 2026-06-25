@@ -32,6 +32,13 @@ export function daysInMonth(d: Date): number {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 }
 
+/** First day (local midnight) of the week containing `d`, per Monday/Sunday start. */
+export function startOfWeek(d: Date, mondayFirst: boolean): Date {
+    const dow = d.getDay(); // 0=Sun..6=Sat
+    const offset = mondayFirst ? (dow + 6) % 7 : dow;
+    return addDays(startOfDay(d), -offset);
+}
+
 /** Offset (0..6) of the first day cell, honouring Monday-first or Sunday-first. */
 export function firstCellOffset(monthStart: Date, mondayFirst: boolean): number {
     const dow = monthStart.getDay(); // 0=Sun .. 6=Sat

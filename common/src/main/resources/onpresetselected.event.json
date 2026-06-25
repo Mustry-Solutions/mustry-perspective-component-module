@@ -5,13 +5,21 @@
             "type": "string",
             "description": "The clicked preset's label."
         },
+        "type": {
+            "type": "string",
+            "description": "The preset's type ('rolling' | 'calendar')."
+        },
         "amount": {
             "type": "number",
-            "description": "The preset's amount."
+            "description": "Rolling preset: the amount."
         },
         "unit": {
             "type": "string",
-            "description": "The preset's unit ('hours' | 'days' | 'weeks' | 'months')."
+            "description": "Rolling preset: the unit ('hours' | 'days' | 'weeks' | 'months')."
+        },
+        "period": {
+            "type": "string",
+            "description": "Calendar preset: the period ('today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'lastYear')."
         }
     }
 }

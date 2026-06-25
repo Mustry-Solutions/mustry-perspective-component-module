@@ -27,6 +27,7 @@ import {
     secToHms,
     startOfDay,
     startOfMonth,
+    startOfWeek,
     today,
     weekdayHeaders
 } from './dateUtils';
@@ -40,11 +41,19 @@ type WeekStart = 'monday' | 'sunday';
 type LayoutMode = 'auto' | 'compact' | 'oneMonth' | 'twoMonths';
 type ResolvedLayout = 'compact' | 'oneMonth' | 'twoMonths';
 type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
+type PresetType = 'rolling' | 'calendar';
+type PresetPeriod =
+    'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
+    | 'thisMonth' | 'lastMonth' | 'thisYear' | 'lastYear';
 
 interface PresetDef {
     label: string;
+    type: PresetType;
+    // rolling
     amount: number;
     unit: PresetUnit;
+    // calendar
+    period: PresetPeriod;
 }
 
 export interface DateTimeRangePickerProps {
@@ -280,6 +289,9 @@ export class DateTimeRangePicker
     // mode — forward in 'past' (forward-booking) mode so the range lands on selectable
     // days, backward otherwise (the historical/historian case).
     private presetRange(p: PresetDef): { start: Date; end: Date } {
+        if (p.type === 'calendar') {
+            return this.calendarRange(p.period);
+        }
         const forward = this.props.props.disableDates === 'past';
         const sign = forward ? 1 : -1;
         const now = new Date();
@@ -303,6 +315,44 @@ export class DateTimeRangePicker
                 break;
         }
         return { start: forward ? now : other, end: forward ? other : now };
+    }
+
+    // Calendar presets snap to calendar boundaries: 'this*' = period-to-date (start of
+    // the period to the end of today); 'last*' = the full previous period. Week-based
+    // periods honour weekStart. Times are full-day (00:00:00 .. 23:59:59).
+    private calendarRange(period: PresetPeriod): { start: Date; end: Date } {
+        const mondayFirst = this.props.props.weekStart === 'monday';
+        const now = new Date();
+        const todayStart = startOfDay(now);
+        const endOfToday = combine(todayStart, 86399);
+
+        switch (period) {
+            case 'today':
+                return { start: todayStart, end: endOfToday };
+            case 'yesterday': {
+                const y = addDays(todayStart, -1);
+                return { start: y, end: combine(y, 86399) };
+            }
+            case 'thisWeek':
+                return { start: startOfWeek(now, mondayFirst), end: endOfToday };
+            case 'lastWeek': {
+                const ws = startOfWeek(now, mondayFirst);
+                return { start: addDays(ws, -7), end: combine(addDays(ws, -1), 86399) };
+            }
+            case 'thisMonth':
+                return { start: startOfMonth(now), end: endOfToday };
+            case 'lastMonth': {
+                const lastEnd = addDays(startOfMonth(now), -1);
+                return { start: startOfMonth(lastEnd), end: combine(lastEnd, 86399) };
+            }
+            case 'thisYear':
+                return { start: new Date(now.getFullYear(), 0, 1), end: endOfToday };
+            case 'lastYear':
+            default: {
+                const y = now.getFullYear() - 1;
+                return { start: new Date(y, 0, 1), end: combine(new Date(y, 11, 31), 86399) };
+            }
+        }
     }
 
     /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
@@ -340,13 +390,15 @@ export class DateTimeRangePicker
         w.write('selection.startTimeSec', secondsOfDay(start));
         w.write('selection.endDate', fmtDate(startOfDay(end)));
         w.write('selection.endTimeSec', secondsOfDay(end));
-        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(today()) });
-        this.fireEvent('onPresetSelected', { label: p.label, amount: p.amount, unit: p.unit });
+        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(start) });
+        this.fireEvent('onPresetSelected', {
+            label: p.label, type: p.type, amount: p.amount, unit: p.unit, period: p.period
+        });
     };
 
-    /** Adapt the label to the roll direction ("Last ..." -> "Next ..." in forward mode). */
+    /** Adapt a rolling preset's label to its direction ("Last ..." -> "Next ..." forward). */
     private presetLabel(p: PresetDef): string {
-        if (this.props.props.disableDates === 'past') {
+        if (p.type === 'rolling' && this.props.props.disableDates === 'past') {
             return p.label.replace(/\bLast\b/i, 'Next');
         }
         return p.label;
@@ -885,8 +937,10 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             showPresets: tree.readBoolean('config.showPresets', true),
             presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
                 label: String((p && p.label) || ''),
+                type: ((p && p.type) === 'calendar' ? 'calendar' : 'rolling') as PresetType,
                 amount: Number((p && p.amount) || 0),
-                unit: ((p && p.unit) || 'days') as PresetUnit
+                unit: ((p && p.unit) || 'days') as PresetUnit,
+                period: ((p && p.period) || 'today') as PresetPeriod
             })),
             startDate: tree.readString('selection.startDate', ''),
             endDate: tree.readString('selection.endDate', ''),

@@ -139,7 +139,7 @@
                 },
                 "presets": {
                     "type": "array",
-                    "description": "Quick-range buttons. Each rolls a window of amount*unit from now. Direction follows disableDates: forward ('Next ...') in 'past' mode, backward ('Last ...') in 'future'/'none' mode.",
+                    "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled.",
                     "default": [
                         { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
                         { "label": "Last 7 days", "amount": 7, "unit": "days" },
@@ -152,17 +152,27 @@
                             "label": {
                                 "type": "string",
                                 "default": "",
-                                "description": "Button text. A leading 'Last' is shown as 'Next' when the preset rolls forward."
+                                "description": "Button text. For a rolling preset, a leading 'Last' is shown as 'Next' when it rolls forward."
+                            },
+                            "type": {
+                                "enum": ["rolling", "calendar"],
+                                "default": "rolling",
+                                "description": "'rolling' = a window of amount*unit from now. 'calendar' = a period snapped to calendar boundaries (uses 'period')."
                             },
                             "amount": {
                                 "type": "number",
                                 "default": 1,
-                                "description": "How many units the window spans from now."
+                                "description": "Rolling preset: how many units the window spans from now."
                             },
                             "unit": {
                                 "enum": ["hours", "days", "weeks", "months"],
                                 "default": "days",
-                                "description": "Unit for 'amount'."
+                                "description": "Rolling preset: unit for 'amount'."
+                            },
+                            "period": {
+                                "enum": ["today", "yesterday", "thisWeek", "lastWeek", "thisMonth", "lastMonth", "thisYear", "lastYear"],
+                                "default": "today",
+                                "description": "Calendar preset: which period. 'this*' = period-to-date (start to end of today); 'last*' = the full previous period. Week periods honour weekStart."
                             }
                         }
                     }
