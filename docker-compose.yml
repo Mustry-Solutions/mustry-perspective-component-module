@@ -1,15 +1,18 @@
 # Local development gateway for testing the Mustry Solutions Perspective Components module.
 #
-# This runs a disposable Ignition 8.3.6 gateway in Docker. It is configured for
-# DEVELOPMENT ONLY: it accepts the EULA, uses a fixed weak admin password, and
-# allows unsigned modules. Do NOT use this configuration in production.
+# Runs a disposable Ignition 8.3.6 gateway in Docker. DEVELOPMENT ONLY: it accepts
+# the EULA automatically and uses a fixed weak admin password. Do NOT use in production.
+#
+# The module is self-signed with a local dev certificate (see ops/lib.sh). On a fresh
+# gateway you accept that certificate once during the commissioning wizard; after that
+# it persists in the data volume and reloads automatically on every redeploy.
 #
 # Drive it with the scripts in ./ops (setup.sh / deploy.sh / teardown.sh / ...).
 
 services:
   gateway:
     image: inductiveautomation/ignition:8.3.6
-    container_name: msc-ignition
+    container_name: mspc-ignition
     ports:
       # Host port is configurable via .env (GATEWAY_HTTP_PORT/GATEWAY_HTTPS_PORT).
       # The gateway always listens on 8088/8043 INSIDE the container.
@@ -26,17 +29,18 @@ services:
       TZ: "UTC"
     volumes:
       # Persists gateway configuration/state across restarts (survives `up`/`down`,
-      # removed by `teardown.sh --purge`).
+      # removed by `teardown.sh --purge`). Holds the one-time module cert acceptance.
       - gateway-data:/usr/local/bin/ignition/data
-      # Any .modl placed here is auto-linked into the gateway at startup.
-      - ./ops/modules:/modules
+      # Dedicated third-party module folder (see externalModulesFolder arg below).
+      # setup.sh/deploy.sh stage the freshly built+signed .modl here.
+      - ./ops/modules:/external-modules
     # Everything after "--" is passed to the JVM / service wrapper.
-    # -Dignition.allowunsignedmodules=true lets the gateway load our unsigned dev build.
+    #   externalModulesFolder -> where the gateway looks for third-party modules.
     command:
       - "-n"
       - "msc-dev"
       - "--"
-      - "-Dignition.allowunsignedmodules=true"
+      - "-Dignition.gateway.externalModulesFolder=/external-modules"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8088/StatusPing"]
       interval: 10s

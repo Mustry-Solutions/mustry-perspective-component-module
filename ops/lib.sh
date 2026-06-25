@@ -8,6 +8,16 @@ OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${OPS_DIR}/.." && pwd)"
 MODULES_DIR="${OPS_DIR}/modules"
 
+# Local self-signed signing material for development (gitignored). The gateway is
+# told to auto-accept this module's certificate (ACCEPT_MODULE_CERTS in compose),
+# so a signed dev build loads with no manual steps. These are throwaway dev creds.
+SIGNING_DIR="${OPS_DIR}/signing"
+KEYSTORE_FILE="${SIGNING_DIR}/dev-keystore.p12"
+CERT_FILE="${SIGNING_DIR}/dev-cert.pem"
+CERT_ALIAS="mspc-dev"
+SIGNING_PASS="devpassword"
+SIGNING_DNAME="CN=Mustry Solutions (Dev), O=Mustry Solutions, C=BE"
+
 # Use Java 17 for Gradle (matches the module's toolchain).
 JAVA_17_HOME="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
 if [[ -d "${JAVA_17_HOME}" ]]; then
@@ -46,17 +56,53 @@ require_docker() {
   fi
 }
 
-# --- build & stage --------------------------------------------------------
-# Build the module and copy the freshly built .modl into ops/modules so the
-# gateway can pick it up.
-build_and_stage_module() {
-  info "Building the module with Gradle (first build downloads dependencies)..."
-  ( cd "${PROJECT_ROOT}" && ./gradlew build --console plain -Dorg.gradle.java.installations.auto-download=false )
+# --- signing --------------------------------------------------------------
+# Generate a local self-signed keystore + exported certificate the first time,
+# so the module can be signed for the dev gateway. Throwaway dev credentials.
+ensure_dev_keystore() {
+  if [[ -f "${KEYSTORE_FILE}" && -f "${CERT_FILE}" ]]; then
+    return 0
+  fi
+  local keytool="${JAVA_HOME:-}/bin/keytool"
+  [[ -x "${keytool}" ]] || keytool="keytool"
+  info "Generating a self-signed dev signing keystore (first time only)..."
+  mkdir -p "${SIGNING_DIR}"
+  "${keytool}" -genkeypair \
+    -alias "${CERT_ALIAS}" \
+    -keyalg RSA -keysize 2048 \
+    -validity 3650 \
+    -dname "${SIGNING_DNAME}" \
+    -keystore "${KEYSTORE_FILE}" -storetype PKCS12 \
+    -storepass "${SIGNING_PASS}"
+  "${keytool}" -exportcert \
+    -alias "${CERT_ALIAS}" \
+    -keystore "${KEYSTORE_FILE}" -storetype PKCS12 \
+    -storepass "${SIGNING_PASS}" \
+    -rfc -file "${CERT_FILE}"
+  ok "Created dev keystore at ops/signing/ (gitignored)."
+}
 
+# --- build & stage --------------------------------------------------------
+# Build the module (signed with the local dev cert) and copy the freshly built
+# .modl into ops/modules so the gateway can pick it up.
+build_and_stage_module() {
+  ensure_dev_keystore
+  info "Building and signing the module with Gradle (first build downloads dependencies)..."
+  # `clean` so the signed .modl is produced fresh and never confused with a stale
+  # unsigned artifact. This module is small, so a clean build is quick.
+  ( cd "${PROJECT_ROOT}" && ./gradlew clean build --console plain \
+      -Dorg.gradle.java.installations.auto-download=false \
+      -Pignition.signing.keystoreFile="${KEYSTORE_FILE}" \
+      -Pignition.signing.keystorePassword="${SIGNING_PASS}" \
+      -Pignition.signing.certFile="${CERT_FILE}" \
+      -Pignition.signing.certAlias="${CERT_ALIAS}" \
+      -Pignition.signing.certPassword="${SIGNING_PASS}" )
+
+  # Select the SIGNED module, not the `.unsigned.modl` signing intermediate.
   local modl
-  modl="$(find "${PROJECT_ROOT}/build" -maxdepth 1 -name '*.modl' | head -1)"
+  modl="$(find "${PROJECT_ROOT}/build" -maxdepth 1 -name '*.modl' ! -name '*.unsigned.modl' | head -1)"
   if [[ -z "${modl}" ]]; then
-    err "No .modl found under build/ after the build. Aborting."
+    err "No signed .modl found under build/ after the build. Aborting."
     exit 1
   fi
 

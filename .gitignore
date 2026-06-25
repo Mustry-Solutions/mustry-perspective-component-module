@@ -12,6 +12,9 @@ build/
 # --- Staged module artifacts for the local dev gateway ---
 ops/modules/*.modl
 
+# --- Local dev signing material (NEVER commit keystores/certs/keys) ---
+ops/signing/
+
 # --- IDE / editor ---
 .idea/
 *.iml

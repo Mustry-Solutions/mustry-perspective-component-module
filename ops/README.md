@@ -4,8 +4,9 @@ Helper scripts for running a disposable **Ignition 8.3.6** gateway in Docker so 
 can build, install, and test this module locally. The gateway is defined in
 [`../docker-compose.yml`](../docker-compose.yml).
 
-> **Development only.** This gateway accepts the EULA automatically, uses a fixed
-> weak admin password (`admin` / `password`), and allows **unsigned** modules.
+> **Development only.** This gateway accepts the EULA automatically and uses a fixed
+> weak admin password (`admin` / `password`). The module is signed with a local
+> self-signed dev certificate (auto-generated under `ops/signing/`, gitignored).
 > Never use this configuration in production.
 
 ## Prerequisites
@@ -20,9 +21,16 @@ can build, install, and test this module locally. The gateway is defined in
 ops/setup.sh
 ```
 
-This builds the module, starts the gateway, and installs the module. When it
-finishes, open <http://localhost:9088> and log in with `admin` / `password`. Find the
-module under **Config → Modules** ("Mustry Solutions Perspective Components").
+This builds and signs the module, stages it for the gateway, and starts the gateway.
+On a **fresh** gateway there is a one-time step: open <http://localhost:9088>, step
+through the commissioning wizard, and **accept the certificate + license for
+"Mustry Solutions Perspective Components"** when it's listed (Ignition 8.3 accepts
+third-party modules right in the commissioning wizard). Then log in with
+`admin` / `password` and find it under **Config → Modules**.
+
+The accepted certificate persists in the gateway data volume, and the dev signing
+certificate is stable across rebuilds — so redeploys (`ops/deploy.sh`) reload your
+module with no prompt. You only commission again after `teardown.sh --purge`.
 
 > **Ports:** the gateway is published on host port **9088** (HTTPS 9043) by default,
 > set in [`../.env`](../.env). The default 8088 was already in use locally. To change
@@ -56,17 +64,29 @@ ops/teardown.sh     # stop when done (keeps state)
 ## How it works
 
 - The gateway is `inductiveautomation/ignition:8.3.6`, edition `standard` (includes Perspective).
-- Unsigned modules are allowed via the wrapper argument
-  `-Dignition.allowunsignedmodules=true` (passed after `--` in the compose `command`).
-- The built `.modl` is staged into `ops/modules/`, which is bind-mounted to `/modules`
-  in the container. The image links any `.modl` found there into the gateway at startup.
-- On a brand-new gateway, third-party modules aren't linked on the very first boot, so
-  `setup.sh` restarts the gateway once after initial commissioning.
+- `ops/lib.sh` generates a self-signed dev keystore under `ops/signing/` (once), then
+  builds **and signs** the module by passing `-Pignition.signing.*` to Gradle. A plain
+  `./gradlew build` with no signing properties still works and produces an *unsigned* build.
+- The signed `.modl` is staged into `ops/modules/`, bind-mounted to `/external-modules`
+  in the container. The gateway is pointed there with
+  `-Dignition.gateway.externalModulesFolder=/external-modules` and discovers the module.
+- Ignition 8.3 quarantines any module whose certificate hasn't been accepted. You accept
+  the dev certificate once in the commissioning wizard; it's recorded in the data volume.
+  Because the dev cert is reused for every build, later redeploys load without re-prompting.
+
+> **Why not fully hands-off?** Ignition 8.3 deliberately requires accepting a module's
+> certificate. The `ACCEPT_MODULE_CERTS` env var only auto-accepts certs the gateway
+> already trusts, not an arbitrary self-signed dev cert (fully automating that needs a
+> `register-module.sh`-style pre-registration). The one-time wizard acceptance is the
+> simple, supported path.
 
 ## Troubleshooting
 
-- **Module doesn't appear / wrong version:** `ops/teardown.sh --purge && ops/setup.sh`
-  for a clean cycle.
+- **Module doesn't appear:** make sure you completed the commissioning wizard at
+  <http://localhost:9088> and accepted the module's certificate. Check `ops/status.sh`;
+  if the gateway shows `NEEDS_COMMISSIONING`, finish the wizard. In a running gateway,
+  a quarantined module can also be accepted under **Config → Modules**.
+- **Wrong / stale version:** `ops/teardown.sh --purge && ops/setup.sh` for a clean cycle.
 - **Port already in use:** another service (maybe another gateway) is using the host
   port. Change `GATEWAY_HTTP_PORT` (and `GATEWAY_HTTPS_PORT`) in `../.env`, then re-run.
 - **Gateway slow to start:** first launch initializes the database; give it a minute

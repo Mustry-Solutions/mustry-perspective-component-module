@@ -117,8 +117,9 @@ ignitionModule {
     // documentationIndex.set("index.html")
 
     /*
-     * Optional unsigned modl settings. If true, modl signing will be skipped. This is not for production and should
-     * be used merely for development testing
+     * Sign the module only when signing credentials are supplied via -Pignition.signing.*
+     * (the ops/ dev scripts pass them, pointing at a local self-signed dev keystore).
+     * A plain `./gradlew build` with no signing properties stays unsigned.
      */
-    skipModlSigning.set(true)
+    skipModlSigning.set(!project.hasProperty("ignition.signing.keystoreFile"))
 }
