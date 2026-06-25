@@ -33,6 +33,11 @@
             "default": true,
             "description": "Start weeks on Monday (true) or Sunday (false)."
         },
+        "compactBelowHeight": {
+            "type": "number",
+            "default": 260,
+            "description": "When the component's rendered height (px) is below this, it switches from the full calendar to a compact two-field (start/end date + time) layout."
+        },
         "startDate": {
             "type": "string",
             "default": "",

@@ -43,6 +43,7 @@ export interface DateTimeRangePickerProps {
     shortSpanHours: number;
     timeStepSeconds: number;
     firstDayMonday: boolean;
+    compactBelowHeight: number;
     // selection (two-way)
     startDate: string;     // "YYYY-MM-DD" or ""
     endDate: string;       // "YYYY-MM-DD" or ""
@@ -51,9 +52,10 @@ export interface DateTimeRangePickerProps {
 }
 
 interface DateTimeRangePickerState {
-    viewMonth: Date;       // first day of the displayed month
-    anchor: Date | null;   // first-clicked day of an in-progress range
-    hover: Date | null;    // hovered day during preview
+    viewMonth: Date;          // first day of the displayed month
+    anchor: Date | null;      // first-clicked day of an in-progress range
+    hover: Date | null;       // hovered day during preview
+    containerHeight: number;  // measured rendered height, drives compact mode
 }
 
 type DayState = 'empty' | 'disabled' | 'today' | 'default' | 'start' | 'end' | 'inrange';
@@ -64,22 +66,50 @@ export class DateTimeRangePicker
     // Signature of the last outputs we wrote, to avoid redundant prop writes / loops.
     private lastOutputSig = '';
 
+    // Observes the rendered size so the layout can switch to a compact form when short.
+    private resizeObserver: ResizeObserver | null = null;
+
     constructor(props: ComponentProps<DateTimeRangePickerProps>) {
         super(props);
         const start = parseDate(props.props.startDate);
         this.state = {
             viewMonth: startOfMonth(start || today()),
             anchor: null,
-            hover: null
+            hover: null,
+            containerHeight: 99999  // start in full mode until measured
         };
     }
 
     componentDidMount(): void {
         this.syncOutputs();
+        this.observeSize();
     }
 
     componentDidUpdate(): void {
         this.syncOutputs();
+    }
+
+    componentWillUnmount(): void {
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
+    }
+
+    private observeSize(): void {
+        const el = this.props.store.element as HTMLElement | undefined;
+        if (!el || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (Math.abs(h - this.state.containerHeight) > 1) {
+                    this.setState({ containerHeight: h });
+                }
+            }
+        });
+        this.resizeObserver.observe(el);
     }
 
     // --- bounds ----------------------------------------------------------
@@ -193,6 +223,15 @@ export class DateTimeRangePicker
 
     private onEndTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.props.store.props.write('endTimeSec', hmsToSec(e.target.value));
+    };
+
+    // Compact-mode date fields: write the date directly (already "YYYY-MM-DD").
+    private onStartDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.props.store.props.write('startDate', e.target.value);
+    };
+
+    private onEndDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.props.store.props.write('endDate', e.target.value);
     };
 
     // --- outputs ---------------------------------------------------------
@@ -331,14 +370,49 @@ export class DateTimeRangePicker
         return cells;
     }
 
-    render() {
-        const { props, emit } = this.props;
-        const { startDate, endDate, startTimeSec, endTimeSec, timeStepSeconds } = props;
-        const hasRange = !!parseDate(startDate) && !!parseDate(endDate);
-        const step = Math.max(1, Math.floor(timeStepSeconds || 1));
-
+    /** Duration text + Clear, shared by the full and compact layouts. */
+    private renderFooter(): React.ReactNode {
+        const { startDate, endDate, startTimeSec, endTimeSec } = this.props.props;
+        const start = parseDate(startDate);
+        const end = parseDate(endDate);
+        let label = 'Select a range';
+        if (start && end) {
+            const sdt = combine(start, clampSec(startTimeSec)).getTime();
+            const edt = combine(end, clampSec(endTimeSec)).getTime();
+            label = this.durationLabel(daysBetween(start, end), (edt - sdt) / 3600000, edt > sdt);
+        }
         return (
-            <div {...emit({ classes: ['mustry-datetime-range-picker'] })}>
+            <div className="dtrp-footer">
+                <span className="dtrp-duration">{label}</span>
+                <button type="button" className="dtrp-clear" onClick={this.clear}>
+                    Clear
+                </button>
+            </div>
+        );
+    }
+
+    private renderTimes(): React.ReactNode {
+        const { startTimeSec, endTimeSec, timeStepSeconds } = this.props.props;
+        const step = Math.max(1, Math.floor(timeStepSeconds || 1));
+        return (
+            <div className="dtrp-times">
+                <label className="dtrp-time-field">
+                    <span className="dtrp-time-label">Start time</span>
+                    <input type="time" step={step} value={secToHms(startTimeSec)} onChange={this.onStartTime} />
+                </label>
+                <label className="dtrp-time-field">
+                    <span className="dtrp-time-label">End time</span>
+                    <input type="time" step={step} value={secToHms(endTimeSec)} onChange={this.onEndTime} />
+                </label>
+            </div>
+        );
+    }
+
+    /** Full calendar layout (used when the component is tall enough). */
+    private renderFull(): React.ReactNode {
+        const { props } = this.props;
+        return (
+            <>
                 <div className="dtrp-header">
                     <button
                         type="button"
@@ -371,41 +445,53 @@ export class DateTimeRangePicker
                     {this.renderGrid()}
                 </div>
 
-                <div className="dtrp-times">
-                    <label className="dtrp-time-field">
-                        <span className="dtrp-time-label">Start time</span>
-                        <input
-                            type="time"
-                            step={step}
-                            value={secToHms(startTimeSec)}
-                            onChange={this.onStartTime}
-                        />
-                    </label>
-                    <label className="dtrp-time-field">
-                        <span className="dtrp-time-label">End time</span>
-                        <input
-                            type="time"
-                            step={step}
-                            value={secToHms(endTimeSec)}
-                            onChange={this.onEndTime}
-                        />
-                    </label>
-                </div>
+                {this.renderTimes()}
+                {this.renderFooter()}
+            </>
+        );
+    }
 
-                <div className="dtrp-footer">
-                    <span className="dtrp-duration">
-                        {hasRange ? this.durationLabel(
-                            daysBetween(parseDate(startDate)!, parseDate(endDate)!),
-                            (combine(parseDate(endDate)!, clampSec(endTimeSec)).getTime()
-                                - combine(parseDate(startDate)!, clampSec(startTimeSec)).getTime()) / 3600000,
-                            combine(parseDate(endDate)!, clampSec(endTimeSec)).getTime()
-                                > combine(parseDate(startDate)!, clampSec(startTimeSec)).getTime()
-                        ) : 'Select a range'}
-                    </span>
-                    <button type="button" className="dtrp-clear" onClick={this.clear}>
-                        Clear
-                    </button>
-                </div>
+    /** Compact layout (used when too short for a usable calendar): two date+time fields. */
+    private renderCompact(): React.ReactNode {
+        const { startDate, endDate } = this.props.props;
+        const min = this.effMin();
+        const max = this.effMax();
+        const dmin = min ? fmtDate(min) : undefined;
+        const dmax = max ? fmtDate(max) : undefined;
+        return (
+            <>
+                <label className="dtrp-compact-field">
+                    <span className="dtrp-compact-label">Start</span>
+                    <input
+                        type="date"
+                        value={startDate}
+                        min={dmin}
+                        max={dmax}
+                        onChange={this.onStartDateInput}
+                    />
+                </label>
+                <label className="dtrp-compact-field">
+                    <span className="dtrp-compact-label">End</span>
+                    <input
+                        type="date"
+                        value={endDate}
+                        min={dmin}
+                        max={dmax}
+                        onChange={this.onEndDateInput}
+                    />
+                </label>
+                {this.renderTimes()}
+                {this.renderFooter()}
+            </>
+        );
+    }
+
+    render() {
+        const { emit, props } = this.props;
+        const compact = this.state.containerHeight < props.compactBelowHeight;
+        return (
+            <div {...emit({ classes: ['mustry-datetime-range-picker', ...(compact ? ['is-compact'] : [])] })}>
+                {compact ? this.renderCompact() : this.renderFull()}
             </div>
         );
     }
@@ -433,6 +519,7 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             shortSpanHours: tree.readNumber('shortSpanHours', 24),
             timeStepSeconds: tree.readNumber('timeStepSeconds', 1),
             firstDayMonday: tree.readBoolean('firstDayMonday', true),
+            compactBelowHeight: tree.readNumber('compactBelowHeight', 260),
             startDate: tree.readString('startDate', ''),
             endDate: tree.readString('endDate', ''),
             startTimeSec: tree.readNumber('startTimeSec', 0),

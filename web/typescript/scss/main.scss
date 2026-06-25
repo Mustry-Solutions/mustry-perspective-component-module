@@ -190,4 +190,37 @@ $text: #1f2937;
             background: $accent-soft;
         }
     }
+
+    // --- compact mode (short component): two date+time fields, no calendar ---
+    &.is-compact {
+        justify-content: center;
+        overflow: auto;
+
+        .dtrp-compact-field {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: $muted;
+
+            > span {
+                width: 40px;
+                flex: 0 0 auto;
+            }
+
+            input {
+                flex: 1 1 auto;
+                font-size: 13px;
+                padding: 4px 6px;
+                border: 1px solid $border;
+                border-radius: 6px;
+                color: $text;
+                min-width: 0;
+            }
+        }
+
+        .dtrp-times {
+            margin-top: 0;
+        }
+    }
 }
