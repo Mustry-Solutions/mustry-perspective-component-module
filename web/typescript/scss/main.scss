@@ -6,12 +6,15 @@ $text: #1f2937;
 
 .mustry-datetime-range-picker {
     box-sizing: border-box;
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 12px;
     width: 100%;
     height: 100%;
+    // Fill the component's box and clip rather than spilling outside its bounds.
+    min-height: 0;
+    overflow: hidden;
     font-family: inherit;
     color: $text;
     background: #ffffff;
@@ -62,6 +65,14 @@ $text: #1f2937;
         gap: 2px;
     }
 
+    // The grid takes the remaining vertical space; its rows divide that space
+    // evenly so day cells scale with the component's height instead of its width.
+    .dtrp-grid {
+        flex: 1 1 auto;
+        min-height: 0;
+        grid-auto-rows: 1fr;
+    }
+
     .dtrp-weekday {
         text-align: center;
         font-size: 11px;
@@ -72,8 +83,9 @@ $text: #1f2937;
     .dtrp-cell {
         border: none;
         background: transparent;
-        aspect-ratio: 1 / 1;
-        min-height: 32px;
+        // Height comes from the grid row (grid-auto-rows: 1fr), not from width,
+        // so cells fill the available height and never force overflow.
+        min-height: 0;
         font-size: 13px;
         cursor: pointer;
         color: $text;
