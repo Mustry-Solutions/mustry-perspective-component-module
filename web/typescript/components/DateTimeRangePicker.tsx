@@ -209,35 +209,51 @@ export class DateTimeRangePicker
         this.setState({ anchor: null, hover: null });
     };
 
-    // Quick presets: set a rolling window of `amount` units ending now.
+    // Quick presets: roll a window of `amount` units from now. Direction follows the
+    // disableDates mode — forward in 'past' (forward-booking) mode so the range lands on
+    // selectable days, backward otherwise (the historical/historian case).
     private applyPreset = (p: PresetDef): void => {
+        const forward = this.props.props.disableDates === 'past';
+        const sign = forward ? 1 : -1;
         const now = new Date();
-        let start: Date;
+
+        let other: Date;
         switch (p.unit) {
             case 'hours':
-                start = new Date(now.getTime() - p.amount * 3600000);
+                other = new Date(now.getTime() + sign * p.amount * 3600000);
                 break;
             case 'weeks':
-                start = new Date(now.getTime() - p.amount * 7 * 86400000);
+                other = new Date(now.getTime() + sign * p.amount * 7 * 86400000);
                 break;
             case 'months':
-                start = new Date(
-                    now.getFullYear(), now.getMonth() - p.amount, now.getDate(),
+                other = new Date(
+                    now.getFullYear(), now.getMonth() + sign * p.amount, now.getDate(),
                     now.getHours(), now.getMinutes(), now.getSeconds()
                 );
                 break;
             case 'days':
             default:
-                start = new Date(now.getTime() - p.amount * 86400000);
+                other = new Date(now.getTime() + sign * p.amount * 86400000);
                 break;
         }
+
+        const start = forward ? now : other;
+        const end = forward ? other : now;
         const w = this.props.store.props;
         w.write('selection.startDate', fmtDate(startOfDay(start)));
         w.write('selection.startTimeSec', secondsOfDay(start));
-        w.write('selection.endDate', fmtDate(startOfDay(now)));
-        w.write('selection.endTimeSec', secondsOfDay(now));
+        w.write('selection.endDate', fmtDate(startOfDay(end)));
+        w.write('selection.endTimeSec', secondsOfDay(end));
         this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(now) });
     };
+
+    /** Adapt the label to the roll direction ("Last ..." -> "Next ..." in forward mode). */
+    private presetLabel(p: PresetDef): string {
+        if (this.props.props.disableDates === 'past') {
+            return p.label.replace(/\bLast\b/i, 'Next');
+        }
+        return p.label;
+    }
 
     // --- month navigation ------------------------------------------------
     private canPrev(): boolean {
@@ -473,7 +489,7 @@ export class DateTimeRangePicker
                         className="dtrp-preset"
                         onClick={() => this.applyPreset(p)}
                     >
-                        {p.label}
+                        {this.presetLabel(p)}
                     </button>
                 ))}
             </div>

@@ -71,7 +71,7 @@
                 },
                 "presets": {
                     "type": "array",
-                    "description": "Quick-range buttons. Each sets a rolling window ending now: start = now - amount*unit, end = now.",
+                    "description": "Quick-range buttons. Each rolls a window of amount*unit from now. Direction follows disableDates: forward ('Next ...') in 'past' mode, backward ('Last ...') in 'future'/'none' mode.",
                     "default": [
                         { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
                         { "label": "Last 7 days", "amount": 7, "unit": "days" },
