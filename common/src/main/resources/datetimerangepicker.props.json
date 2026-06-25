@@ -65,9 +65,9 @@
                     }
                 },
                 "granularity": {
-                    "enum": ["hour", "minute", "second"],
+                    "enum": ["day", "hour", "minute", "second"],
                     "default": "second",
-                    "description": "Precision of the start/end time pickers: hour, minute, or second."
+                    "description": "Time precision. 'day' hides the time pickers and uses whole days (start of start-day to end of end-day). 'hour'/'minute'/'second' show start/end time pickers at that precision."
                 },
                 "durationLabelThresholdHours": {
                     "type": "number",

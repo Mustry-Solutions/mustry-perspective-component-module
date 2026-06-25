@@ -35,7 +35,7 @@ import {
 export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
 type DisableMode = 'past' | 'future' | 'none';
-type Granularity = 'hour' | 'minute' | 'second';
+type Granularity = 'day' | 'hour' | 'minute' | 'second';
 type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
 
 interface PresetDef {
@@ -329,10 +329,21 @@ export class DateTimeRangePicker
     /** Step (seconds) for the chosen granularity. */
     private stepSeconds(): number {
         switch (this.props.props.granularity) {
+            case 'day': return 86400;
             case 'hour': return 3600;
             case 'minute': return 60;
             default: return 1;
         }
+    }
+
+    /** Effective start/end time-of-day (seconds). In 'day' mode the range covers
+     *  whole days: 00:00:00 to 23:59:59; otherwise the snapped selected times. */
+    private effStartSec(): number {
+        return this.props.props.granularity === 'day' ? 0 : this.snapSec(this.props.props.startTimeSec);
+    }
+
+    private effEndSec(): number {
+        return this.props.props.granularity === 'day' ? 86399 : this.snapSec(this.props.props.endTimeSec);
     }
 
     /** Snap seconds-since-midnight down to the chosen granularity. */
@@ -369,6 +380,12 @@ export class DateTimeRangePicker
         if (!valid) {
             return '';
         }
+        if (this.props.props.granularity === 'day') {
+            if (days === 0) {
+                return 'Same day';
+            }
+            return days === 1 ? '1 day' : `${days} days`;
+        }
         const { shortSpanHours } = this.props.props;
         if (durationHours >= shortSpanHours) {
             return days === 1 ? '1 day' : `${days} days`;
@@ -386,13 +403,11 @@ export class DateTimeRangePicker
         return `${s}s`;
     }
 
-    /** Compute outputs from the committed selection and write any that changed. */
-    private syncOutputs(): void {
-        const { startTimeSec, endTimeSec } = this.props.props;
+    /** Compute the output values from the committed selection (single source of truth). */
+    private computeOutputs() {
         const start = parseDate(this.props.props.startDate);
         const end = parseDate(this.props.props.endDate);
-
-        let out = {
+        const base = {
             startDateTime: '',
             endDateTime: '',
             durationDays: 0,
@@ -400,30 +415,34 @@ export class DateTimeRangePicker
             durationLabel: '',
             isValid: false
         };
-
-        if (start && end) {
-            const sdt = combine(start, this.snapSec(startTimeSec));
-            const edt = combine(end, this.snapSec(endTimeSec));
-            const durationDays = daysBetween(start, end);
-            const { minDays, maxDays } = this.props.props;
-            let valid = edt.getTime() > sdt.getTime();
-            if (minDays > 0 && durationDays < minDays) {
-                valid = false;
-            }
-            if (maxDays > 0 && durationDays > maxDays) {
-                valid = false;
-            }
-            const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
-            out = {
-                startDateTime: fmtDateTime(sdt),
-                endDateTime: fmtDateTime(edt),
-                durationDays,
-                durationHours,
-                durationLabel: this.durationLabel(durationDays, durationHours, valid),
-                isValid: valid
-            };
+        if (!start || !end) {
+            return base;
         }
+        const sdt = combine(start, this.effStartSec());
+        const edt = combine(end, this.effEndSec());
+        const durationDays = daysBetween(start, end);
+        const { minDays, maxDays } = this.props.props;
+        let valid = edt.getTime() > sdt.getTime();
+        if (minDays > 0 && durationDays < minDays) {
+            valid = false;
+        }
+        if (maxDays > 0 && durationDays > maxDays) {
+            valid = false;
+        }
+        const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
+        return {
+            startDateTime: fmtDateTime(sdt),
+            endDateTime: fmtDateTime(edt),
+            durationDays,
+            durationHours,
+            durationLabel: this.durationLabel(durationDays, durationHours, valid),
+            isValid: valid
+        };
+    }
 
+    /** Write any outputs that changed (de-duplicated to avoid render/write loops). */
+    private syncOutputs(): void {
+        const out = this.computeOutputs();
         const sig = JSON.stringify(out);
         if (sig === this.lastOutputSig) {
             return;
@@ -510,15 +529,9 @@ export class DateTimeRangePicker
 
     /** Duration text + Clear, shared by the full and compact layouts. */
     private renderFooter(): React.ReactNode {
-        const { startDate, endDate, startTimeSec, endTimeSec } = this.props.props;
-        const start = parseDate(startDate);
-        const end = parseDate(endDate);
-        let label = 'Select a range';
-        if (start && end) {
-            const sdt = combine(start, this.snapSec(startTimeSec)).getTime();
-            const edt = combine(end, this.snapSec(endTimeSec)).getTime();
-            label = this.durationLabel(daysBetween(start, end), (edt - sdt) / 3600000, edt > sdt);
-        }
+        const hasRange = !!parseDate(this.props.props.startDate) && !!parseDate(this.props.props.endDate);
+        const out = this.computeOutputs();
+        const label = !hasRange ? 'Select a range' : (out.isValid ? out.durationLabel : 'Invalid range');
         return (
             <div className="dtrp-footer">
                 <span className="dtrp-duration">{label}</span>
@@ -569,6 +582,9 @@ export class DateTimeRangePicker
     }
 
     private renderTimes(): React.ReactNode {
+        if (this.props.props.granularity === 'day') {
+            return null;   // whole-day mode: no time-of-day selection
+        }
         const { startTimeSec, endTimeSec } = this.props.props;
         const step = this.stepSeconds();
         return (
