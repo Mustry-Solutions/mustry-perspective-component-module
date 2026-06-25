@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "required": [],
+    "properties": {
+        "startDate": {
+            "type": "string",
+            "description": "Start of the range, as a datetime-local string (e.g. 2026-06-25T09:00).",
+            "default": ""
+        },
+        "endDate": {
+            "type": "string",
+            "description": "End of the range, as a datetime-local string (e.g. 2026-06-25T17:00).",
+            "default": ""
+        },
+        "style": {
+            "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+            "default": {
+                "classes": ""
+            }
+        }
+    }
+}

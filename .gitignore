@@ -9,6 +9,11 @@ ignition-module-tools/
 build/
 **/build/
 
+# --- Node / web front-end ---
+node_modules/
+**/node_modules/
+web/.gradle/
+
 # --- Staged module artifacts for the local dev gateway ---
 ops/modules/*.modl
 

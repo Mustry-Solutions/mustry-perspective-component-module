@@ -1,0 +1,31 @@
+.mustry-datetime-range-picker {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    box-sizing: border-box;
+    padding: 4px;
+    font-family: inherit;
+
+    .dtrp-field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 12px;
+    }
+
+    .dtrp-label {
+        color: #6b7280;
+    }
+
+    .dtrp-input {
+        padding: 4px 6px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+
+    .dtrp-separator {
+        padding-bottom: 6px;
+        color: #6b7280;
+    }
+}

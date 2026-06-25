@@ -1,39 +1,70 @@
 package com.mustrysolutions.perspective.components.gateway;
 
+import static com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule.URL_ALIAS;
+
+import java.util.Optional;
+
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
+import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
+import com.inductiveautomation.perspective.common.api.ComponentRegistry;
+import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
+
+import com.mustrysolutions.perspective.components.common.comp.DateTimeRangePicker;
 
 /**
- * Class which is instantiated by the Ignition platform when the module is loaded in the gateway scope.
- *
- * <p>This is where the module registers its server-side behavior. For a Perspective component module,
- * this is where you will register your component(s) with the Perspective module once you add that code.
+ * Gateway-scope hook. Registers this module's Perspective components with the
+ * gateway's component registry and serves their front-end resources.
  */
 public class MustrySolutionsPerspectiveComponentsGatewayHook extends AbstractGatewayModuleHook {
 
-    /**
-     * Called before startup. The chance for the module to add extension points and update persistent
-     * records and schemas. None of the managers will be started up at this point.
-     */
+    private static final LoggerEx log = LoggerEx.newBuilder().build(
+        "MustrySolutions.PerspectiveComponents.GatewayHook");
+
+    private GatewayContext gatewayContext;
+    private PerspectiveContext perspectiveContext;
+    private ComponentRegistry componentRegistry;
+
     @Override
     public void setup(GatewayContext context) {
-
+        this.gatewayContext = context;
     }
 
-    /**
-     * Called to initialize the module. Will only be called once.
-     */
     @Override
     public void startup(LicenseState activationState) {
+        this.perspectiveContext = PerspectiveContext.get(this.gatewayContext);
+        this.componentRegistry = this.perspectiveContext.getComponentRegistry();
 
+        if (this.componentRegistry != null) {
+            log.info("Registering Mustry Solutions Perspective components.");
+            this.componentRegistry.registerComponent(DateTimeRangePicker.DESCRIPTOR);
+        } else {
+            log.error("Perspective component registry not found; components not registered.");
+        }
     }
 
-    /**
-     * Called to shut down this module. A new instance will be created if a restart is desired.
-     */
     @Override
     public void shutdown() {
+        if (this.componentRegistry != null) {
+            this.componentRegistry.removeComponent(DateTimeRangePicker.COMPONENT_ID);
+        }
+    }
 
+    /** Serve the bundled web resources found in the module's "mounted" resource folder. */
+    @Override
+    public Optional<String> getMountedResourceFolder() {
+        return Optional.of("mounted");
+    }
+
+    /** Mount those resources at /res/{URL_ALIAS}/ rather than under the module id. */
+    @Override
+    public Optional<String> getMountPathAlias() {
+        return Optional.of(URL_ALIAS);
+    }
+
+    @Override
+    public boolean isFreeModule() {
+        return true;
     }
 }

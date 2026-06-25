@@ -9,6 +9,7 @@ java {
 }
 
 dependencies {
-    // add common scoped dependencies here
     compileOnly("com.inductiveautomation.ignitionsdk:ignition-common:${rootProject.extra["sdk_version"]}")
+    // Perspective component descriptor / BrowserResource APIs.
+    compileOnly("com.inductiveautomation.ignitionsdk:perspective-common:${rootProject.extra["sdk_version"]}")
 }

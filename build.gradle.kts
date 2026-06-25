@@ -53,7 +53,8 @@ ignitionModule {
     projectScopes.putAll(mapOf(
         ":common" to "GD",
         ":designer" to "D",
-        ":gateway" to "G"
+        ":gateway" to "G",
+        ":web" to "G"
     ))
 
     /*
