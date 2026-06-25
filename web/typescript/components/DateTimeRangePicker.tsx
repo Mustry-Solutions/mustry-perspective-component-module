@@ -36,6 +36,7 @@ export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
 type DisableMode = 'past' | 'future' | 'none';
 type Granularity = 'day' | 'hour' | 'minute' | 'second';
+type WeekStart = 'monday' | 'sunday';
 type LayoutMode = 'auto' | 'compact' | 'oneMonth' | 'twoMonths';
 type ResolvedLayout = 'compact' | 'oneMonth' | 'twoMonths';
 type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
@@ -57,7 +58,7 @@ export interface DateTimeRangePickerProps {
     maxSpanDays: number;
     durationLabelThresholdHours: number;
     granularity: Granularity;
-    firstDayMonday: boolean;
+    weekStart: WeekStart;
     timezone: string;
     locale: string;
     layout: LayoutMode;
@@ -583,8 +584,8 @@ export class DateTimeRangePicker
     }
 
     private renderGrid(monthStart: Date): React.ReactNode {
-        const { firstDayMonday, enabled } = this.props.props;
-        const offset = firstCellOffset(monthStart, firstDayMonday);
+        const { weekStart, enabled } = this.props.props;
+        const offset = firstCellOffset(monthStart, weekStart === 'monday');
         const count = daysInMonth(monthStart);
 
         const cells: React.ReactNode[] = [];
@@ -711,11 +712,11 @@ export class DateTimeRangePicker
 
     /** A single month: weekday header row + day grid. */
     private renderCalendar(monthStart: Date): React.ReactNode {
-        const { firstDayMonday, locale } = this.props.props;
+        const { weekStart, locale } = this.props.props;
         return (
             <div className="dtrp-calendar">
                 <div className="dtrp-weekdays">
-                    {weekdayHeaders(firstDayMonday, locale).map((w) => (
+                    {weekdayHeaders(weekStart === 'monday', locale).map((w) => (
                         <div key={`${fmtDate(monthStart)}-${w}`} className="dtrp-weekday">{w}</div>
                     ))}
                 </div>
@@ -874,7 +875,7 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             maxSpanDays: tree.readNumber('config.spanDays.max', 0),
             durationLabelThresholdHours: tree.readNumber('config.durationLabelThresholdHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
-            firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
+            weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
             timezone: tree.readString('config.timezone', ''),
             locale: tree.readString('config.locale', ''),
             layout: tree.readString('config.layout', 'auto') as LayoutMode,

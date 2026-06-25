@@ -14,7 +14,7 @@
                 "spanDays": { "min": 0, "max": 0 },
                 "granularity": "second",
                 "durationLabelThresholdHours": 24,
-                "firstDayMonday": true,
+                "weekStart": "monday",
                 "timezone": "",
                 "locale": "",
                 "layout": "auto",
@@ -84,10 +84,10 @@
                     "default": 24,
                     "description": "Controls output.durationLabel only: spans at/above this many hours show as whole days ('3 days'); shorter spans show as elapsed time ('6h 30m')."
                 },
-                "firstDayMonday": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Start the week on Monday (true) or Sunday (false)."
+                "weekStart": {
+                    "enum": ["monday", "sunday"],
+                    "default": "monday",
+                    "description": "Day the week starts on (affects the calendar's weekday columns)."
                 },
                 "timezone": {
                     "type": "string",
@@ -97,7 +97,7 @@
                 "locale": {
                     "type": "string",
                     "default": "",
-                    "description": "BCP-47 locale (e.g. 'nl-BE', 'fr-FR') for the month label and weekday headers. Blank = the browser default. Week start is still controlled by firstDayMonday."
+                    "description": "BCP-47 locale (e.g. 'nl-BE', 'fr-FR') for the month label and weekday headers. Blank = the browser default. Week start is still controlled by weekStart."
                 },
                 "layout": {
                     "enum": ["auto", "compact", "oneMonth", "twoMonths"],
