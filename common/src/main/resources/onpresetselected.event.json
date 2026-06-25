@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "properties": {
+        "label": {
+            "type": "string",
+            "description": "The clicked preset's label."
+        },
+        "amount": {
+            "type": "number",
+            "description": "The preset's amount."
+        },
+        "unit": {
+            "type": "string",
+            "description": "The preset's unit ('hours' | 'days' | 'weeks' | 'months')."
+        }
+    }
+}

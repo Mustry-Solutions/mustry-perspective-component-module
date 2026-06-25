@@ -1,0 +1,37 @@
+{
+    "type": "object",
+    "properties": {
+        "startDateTime": {
+            "type": "string",
+            "description": "Start instant, ISO 8601 with offset (per config.timezone)."
+        },
+        "endDateTime": {
+            "type": "string",
+            "description": "End instant, ISO 8601 with offset (per config.timezone)."
+        },
+        "startEpochMs": {
+            "type": "number",
+            "description": "Start instant as epoch milliseconds (absolute UTC)."
+        },
+        "endEpochMs": {
+            "type": "number",
+            "description": "End instant as epoch milliseconds (absolute UTC)."
+        },
+        "durationDays": {
+            "type": "number",
+            "description": "Whole calendar days between start and end (0 = same day)."
+        },
+        "durationHours": {
+            "type": "number",
+            "description": "Full span in hours."
+        },
+        "durationLabel": {
+            "type": "string",
+            "description": "Pre-formatted span for display, e.g. '3 days' or '6h 30m'."
+        },
+        "isValid": {
+            "type": "boolean",
+            "description": "True when both endpoints are set, end is after start, and the span is within spanDays."
+        }
+    }
+}

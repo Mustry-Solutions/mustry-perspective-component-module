@@ -92,6 +92,9 @@ export class DateTimeRangePicker
     // Observes the rendered size so the layout can switch to a compact form when short.
     private resizeObserver: ResizeObserver | null = null;
 
+    // Suppress the onRangeChanged event during the initial mount sync.
+    private didMount = false;
+
     constructor(props: ComponentProps<DateTimeRangePickerProps>) {
         super(props);
         const start = parseDate(props.props.startDate);
@@ -106,7 +109,15 @@ export class DateTimeRangePicker
 
     componentDidMount(): void {
         this.syncOutputs();
+        this.didMount = true;
         this.observeSize();
+    }
+
+    /** Fire a component event for authors' event scripts (suppressed at design time). */
+    private fireEvent(name: string, payload: object): void {
+        if (this.props.eventsEnabled) {
+            this.props.componentEvents.fireComponentEvent(name, payload);
+        }
     }
 
     componentDidUpdate(): void {
@@ -329,6 +340,7 @@ export class DateTimeRangePicker
         w.write('selection.endDate', fmtDate(startOfDay(end)));
         w.write('selection.endTimeSec', secondsOfDay(end));
         this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(today()) });
+        this.fireEvent('onPresetSelected', { label: p.label, amount: p.amount, unit: p.unit });
     };
 
     /** Adapt the label to the roll direction ("Last ..." -> "Next ..." in forward mode). */
@@ -528,6 +540,9 @@ export class DateTimeRangePicker
         write.write('output.durationHours', out.durationHours);
         write.write('output.durationLabel', out.durationLabel);
         write.write('output.isValid', out.isValid);
+        if (this.didMount) {
+            this.fireEvent('onRangeChanged', out);
+        }
     }
 
     // --- rendering -------------------------------------------------------
