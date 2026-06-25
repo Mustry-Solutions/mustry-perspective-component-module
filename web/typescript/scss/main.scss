@@ -1,31 +1,181 @@
-.mustry-datetime-range-picker {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    box-sizing: border-box;
-    padding: 4px;
-    font-family: inherit;
+$accent: #0a66c2;
+$accent-soft: #d6e6f7;
+$muted: #9ca3af;
+$border: #e5e7eb;
+$text: #1f2937;
 
-    .dtrp-field {
+.mustry-datetime-range-picker {
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    width: 100%;
+    height: 100%;
+    font-family: inherit;
+    color: $text;
+    background: #ffffff;
+    border: 1px solid $border;
+    border-radius: 10px;
+    user-select: none;
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .dtrp-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .dtrp-month {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .dtrp-nav {
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        line-height: 1;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: $accent;
+
+        &:hover:not(:disabled) {
+            background: $accent-soft;
+        }
+
+        &:disabled {
+            color: $muted;
+            cursor: default;
+        }
+    }
+
+    .dtrp-weekdays,
+    .dtrp-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+    }
+
+    .dtrp-weekday {
+        text-align: center;
+        font-size: 11px;
+        color: $muted;
+        padding: 2px 0;
+    }
+
+    .dtrp-cell {
+        border: none;
+        background: transparent;
+        aspect-ratio: 1 / 1;
+        min-height: 32px;
+        font-size: 13px;
+        cursor: pointer;
+        color: $text;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover:not(:disabled) {
+            background: $accent-soft;
+        }
+    }
+
+    .dtrp-cell--empty {
+        visibility: hidden;
+        cursor: default;
+    }
+
+    .dtrp-cell--disabled {
+        color: $muted;
+        cursor: not-allowed;
+        text-decoration: line-through;
+
+        &:hover {
+            background: transparent;
+        }
+    }
+
+    .dtrp-cell--today {
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px $accent;
+    }
+
+    // The in-range band: square corners so endpoints visually connect it.
+    .dtrp-cell--inrange {
+        background: $accent-soft;
+        border-radius: 0;
+    }
+
+    .dtrp-cell--start,
+    .dtrp-cell--end {
+        background: $accent;
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    .dtrp-cell--start {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .dtrp-cell--end {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .dtrp-times {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .dtrp-time-field {
         display: flex;
         flex-direction: column;
         gap: 2px;
-        font-size: 12px;
+        flex: 1;
+        font-size: 11px;
+        color: $muted;
+
+        input {
+            font-size: 13px;
+            padding: 4px 6px;
+            border: 1px solid $border;
+            border-radius: 6px;
+            color: $text;
+        }
     }
 
-    .dtrp-label {
-        color: #6b7280;
-    }
-
-    .dtrp-input {
-        padding: 4px 6px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
+    .dtrp-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 4px;
         font-size: 13px;
     }
 
-    .dtrp-separator {
-        padding-bottom: 6px;
-        color: #6b7280;
+    .dtrp-duration {
+        font-weight: 600;
+    }
+
+    .dtrp-clear {
+        border: 1px solid $border;
+        background: #ffffff;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        color: $accent;
+
+        &:hover {
+            background: $accent-soft;
+        }
     }
 }
