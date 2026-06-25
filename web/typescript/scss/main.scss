@@ -46,6 +46,12 @@ $text: #1f2937;
         }
     }
 
+    .dtrp-hint {
+        font-size: 11px;
+        color: $muted;
+        font-style: italic;
+    }
+
     .dtrp-header {
         display: flex;
         align-items: center;

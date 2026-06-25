@@ -6,18 +6,15 @@
         "config": {
             "type": "object",
             "additionalProperties": false,
-            "description": "Configuration options that control behaviour and layout.",
+            "description": "Configuration: behaviour, constraints, and layout.",
             "default": {
                 "disableDates": "past",
-                "minDate": "",
-                "maxDate": "",
-                "minDays": 0,
-                "maxDays": 0,
-                "shortSpanHours": 24,
+                "dateBounds": { "earliest": "", "latest": "" },
+                "spanDays": { "min": 0, "max": 0 },
                 "granularity": "second",
+                "durationLabelThresholdHours": 24,
                 "firstDayMonday": true,
-                "compactBelowHeight": 260,
-                "compactBelowWidth": 240,
+                "compact": { "belowWidth": 240, "belowHeight": 260 },
                 "showPresets": true,
                 "presets": [
                     { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
@@ -29,57 +26,81 @@
                 "disableDates": {
                     "enum": ["past", "future", "none"],
                     "default": "past",
-                    "description": "Which side is muted/non-clickable. 'past' mutes dates before minDate (default today; Booking.com style, range builds forward). 'future' mutes dates after maxDate (default today; range builds backward). 'none' mutes nothing (pick any two dates either direction)."
+                    "description": "Which dates are muted/non-clickable. 'past': dates before today are muted (forward-only booking). 'future': dates after today are muted (historical selection). 'none': nothing muted."
                 },
-                "minDate": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Earliest selectable date as 'YYYY-MM-DD'. Hard lower bound regardless of disableDates."
+                "dateBounds": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Absolute calendar limits — the earliest/latest dates that can be selected.",
+                    "default": { "earliest": "", "latest": "" },
+                    "properties": {
+                        "earliest": {
+                            "type": "string",
+                            "default": "",
+                            "description": "Earliest selectable date 'YYYY-MM-DD' (blank = no lower limit; defaults to today in 'past' mode)."
+                        },
+                        "latest": {
+                            "type": "string",
+                            "default": "",
+                            "description": "Latest selectable date 'YYYY-MM-DD' (blank = no upper limit; defaults to today in 'future' mode)."
+                        }
+                    }
                 },
-                "maxDate": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Latest selectable date as 'YYYY-MM-DD'. Hard upper bound regardless of disableDates."
-                },
-                "minDays": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "Minimum range length in whole days (0 = no minimum; same-day allowed). During selection, end days closer than this are disabled."
-                },
-                "maxDays": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "Maximum range length in whole days (0 = no maximum). During selection, end days farther than this are disabled."
-                },
-                "shortSpanHours": {
-                    "type": "number",
-                    "default": 24,
-                    "description": "Threshold (hours) at which durationLabel flips from elapsed time (below) to whole days (at or above)."
+                "spanDays": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "How long the selected range may be, in whole days (distinct from dateBounds, which limits WHICH dates).",
+                    "default": { "min": 0, "max": 0 },
+                    "properties": {
+                        "min": {
+                            "type": "number",
+                            "default": 0,
+                            "description": "Minimum range length in days (0 = no minimum; same-day allowed). Closer end days are disabled while selecting."
+                        },
+                        "max": {
+                            "type": "number",
+                            "default": 0,
+                            "description": "Maximum range length in days (0 = no maximum). Farther end days are disabled while selecting."
+                        }
+                    }
                 },
                 "granularity": {
                     "enum": ["hour", "minute", "second"],
                     "default": "second",
-                    "description": "Precision of the start/end time selectors: 'hour', 'minute', or 'second'. Times are snapped to this precision for both display and the outputs."
+                    "description": "Precision of the start/end time pickers: hour, minute, or second."
+                },
+                "durationLabelThresholdHours": {
+                    "type": "number",
+                    "default": 24,
+                    "description": "Controls output.durationLabel only: spans at/above this many hours show as whole days ('3 days'); shorter spans show as elapsed time ('6h 30m')."
                 },
                 "firstDayMonday": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Start weeks on Monday (true) or Sunday (false)."
+                    "description": "Start the week on Monday (true) or Sunday (false)."
                 },
-                "compactBelowHeight": {
-                    "type": "number",
-                    "default": 260,
-                    "description": "When the rendered height (px) is below this, switch from the full calendar to a compact two-field layout."
-                },
-                "compactBelowWidth": {
-                    "type": "number",
-                    "default": 240,
-                    "description": "When the rendered width (px) is below this, switch from the full calendar to a compact two-field layout."
+                "compact": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Responsive breakpoints: below either size the component switches from the full calendar to a compact two-field layout.",
+                    "default": { "belowWidth": 240, "belowHeight": 260 },
+                    "properties": {
+                        "belowWidth": {
+                            "type": "number",
+                            "default": 240,
+                            "description": "Switch to the compact layout when the rendered width (px) is below this."
+                        },
+                        "belowHeight": {
+                            "type": "number",
+                            "default": 260,
+                            "description": "Switch to the compact layout when the rendered height (px) is below this."
+                        }
+                    }
                 },
                 "showPresets": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Show the quick-preset buttons (configured by 'presets')."
+                    "description": "Show the quick-range preset buttons (configured by 'presets')."
                 },
                 "presets": {
                     "type": "array",
@@ -96,12 +117,12 @@
                             "label": {
                                 "type": "string",
                                 "default": "",
-                                "description": "Button text."
+                                "description": "Button text. A leading 'Last' is shown as 'Next' when the preset rolls forward."
                             },
                             "amount": {
                                 "type": "number",
                                 "default": 1,
-                                "description": "How many units back from now the range starts."
+                                "description": "How many units the window spans from now."
                             },
                             "unit": {
                                 "enum": ["hours", "days", "weeks", "months"],
@@ -116,7 +137,7 @@
         "selection": {
             "type": "object",
             "additionalProperties": false,
-            "description": "The current selection (date + time parts). Two-way: set these to pre-select a range.",
+            "description": "The current selection (date + time-of-day parts). Two-way: set these to pre-select a range.",
             "default": {
                 "startDate": "",
                 "endDate": "",
@@ -137,12 +158,12 @@
                 "startTimeSec": {
                     "type": "integer",
                     "default": 0,
-                    "description": "Start time as seconds since midnight (0 = 00:00:00)."
+                    "description": "Start time-of-day as seconds since midnight (0 = 00:00:00)."
                 },
                 "endTimeSec": {
                     "type": "integer",
                     "default": 86399,
-                    "description": "End time as seconds since midnight (86399 = 23:59:59)."
+                    "description": "End time-of-day as seconds since midnight (86399 = 23:59:59)."
                 }
             }
         },
@@ -182,12 +203,12 @@
                 "durationLabel": {
                     "type": "string",
                     "default": "",
-                    "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m'."
+                    "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m' (see config.durationLabelThresholdHours)."
                 },
                 "isValid": {
                     "type": "boolean",
                     "default": false,
-                    "description": "OUTPUT: true when both endpoints are set and endDateTime > startDateTime."
+                    "description": "OUTPUT: true when both endpoints are set, end is after start, and the span is within spanDays."
                 }
             }
         },

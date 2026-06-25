@@ -182,6 +182,30 @@ export class DateTimeRangePicker
         return this.isDisabled(day) || this.isSpanInvalid(day);
     }
 
+    /** Human-readable reason a day is disabled (used as the cell tooltip). '' if selectable. */
+    private disabledReason(day: Date): string {
+        const min = this.effMin();
+        const max = this.effMax();
+        if (min && day.getTime() < min.getTime()) {
+            return `Before the earliest selectable date (${fmtDate(min)})`;
+        }
+        if (max && day.getTime() > max.getTime()) {
+            return `After the latest selectable date (${fmtDate(max)})`;
+        }
+        const anchor = this.state.anchor;
+        if (anchor) {
+            const { minDays, maxDays } = this.props.props;
+            const span = Math.abs(daysBetween(anchor, day));
+            if (minDays > 0 && span < minDays) {
+                return `Range must be at least ${minDays} day${minDays === 1 ? '' : 's'}`;
+            }
+            if (maxDays > 0 && span > maxDays) {
+                return `Range can be at most ${maxDays} day${maxDays === 1 ? '' : 's'}`;
+            }
+        }
+        return '';
+    }
+
     // --- selection state machine ----------------------------------------
     private onDayClick = (day: Date): void => {
         if (this.dayBlocked(day)) {
@@ -473,6 +497,7 @@ export class DateTimeRangePicker
                     disabled={disabled}
                     aria-disabled={disabled}
                     aria-label={fmtDate(day)}
+                    title={disabled ? this.disabledReason(day) : fmtDate(day)}
                     onClick={() => this.onDayClick(day)}
                     onMouseEnter={() => this.onDayHover(day)}
                 >
@@ -526,6 +551,23 @@ export class DateTimeRangePicker
         );
     }
 
+    /** Upfront note about the active span constraint, so users know why days disable. */
+    private renderHint(): React.ReactNode {
+        const { minDays, maxDays } = this.props.props;
+        if (minDays <= 0 && maxDays <= 0) {
+            return null;
+        }
+        let text: string;
+        if (minDays > 0 && maxDays > 0) {
+            text = `Pick a range of ${minDays}–${maxDays} days`;
+        } else if (minDays > 0) {
+            text = `Pick a range of at least ${minDays} day${minDays === 1 ? '' : 's'}`;
+        } else {
+            text = `Pick a range of up to ${maxDays} day${maxDays === 1 ? '' : 's'}`;
+        }
+        return <div className="dtrp-hint">{text}</div>;
+    }
+
     private renderTimes(): React.ReactNode {
         const { startTimeSec, endTimeSec } = this.props.props;
         const step = this.stepSeconds();
@@ -559,6 +601,7 @@ export class DateTimeRangePicker
         return (
             <>
                 {this.renderPresets()}
+                {this.renderHint()}
                 <div className="dtrp-header">
                     <button
                         type="button"
@@ -623,6 +666,7 @@ export class DateTimeRangePicker
         return (
             <>
                 {this.renderPresets()}
+                {this.renderHint()}
                 <label className="dtrp-compact-field">
                     <span className="dtrp-compact-label">Start</span>
                     <input
@@ -677,16 +721,18 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
 
     getPropsReducer(tree: PropertyTree): DateTimeRangePickerProps {
         return {
+            // Public prop paths are grouped (config.dateBounds.*, config.spanDays.*,
+            // config.compact.*); internal field names are kept flat for brevity.
             disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
-            minDate: tree.readString('config.minDate', ''),
-            maxDate: tree.readString('config.maxDate', ''),
-            minDays: tree.readNumber('config.minDays', 0),
-            maxDays: tree.readNumber('config.maxDays', 0),
-            shortSpanHours: tree.readNumber('config.shortSpanHours', 24),
+            minDate: tree.readString('config.dateBounds.earliest', ''),
+            maxDate: tree.readString('config.dateBounds.latest', ''),
+            minDays: tree.readNumber('config.spanDays.min', 0),
+            maxDays: tree.readNumber('config.spanDays.max', 0),
+            shortSpanHours: tree.readNumber('config.durationLabelThresholdHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
-            compactBelowHeight: tree.readNumber('config.compactBelowHeight', 260),
-            compactBelowWidth: tree.readNumber('config.compactBelowWidth', 240),
+            compactBelowHeight: tree.readNumber('config.compact.belowHeight', 260),
+            compactBelowWidth: tree.readNumber('config.compact.belowWidth', 240),
             showPresets: tree.readBoolean('config.showPresets', true),
             presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
                 label: String((p && p.label) || ''),
