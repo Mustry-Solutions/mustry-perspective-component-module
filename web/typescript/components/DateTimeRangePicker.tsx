@@ -48,6 +48,8 @@ interface PresetDef {
 
 export interface DateTimeRangePickerProps {
     // configuration
+    enabled: boolean;
+    showClear: boolean;
     disableDates: DisableMode;
     earliestDate: string;
     latestDate: string;
@@ -566,7 +568,7 @@ export class DateTimeRangePicker
     }
 
     private renderGrid(monthStart: Date): React.ReactNode {
-        const { firstDayMonday } = this.props.props;
+        const { firstDayMonday, enabled } = this.props.props;
         const offset = firstCellOffset(monthStart, firstDayMonday);
         const count = daysInMonth(monthStart);
 
@@ -583,8 +585,8 @@ export class DateTimeRangePicker
                     key={fmtDate(day)}
                     type="button"
                     className={`dtrp-cell dtrp-cell--${st}`}
-                    disabled={disabled}
-                    aria-disabled={disabled}
+                    disabled={!enabled || disabled}
+                    aria-disabled={!enabled || disabled}
                     aria-label={fmtDate(day)}
                     title={disabled ? this.disabledReason(day) : fmtDate(day)}
                     onClick={() => this.onDayClick(day)}
@@ -599,21 +601,24 @@ export class DateTimeRangePicker
 
     /** Duration text + Clear, shared by the full and compact layouts. */
     private renderFooter(): React.ReactNode {
+        const { enabled, showClear } = this.props.props;
         const hasRange = !!parseDate(this.props.props.startDate) && !!parseDate(this.props.props.endDate);
         const out = this.computeOutputs();
         const label = !hasRange ? 'Select a range' : (out.isValid ? out.durationLabel : 'Invalid range');
         return (
             <div className="dtrp-footer">
                 <span className="dtrp-duration">{label}</span>
-                <button type="button" className="dtrp-clear" onClick={this.clear}>
-                    Clear
-                </button>
+                {showClear && (
+                    <button type="button" className="dtrp-clear" disabled={!enabled} onClick={this.clear}>
+                        Clear
+                    </button>
+                )}
             </div>
         );
     }
 
     private renderPresets(): React.ReactNode {
-        const { showPresets, presets } = this.props.props;
+        const { showPresets, presets, enabled } = this.props.props;
         const items = (presets || []).filter((p) => p && p.label);
         if (!showPresets || items.length === 0) {
             return null;
@@ -627,8 +632,8 @@ export class DateTimeRangePicker
                             key={`${p.label}-${i}`}
                             type="button"
                             className="dtrp-preset"
-                            disabled={!!conflict}
-                            aria-disabled={!!conflict}
+                            disabled={!enabled || !!conflict}
+                            aria-disabled={!enabled || !!conflict}
                             title={conflict || undefined}
                             onClick={() => this.applyPreset(p)}
                         >
@@ -661,7 +666,7 @@ export class DateTimeRangePicker
         if (this.props.props.granularity === 'day') {
             return null;   // whole-day mode: no time-of-day selection
         }
-        const { startTimeSec, endTimeSec } = this.props.props;
+        const { startTimeSec, endTimeSec, enabled } = this.props.props;
         const step = this.stepSeconds();
         return (
             <div className="dtrp-times">
@@ -670,6 +675,7 @@ export class DateTimeRangePicker
                     <input
                         type="time"
                         step={step}
+                        disabled={!enabled}
                         value={this.timeInputValue(startTimeSec)}
                         onChange={this.onStartTime}
                     />
@@ -679,6 +685,7 @@ export class DateTimeRangePicker
                     <input
                         type="time"
                         step={step}
+                        disabled={!enabled}
                         value={this.timeInputValue(endTimeSec)}
                         onChange={this.onEndTime}
                     />
@@ -706,6 +713,7 @@ export class DateTimeRangePicker
 
     /** Full calendar layout: one month, or two side by side when twoMonths. */
     private renderFull(twoMonths: boolean): React.ReactNode {
+        const { enabled } = this.props.props;
         const m1 = startOfMonth(this.state.viewMonth);
         const m2 = addMonths(this.state.viewMonth, 1);
         return (
@@ -717,7 +725,7 @@ export class DateTimeRangePicker
                         type="button"
                         className="dtrp-nav"
                         onClick={this.prevMonth}
-                        disabled={!this.canPrev()}
+                        disabled={!enabled || !this.canPrev()}
                         aria-label="Previous month"
                     >
                         ‹
@@ -730,7 +738,7 @@ export class DateTimeRangePicker
                         type="button"
                         className="dtrp-nav"
                         onClick={this.nextMonth}
-                        disabled={!this.canNext()}
+                        disabled={!enabled || !this.canNext()}
                         aria-label="Next month"
                     >
                         ›
@@ -750,7 +758,7 @@ export class DateTimeRangePicker
 
     /** Compact layout (used when too short for a usable calendar): two date+time fields. */
     private renderCompact(): React.ReactNode {
-        const { startDate, endDate, minSpanDays, maxSpanDays } = this.props.props;
+        const { startDate, endDate, minSpanDays, maxSpanDays, enabled } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
         const dmin = min ? fmtDate(min) : undefined;
@@ -782,6 +790,7 @@ export class DateTimeRangePicker
                         value={startDate}
                         min={dmin}
                         max={dmax}
+                        disabled={!enabled}
                         onChange={this.onStartDateInput}
                     />
                 </label>
@@ -792,6 +801,7 @@ export class DateTimeRangePicker
                         value={endDate}
                         min={endDmin}
                         max={endDmax}
+                        disabled={!enabled}
                         onChange={this.onEndDateInput}
                     />
                 </label>
@@ -805,6 +815,9 @@ export class DateTimeRangePicker
         const { emit } = this.props;
         const mode = this.resolveLayout();
         const classes = ['mustry-datetime-range-picker'];
+        if (!this.props.props.enabled) {
+            classes.push('is-disabled');
+        }
         if (mode === 'compact') {
             classes.push('is-compact');
         }
@@ -836,7 +849,9 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
     getPropsReducer(tree: PropertyTree): DateTimeRangePickerProps {
         return {
             // Public prop paths are grouped (config.dateBounds.*, config.spanDays.*,
-            // config.compact.*); internal field names are kept flat for brevity.
+            // config.breakpoints.*); internal field names are kept flat for brevity.
+            enabled: tree.readBoolean('config.enabled', true),
+            showClear: tree.readBoolean('config.showClear', true),
             disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
             earliestDate: tree.readString('config.dateBounds.earliest', ''),
             latestDate: tree.readString('config.dateBounds.latest', ''),

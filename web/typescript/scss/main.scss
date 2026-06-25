@@ -22,6 +22,11 @@ $text: #1f2937;
     border-radius: 10px;
     user-select: none;
 
+    &.is-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     * {
         box-sizing: border-box;
     }
@@ -247,8 +252,14 @@ $text: #1f2937;
         cursor: pointer;
         color: $accent;
 
-        &:hover {
+        &:hover:not(:disabled) {
             background: $accent-soft;
+        }
+
+        &:disabled {
+            color: $muted;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
     }
 

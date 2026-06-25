@@ -8,6 +8,7 @@
             "additionalProperties": false,
             "description": "Configuration: behaviour, constraints, and layout.",
             "default": {
+                "enabled": true,
                 "disableDates": "past",
                 "dateBounds": { "earliest": "", "latest": "" },
                 "spanDays": { "min": 0, "max": 0 },
@@ -18,6 +19,7 @@
                 "locale": "",
                 "layout": "auto",
                 "breakpoints": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
+                "showClear": true,
                 "showPresets": true,
                 "presets": [
                     { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
@@ -26,6 +28,11 @@
                 ]
             },
             "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When false, the picker is display-only: all interaction (day clicks, month nav, time/date inputs, presets, clear) is disabled and the component is dimmed. The current selection is still shown."
+                },
                 "disableDates": {
                     "enum": ["past", "future", "none"],
                     "default": "past",
@@ -119,6 +126,11 @@
                             "description": "Use the two-month layout when the rendered width (px) is at or above this."
                         }
                     }
+                },
+                "showClear": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the 'Clear' button that resets the selection."
                 },
                 "showPresets": {
                     "type": "boolean",
