@@ -15,7 +15,13 @@
                 "granularity": "second",
                 "firstDayMonday": true,
                 "compactBelowHeight": 260,
-                "compactBelowWidth": 240
+                "compactBelowWidth": 240,
+                "showPresets": true,
+                "presets": [
+                    { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
+                    { "label": "Last 7 days", "amount": 7, "unit": "days" },
+                    { "label": "Last 30 days", "amount": 30, "unit": "days" }
+                ]
             },
             "properties": {
                 "disableDates": {
@@ -57,6 +63,41 @@
                     "type": "number",
                     "default": 240,
                     "description": "When the rendered width (px) is below this, switch from the full calendar to a compact two-field layout."
+                },
+                "showPresets": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the quick-preset buttons (configured by 'presets')."
+                },
+                "presets": {
+                    "type": "array",
+                    "description": "Quick-range buttons. Each sets a rolling window ending now: start = now - amount*unit, end = now.",
+                    "default": [
+                        { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
+                        { "label": "Last 7 days", "amount": 7, "unit": "days" },
+                        { "label": "Last 30 days", "amount": 30, "unit": "days" }
+                    ],
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "label": {
+                                "type": "string",
+                                "default": "",
+                                "description": "Button text."
+                            },
+                            "amount": {
+                                "type": "number",
+                                "default": 1,
+                                "description": "How many units back from now the range starts."
+                            },
+                            "unit": {
+                                "enum": ["hours", "days", "weeks", "months"],
+                                "default": "days",
+                                "description": "Unit for 'amount'."
+                            }
+                        }
+                    }
                 }
             }
         },

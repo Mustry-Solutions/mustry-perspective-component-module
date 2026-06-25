@@ -23,6 +23,7 @@ import {
     monthLabel,
     parseDate,
     sameDay,
+    secondsOfDay,
     secToHms,
     startOfDay,
     startOfMonth,
@@ -35,6 +36,13 @@ export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
 type DisableMode = 'past' | 'future' | 'none';
 type Granularity = 'hour' | 'minute' | 'second';
+type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
+
+interface PresetDef {
+    label: string;
+    amount: number;
+    unit: PresetUnit;
+}
 
 export interface DateTimeRangePickerProps {
     // configuration
@@ -46,6 +54,8 @@ export interface DateTimeRangePickerProps {
     firstDayMonday: boolean;
     compactBelowHeight: number;
     compactBelowWidth: number;
+    showPresets: boolean;
+    presets: PresetDef[];
     // selection (two-way)
     startDate: string;     // "YYYY-MM-DD" or ""
     endDate: string;       // "YYYY-MM-DD" or ""
@@ -197,6 +207,36 @@ export class DateTimeRangePicker
         write.write('selection.startDate', '');
         write.write('selection.endDate', '');
         this.setState({ anchor: null, hover: null });
+    };
+
+    // Quick presets: set a rolling window of `amount` units ending now.
+    private applyPreset = (p: PresetDef): void => {
+        const now = new Date();
+        let start: Date;
+        switch (p.unit) {
+            case 'hours':
+                start = new Date(now.getTime() - p.amount * 3600000);
+                break;
+            case 'weeks':
+                start = new Date(now.getTime() - p.amount * 7 * 86400000);
+                break;
+            case 'months':
+                start = new Date(
+                    now.getFullYear(), now.getMonth() - p.amount, now.getDate(),
+                    now.getHours(), now.getMinutes(), now.getSeconds()
+                );
+                break;
+            case 'days':
+            default:
+                start = new Date(now.getTime() - p.amount * 86400000);
+                break;
+        }
+        const w = this.props.store.props;
+        w.write('selection.startDate', fmtDate(startOfDay(start)));
+        w.write('selection.startTimeSec', secondsOfDay(start));
+        w.write('selection.endDate', fmtDate(startOfDay(now)));
+        w.write('selection.endTimeSec', secondsOfDay(now));
+        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(now) });
     };
 
     // --- month navigation ------------------------------------------------
@@ -418,6 +458,28 @@ export class DateTimeRangePicker
         );
     }
 
+    private renderPresets(): React.ReactNode {
+        const { showPresets, presets } = this.props.props;
+        const items = (presets || []).filter((p) => p && p.label);
+        if (!showPresets || items.length === 0) {
+            return null;
+        }
+        return (
+            <div className="dtrp-presets">
+                {items.map((p, i) => (
+                    <button
+                        key={`${p.label}-${i}`}
+                        type="button"
+                        className="dtrp-preset"
+                        onClick={() => this.applyPreset(p)}
+                    >
+                        {p.label}
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
     private renderTimes(): React.ReactNode {
         const { startTimeSec, endTimeSec } = this.props.props;
         const step = this.stepSeconds();
@@ -450,6 +512,7 @@ export class DateTimeRangePicker
         const { props } = this.props;
         return (
             <>
+                {this.renderPresets()}
                 <div className="dtrp-header">
                     <button
                         type="button"
@@ -497,6 +560,7 @@ export class DateTimeRangePicker
         const dmax = max ? fmtDate(max) : undefined;
         return (
             <>
+                {this.renderPresets()}
                 <label className="dtrp-compact-field">
                     <span className="dtrp-compact-label">Start</span>
                     <input
@@ -559,6 +623,12 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
             compactBelowHeight: tree.readNumber('config.compactBelowHeight', 260),
             compactBelowWidth: tree.readNumber('config.compactBelowWidth', 240),
+            showPresets: tree.readBoolean('config.showPresets', true),
+            presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
+                label: String((p && p.label) || ''),
+                amount: Number((p && p.amount) || 0),
+                unit: ((p && p.unit) || 'days') as PresetUnit
+            })),
             startDate: tree.readString('selection.startDate', ''),
             endDate: tree.readString('selection.endDate', ''),
             startTimeSec: tree.readNumber('selection.startTimeSec', 0),

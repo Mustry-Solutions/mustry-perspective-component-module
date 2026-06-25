@@ -95,6 +95,11 @@ export function hmsToSec(v: string): number {
     return clampSec(h * 3600 + m * 60 + s);
 }
 
+/** Seconds-since-midnight for the time-of-day portion of a datetime. */
+export function secondsOfDay(d: Date): number {
+    return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+}
+
 /** Combine a date-only value with seconds-since-midnight into a full datetime. */
 export function combine(dateOnly: Date, sec: number): Date {
     const s = clampSec(sec);

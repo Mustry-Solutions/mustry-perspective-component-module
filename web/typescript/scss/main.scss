@@ -26,6 +26,26 @@ $text: #1f2937;
         box-sizing: border-box;
     }
 
+    .dtrp-presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .dtrp-preset {
+        border: 1px solid $border;
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 3px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        color: $accent;
+
+        &:hover {
+            background: $accent-soft;
+        }
+    }
+
     .dtrp-header {
         display: flex;
         align-items: center;
