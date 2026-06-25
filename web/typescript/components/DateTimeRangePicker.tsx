@@ -36,6 +36,8 @@ export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
 type DisableMode = 'past' | 'future' | 'none';
 type Granularity = 'day' | 'hour' | 'minute' | 'second';
+type LayoutMode = 'auto' | 'compact' | 'oneMonth' | 'twoMonths';
+type ResolvedLayout = 'compact' | 'oneMonth' | 'twoMonths';
 type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
 
 interface PresetDef {
@@ -54,8 +56,10 @@ export interface DateTimeRangePickerProps {
     shortSpanHours: number;
     granularity: Granularity;
     firstDayMonday: boolean;
+    layout: LayoutMode;
     compactBelowHeight: number;
     compactBelowWidth: number;
+    twoMonthsAboveWidth: number;
     showPresets: boolean;
     presets: PresetDef[];
     // selection (two-way)
@@ -310,7 +314,33 @@ export class DateTimeRangePicker
 
     private canNext(): boolean {
         const max = this.effMax();
-        return !(max && startOfMonth(this.state.viewMonth).getTime() >= startOfMonth(max).getTime());
+        if (!max) {
+            return true;
+        }
+        const lastVisible = addMonths(this.state.viewMonth, this.monthsShown() - 1);
+        return startOfMonth(lastVisible).getTime() < startOfMonth(max).getTime();
+    }
+
+    // --- layout resolution -----------------------------------------------
+    /** Resolve the effective layout: honour an explicit choice, else pick by size. */
+    private resolveLayout(): ResolvedLayout {
+        const { layout, compactBelowWidth, compactBelowHeight, twoMonthsAboveWidth } = this.props.props;
+        if (layout === 'compact' || layout === 'oneMonth' || layout === 'twoMonths') {
+            return layout;
+        }
+        const w = this.state.containerWidth;
+        const h = this.state.containerHeight;
+        if (h < compactBelowHeight || w < compactBelowWidth) {
+            return 'compact';
+        }
+        if (w >= twoMonthsAboveWidth) {
+            return 'twoMonths';
+        }
+        return 'oneMonth';
+    }
+
+    private monthsShown(): number {
+        return this.resolveLayout() === 'twoMonths' ? 2 : 1;
     }
 
     private prevMonth = (): void => {
@@ -494,15 +524,14 @@ export class DateTimeRangePicker
         return 'default';
     }
 
-    private renderGrid(): React.ReactNode {
+    private renderGrid(monthStart: Date): React.ReactNode {
         const { firstDayMonday } = this.props.props;
-        const monthStart = startOfMonth(this.state.viewMonth);
         const offset = firstCellOffset(monthStart, firstDayMonday);
         const count = daysInMonth(monthStart);
 
         const cells: React.ReactNode[] = [];
         for (let i = 0; i < offset; i++) {
-            cells.push(<div key={`blank-${i}`} className="dtrp-cell dtrp-cell--empty" />);
+            cells.push(<div key={`blank-${fmtDate(monthStart)}-${i}`} className="dtrp-cell dtrp-cell--empty" />);
         }
         for (let d = 1; d <= count; d++) {
             const day = addDays(monthStart, d - 1);
@@ -611,9 +640,27 @@ export class DateTimeRangePicker
         );
     }
 
-    /** Full calendar layout (used when the component is tall enough). */
-    private renderFull(): React.ReactNode {
-        const { props } = this.props;
+    /** A single month: weekday header row + day grid. */
+    private renderCalendar(monthStart: Date): React.ReactNode {
+        const { firstDayMonday } = this.props.props;
+        return (
+            <div className="dtrp-calendar">
+                <div className="dtrp-weekdays">
+                    {weekdayHeaders(firstDayMonday).map((w) => (
+                        <div key={`${fmtDate(monthStart)}-${w}`} className="dtrp-weekday">{w}</div>
+                    ))}
+                </div>
+                <div className="dtrp-grid">
+                    {this.renderGrid(monthStart)}
+                </div>
+            </div>
+        );
+    }
+
+    /** Full calendar layout: one month, or two side by side when twoMonths. */
+    private renderFull(twoMonths: boolean): React.ReactNode {
+        const m1 = startOfMonth(this.state.viewMonth);
+        const m2 = addMonths(this.state.viewMonth, 1);
         return (
             <>
                 {this.renderPresets()}
@@ -628,7 +675,10 @@ export class DateTimeRangePicker
                     >
                         ‹
                     </button>
-                    <span className="dtrp-month">{monthLabel(this.state.viewMonth)}</span>
+                    <div className="dtrp-months">
+                        <span className="dtrp-month">{monthLabel(m1)}</span>
+                        {twoMonths && <span className="dtrp-month">{monthLabel(m2)}</span>}
+                    </div>
                     <button
                         type="button"
                         className="dtrp-nav"
@@ -640,14 +690,9 @@ export class DateTimeRangePicker
                     </button>
                 </div>
 
-                <div className="dtrp-weekdays">
-                    {weekdayHeaders(props.firstDayMonday).map((w) => (
-                        <div key={w} className="dtrp-weekday">{w}</div>
-                    ))}
-                </div>
-
-                <div className="dtrp-grid" onMouseLeave={this.clearHover}>
-                    {this.renderGrid()}
+                <div className="dtrp-calendars" onMouseLeave={this.clearHover}>
+                    {this.renderCalendar(m1)}
+                    {twoMonths && this.renderCalendar(m2)}
                 </div>
 
                 {this.renderTimes()}
@@ -710,12 +755,18 @@ export class DateTimeRangePicker
     }
 
     render() {
-        const { emit, props } = this.props;
-        const compact = this.state.containerHeight < props.compactBelowHeight
-            || this.state.containerWidth < props.compactBelowWidth;
+        const { emit } = this.props;
+        const mode = this.resolveLayout();
+        const classes = ['mustry-datetime-range-picker'];
+        if (mode === 'compact') {
+            classes.push('is-compact');
+        }
+        if (mode === 'twoMonths') {
+            classes.push('is-two-months');
+        }
         return (
-            <div {...emit({ classes: ['mustry-datetime-range-picker', ...(compact ? ['is-compact'] : [])] })}>
-                {compact ? this.renderCompact() : this.renderFull()}
+            <div {...emit({ classes })}>
+                {mode === 'compact' ? this.renderCompact() : this.renderFull(mode === 'twoMonths')}
             </div>
         );
     }
@@ -747,8 +798,10 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             shortSpanHours: tree.readNumber('config.durationLabelThresholdHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
-            compactBelowHeight: tree.readNumber('config.compact.belowHeight', 260),
-            compactBelowWidth: tree.readNumber('config.compact.belowWidth', 240),
+            layout: tree.readString('config.layout', 'auto') as LayoutMode,
+            compactBelowHeight: tree.readNumber('config.breakpoints.compactBelowHeight', 260),
+            compactBelowWidth: tree.readNumber('config.breakpoints.compactBelowWidth', 240),
+            twoMonthsAboveWidth: tree.readNumber('config.breakpoints.twoMonthsAboveWidth', 560),
             showPresets: tree.readBoolean('config.showPresets', true),
             presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
                 label: String((p && p.label) || ''),

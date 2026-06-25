@@ -14,7 +14,8 @@
                 "granularity": "second",
                 "durationLabelThresholdHours": 24,
                 "firstDayMonday": true,
-                "compact": { "belowWidth": 240, "belowHeight": 260 },
+                "layout": "auto",
+                "breakpoints": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
                 "showPresets": true,
                 "presets": [
                     { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
@@ -79,21 +80,31 @@
                     "default": true,
                     "description": "Start the week on Monday (true) or Sunday (false)."
                 },
-                "compact": {
+                "layout": {
+                    "enum": ["auto", "compact", "oneMonth", "twoMonths"],
+                    "default": "auto",
+                    "description": "Which layout to show. 'auto' picks responsively from the rendered size using 'breakpoints'. Force one with: 'compact' (date fields only), 'oneMonth' (single calendar), 'twoMonths' (two calendars side by side)."
+                },
+                "breakpoints": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "Responsive breakpoints: below either size the component switches from the full calendar to a compact two-field layout.",
-                    "default": { "belowWidth": 240, "belowHeight": 260 },
+                    "description": "Size thresholds used only when layout = 'auto'.",
+                    "default": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
                     "properties": {
-                        "belowWidth": {
+                        "compactBelowWidth": {
                             "type": "number",
                             "default": 240,
-                            "description": "Switch to the compact layout when the rendered width (px) is below this."
+                            "description": "Use the compact layout when the rendered width (px) is below this."
                         },
-                        "belowHeight": {
+                        "compactBelowHeight": {
                             "type": "number",
                             "default": 260,
-                            "description": "Switch to the compact layout when the rendered height (px) is below this."
+                            "description": "Use the compact layout when the rendered height (px) is below this."
+                        },
+                        "twoMonthsAboveWidth": {
+                            "type": "number",
+                            "default": 560,
+                            "description": "Use the two-month layout when the rendered width (px) is at or above this."
                         }
                     }
                 },

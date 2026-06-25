@@ -58,9 +58,36 @@ $text: #1f2937;
         justify-content: space-between;
     }
 
+    // One or two centered month labels between the nav arrows.
+    .dtrp-months {
+        flex: 1 1 auto;
+        display: flex;
+        min-width: 0;
+    }
+
     .dtrp-month {
+        flex: 1 1 0;
+        text-align: center;
         font-weight: 600;
         font-size: 14px;
+    }
+
+    // Row of one or two month calendars; wraps to stacked if too narrow.
+    .dtrp-calendars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .dtrp-calendar {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
     }
 
     .dtrp-nav {
