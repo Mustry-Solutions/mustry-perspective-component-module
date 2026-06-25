@@ -12,7 +12,7 @@
                 "minDate": "",
                 "maxDate": "",
                 "shortSpanHours": 24,
-                "timeStepSeconds": 1,
+                "granularity": "second",
                 "firstDayMonday": true,
                 "compactBelowHeight": 260,
                 "compactBelowWidth": 240
@@ -38,10 +38,10 @@
                     "default": 24,
                     "description": "Threshold (hours) at which durationLabel flips from elapsed time (below) to whole days (at or above)."
                 },
-                "timeStepSeconds": {
-                    "type": "number",
-                    "default": 1,
-                    "description": "Granularity (seconds) of the time selectors. 1 allows down-to-the-second selection."
+                "granularity": {
+                    "enum": ["hour", "minute", "second"],
+                    "default": "second",
+                    "description": "Precision of the start/end time selectors: 'hour', 'minute', or 'second'. Times are snapped to this precision for both display and the outputs."
                 },
                 "firstDayMonday": {
                     "type": "boolean",

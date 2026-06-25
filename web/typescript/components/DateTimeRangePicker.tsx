@@ -34,6 +34,7 @@ import {
 export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
 type DisableMode = 'past' | 'future' | 'none';
+type Granularity = 'hour' | 'minute' | 'second';
 
 export interface DateTimeRangePickerProps {
     // configuration
@@ -41,7 +42,7 @@ export interface DateTimeRangePickerProps {
     minDate: string;
     maxDate: string;
     shortSpanHours: number;
-    timeStepSeconds: number;
+    granularity: Granularity;
     firstDayMonday: boolean;
     compactBelowHeight: number;
     compactBelowWidth: number;
@@ -222,12 +223,33 @@ export class DateTimeRangePicker
     };
 
     // --- time selectors --------------------------------------------------
+    /** Step (seconds) for the chosen granularity. */
+    private stepSeconds(): number {
+        switch (this.props.props.granularity) {
+            case 'hour': return 3600;
+            case 'minute': return 60;
+            default: return 1;
+        }
+    }
+
+    /** Snap seconds-since-midnight down to the chosen granularity. */
+    private snapSec(sec: number): number {
+        const step = this.stepSeconds();
+        return Math.floor(clampSec(sec) / step) * step;
+    }
+
+    /** Value string for a native <input type="time"> at the chosen granularity. */
+    private timeInputValue(sec: number): string {
+        const hms = secToHms(this.snapSec(sec));      // "HH:mm:ss"
+        return this.props.props.granularity === 'second' ? hms : hms.slice(0, 5); // "HH:mm"
+    }
+
     private onStartTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('selection.startTimeSec', hmsToSec(e.target.value));
+        this.props.store.props.write('selection.startTimeSec', this.snapSec(hmsToSec(e.target.value)));
     };
 
     private onEndTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('selection.endTimeSec', hmsToSec(e.target.value));
+        this.props.store.props.write('selection.endTimeSec', this.snapSec(hmsToSec(e.target.value)));
     };
 
     // Compact-mode date fields: write the date directly (already "YYYY-MM-DD").
@@ -277,8 +299,8 @@ export class DateTimeRangePicker
         };
 
         if (start && end) {
-            const sdt = combine(start, clampSec(startTimeSec));
-            const edt = combine(end, clampSec(endTimeSec));
+            const sdt = combine(start, this.snapSec(startTimeSec));
+            const edt = combine(end, this.snapSec(endTimeSec));
             const valid = edt.getTime() > sdt.getTime();
             const durationDays = daysBetween(start, end);
             const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
@@ -382,8 +404,8 @@ export class DateTimeRangePicker
         const end = parseDate(endDate);
         let label = 'Select a range';
         if (start && end) {
-            const sdt = combine(start, clampSec(startTimeSec)).getTime();
-            const edt = combine(end, clampSec(endTimeSec)).getTime();
+            const sdt = combine(start, this.snapSec(startTimeSec)).getTime();
+            const edt = combine(end, this.snapSec(endTimeSec)).getTime();
             label = this.durationLabel(daysBetween(start, end), (edt - sdt) / 3600000, edt > sdt);
         }
         return (
@@ -397,17 +419,27 @@ export class DateTimeRangePicker
     }
 
     private renderTimes(): React.ReactNode {
-        const { startTimeSec, endTimeSec, timeStepSeconds } = this.props.props;
-        const step = Math.max(1, Math.floor(timeStepSeconds || 1));
+        const { startTimeSec, endTimeSec } = this.props.props;
+        const step = this.stepSeconds();
         return (
             <div className="dtrp-times">
                 <label className="dtrp-time-field">
                     <span className="dtrp-time-label">Start time</span>
-                    <input type="time" step={step} value={secToHms(startTimeSec)} onChange={this.onStartTime} />
+                    <input
+                        type="time"
+                        step={step}
+                        value={this.timeInputValue(startTimeSec)}
+                        onChange={this.onStartTime}
+                    />
                 </label>
                 <label className="dtrp-time-field">
                     <span className="dtrp-time-label">End time</span>
-                    <input type="time" step={step} value={secToHms(endTimeSec)} onChange={this.onEndTime} />
+                    <input
+                        type="time"
+                        step={step}
+                        value={this.timeInputValue(endTimeSec)}
+                        onChange={this.onEndTime}
+                    />
                 </label>
             </div>
         );
@@ -523,7 +555,7 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             minDate: tree.readString('config.minDate', ''),
             maxDate: tree.readString('config.maxDate', ''),
             shortSpanHours: tree.readNumber('config.shortSpanHours', 24),
-            timeStepSeconds: tree.readNumber('config.timeStepSeconds', 1),
+            granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
             compactBelowHeight: tree.readNumber('config.compactBelowHeight', 260),
             compactBelowWidth: tree.readNumber('config.compactBelowWidth', 240),
