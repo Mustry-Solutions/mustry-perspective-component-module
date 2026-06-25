@@ -25,7 +25,19 @@
                     { "label": "Last 24 hours", "type": "rolling", "rolling": { "amount": 24, "unit": "hours" } },
                     { "label": "Last 7 days", "type": "rolling", "rolling": { "amount": 7, "unit": "days" } },
                     { "label": "Last 30 days", "type": "rolling", "rolling": { "amount": 30, "unit": "days" } }
-                ]
+                ],
+                "labels": {
+                    "startTime": "Start time",
+                    "endTime": "End time",
+                    "startDate": "Start",
+                    "endDate": "End",
+                    "clear": "Clear",
+                    "selectRange": "Select a range",
+                    "invalidRange": "Invalid range",
+                    "sameDay": "Same day",
+                    "previousMonth": "Previous month",
+                    "nextMonth": "Next month"
+                }
             },
             "properties": {
                 "enabled": {
@@ -191,6 +203,35 @@
                                 }
                             }
                         }
+                    }
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Override the UI text (for translation or branding). Each value defaults to the built-in English text.",
+                    "default": {
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "startDate": "Start",
+                        "endDate": "End",
+                        "clear": "Clear",
+                        "selectRange": "Select a range",
+                        "invalidRange": "Invalid range",
+                        "sameDay": "Same day",
+                        "previousMonth": "Previous month",
+                        "nextMonth": "Next month"
+                    },
+                    "properties": {
+                        "startTime": { "type": "string", "default": "Start time", "description": "Label above the start-time input." },
+                        "endTime": { "type": "string", "default": "End time", "description": "Label above the end-time input." },
+                        "startDate": { "type": "string", "default": "Start", "description": "Label for the start-date field (compact layout)." },
+                        "endDate": { "type": "string", "default": "End", "description": "Label for the end-date field (compact layout)." },
+                        "clear": { "type": "string", "default": "Clear", "description": "Text on the Clear button." },
+                        "selectRange": { "type": "string", "default": "Select a range", "description": "Footer text shown when no range is selected." },
+                        "invalidRange": { "type": "string", "default": "Invalid range", "description": "Footer text shown when the selected range is invalid." },
+                        "sameDay": { "type": "string", "default": "Same day", "description": "Duration label for a single-day range (day granularity)." },
+                        "previousMonth": { "type": "string", "default": "Previous month", "description": "Accessible label for the previous-month arrow." },
+                        "nextMonth": { "type": "string", "default": "Next month", "description": "Accessible label for the next-month arrow." }
                     }
                 }
             }

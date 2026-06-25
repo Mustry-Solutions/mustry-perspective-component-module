@@ -56,10 +56,24 @@ interface PresetDef {
     period: PresetPeriod;
 }
 
+interface LabelConfig {
+    startTime: string;
+    endTime: string;
+    startDate: string;
+    endDate: string;
+    clear: string;
+    selectRange: string;
+    invalidRange: string;
+    sameDay: string;
+    previousMonth: string;
+    nextMonth: string;
+}
+
 export interface DateTimeRangePickerProps {
     // configuration
     enabled: boolean;
     showClear: boolean;
+    labels: LabelConfig;
     disableDates: DisableMode;
     earliestDate: string;
     latestDate: string;
@@ -510,7 +524,7 @@ export class DateTimeRangePicker
         }
         if (this.props.props.granularity === 'day') {
             if (days === 0) {
-                return 'Same day';
+                return this.props.props.labels.sameDay;
             }
             return days === 1 ? '1 day' : `${days} days`;
         }
@@ -669,16 +683,16 @@ export class DateTimeRangePicker
 
     /** Duration text + Clear, shared by the full and compact layouts. */
     private renderFooter(): React.ReactNode {
-        const { enabled, showClear } = this.props.props;
+        const { enabled, showClear, labels } = this.props.props;
         const hasRange = !!parseDate(this.props.props.startDate) && !!parseDate(this.props.props.endDate);
         const out = this.computeOutputs();
-        const label = !hasRange ? 'Select a range' : (out.isValid ? out.durationLabel : 'Invalid range');
+        const label = !hasRange ? labels.selectRange : (out.isValid ? out.durationLabel : labels.invalidRange);
         return (
             <div className="dtrp-footer">
                 <span className="dtrp-duration">{label}</span>
                 {showClear && (
                     <button type="button" className="dtrp-clear" disabled={!enabled} onClick={this.clear}>
-                        Clear
+                        {labels.clear}
                     </button>
                 )}
             </div>
@@ -734,12 +748,12 @@ export class DateTimeRangePicker
         if (this.props.props.granularity === 'day') {
             return null;   // whole-day mode: no time-of-day selection
         }
-        const { startTimeSec, endTimeSec, enabled } = this.props.props;
+        const { startTimeSec, endTimeSec, enabled, labels } = this.props.props;
         const step = this.stepSeconds();
         return (
             <div className="dtrp-times">
                 <label className="dtrp-time-field">
-                    <span className="dtrp-time-label">Start time</span>
+                    <span className="dtrp-time-label">{labels.startTime}</span>
                     <input
                         type="time"
                         step={step}
@@ -749,7 +763,7 @@ export class DateTimeRangePicker
                     />
                 </label>
                 <label className="dtrp-time-field">
-                    <span className="dtrp-time-label">End time</span>
+                    <span className="dtrp-time-label">{labels.endTime}</span>
                     <input
                         type="time"
                         step={step}
@@ -781,7 +795,7 @@ export class DateTimeRangePicker
 
     /** Full calendar layout: one month, or two side by side when twoMonths. */
     private renderFull(twoMonths: boolean): React.ReactNode {
-        const { enabled } = this.props.props;
+        const { enabled, labels } = this.props.props;
         const m1 = startOfMonth(this.state.viewMonth);
         const m2 = addMonths(this.state.viewMonth, 1);
         return (
@@ -794,7 +808,7 @@ export class DateTimeRangePicker
                         className="dtrp-nav"
                         onClick={this.prevMonth}
                         disabled={!enabled || !this.canPrev()}
-                        aria-label="Previous month"
+                        aria-label={labels.previousMonth}
                     >
                         ‹
                     </button>
@@ -807,7 +821,7 @@ export class DateTimeRangePicker
                         className="dtrp-nav"
                         onClick={this.nextMonth}
                         disabled={!enabled || !this.canNext()}
-                        aria-label="Next month"
+                        aria-label={labels.nextMonth}
                     >
                         ›
                     </button>
@@ -826,7 +840,7 @@ export class DateTimeRangePicker
 
     /** Compact layout (used when too short for a usable calendar): two date+time fields. */
     private renderCompact(): React.ReactNode {
-        const { startDate, endDate, minSpanDays, maxSpanDays, enabled } = this.props.props;
+        const { startDate, endDate, minSpanDays, maxSpanDays, enabled, labels } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
         const dmin = min ? fmtDate(min) : undefined;
@@ -852,7 +866,7 @@ export class DateTimeRangePicker
                 {this.renderPresets()}
                 {this.renderHint()}
                 <label className="dtrp-compact-field">
-                    <span className="dtrp-compact-label">Start</span>
+                    <span className="dtrp-compact-label">{labels.startDate}</span>
                     <input
                         type="date"
                         value={startDate}
@@ -863,7 +877,7 @@ export class DateTimeRangePicker
                     />
                 </label>
                 <label className="dtrp-compact-field">
-                    <span className="dtrp-compact-label">End</span>
+                    <span className="dtrp-compact-label">{labels.endDate}</span>
                     <input
                         type="date"
                         value={endDate}
@@ -920,6 +934,18 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             // config.breakpoints.*); internal field names are kept flat for brevity.
             enabled: tree.readBoolean('config.enabled', true),
             showClear: tree.readBoolean('config.showClear', true),
+            labels: {
+                startTime: tree.readString('config.labels.startTime', 'Start time'),
+                endTime: tree.readString('config.labels.endTime', 'End time'),
+                startDate: tree.readString('config.labels.startDate', 'Start'),
+                endDate: tree.readString('config.labels.endDate', 'End'),
+                clear: tree.readString('config.labels.clear', 'Clear'),
+                selectRange: tree.readString('config.labels.selectRange', 'Select a range'),
+                invalidRange: tree.readString('config.labels.invalidRange', 'Invalid range'),
+                sameDay: tree.readString('config.labels.sameDay', 'Same day'),
+                previousMonth: tree.readString('config.labels.previousMonth', 'Previous month'),
+                nextMonth: tree.readString('config.labels.nextMonth', 'Next month')
+            },
             disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
             earliestDate: tree.readString('config.dateBounds.earliest', ''),
             latestDate: tree.readString('config.dateBounds.latest', ''),
