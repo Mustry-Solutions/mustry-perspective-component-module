@@ -11,6 +11,8 @@
                 "disableDates": "past",
                 "minDate": "",
                 "maxDate": "",
+                "minDays": 0,
+                "maxDays": 0,
                 "shortSpanHours": 24,
                 "granularity": "second",
                 "firstDayMonday": true,
@@ -38,6 +40,16 @@
                     "type": "string",
                     "default": "",
                     "description": "Latest selectable date as 'YYYY-MM-DD'. Hard upper bound regardless of disableDates."
+                },
+                "minDays": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Minimum range length in whole days (0 = no minimum; same-day allowed). During selection, end days closer than this are disabled."
+                },
+                "maxDays": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Maximum range length in whole days (0 = no maximum). During selection, end days farther than this are disabled."
                 },
                 "shortSpanHours": {
                     "type": "number",

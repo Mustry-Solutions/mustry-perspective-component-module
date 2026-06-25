@@ -49,6 +49,8 @@ export interface DateTimeRangePickerProps {
     disableDates: DisableMode;
     minDate: string;
     maxDate: string;
+    minDays: number;
+    maxDays: number;
     shortSpanHours: number;
     granularity: Granularity;
     firstDayMonday: boolean;
@@ -159,9 +161,30 @@ export class DateTimeRangePicker
         return false;
     }
 
+    /** While picking the second endpoint, block days that violate the min/max-day span. */
+    private isSpanInvalid(day: Date): boolean {
+        const anchor = this.state.anchor;
+        if (!anchor) {
+            return false;
+        }
+        const { minDays, maxDays } = this.props.props;
+        const span = Math.abs(daysBetween(anchor, day));
+        if (minDays > 0 && span < minDays) {
+            return true;
+        }
+        if (maxDays > 0 && span > maxDays) {
+            return true;
+        }
+        return false;
+    }
+
+    private dayBlocked(day: Date): boolean {
+        return this.isDisabled(day) || this.isSpanInvalid(day);
+    }
+
     // --- selection state machine ----------------------------------------
     private onDayClick = (day: Date): void => {
-        if (this.isDisabled(day)) {
+        if (this.dayBlocked(day)) {
             return;
         }
         const start = parseDate(this.props.props.startDate);
@@ -191,7 +214,7 @@ export class DateTimeRangePicker
     };
 
     private onDayHover = (day: Date): void => {
-        if (this.state.anchor && !this.isDisabled(day)) {
+        if (this.state.anchor && !this.dayBlocked(day)) {
             this.setState({ hover: day });
         }
     };
@@ -357,8 +380,15 @@ export class DateTimeRangePicker
         if (start && end) {
             const sdt = combine(start, this.snapSec(startTimeSec));
             const edt = combine(end, this.snapSec(endTimeSec));
-            const valid = edt.getTime() > sdt.getTime();
             const durationDays = daysBetween(start, end);
+            const { minDays, maxDays } = this.props.props;
+            let valid = edt.getTime() > sdt.getTime();
+            if (minDays > 0 && durationDays < minDays) {
+                valid = false;
+            }
+            if (maxDays > 0 && durationDays > maxDays) {
+                valid = false;
+            }
             const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
             out = {
                 startDateTime: fmtDateTime(sdt),
@@ -386,7 +416,7 @@ export class DateTimeRangePicker
 
     // --- rendering -------------------------------------------------------
     private dayState(day: Date): DayState {
-        if (this.isDisabled(day)) {
+        if (this.dayBlocked(day)) {
             return 'disabled';
         }
         const start = parseDate(this.props.props.startDate);
@@ -569,11 +599,27 @@ export class DateTimeRangePicker
 
     /** Compact layout (used when too short for a usable calendar): two date+time fields. */
     private renderCompact(): React.ReactNode {
-        const { startDate, endDate } = this.props.props;
+        const { startDate, endDate, minDays, maxDays } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
         const dmin = min ? fmtDate(min) : undefined;
         const dmax = max ? fmtDate(max) : undefined;
+
+        // Constrain the end date by start + min/max-day span (within the date bounds).
+        const startD = parseDate(startDate);
+        let endMinD = min;
+        let endMaxD = max;
+        if (startD) {
+            const lo = addDays(startD, minDays > 0 ? minDays : 0);
+            endMinD = endMinD ? maxDate(endMinD, lo) : lo;
+            if (maxDays > 0) {
+                const hi = addDays(startD, maxDays);
+                endMaxD = endMaxD ? minDate(endMaxD, hi) : hi;
+            }
+        }
+        const endDmin = endMinD ? fmtDate(endMinD) : undefined;
+        const endDmax = endMaxD ? fmtDate(endMaxD) : undefined;
+
         return (
             <>
                 {this.renderPresets()}
@@ -592,8 +638,8 @@ export class DateTimeRangePicker
                     <input
                         type="date"
                         value={endDate}
-                        min={dmin}
-                        max={dmax}
+                        min={endDmin}
+                        max={endDmax}
                         onChange={this.onEndDateInput}
                     />
                 </label>
@@ -634,6 +680,8 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
             minDate: tree.readString('config.minDate', ''),
             maxDate: tree.readString('config.maxDate', ''),
+            minDays: tree.readNumber('config.minDays', 0),
+            maxDays: tree.readNumber('config.maxDays', 0),
             shortSpanHours: tree.readNumber('config.shortSpanHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
