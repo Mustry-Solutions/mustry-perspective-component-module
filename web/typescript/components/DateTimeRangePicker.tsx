@@ -49,11 +49,11 @@ interface PresetDef {
 export interface DateTimeRangePickerProps {
     // configuration
     disableDates: DisableMode;
-    minDate: string;
-    maxDate: string;
-    minDays: number;
-    maxDays: number;
-    shortSpanHours: number;
+    earliestDate: string;
+    latestDate: string;
+    minSpanDays: number;
+    maxSpanDays: number;
+    durationLabelThresholdHours: number;
     granularity: Granularity;
     firstDayMonday: boolean;
     timezone: string;
@@ -138,7 +138,7 @@ export class DateTimeRangePicker
 
     // --- bounds ----------------------------------------------------------
     private effMin(): Date | null {
-        const { disableDates, minDate: min } = this.props.props;
+        const { disableDates, earliestDate: min } = this.props.props;
         const parsed = parseDate(min);
         if (parsed) {
             return parsed;
@@ -147,7 +147,7 @@ export class DateTimeRangePicker
     }
 
     private effMax(): Date | null {
-        const { disableDates, maxDate: max } = this.props.props;
+        const { disableDates, latestDate: max } = this.props.props;
         const parsed = parseDate(max);
         if (parsed) {
             return parsed;
@@ -173,12 +173,12 @@ export class DateTimeRangePicker
         if (!anchor) {
             return false;
         }
-        const { minDays, maxDays } = this.props.props;
+        const { minSpanDays, maxSpanDays } = this.props.props;
         const span = Math.abs(daysBetween(anchor, day));
-        if (minDays > 0 && span < minDays) {
+        if (minSpanDays > 0 && span < minSpanDays) {
             return true;
         }
-        if (maxDays > 0 && span > maxDays) {
+        if (maxSpanDays > 0 && span > maxSpanDays) {
             return true;
         }
         return false;
@@ -200,13 +200,13 @@ export class DateTimeRangePicker
         }
         const anchor = this.state.anchor;
         if (anchor) {
-            const { minDays, maxDays } = this.props.props;
+            const { minSpanDays, maxSpanDays } = this.props.props;
             const span = Math.abs(daysBetween(anchor, day));
-            if (minDays > 0 && span < minDays) {
-                return `Range must be at least ${minDays} day${minDays === 1 ? '' : 's'}`;
+            if (minSpanDays > 0 && span < minSpanDays) {
+                return `Range must be at least ${minSpanDays} day${minSpanDays === 1 ? '' : 's'}`;
             }
-            if (maxDays > 0 && span > maxDays) {
-                return `Range can be at most ${maxDays} day${maxDays === 1 ? '' : 's'}`;
+            if (maxSpanDays > 0 && span > maxSpanDays) {
+                return `Range can be at most ${maxSpanDays} day${maxSpanDays === 1 ? '' : 's'}`;
             }
         }
         return '';
@@ -305,12 +305,12 @@ export class DateTimeRangePicker
             return `Ends after the latest selectable date (${fmtDate(max)})`;
         }
         const span = daysBetween(lo, hi);
-        const { minDays, maxDays } = this.props.props;
-        if (minDays > 0 && span < minDays) {
-            return `Shorter than the ${minDays}-day minimum`;
+        const { minSpanDays, maxSpanDays } = this.props.props;
+        if (minSpanDays > 0 && span < minSpanDays) {
+            return `Shorter than the ${minSpanDays}-day minimum`;
         }
-        if (maxDays > 0 && span > maxDays) {
-            return `Exceeds the ${maxDays}-day maximum`;
+        if (maxSpanDays > 0 && span > maxSpanDays) {
+            return `Exceeds the ${maxSpanDays}-day maximum`;
         }
         return '';
     }
@@ -447,8 +447,8 @@ export class DateTimeRangePicker
             }
             return days === 1 ? '1 day' : `${days} days`;
         }
-        const { shortSpanHours } = this.props.props;
-        if (durationHours >= shortSpanHours) {
+        const { durationLabelThresholdHours } = this.props.props;
+        if (durationHours >= durationLabelThresholdHours) {
             return days === 1 ? '1 day' : `${days} days`;
         }
         const total = Math.max(0, Math.round(durationHours * 3600));
@@ -481,7 +481,7 @@ export class DateTimeRangePicker
         if (!start || !end) {
             return base;
         }
-        const { timezone, minDays, maxDays } = this.props.props;
+        const { timezone, minSpanDays, maxSpanDays } = this.props.props;
         // Resolve the picked wall-clock times into absolute instants in the
         // configured timezone (blank = browser-local), giving offset-bearing ISO
         // strings and epoch milliseconds.
@@ -489,10 +489,10 @@ export class DateTimeRangePicker
         const eZ = resolveZoned(combine(end, this.effEndSec()), timezone);
         const durationDays = daysBetween(start, end);
         let valid = eZ.epochMs > sZ.epochMs;
-        if (minDays > 0 && durationDays < minDays) {
+        if (minSpanDays > 0 && durationDays < minSpanDays) {
             valid = false;
         }
-        if (maxDays > 0 && durationDays > maxDays) {
+        if (maxSpanDays > 0 && durationDays > maxSpanDays) {
             valid = false;
         }
         // True elapsed hours from the absolute instants (DST-correct).
@@ -642,17 +642,17 @@ export class DateTimeRangePicker
 
     /** Upfront note about the active span constraint, so users know why days disable. */
     private renderHint(): React.ReactNode {
-        const { minDays, maxDays } = this.props.props;
-        if (minDays <= 0 && maxDays <= 0) {
+        const { minSpanDays, maxSpanDays } = this.props.props;
+        if (minSpanDays <= 0 && maxSpanDays <= 0) {
             return null;
         }
         let text: string;
-        if (minDays > 0 && maxDays > 0) {
-            text = `Pick a range of ${minDays}–${maxDays} days`;
-        } else if (minDays > 0) {
-            text = `Pick a range of at least ${minDays} day${minDays === 1 ? '' : 's'}`;
+        if (minSpanDays > 0 && maxSpanDays > 0) {
+            text = `Pick a range of ${minSpanDays}–${maxSpanDays} days`;
+        } else if (minSpanDays > 0) {
+            text = `Pick a range of at least ${minSpanDays} day${minSpanDays === 1 ? '' : 's'}`;
         } else {
-            text = `Pick a range of up to ${maxDays} day${maxDays === 1 ? '' : 's'}`;
+            text = `Pick a range of up to ${maxSpanDays} day${maxSpanDays === 1 ? '' : 's'}`;
         }
         return <div className="dtrp-hint">{text}</div>;
     }
@@ -750,7 +750,7 @@ export class DateTimeRangePicker
 
     /** Compact layout (used when too short for a usable calendar): two date+time fields. */
     private renderCompact(): React.ReactNode {
-        const { startDate, endDate, minDays, maxDays } = this.props.props;
+        const { startDate, endDate, minSpanDays, maxSpanDays } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
         const dmin = min ? fmtDate(min) : undefined;
@@ -761,10 +761,10 @@ export class DateTimeRangePicker
         let endMinD = min;
         let endMaxD = max;
         if (startD) {
-            const lo = addDays(startD, minDays > 0 ? minDays : 0);
+            const lo = addDays(startD, minSpanDays > 0 ? minSpanDays : 0);
             endMinD = endMinD ? maxDate(endMinD, lo) : lo;
-            if (maxDays > 0) {
-                const hi = addDays(startD, maxDays);
+            if (maxSpanDays > 0) {
+                const hi = addDays(startD, maxSpanDays);
                 endMaxD = endMaxD ? minDate(endMaxD, hi) : hi;
             }
         }
@@ -838,11 +838,11 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             // Public prop paths are grouped (config.dateBounds.*, config.spanDays.*,
             // config.compact.*); internal field names are kept flat for brevity.
             disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
-            minDate: tree.readString('config.dateBounds.earliest', ''),
-            maxDate: tree.readString('config.dateBounds.latest', ''),
-            minDays: tree.readNumber('config.spanDays.min', 0),
-            maxDays: tree.readNumber('config.spanDays.max', 0),
-            shortSpanHours: tree.readNumber('config.durationLabelThresholdHours', 24),
+            earliestDate: tree.readString('config.dateBounds.earliest', ''),
+            latestDate: tree.readString('config.dateBounds.latest', ''),
+            minSpanDays: tree.readNumber('config.spanDays.min', 0),
+            maxSpanDays: tree.readNumber('config.spanDays.max', 0),
+            durationLabelThresholdHours: tree.readNumber('config.durationLabelThresholdHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
             timezone: tree.readString('config.timezone', ''),
