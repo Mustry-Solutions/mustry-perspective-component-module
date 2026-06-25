@@ -27,6 +27,11 @@ Because it's bind-mounted, the project is always present in the gateway (survive
 3. You should see the picker in all three layouts. Interact with it and confirm the
    behaviour of whatever you changed.
 
+> **Trial expired?** The dev gateway runs Perspective in a **2-hour trial**, and this
+> image persists it across container restarts. If the session shows "Trial Expired",
+> open the gateway at **http://localhost:9088** and **log in** (`admin` / `password`) —
+> logging into the gateway starts a fresh 2-hour trial. Then reload the session.
+
 After a redeploy, navigate to the URL fresh (full reload) so Perspective picks up
 the new component bundle; if it looks stale, `docker compose restart gateway` and
 reload.

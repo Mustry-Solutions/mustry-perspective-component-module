@@ -38,6 +38,12 @@ There is a committed verification harness:
      user to grant the Chrome extension permission for localhost — if a call is
      "Permission denied by user", ask them to allow it, or have them screenshot.)
 
+   - **Trial Expired screen?** The dev gateway runs Perspective in a 2-hour trial
+     that this image persists across restarts. A `docker compose restart`/recreate
+     does NOT reset it. Ask the user to open http://localhost:9088 and log in
+     (`admin`/`password`) — logging into the gateway starts a fresh 2-hour trial —
+     then reload the session. (Don't type the gateway password yourself.)
+
 4. **Actually review the screenshot** against the change you made. Check the
    relevant layout(s): one-month grid + hover, compact two-field form, two-month
    side-by-side, the time pickers, presets, the duration/footer text, disabled-day
