@@ -34,6 +34,10 @@ services:
       # Dedicated third-party module folder (see externalModulesFolder arg below).
       # setup.sh/deploy.sh stage the freshly built+signed .modl here.
       - ./ops/modules:/external-modules
+      # Verification harness: a committed Perspective project (view + page with the
+      # module's components) mounted in so a browser session can render it. Edits
+      # saved in the Designer write straight back into the repo.
+      - ./ops/verify/project:/usr/local/bin/ignition/data/projects/verify
     # Everything after "--" is passed to the JVM / service wrapper.
     #   externalModulesFolder -> where the gateway looks for third-party modules.
     command:

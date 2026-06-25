@@ -1,0 +1,65 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 780,
+      "height": 1040
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "oneMonth" },
+        "meta": { "name": "label_oneMonth" },
+        "position": { "x": 24, "y": 4, "width": 200, "height": 18 }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": { "config": { "layout": "oneMonth" } },
+        "custom": {},
+        "meta": { "name": "oneMonth" },
+        "position": { "x": 24, "y": 24, "width": 360, "height": 500 }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "compact" },
+        "meta": { "name": "label_compact" },
+        "position": { "x": 420, "y": 4, "width": 200, "height": 18 }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": { "config": { "layout": "compact" } },
+        "custom": {},
+        "meta": { "name": "compact" },
+        "position": { "x": 420, "y": 24, "width": 320, "height": 150 }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "twoMonths" },
+        "meta": { "name": "label_twoMonths" },
+        "position": { "x": 24, "y": 544, "width": 200, "height": 18 }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": { "config": { "layout": "twoMonths" } },
+        "custom": {},
+        "meta": { "name": "twoMonths" },
+        "position": { "x": 24, "y": 564, "width": 700, "height": 460 }
+      }
+    ]
+  }
+}

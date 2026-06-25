@@ -1,0 +1,7 @@
+{
+  "title": "verify",
+  "description": "Component verification harness — auto-mounted from the repo (ops/verify/project). Holds a Perspective page/view with the module's components for live browser verification.",
+  "enabled": true,
+  "inheritable": false,
+  "parent": ""
+}

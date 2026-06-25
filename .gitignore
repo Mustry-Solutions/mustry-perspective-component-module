@@ -1,8 +1,12 @@
 # --- Ignition module generator tool (kept on disk for convenience, not part of this repo) ---
 ignition-module-tools/
 
-# --- Local Claude Code tooling (not part of the module) ---
-.claude/
+# --- Local Claude Code tooling ---
+# Ignore local Claude state, but DO commit project skills under .claude/skills/<name>.
+.claude/*
+!.claude/skills
+.claude/skills/*
+!.claude/skills/verify-component
 
 # --- Gradle ---
 .gradle/
