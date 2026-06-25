@@ -936,11 +936,13 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             twoMonthsAboveWidth: tree.readNumber('config.breakpoints.twoMonthsAboveWidth', 560),
             showPresets: tree.readBoolean('config.showPresets', true),
             presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
+                // Public item shape nests type-specific fields under rolling/calendar;
+                // flatten here so the rest of the component stays simple.
                 label: String((p && p.label) || ''),
                 type: ((p && p.type) === 'calendar' ? 'calendar' : 'rolling') as PresetType,
-                amount: Number((p && p.amount) || 0),
-                unit: ((p && p.unit) || 'days') as PresetUnit,
-                period: ((p && p.period) || 'today') as PresetPeriod
+                amount: Number((p && p.rolling && p.rolling.amount) || 0),
+                unit: ((p && p.rolling && p.rolling.unit) || 'days') as PresetUnit,
+                period: ((p && p.calendar && p.calendar.period) || 'thisMonth') as PresetPeriod
             })),
             startDate: tree.readString('selection.startDate', ''),
             endDate: tree.readString('selection.endDate', ''),

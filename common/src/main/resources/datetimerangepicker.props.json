@@ -22,9 +22,9 @@
                 "showClear": true,
                 "showPresets": true,
                 "presets": [
-                    { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
-                    { "label": "Last 7 days", "amount": 7, "unit": "days" },
-                    { "label": "Last 30 days", "amount": 30, "unit": "days" }
+                    { "label": "Last 24 hours", "type": "rolling", "rolling": { "amount": 24, "unit": "hours" } },
+                    { "label": "Last 7 days", "type": "rolling", "rolling": { "amount": 7, "unit": "days" } },
+                    { "label": "Last 30 days", "type": "rolling", "rolling": { "amount": 30, "unit": "days" } }
                 ]
             },
             "properties": {
@@ -141,9 +141,9 @@
                     "type": "array",
                     "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled.",
                     "default": [
-                        { "label": "Last 24 hours", "amount": 24, "unit": "hours" },
-                        { "label": "Last 7 days", "amount": 7, "unit": "days" },
-                        { "label": "Last 30 days", "amount": 30, "unit": "days" }
+                        { "label": "Last 24 hours", "type": "rolling", "rolling": { "amount": 24, "unit": "hours" } },
+                        { "label": "Last 7 days", "type": "rolling", "rolling": { "amount": 7, "unit": "days" } },
+                        { "label": "Last 30 days", "type": "rolling", "rolling": { "amount": 30, "unit": "days" } }
                     ],
                     "items": {
                         "type": "object",
@@ -157,22 +157,38 @@
                             "type": {
                                 "enum": ["rolling", "calendar"],
                                 "default": "rolling",
-                                "description": "'rolling' = a window of amount*unit from now. 'calendar' = a period snapped to calendar boundaries (uses 'period')."
+                                "description": "Which group below applies: 'rolling' (a window from now) or 'calendar' (a period snapped to boundaries). The other group is ignored."
                             },
-                            "amount": {
-                                "type": "number",
-                                "default": 1,
-                                "description": "Rolling preset: how many units the window spans from now."
+                            "rolling": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "description": "Used when type = 'rolling': a window of amount*unit from now (direction follows disableDates).",
+                                "default": { "amount": 1, "unit": "days" },
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "default": 1,
+                                        "description": "How many units the window spans from now."
+                                    },
+                                    "unit": {
+                                        "enum": ["hours", "days", "weeks", "months"],
+                                        "default": "days",
+                                        "description": "Unit for 'amount'."
+                                    }
+                                }
                             },
-                            "unit": {
-                                "enum": ["hours", "days", "weeks", "months"],
-                                "default": "days",
-                                "description": "Rolling preset: unit for 'amount'."
-                            },
-                            "period": {
-                                "enum": ["today", "yesterday", "thisWeek", "lastWeek", "thisMonth", "lastMonth", "thisYear", "lastYear"],
-                                "default": "today",
-                                "description": "Calendar preset: which period. 'this*' = period-to-date (start to end of today); 'last*' = the full previous period. Week periods honour weekStart."
+                            "calendar": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "description": "Used when type = 'calendar': a period snapped to calendar boundaries.",
+                                "default": { "period": "thisMonth" },
+                                "properties": {
+                                    "period": {
+                                        "enum": ["today", "yesterday", "thisWeek", "lastWeek", "thisMonth", "lastMonth", "thisYear", "lastYear"],
+                                        "default": "thisMonth",
+                                        "description": "'this*' = period-to-date (start to end of today); 'last*' = the full previous period. Week periods honour weekStart."
+                                    }
+                                }
                             }
                         }
                     }
