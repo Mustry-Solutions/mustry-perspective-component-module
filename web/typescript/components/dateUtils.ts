@@ -113,16 +113,101 @@ export function fmtDateTime(d: Date): string {
     return `${fmtDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-export function monthLabel(d: Date): string {
-    return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+function intlFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+    try {
+        return new Intl.DateTimeFormat(locale || undefined, options);
+    } catch (e) {
+        return new Intl.DateTimeFormat(undefined, options);
+    }
 }
 
-export function weekdayHeaders(mondayFirst: boolean): string[] {
-    const base = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** "June 2026" localized to `locale` ('' = browser default). */
+export function monthLabel(d: Date, locale: string): string {
+    return intlFormat(locale, { month: 'long', year: 'numeric' }).format(d);
+}
+
+/** Short weekday headers localized to `locale`, ordered per `mondayFirst`. */
+export function weekdayHeaders(mondayFirst: boolean, locale: string): string[] {
+    const fmt = intlFormat(locale, { weekday: 'short' });
+    // 2024-01-07 is a Sunday; format Sun..Sat.
+    const base: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        base.push(fmt.format(new Date(2024, 0, 7 + i)));
+    }
     return mondayFirst ? [...base.slice(1), base[0]] : base;
+}
+
+// --- timezone resolution (DST-correct, no external libraries) -------------
+
+export interface ZonedResult {
+    epochMs: number;   // absolute instant (UTC) of the wall-clock in the target zone
+    iso: string;       // ISO 8601 with offset, e.g. "2026-06-25T09:00:00+02:00"
+}
+
+/** Offset (minutes, east-positive) of `timeZone` at the instant `date`. */
+function tzOffsetMinutes(date: Date, timeZone: string): number {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour12: false,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const map: { [k: string]: number } = {};
+    for (const p of dtf.formatToParts(date)) {
+        if (p.type !== 'literal') {
+            map[p.type] = parseInt(p.value, 10);
+        }
+    }
+    const hour = map.hour === 24 ? 0 : map.hour;
+    const asUTC = Date.UTC(map.year, map.month - 1, map.day, hour, map.minute, map.second);
+    return Math.round((asUTC - date.getTime()) / 60000);
+}
+
+/** Epoch ms for wall-clock fields interpreted in `timeZone` (handles DST). */
+function zonedWallClockToEpoch(y: number, mo: number, d: number, h: number, mi: number, s: number, timeZone: string): number {
+    let ts = Date.UTC(y, mo - 1, d, h, mi, s);
+    const off1 = tzOffsetMinutes(new Date(ts), timeZone);
+    ts -= off1 * 60000;
+    const off2 = tzOffsetMinutes(new Date(ts), timeZone);
+    if (off2 !== off1) {
+        ts -= (off2 - off1) * 60000;
+    }
+    return ts;
+}
+
+function offsetToStr(offMin: number): string {
+    const sign = offMin >= 0 ? '+' : '-';
+    const abs = Math.abs(offMin);
+    return `${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
+}
+
+/**
+ * Resolve a wall-clock Date (its LOCAL fields are the picked values) into an
+ * absolute instant + offset-bearing ISO, interpreting the wall clock in
+ * `timeZone`. Empty `timeZone` = the browser/session-local zone.
+ */
+export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
+    const y = wall.getFullYear();
+    const mo = wall.getMonth() + 1;
+    const d = wall.getDate();
+    const h = wall.getHours();
+    const mi = wall.getMinutes();
+    const s = wall.getSeconds();
+
+    let epochMs: number;
+    let offMin: number;
+    if (!timeZone) {
+        epochMs = wall.getTime();
+        offMin = -wall.getTimezoneOffset();
+    } else {
+        try {
+            epochMs = zonedWallClockToEpoch(y, mo, d, h, mi, s, timeZone);
+            offMin = tzOffsetMinutes(new Date(epochMs), timeZone);
+        } catch (e) {
+            epochMs = wall.getTime();
+            offMin = -wall.getTimezoneOffset();
+        }
+    }
+    const iso = `${fmtDate(wall)}T${pad2(h)}:${pad2(mi)}:${pad2(s)}${offsetToStr(offMin)}`;
+    return { epochMs, iso };
 }

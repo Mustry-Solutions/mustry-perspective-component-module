@@ -14,6 +14,8 @@
                 "granularity": "second",
                 "durationLabelThresholdHours": 24,
                 "firstDayMonday": true,
+                "timezone": "",
+                "locale": "",
                 "layout": "auto",
                 "breakpoints": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
                 "showPresets": true,
@@ -79,6 +81,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Start the week on Monday (true) or Sunday (false)."
+                },
+                "timezone": {
+                    "type": "string",
+                    "default": "",
+                    "description": "IANA timezone (e.g. 'Europe/Brussels', 'UTC') a picked time is interpreted in. Blank = the browser/session-local zone. Drives the offset in output.startDateTime/endDateTime and the absolute output.*EpochMs."
+                },
+                "locale": {
+                    "type": "string",
+                    "default": "",
+                    "description": "BCP-47 locale (e.g. 'nl-BE', 'fr-FR') for the month label and weekday headers. Blank = the browser default. Week start is still controlled by firstDayMonday."
                 },
                 "layout": {
                     "enum": ["auto", "compact", "oneMonth", "twoMonths"],
@@ -185,6 +197,8 @@
             "default": {
                 "startDateTime": "",
                 "endDateTime": "",
+                "startEpochMs": 0,
+                "endEpochMs": 0,
                 "durationDays": 0,
                 "durationHours": 0,
                 "durationLabel": "",
@@ -194,12 +208,22 @@
                 "startDateTime": {
                     "type": "string",
                     "default": "",
-                    "description": "OUTPUT: start date + start time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
+                    "description": "OUTPUT: start instant as ISO 8601 with offset, e.g. '2026-06-25T09:00:00+02:00' (offset per config.timezone)."
                 },
                 "endDateTime": {
                     "type": "string",
                     "default": "",
-                    "description": "OUTPUT: end date + end time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
+                    "description": "OUTPUT: end instant as ISO 8601 with offset, e.g. '2026-06-25T17:00:00+02:00' (offset per config.timezone)."
+                },
+                "startEpochMs": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "OUTPUT: start instant as epoch milliseconds (absolute UTC). Ideal for historian/tag queries."
+                },
+                "endEpochMs": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "OUTPUT: end instant as epoch milliseconds (absolute UTC)."
                 },
                 "durationDays": {
                     "type": "integer",

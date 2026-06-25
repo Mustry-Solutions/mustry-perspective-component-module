@@ -16,12 +16,12 @@ import {
     daysInMonth,
     firstCellOffset,
     fmtDate,
-    fmtDateTime,
     hmsToSec,
     maxDate,
     minDate,
     monthLabel,
     parseDate,
+    resolveZoned,
     sameDay,
     secondsOfDay,
     secToHms,
@@ -56,6 +56,8 @@ export interface DateTimeRangePickerProps {
     shortSpanHours: number;
     granularity: Granularity;
     firstDayMonday: boolean;
+    timezone: string;
+    locale: string;
     layout: LayoutMode;
     compactBelowHeight: number;
     compactBelowWidth: number;
@@ -260,14 +262,13 @@ export class DateTimeRangePicker
         this.setState({ anchor: null, hover: null });
     };
 
-    // Quick presets: roll a window of `amount` units from now. Direction follows the
-    // disableDates mode — forward in 'past' (forward-booking) mode so the range lands on
-    // selectable days, backward otherwise (the historical/historian case).
-    private applyPreset = (p: PresetDef): void => {
+    // The (datetime) endpoints a preset would set. Direction follows the disableDates
+    // mode — forward in 'past' (forward-booking) mode so the range lands on selectable
+    // days, backward otherwise (the historical/historian case).
+    private presetRange(p: PresetDef): { start: Date; end: Date } {
         const forward = this.props.props.disableDates === 'past';
         const sign = forward ? 1 : -1;
         const now = new Date();
-
         let other: Date;
         switch (p.unit) {
             case 'hours':
@@ -287,15 +288,45 @@ export class DateTimeRangePicker
                 other = new Date(now.getTime() + sign * p.amount * 86400000);
                 break;
         }
+        return { start: forward ? now : other, end: forward ? other : now };
+    }
 
-        const start = forward ? now : other;
-        const end = forward ? other : now;
+    /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
+    private presetConflict(p: PresetDef): string {
+        const range = this.presetRange(p);
+        const lo = startOfDay(minDate(range.start, range.end));
+        const hi = startOfDay(maxDate(range.start, range.end));
+        const min = this.effMin();
+        const max = this.effMax();
+        if (min && lo.getTime() < min.getTime()) {
+            return `Starts before the earliest selectable date (${fmtDate(min)})`;
+        }
+        if (max && hi.getTime() > max.getTime()) {
+            return `Ends after the latest selectable date (${fmtDate(max)})`;
+        }
+        const span = daysBetween(lo, hi);
+        const { minDays, maxDays } = this.props.props;
+        if (minDays > 0 && span < minDays) {
+            return `Shorter than the ${minDays}-day minimum`;
+        }
+        if (maxDays > 0 && span > maxDays) {
+            return `Exceeds the ${maxDays}-day maximum`;
+        }
+        return '';
+    }
+
+    // Apply a preset: set the selection to its range (no-op if it would conflict).
+    private applyPreset = (p: PresetDef): void => {
+        if (this.presetConflict(p)) {
+            return;
+        }
+        const { start, end } = this.presetRange(p);
         const w = this.props.store.props;
         w.write('selection.startDate', fmtDate(startOfDay(start)));
         w.write('selection.startTimeSec', secondsOfDay(start));
         w.write('selection.endDate', fmtDate(startOfDay(end)));
         w.write('selection.endTimeSec', secondsOfDay(end));
-        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(now) });
+        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(today()) });
     };
 
     /** Adapt the label to the roll direction ("Last ..." -> "Next ..." in forward mode). */
@@ -440,6 +471,8 @@ export class DateTimeRangePicker
         const base = {
             startDateTime: '',
             endDateTime: '',
+            startEpochMs: 0,
+            endEpochMs: 0,
             durationDays: 0,
             durationHours: 0,
             durationLabel: '',
@@ -448,21 +481,27 @@ export class DateTimeRangePicker
         if (!start || !end) {
             return base;
         }
-        const sdt = combine(start, this.effStartSec());
-        const edt = combine(end, this.effEndSec());
+        const { timezone, minDays, maxDays } = this.props.props;
+        // Resolve the picked wall-clock times into absolute instants in the
+        // configured timezone (blank = browser-local), giving offset-bearing ISO
+        // strings and epoch milliseconds.
+        const sZ = resolveZoned(combine(start, this.effStartSec()), timezone);
+        const eZ = resolveZoned(combine(end, this.effEndSec()), timezone);
         const durationDays = daysBetween(start, end);
-        const { minDays, maxDays } = this.props.props;
-        let valid = edt.getTime() > sdt.getTime();
+        let valid = eZ.epochMs > sZ.epochMs;
         if (minDays > 0 && durationDays < minDays) {
             valid = false;
         }
         if (maxDays > 0 && durationDays > maxDays) {
             valid = false;
         }
-        const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
+        // True elapsed hours from the absolute instants (DST-correct).
+        const durationHours = Math.round(((eZ.epochMs - sZ.epochMs) / 3600000) * 1000) / 1000;
         return {
-            startDateTime: fmtDateTime(sdt),
-            endDateTime: fmtDateTime(edt),
+            startDateTime: sZ.iso,
+            endDateTime: eZ.iso,
+            startEpochMs: sZ.epochMs,
+            endEpochMs: eZ.epochMs,
             durationDays,
             durationHours,
             durationLabel: this.durationLabel(durationDays, durationHours, valid),
@@ -481,6 +520,8 @@ export class DateTimeRangePicker
         const write = this.props.store.props;
         write.write('output.startDateTime', out.startDateTime);
         write.write('output.endDateTime', out.endDateTime);
+        write.write('output.startEpochMs', out.startEpochMs);
+        write.write('output.endEpochMs', out.endEpochMs);
         write.write('output.durationDays', out.durationDays);
         write.write('output.durationHours', out.durationHours);
         write.write('output.durationLabel', out.durationLabel);
@@ -579,16 +620,22 @@ export class DateTimeRangePicker
         }
         return (
             <div className="dtrp-presets">
-                {items.map((p, i) => (
-                    <button
-                        key={`${p.label}-${i}`}
-                        type="button"
-                        className="dtrp-preset"
-                        onClick={() => this.applyPreset(p)}
-                    >
-                        {this.presetLabel(p)}
-                    </button>
-                ))}
+                {items.map((p, i) => {
+                    const conflict = this.presetConflict(p);
+                    return (
+                        <button
+                            key={`${p.label}-${i}`}
+                            type="button"
+                            className="dtrp-preset"
+                            disabled={!!conflict}
+                            aria-disabled={!!conflict}
+                            title={conflict || undefined}
+                            onClick={() => this.applyPreset(p)}
+                        >
+                            {this.presetLabel(p)}
+                        </button>
+                    );
+                })}
             </div>
         );
     }
@@ -642,11 +689,11 @@ export class DateTimeRangePicker
 
     /** A single month: weekday header row + day grid. */
     private renderCalendar(monthStart: Date): React.ReactNode {
-        const { firstDayMonday } = this.props.props;
+        const { firstDayMonday, locale } = this.props.props;
         return (
             <div className="dtrp-calendar">
                 <div className="dtrp-weekdays">
-                    {weekdayHeaders(firstDayMonday).map((w) => (
+                    {weekdayHeaders(firstDayMonday, locale).map((w) => (
                         <div key={`${fmtDate(monthStart)}-${w}`} className="dtrp-weekday">{w}</div>
                     ))}
                 </div>
@@ -676,8 +723,8 @@ export class DateTimeRangePicker
                         ‹
                     </button>
                     <div className="dtrp-months">
-                        <span className="dtrp-month">{monthLabel(m1)}</span>
-                        {twoMonths && <span className="dtrp-month">{monthLabel(m2)}</span>}
+                        <span className="dtrp-month">{monthLabel(m1, this.props.props.locale)}</span>
+                        {twoMonths && <span className="dtrp-month">{monthLabel(m2, this.props.props.locale)}</span>}
                     </div>
                     <button
                         type="button"
@@ -798,6 +845,8 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             shortSpanHours: tree.readNumber('config.durationLabelThresholdHours', 24),
             granularity: tree.readString('config.granularity', 'second') as Granularity,
             firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
+            timezone: tree.readString('config.timezone', ''),
+            locale: tree.readString('config.locale', ''),
             layout: tree.readString('config.layout', 'auto') as LayoutMode,
             compactBelowHeight: tree.readNumber('config.breakpoints.compactBelowHeight', 260),
             compactBelowWidth: tree.readNumber('config.breakpoints.compactBelowWidth', 240),
