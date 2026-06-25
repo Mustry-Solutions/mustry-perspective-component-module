@@ -44,6 +44,7 @@ export interface DateTimeRangePickerProps {
     timeStepSeconds: number;
     firstDayMonday: boolean;
     compactBelowHeight: number;
+    compactBelowWidth: number;
     // selection (two-way)
     startDate: string;     // "YYYY-MM-DD" or ""
     endDate: string;       // "YYYY-MM-DD" or ""
@@ -55,6 +56,7 @@ interface DateTimeRangePickerState {
     viewMonth: Date;          // first day of the displayed month
     anchor: Date | null;      // first-clicked day of an in-progress range
     hover: Date | null;       // hovered day during preview
+    containerWidth: number;   // measured rendered width, drives compact mode
     containerHeight: number;  // measured rendered height, drives compact mode
 }
 
@@ -76,7 +78,8 @@ export class DateTimeRangePicker
             viewMonth: startOfMonth(start || today()),
             anchor: null,
             hover: null,
-            containerHeight: 99999  // start in full mode until measured
+            containerWidth: 99999,   // start in full mode until measured
+            containerHeight: 99999
         };
     }
 
@@ -103,9 +106,11 @@ export class DateTimeRangePicker
         }
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
+                const w = entry.contentRect.width;
                 const h = entry.contentRect.height;
-                if (Math.abs(h - this.state.containerHeight) > 1) {
-                    this.setState({ containerHeight: h });
+                if (Math.abs(w - this.state.containerWidth) > 1
+                    || Math.abs(h - this.state.containerHeight) > 1) {
+                    this.setState({ containerWidth: w, containerHeight: h });
                 }
             }
         });
@@ -154,8 +159,8 @@ export class DateTimeRangePicker
 
         if (start && end) {
             // Range complete -> start a new range anchored on this day.
-            write.write('startDate', '');
-            write.write('endDate', '');
+            write.write('selection.startDate', '');
+            write.write('selection.endDate', '');
             this.setState({ anchor: day, hover: null });
             return;
         }
@@ -164,8 +169,8 @@ export class DateTimeRangePicker
             // Second endpoint -> normalise so start <= end.
             const lo = minDate(this.state.anchor, day);
             const hi = maxDate(this.state.anchor, day);
-            write.write('startDate', fmtDate(lo));
-            write.write('endDate', fmtDate(hi));
+            write.write('selection.startDate', fmtDate(lo));
+            write.write('selection.endDate', fmtDate(hi));
             this.setState({ anchor: null, hover: null });
             return;
         }
@@ -188,8 +193,8 @@ export class DateTimeRangePicker
 
     private clear = (): void => {
         const write = this.props.store.props;
-        write.write('startDate', '');
-        write.write('endDate', '');
+        write.write('selection.startDate', '');
+        write.write('selection.endDate', '');
         this.setState({ anchor: null, hover: null });
     };
 
@@ -218,20 +223,20 @@ export class DateTimeRangePicker
 
     // --- time selectors --------------------------------------------------
     private onStartTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('startTimeSec', hmsToSec(e.target.value));
+        this.props.store.props.write('selection.startTimeSec', hmsToSec(e.target.value));
     };
 
     private onEndTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('endTimeSec', hmsToSec(e.target.value));
+        this.props.store.props.write('selection.endTimeSec', hmsToSec(e.target.value));
     };
 
     // Compact-mode date fields: write the date directly (already "YYYY-MM-DD").
     private onStartDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('startDate', e.target.value);
+        this.props.store.props.write('selection.startDate', e.target.value);
     };
 
     private onEndDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        this.props.store.props.write('endDate', e.target.value);
+        this.props.store.props.write('selection.endDate', e.target.value);
     };
 
     // --- outputs ---------------------------------------------------------
@@ -293,12 +298,12 @@ export class DateTimeRangePicker
         }
         this.lastOutputSig = sig;
         const write = this.props.store.props;
-        write.write('startDateTime', out.startDateTime);
-        write.write('endDateTime', out.endDateTime);
-        write.write('days', out.days);
-        write.write('durationHours', out.durationHours);
-        write.write('durationLabel', out.durationLabel);
-        write.write('isValid', out.isValid);
+        write.write('output.startDateTime', out.startDateTime);
+        write.write('output.endDateTime', out.endDateTime);
+        write.write('output.days', out.days);
+        write.write('output.durationHours', out.durationHours);
+        write.write('output.durationLabel', out.durationLabel);
+        write.write('output.isValid', out.isValid);
     }
 
     // --- rendering -------------------------------------------------------
@@ -488,7 +493,8 @@ export class DateTimeRangePicker
 
     render() {
         const { emit, props } = this.props;
-        const compact = this.state.containerHeight < props.compactBelowHeight;
+        const compact = this.state.containerHeight < props.compactBelowHeight
+            || this.state.containerWidth < props.compactBelowWidth;
         return (
             <div {...emit({ classes: ['mustry-datetime-range-picker', ...(compact ? ['is-compact'] : [])] })}>
                 {compact ? this.renderCompact() : this.renderFull()}
@@ -513,17 +519,18 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
 
     getPropsReducer(tree: PropertyTree): DateTimeRangePickerProps {
         return {
-            disableDates: tree.readString('disableDates', 'past') as DisableMode,
-            minDate: tree.readString('minDate', ''),
-            maxDate: tree.readString('maxDate', ''),
-            shortSpanHours: tree.readNumber('shortSpanHours', 24),
-            timeStepSeconds: tree.readNumber('timeStepSeconds', 1),
-            firstDayMonday: tree.readBoolean('firstDayMonday', true),
-            compactBelowHeight: tree.readNumber('compactBelowHeight', 260),
-            startDate: tree.readString('startDate', ''),
-            endDate: tree.readString('endDate', ''),
-            startTimeSec: tree.readNumber('startTimeSec', 0),
-            endTimeSec: tree.readNumber('endTimeSec', 86399)
+            disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
+            minDate: tree.readString('config.minDate', ''),
+            maxDate: tree.readString('config.maxDate', ''),
+            shortSpanHours: tree.readNumber('config.shortSpanHours', 24),
+            timeStepSeconds: tree.readNumber('config.timeStepSeconds', 1),
+            firstDayMonday: tree.readBoolean('config.firstDayMonday', true),
+            compactBelowHeight: tree.readNumber('config.compactBelowHeight', 260),
+            compactBelowWidth: tree.readNumber('config.compactBelowWidth', 240),
+            startDate: tree.readString('selection.startDate', ''),
+            endDate: tree.readString('selection.endDate', ''),
+            startTimeSec: tree.readNumber('selection.startTimeSec', 0),
+            endTimeSec: tree.readNumber('selection.endTimeSec', 86399)
         };
     }
 }

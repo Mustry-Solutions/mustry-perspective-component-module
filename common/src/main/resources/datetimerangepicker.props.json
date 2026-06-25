@@ -3,90 +3,140 @@
     "additionalProperties": false,
     "required": [],
     "properties": {
-        "disableDates": {
-            "enum": ["past", "future", "none"],
-            "default": "past",
-            "description": "Which side is muted/non-clickable. 'past' mutes dates before minDate (default today; Booking.com style, range builds forward). 'future' mutes dates after maxDate (default today; range builds backward). 'none' mutes nothing (pick any two dates either direction)."
+        "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Configuration options that control behaviour and layout.",
+            "default": {
+                "disableDates": "past",
+                "minDate": "",
+                "maxDate": "",
+                "shortSpanHours": 24,
+                "timeStepSeconds": 1,
+                "firstDayMonday": true,
+                "compactBelowHeight": 260,
+                "compactBelowWidth": 240
+            },
+            "properties": {
+                "disableDates": {
+                    "enum": ["past", "future", "none"],
+                    "default": "past",
+                    "description": "Which side is muted/non-clickable. 'past' mutes dates before minDate (default today; Booking.com style, range builds forward). 'future' mutes dates after maxDate (default today; range builds backward). 'none' mutes nothing (pick any two dates either direction)."
+                },
+                "minDate": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Earliest selectable date as 'YYYY-MM-DD'. Hard lower bound regardless of disableDates."
+                },
+                "maxDate": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Latest selectable date as 'YYYY-MM-DD'. Hard upper bound regardless of disableDates."
+                },
+                "shortSpanHours": {
+                    "type": "number",
+                    "default": 24,
+                    "description": "Threshold (hours) at which durationLabel flips from elapsed time (below) to whole days (at or above)."
+                },
+                "timeStepSeconds": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "Granularity (seconds) of the time selectors. 1 allows down-to-the-second selection."
+                },
+                "firstDayMonday": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Start weeks on Monday (true) or Sunday (false)."
+                },
+                "compactBelowHeight": {
+                    "type": "number",
+                    "default": 260,
+                    "description": "When the rendered height (px) is below this, switch from the full calendar to a compact two-field layout."
+                },
+                "compactBelowWidth": {
+                    "type": "number",
+                    "default": 240,
+                    "description": "When the rendered width (px) is below this, switch from the full calendar to a compact two-field layout."
+                }
+            }
         },
-        "minDate": {
-            "type": "string",
-            "default": "",
-            "description": "Earliest selectable date as 'YYYY-MM-DD'. Hard lower bound regardless of disableDates."
+        "selection": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The current selection (date + time parts). Two-way: set these to pre-select a range.",
+            "default": {
+                "startDate": "",
+                "endDate": "",
+                "startTimeSec": 0,
+                "endTimeSec": 86399
+            },
+            "properties": {
+                "startDate": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Selected start date (date only, 'YYYY-MM-DD')."
+                },
+                "endDate": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Selected end date (date only, 'YYYY-MM-DD')."
+                },
+                "startTimeSec": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Start time as seconds since midnight (0 = 00:00:00)."
+                },
+                "endTimeSec": {
+                    "type": "integer",
+                    "default": 86399,
+                    "description": "End time as seconds since midnight (86399 = 23:59:59)."
+                }
+            }
         },
-        "maxDate": {
-            "type": "string",
-            "default": "",
-            "description": "Latest selectable date as 'YYYY-MM-DD'. Hard upper bound regardless of disableDates."
-        },
-        "shortSpanHours": {
-            "type": "number",
-            "default": 24,
-            "description": "Threshold (hours) at which durationLabel flips from elapsed time (below) to whole days (at or above)."
-        },
-        "timeStepSeconds": {
-            "type": "number",
-            "default": 1,
-            "description": "Granularity (seconds) of the time selectors. 1 allows down-to-the-second selection."
-        },
-        "firstDayMonday": {
-            "type": "boolean",
-            "default": true,
-            "description": "Start weeks on Monday (true) or Sunday (false)."
-        },
-        "compactBelowHeight": {
-            "type": "number",
-            "default": 260,
-            "description": "When the component's rendered height (px) is below this, it switches from the full calendar to a compact two-field (start/end date + time) layout."
-        },
-        "startDate": {
-            "type": "string",
-            "default": "",
-            "description": "Selected start date (date only, 'YYYY-MM-DD'). Two-way: set it to pre-select."
-        },
-        "endDate": {
-            "type": "string",
-            "default": "",
-            "description": "Selected end date (date only, 'YYYY-MM-DD'). Two-way."
-        },
-        "startTimeSec": {
-            "type": "integer",
-            "default": 0,
-            "description": "Start time as seconds since midnight (0 = 00:00:00)."
-        },
-        "endTimeSec": {
-            "type": "integer",
-            "default": 86399,
-            "description": "End time as seconds since midnight (86399 = 23:59:59)."
-        },
-        "startDateTime": {
-            "type": "string",
-            "default": "",
-            "description": "OUTPUT: start date + start time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
-        },
-        "endDateTime": {
-            "type": "string",
-            "default": "",
-            "description": "OUTPUT: end date + end time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
-        },
-        "days": {
-            "type": "integer",
-            "default": 0,
-            "description": "OUTPUT: whole calendar days between start and end (0 = same day)."
-        },
-        "durationHours": {
-            "type": "number",
-            "default": 0,
-            "description": "OUTPUT: full span in hours (endDateTime - startDateTime)."
-        },
-        "durationLabel": {
-            "type": "string",
-            "default": "",
-            "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m'."
-        },
-        "isValid": {
-            "type": "boolean",
-            "default": false,
-            "description": "OUTPUT: true when both endpoints are set and endDateTime > startDateTime."
+        "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Derived results written by the component (bind to these).",
+            "default": {
+                "startDateTime": "",
+                "endDateTime": "",
+                "days": 0,
+                "durationHours": 0,
+                "durationLabel": "",
+                "isValid": false
+            },
+            "properties": {
+                "startDateTime": {
+                    "type": "string",
+                    "default": "",
+                    "description": "OUTPUT: start date + start time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
+                },
+                "endDateTime": {
+                    "type": "string",
+                    "default": "",
+                    "description": "OUTPUT: end date + end time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
+                },
+                "days": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "OUTPUT: whole calendar days between start and end (0 = same day)."
+                },
+                "durationHours": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "OUTPUT: full span in hours (endDateTime - startDateTime)."
+                },
+                "durationLabel": {
+                    "type": "string",
+                    "default": "",
+                    "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m'."
+                },
+                "isValid": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "OUTPUT: true when both endpoints are set and endDateTime > startDateTime."
+                }
+            }
         },
         "style": {
             "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
