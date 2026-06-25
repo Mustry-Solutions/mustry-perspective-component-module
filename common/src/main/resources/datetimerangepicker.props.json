@@ -100,7 +100,7 @@
             "default": {
                 "startDateTime": "",
                 "endDateTime": "",
-                "days": 0,
+                "durationDays": 0,
                 "durationHours": 0,
                 "durationLabel": "",
                 "isValid": false
@@ -116,7 +116,7 @@
                     "default": "",
                     "description": "OUTPUT: end date + end time, local wall-clock ISO 'YYYY-MM-DDTHH:mm:ss'."
                 },
-                "days": {
+                "durationDays": {
                     "type": "integer",
                     "default": 0,
                     "description": "OUTPUT: whole calendar days between start and end (0 = same day)."

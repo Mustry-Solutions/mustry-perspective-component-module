@@ -270,7 +270,7 @@ export class DateTimeRangePicker
         let out = {
             startDateTime: '',
             endDateTime: '',
-            days: 0,
+            durationDays: 0,
             durationHours: 0,
             durationLabel: '',
             isValid: false
@@ -280,14 +280,14 @@ export class DateTimeRangePicker
             const sdt = combine(start, clampSec(startTimeSec));
             const edt = combine(end, clampSec(endTimeSec));
             const valid = edt.getTime() > sdt.getTime();
-            const days = daysBetween(start, end);
+            const durationDays = daysBetween(start, end);
             const durationHours = Math.round(((edt.getTime() - sdt.getTime()) / 3600000) * 1000) / 1000;
             out = {
                 startDateTime: fmtDateTime(sdt),
                 endDateTime: fmtDateTime(edt),
-                days,
+                durationDays,
                 durationHours,
-                durationLabel: this.durationLabel(days, durationHours, valid),
+                durationLabel: this.durationLabel(durationDays, durationHours, valid),
                 isValid: valid
             };
         }
@@ -300,7 +300,7 @@ export class DateTimeRangePicker
         const write = this.props.store.props;
         write.write('output.startDateTime', out.startDateTime);
         write.write('output.endDateTime', out.endDateTime);
-        write.write('output.days', out.days);
+        write.write('output.durationDays', out.durationDays);
         write.write('output.durationHours', out.durationHours);
         write.write('output.durationLabel', out.durationLabel);
         write.write('output.isValid', out.isValid);
