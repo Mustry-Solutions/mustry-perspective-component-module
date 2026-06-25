@@ -105,7 +105,7 @@ interface DateTimeRangePickerState {
     containerHeight: number;  // measured rendered height, drives compact mode
 }
 
-type DayState = 'empty' | 'disabled' | 'today' | 'default' | 'start' | 'end' | 'inrange';
+type DayState = 'empty' | 'disabled' | 'today' | 'default' | 'start' | 'end' | 'inrange' | 'single';
 
 export class DateTimeRangePicker
     extends Component<ComponentProps<DateTimeRangePickerProps>, DateTimeRangePickerState> {
@@ -634,6 +634,9 @@ export class DateTimeRangePicker
             hi = anchor;
         }
 
+        if (lo && hi && sameDay(lo, hi) && sameDay(day, lo)) {
+            return 'single';   // single day (committed same-day range, or anchor only)
+        }
         if (lo && sameDay(day, lo)) {
             return 'start';
         }
