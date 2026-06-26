@@ -750,6 +750,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     onClick={() => this.updateEditor({ color: c })}
                                 />
                             ))}
+                            <input
+                                type="color"
+                                className="cal-editor-color-custom"
+                                title="Custom colour"
+                                value={ed.color}
+                                onChange={(e) => this.updateEditor({ color: e.target.value })}
+                            />
                         </div>
                     </div>
                     <label className="cal-editor-field">

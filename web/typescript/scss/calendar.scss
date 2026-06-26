@@ -614,16 +614,19 @@
         cursor: pointer;
     }
 
+    // Start/End stack vertically so the native datetime controls always fit the popover.
     .cal-editor-row {
         display: flex;
-        gap: 10px;
+        flex-direction: column;
 
-        .cal-editor-field { flex: 1 1 0; }
+        .cal-editor-field { flex: 1 1 auto; }
     }
 
     .cal-editor-swatches {
         display: flex;
+        align-items: center;
         gap: 6px;
+        flex-wrap: wrap;
     }
 
     .cal-editor-swatch {
@@ -632,11 +635,28 @@
         border-radius: 50%;
         border: 2px solid transparent;
         cursor: pointer;
+        padding: 0;
 
         &.is-selected {
             border-color: var(--cal-text);
             box-shadow: 0 0 0 2px var(--cal-bg) inset;
         }
+    }
+
+    // Custom-colour picker (native), styled as a circular swatch after the presets.
+    .cal-editor-color-custom {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid var(--cal-border);
+        border-radius: 50%;
+        background: none;
+        cursor: pointer;
+        overflow: hidden;
+
+        &::-webkit-color-swatch-wrapper { padding: 0; }
+        &::-webkit-color-swatch { border: none; border-radius: 50%; }
+        &::-moz-color-swatch { border: none; border-radius: 50%; }
     }
 
     .cal-editor-actions {
