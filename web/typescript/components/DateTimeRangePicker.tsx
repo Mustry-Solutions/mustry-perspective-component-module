@@ -12,7 +12,6 @@ import {
     formatPattern,
     addDays,
     addMonths,
-    clampSec,
     combine,
     daysBetween,
     daysInMonth,
@@ -23,41 +22,31 @@ import {
     minDate,
     monthLabel,
     parseDate,
-    resolveZoned,
     sameDay,
     secondsOfDay,
     secToHms,
     startOfDay,
     startOfMonth,
-    startOfWeek,
     today,
     weekdayHeaders
 } from './dateUtils';
+import * as logic from './pickerLogic';
+import {
+    DisableMode,
+    Granularity,
+    LayoutMode,
+    ResolvedLayout,
+    PresetUnit,
+    PresetType,
+    PresetPeriod,
+    PresetDef
+} from './pickerLogic';
 
 // Must match DateTimeRangePicker.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
 
-type DisableMode = 'past' | 'future' | 'none';
-type Granularity = 'day' | 'hour' | 'minute' | 'second';
 type WeekStart = 'monday' | 'sunday';
-type LayoutMode = 'auto' | 'compact' | 'oneMonth' | 'twoMonths';
-type ResolvedLayout = 'compact' | 'oneMonth' | 'twoMonths';
 type DisplayMode = 'inline' | 'popover';
-type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
-type PresetType = 'rolling' | 'calendar';
-type PresetPeriod =
-    'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
-    | 'thisMonth' | 'lastMonth' | 'thisYear' | 'lastYear';
-
-interface PresetDef {
-    label: string;
-    type: PresetType;
-    // rolling
-    amount: number;
-    unit: PresetUnit;
-    // calendar
-    period: PresetPeriod;
-}
 
 interface LabelConfig {
     startTime: string;
@@ -155,6 +144,10 @@ export class DateTimeRangePicker
 
     private setPanelEl = (el: HTMLElement | null): void => {
         this.panelEl = el;
+        if (el) {
+            // Now mounted in the DOM: re-place using the panel's real measured height.
+            this.adjustPanelPosition();
+        }
     };
 
     componentDidMount(): void {
@@ -198,7 +191,7 @@ export class DateTimeRangePicker
     }
 
     private openPanel(): void {
-        this.computePanelPosition();
+        this.computeBasePosition();
         this.setState({ open: true });
         this.addWindowListeners();
     }
@@ -239,26 +232,48 @@ export class DateTimeRangePicker
 
     private reposition = (): void => {
         if (this.state.open) {
-            this.computePanelPosition();
+            this.adjustPanelPosition();
         }
     };
 
-    /** Anchor the floating panel below the trigger (flip above if there's no room). */
-    private computePanelPosition(): void {
+    /** Panel width for the current layout, clamped to the viewport. */
+    private panelWidth(): number {
+        const desired = this.popoverLayout() === 'twoMonths' ? 600 : 300;
+        return Math.min(desired, window.innerWidth - 16);
+    }
+
+    /** Provisional placement (below the trigger) before the panel has been measured. */
+    private computeBasePosition(): void {
         const el = this.triggerEl;
         if (!el) {
             return;
         }
         const rect = el.getBoundingClientRect();
-        const width = this.popoverLayout() === 'twoMonths' ? 600 : 300;
-        const estHeight = 380;
-        const gap = 4;
-        let top = rect.bottom + gap;
-        if (top + estHeight > window.innerHeight && rect.top - gap - estHeight > 0) {
-            top = rect.top - gap - estHeight;
-        }
+        const width = this.panelWidth();
         const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-        this.setState({ panelTop: top, panelLeft: left, panelWidth: width });
+        this.setState({ panelTop: rect.bottom + 4, panelLeft: left, panelWidth: width });
+    }
+
+    /** Final placement using the panel's actual height: flip up if it would overflow. */
+    private adjustPanelPosition(): void {
+        const trigger = this.triggerEl;
+        const panel = this.panelEl;
+        if (!trigger || !panel) {
+            return;
+        }
+        const rect = trigger.getBoundingClientRect();
+        const h = panel.getBoundingClientRect().height;
+        const gap = 4;
+        const width = this.panelWidth();
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+        let top = rect.bottom + gap;
+        if (top + h > window.innerHeight && rect.top - gap - h >= 0) {
+            top = rect.top - gap - h;   // flip above using the real height
+        }
+        // Only update on a real change, so the post-mount measure doesn't loop.
+        if (top !== this.state.panelTop || left !== this.state.panelLeft || width !== this.state.panelWidth) {
+            this.setState({ panelTop: top, panelLeft: left, panelWidth: width });
+        }
     }
 
     /** Layout inside the popover panel (size-based 'auto' isn't measured here). */
@@ -292,21 +307,11 @@ export class DateTimeRangePicker
 
     // --- bounds ----------------------------------------------------------
     private effMin(): Date | null {
-        const { disableDates, earliestDate: min } = this.props.props;
-        const parsed = parseDate(min);
-        if (parsed) {
-            return parsed;
-        }
-        return disableDates === 'past' ? today() : null;
+        return logic.effMin(this.props.props.disableDates, this.props.props.earliestDate);
     }
 
     private effMax(): Date | null {
-        const { disableDates, latestDate: max } = this.props.props;
-        const parsed = parseDate(max);
-        if (parsed) {
-            return parsed;
-        }
-        return disableDates === 'future' ? today() : null;
+        return logic.effMax(this.props.props.disableDates, this.props.props.latestDate);
     }
 
     private isDisabled(day: Date): boolean {
@@ -417,98 +422,33 @@ export class DateTimeRangePicker
         this.setState({ anchor: null, hover: null });
     };
 
+    /** Context for the pure preset helpers (single `now` per call). */
+    private presetCtx(): logic.PresetContext {
+        const p = this.props.props;
+        return {
+            now: new Date(),
+            forward: p.disableDates === 'past',
+            mondayFirst: p.weekStart === 'monday'
+        };
+    }
+
     // The (datetime) endpoints a preset would set. Direction follows the disableDates
     // mode — forward in 'past' (forward-booking) mode so the range lands on selectable
     // days, backward otherwise (the historical/historian case).
     private presetRange(p: PresetDef): { start: Date; end: Date } {
-        if (p.type === 'calendar') {
-            return this.calendarRange(p.period);
-        }
-        const forward = this.props.props.disableDates === 'past';
-        const sign = forward ? 1 : -1;
-        const now = new Date();
-        let other: Date;
-        switch (p.unit) {
-            case 'hours':
-                other = new Date(now.getTime() + sign * p.amount * 3600000);
-                break;
-            case 'weeks':
-                other = new Date(now.getTime() + sign * p.amount * 7 * 86400000);
-                break;
-            case 'months':
-                other = new Date(
-                    now.getFullYear(), now.getMonth() + sign * p.amount, now.getDate(),
-                    now.getHours(), now.getMinutes(), now.getSeconds()
-                );
-                break;
-            case 'days':
-            default:
-                other = new Date(now.getTime() + sign * p.amount * 86400000);
-                break;
-        }
-        return { start: forward ? now : other, end: forward ? other : now };
-    }
-
-    // Calendar presets snap to calendar boundaries: 'this*' = period-to-date (start of
-    // the period to the end of today); 'last*' = the full previous period. Week-based
-    // periods honour weekStart. Times are full-day (00:00:00 .. 23:59:59).
-    private calendarRange(period: PresetPeriod): { start: Date; end: Date } {
-        const mondayFirst = this.props.props.weekStart === 'monday';
-        const now = new Date();
-        const todayStart = startOfDay(now);
-        const endOfToday = combine(todayStart, 86399);
-
-        switch (period) {
-            case 'today':
-                return { start: todayStart, end: endOfToday };
-            case 'yesterday': {
-                const y = addDays(todayStart, -1);
-                return { start: y, end: combine(y, 86399) };
-            }
-            case 'thisWeek':
-                return { start: startOfWeek(now, mondayFirst), end: endOfToday };
-            case 'lastWeek': {
-                const ws = startOfWeek(now, mondayFirst);
-                return { start: addDays(ws, -7), end: combine(addDays(ws, -1), 86399) };
-            }
-            case 'thisMonth':
-                return { start: startOfMonth(now), end: endOfToday };
-            case 'lastMonth': {
-                const lastEnd = addDays(startOfMonth(now), -1);
-                return { start: startOfMonth(lastEnd), end: combine(lastEnd, 86399) };
-            }
-            case 'thisYear':
-                return { start: new Date(now.getFullYear(), 0, 1), end: endOfToday };
-            case 'lastYear':
-            default: {
-                const y = now.getFullYear() - 1;
-                return { start: new Date(y, 0, 1), end: combine(new Date(y, 11, 31), 86399) };
-            }
-        }
+        return logic.presetRange(p, this.presetCtx());
     }
 
     /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
     private presetConflict(p: PresetDef): string {
-        const range = this.presetRange(p);
-        const lo = startOfDay(minDate(range.start, range.end));
-        const hi = startOfDay(maxDate(range.start, range.end));
-        const min = this.effMin();
-        const max = this.effMax();
-        if (min && lo.getTime() < min.getTime()) {
-            return `Starts before the earliest selectable date (${fmtDate(min)})`;
-        }
-        if (max && hi.getTime() > max.getTime()) {
-            return `Ends after the latest selectable date (${fmtDate(max)})`;
-        }
-        const span = daysBetween(lo, hi);
-        const { minSpanDays, maxSpanDays } = this.props.props;
-        if (minSpanDays > 0 && span < minSpanDays) {
-            return `Shorter than the ${minSpanDays}-day minimum`;
-        }
-        if (maxSpanDays > 0 && span > maxSpanDays) {
-            return `Exceeds the ${maxSpanDays}-day maximum`;
-        }
-        return '';
+        const props = this.props.props;
+        return logic.presetConflict(p, {
+            ...this.presetCtx(),
+            min: this.effMin(),
+            max: this.effMax(),
+            minSpanDays: props.minSpanDays,
+            maxSpanDays: props.maxSpanDays
+        });
     }
 
     // Apply a preset: set the selection to its range (no-op if it would conflict).
@@ -555,19 +495,15 @@ export class DateTimeRangePicker
     // --- layout resolution -----------------------------------------------
     /** Resolve the effective layout: honour an explicit choice, else pick by size. */
     private resolveLayout(): ResolvedLayout {
-        const { layout, compactBelowWidth, compactBelowHeight, twoMonthsAboveWidth } = this.props.props;
-        if (layout === 'compact' || layout === 'oneMonth' || layout === 'twoMonths') {
-            return layout;
-        }
-        const w = this.state.containerWidth;
-        const h = this.state.containerHeight;
-        if (h < compactBelowHeight || w < compactBelowWidth) {
-            return 'compact';
-        }
-        if (w >= twoMonthsAboveWidth) {
-            return 'twoMonths';
-        }
-        return 'oneMonth';
+        const p = this.props.props;
+        return logic.resolveLayout({
+            layout: p.layout,
+            width: this.state.containerWidth,
+            height: this.state.containerHeight,
+            compactBelowWidth: p.compactBelowWidth,
+            compactBelowHeight: p.compactBelowHeight,
+            twoMonthsAboveWidth: p.twoMonthsAboveWidth
+        });
     }
 
     private monthsShown(): number {
@@ -589,28 +525,22 @@ export class DateTimeRangePicker
     // --- time selectors --------------------------------------------------
     /** Step (seconds) for the chosen granularity. */
     private stepSeconds(): number {
-        switch (this.props.props.granularity) {
-            case 'day': return 86400;
-            case 'hour': return 3600;
-            case 'minute': return 60;
-            default: return 1;
-        }
+        return logic.stepSeconds(this.props.props.granularity);
     }
 
     /** Effective start/end time-of-day (seconds). In 'day' mode the range covers
      *  whole days: 00:00:00 to 23:59:59; otherwise the snapped selected times. */
     private effStartSec(): number {
-        return this.props.props.granularity === 'day' ? 0 : this.snapSec(this.props.props.startTimeSec);
+        return logic.effStartSec(this.props.props.startTimeSec, this.props.props.granularity);
     }
 
     private effEndSec(): number {
-        return this.props.props.granularity === 'day' ? 86399 : this.snapSec(this.props.props.endTimeSec);
+        return logic.effEndSec(this.props.props.endTimeSec, this.props.props.granularity);
     }
 
     /** Snap seconds-since-midnight down to the chosen granularity. */
     private snapSec(sec: number): number {
-        const step = this.stepSeconds();
-        return Math.floor(clampSec(sec) / step) * step;
+        return logic.snapSec(sec, this.props.props.granularity);
     }
 
     /** Value string for a native <input type="time"> at the chosen granularity. */
@@ -637,76 +567,21 @@ export class DateTimeRangePicker
     };
 
     // --- outputs ---------------------------------------------------------
-    private durationLabel(days: number, durationHours: number, valid: boolean): string {
-        if (!valid) {
-            return '';
-        }
-        if (this.props.props.granularity === 'day') {
-            if (days === 0) {
-                return this.props.props.labels.sameDay;
-            }
-            return days === 1 ? '1 day' : `${days} days`;
-        }
-        const { durationLabelThresholdHours } = this.props.props;
-        if (durationHours >= durationLabelThresholdHours) {
-            return days === 1 ? '1 day' : `${days} days`;
-        }
-        const total = Math.max(0, Math.round(durationHours * 3600));
-        const h = Math.floor(total / 3600);
-        const m = Math.floor((total % 3600) / 60);
-        const s = total % 60;
-        if (h > 0) {
-            return `${h}h ${m}m`;
-        }
-        if (m > 0) {
-            return `${m}m ${s}s`;
-        }
-        return `${s}s`;
-    }
-
     /** Compute the output values from the committed selection (single source of truth). */
-    private computeOutputs() {
-        const start = parseDate(this.props.props.startDate);
-        const end = parseDate(this.props.props.endDate);
-        const base = {
-            startDateTime: '',
-            endDateTime: '',
-            startEpochMs: 0,
-            endEpochMs: 0,
-            durationDays: 0,
-            durationHours: 0,
-            durationLabel: '',
-            isValid: false
-        };
-        if (!start || !end) {
-            return base;
-        }
-        const { timezone, minSpanDays, maxSpanDays } = this.props.props;
-        // Resolve the picked wall-clock times into absolute instants in the
-        // configured timezone (blank = browser-local), giving offset-bearing ISO
-        // strings and epoch milliseconds.
-        const sZ = resolveZoned(combine(start, this.effStartSec()), timezone);
-        const eZ = resolveZoned(combine(end, this.effEndSec()), timezone);
-        const durationDays = daysBetween(start, end);
-        let valid = eZ.epochMs > sZ.epochMs;
-        if (minSpanDays > 0 && durationDays < minSpanDays) {
-            valid = false;
-        }
-        if (maxSpanDays > 0 && durationDays > maxSpanDays) {
-            valid = false;
-        }
-        // True elapsed hours from the absolute instants (DST-correct).
-        const durationHours = Math.round(((eZ.epochMs - sZ.epochMs) / 3600000) * 1000) / 1000;
-        return {
-            startDateTime: sZ.iso,
-            endDateTime: eZ.iso,
-            startEpochMs: sZ.epochMs,
-            endEpochMs: eZ.epochMs,
-            durationDays,
-            durationHours,
-            durationLabel: this.durationLabel(durationDays, durationHours, valid),
-            isValid: valid
-        };
+    private computeOutputs(): logic.Outputs {
+        const p = this.props.props;
+        return logic.computeOutputs({
+            startDate: p.startDate,
+            endDate: p.endDate,
+            startTimeSec: p.startTimeSec,
+            endTimeSec: p.endTimeSec,
+            granularity: p.granularity,
+            timezone: p.timezone,
+            minSpanDays: p.minSpanDays,
+            maxSpanDays: p.maxSpanDays,
+            durationLabelThresholdHours: p.durationLabelThresholdHours,
+            sameDayLabel: p.labels.sameDay
+        });
     }
 
     /** Write any outputs that changed (de-duplicated to avoid render/write loops). */
