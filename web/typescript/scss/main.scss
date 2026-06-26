@@ -331,19 +331,22 @@
     .dtrp-trigger {
         display: inline-flex;
         align-items: center;
-        justify-content: space-between;
         gap: 8px;
         width: 100%;
+        height: 100%;
+        min-height: 34px;
         min-width: 0;
-        padding: 6px 10px;
+        padding: 0 12px;
         font-family: inherit;
         font-size: 13px;
+        line-height: 1.2;
         text-align: left;
         color: var(--dtrp-text);
         background: var(--dtrp-bg);
         border: 1px solid var(--dtrp-border);
-        border-radius: 6px;
+        border-radius: 8px;
         cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
         &:disabled {
             cursor: not-allowed;
@@ -352,17 +355,47 @@
         &:hover:not(:disabled) {
             border-color: var(--dtrp-accent);
         }
+
+        // Focused or open: accent border + a soft ring (reusing the range tint).
+        &:focus-visible,
+        &.dtrp-trigger--open {
+            outline: none;
+            border-color: var(--dtrp-accent);
+            box-shadow: 0 0 0 3px var(--dtrp-range);
+        }
+
+        &:hover:not(:disabled) .dtrp-trigger-icon,
+        &.dtrp-trigger--open .dtrp-trigger-icon {
+            color: var(--dtrp-accent);
+        }
+
+        &.dtrp-trigger--open .dtrp-trigger-caret {
+            transform: rotate(180deg);
+            color: var(--dtrp-accent);
+        }
     }
 
     .dtrp-trigger-text {
+        flex: 1 1 auto;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
+    .dtrp-trigger-text--placeholder {
+        color: var(--dtrp-muted);
+    }
+
     .dtrp-trigger-icon {
         flex: 0 0 auto;
         color: var(--dtrp-muted);
+        transition: color 0.15s ease;
+    }
+
+    .dtrp-trigger-caret {
+        flex: 0 0 auto;
+        color: var(--dtrp-muted);
+        transition: transform 0.15s ease, color 0.15s ease;
     }
 }
 
