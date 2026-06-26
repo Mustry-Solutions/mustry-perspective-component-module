@@ -10,7 +10,7 @@
             "default": {
                 "enabled": true,
                 "display": "inline",
-                "popover": { "placeholder": "Select dates", "closeOnSelect": true },
+                "popover": { "placeholder": "Select dates", "closeOnSelect": true, "dateFormat": "DD/MM/YYYY" },
                 "disableDates": "past",
                 "dateBounds": { "earliest": "", "latest": "" },
                 "spanDays": { "min": 0, "max": 0 },
@@ -56,7 +56,7 @@
                     "type": "object",
                     "additionalProperties": false,
                     "description": "Options for display = 'popover'.",
-                    "default": { "placeholder": "Select dates", "closeOnSelect": true },
+                    "default": { "placeholder": "Select dates", "closeOnSelect": true, "dateFormat": "DD/MM/YYYY" },
                     "properties": {
                         "placeholder": {
                             "type": "string",
@@ -67,6 +67,11 @@
                             "type": "boolean",
                             "default": true,
                             "description": "Close the popover automatically once a complete range (or a preset) is chosen."
+                        },
+                        "dateFormat": {
+                            "type": "string",
+                            "default": "DD/MM/YYYY",
+                            "description": "Date pattern for the trigger text (tokens: YYYY, YY, MM, M, DD, D). The 24h time is appended automatically and trimmed to the granularity: none for 'day', HH:mm for 'hour'/'minute', HH:mm:ss for 'second'."
                         }
                     }
                 },

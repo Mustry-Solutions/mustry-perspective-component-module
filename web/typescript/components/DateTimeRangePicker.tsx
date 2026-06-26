@@ -9,7 +9,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    intlFormat,
+    formatPattern,
     addDays,
     addMonths,
     clampSec,
@@ -78,6 +78,7 @@ export interface DateTimeRangePickerProps {
     display: DisplayMode;
     popoverPlaceholder: string;
     popoverCloseOnSelect: boolean;
+    popoverDateFormat: string;
     showClear: boolean;
     labels: LabelConfig;
     disableDates: DisableMode;
@@ -1084,17 +1085,19 @@ export class DateTimeRangePicker
 
     /** Trigger text: the formatted range, or the placeholder when nothing is selected. */
     private formatTrigger(): string {
-        const { startDate, endDate, granularity, locale, popoverPlaceholder } = this.props.props;
+        const { startDate, endDate, granularity, popoverPlaceholder, popoverDateFormat } = this.props.props;
         const s = parseDate(startDate);
         const e = parseDate(endDate);
         if (!s || !e) {
             return popoverPlaceholder;
         }
-        const opts: Intl.DateTimeFormatOptions = granularity === 'day'
-            ? { year: 'numeric', month: 'short', day: '2-digit' }
-            : { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-        const fmt = intlFormat(locale, opts);
-        return `${fmt.format(combine(s, this.effStartSec()))} – ${fmt.format(combine(e, this.effEndSec()))}`;
+        // Append the 24h time, trimmed to the granularity (hour shows :00 naturally).
+        const timeSuffix = granularity === 'day' ? ''
+            : granularity === 'second' ? ' HH:mm:ss'
+                : ' HH:mm';
+        const pattern = popoverDateFormat + timeSuffix;
+        const fmt = (d: Date) => formatPattern(d, pattern);
+        return `${fmt(combine(s, this.effStartSec()))} – ${fmt(combine(e, this.effEndSec()))}`;
     }
 
     render() {
@@ -1132,6 +1135,7 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             display: tree.readString('config.display', 'inline') as DisplayMode,
             popoverPlaceholder: tree.readString('config.popover.placeholder', 'Select dates'),
             popoverCloseOnSelect: tree.readBoolean('config.popover.closeOnSelect', true),
+            popoverDateFormat: tree.readString('config.popover.dateFormat', 'DD/MM/YYYY'),
             showClear: tree.readBoolean('config.showClear', true),
             labels: {
                 startTime: tree.readString('config.labels.startTime', 'Start time'),

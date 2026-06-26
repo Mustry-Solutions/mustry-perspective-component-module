@@ -120,6 +120,23 @@ export function fmtDateTime(d: Date): string {
     return `${fmtDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
+/** Format a date with a token pattern (YYYY, YY, MM, M, DD, D, HH, mm, ss). */
+export function formatPattern(d: Date, pattern: string): string {
+    const map: { [k: string]: string } = {
+        YYYY: String(d.getFullYear()),
+        YY: pad2(d.getFullYear() % 100),
+        MM: pad2(d.getMonth() + 1),
+        M: String(d.getMonth() + 1),
+        DD: pad2(d.getDate()),
+        D: String(d.getDate()),
+        HH: pad2(d.getHours()),
+        mm: pad2(d.getMinutes()),
+        ss: pad2(d.getSeconds())
+    };
+    // Longer tokens first in the alternation so YYYY beats YY, MM beats M, DD beats D.
+    return pattern.replace(/YYYY|YY|MM|DD|HH|mm|ss|M|D/g, (t) => map[t]);
+}
+
 export function intlFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
     try {
         return new Intl.DateTimeFormat(locale || undefined, options);
