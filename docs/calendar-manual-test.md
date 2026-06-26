@@ -30,6 +30,35 @@ background, and overlapping events:
 > appends to / persists the event, then update `config.data.events`. If you drag and
 > "nothing sticks", that's expected until a handler writes it back.
 
+## Ready-made working demo
+
+A complete, **working** example view (editable calendar with the write-back handlers
+already wired) lives in the dev project at:
+
+```
+ops/verify/project/com.inductiveautomation.perspective/views/CalendarDemo/
+```
+
+- **In the dev gateway** it's served at `http://localhost:9088/data/perspective/client/verify/demo`.
+- **To use it in your own project:** copy that `CalendarDemo/` folder into your
+  project's `com.inductiveautomation.perspective/views/` directory, then open the
+  `CalendarDemo` view in the Designer (Preview mode). Drag empty time to create,
+  drag an event to move, drag its bottom edge to resize — and the changes stick.
+
+**How it works (the whole trick):**
+
+1. The calendar renders `config.data.events`.
+2. A drag-create fires **`onSelect`**; the script on that event **appends** a new
+   event to `self.props.data.events`.
+3. Because `data.events` changed, the calendar **re-renders** and the new event
+   appears. (Move = `onEventDrop` updates an event's start/end; resize =
+   `onEventResize` updates its end — same idea.)
+
+That's the entire pattern: *the component asks "what happened?", your script decides
+"what to store", and the calendar just displays whatever's in `data.events`.* In
+production you'd write to a database and re-query instead of mutating the prop, but
+the loop is identical.
+
 ## Why "nothing happens" when I drag / create (read this first)
 
 The gestures **do** fire — verified in a live session: dragging an event fires

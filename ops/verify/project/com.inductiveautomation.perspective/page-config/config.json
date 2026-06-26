@@ -3,6 +3,10 @@
     "/": {
       "viewPath": "Main",
       "viewParams": {}
+    },
+    "/demo": {
+      "viewPath": "CalendarDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

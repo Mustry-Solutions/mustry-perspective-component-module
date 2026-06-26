@@ -1,0 +1,69 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1000, "height": 720 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Calendar demo — editable. Drag empty time to create, drag an event to move, drag its bottom edge to resize. Edits persist (see the onSelect / onEventDrop / onEventResize scripts on the calendar).", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 10, "width": 960, "height": 40 }
+      },
+      {
+        "type": "mustrysolutions.display.calendar",
+        "version": 0,
+        "props": {
+          "config": { "view": "week", "editable": true, "selectable": true, "scrollToHour": 8 },
+          "data": {
+            "events": [
+              { "id": "seed-1", "title": "Standup", "start": "2026-06-24T09:00:00", "end": "2026-06-24T09:30:00", "color": "#0c7bb3" },
+              { "id": "seed-2", "title": "Lunch", "start": "2026-06-24T12:00:00", "end": "2026-06-24T13:00:00", "color": "#27ae60" }
+            ]
+          }
+        },
+        "custom": {},
+        "meta": { "name": "calendar" },
+        "position": { "x": 16, "y": 56, "width": 968, "height": 640 },
+        "events": {
+          "component": {
+            "onSelect": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tevents = list(self.props.data.events)\n\tnewId = \"evt-\" + str(system.date.toMillis(system.date.now()))\n\tevents.append({\"id\": newId, \"title\": \"New event\", \"start\": event.start, \"end\": event.end})\n\tself.props.data.events = events"
+                }
+              }
+            ],
+            "onEventDrop": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tevents = []\n\tfor e in self.props.data.events:\n\t\trow = dict(e)\n\t\tif row.get(\"id\") == event.id:\n\t\t\trow[\"start\"] = event.newStart\n\t\t\trow[\"end\"] = event.newEnd\n\t\tevents.append(row)\n\tself.props.data.events = events"
+                }
+              }
+            ],
+            "onEventResize": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tevents = []\n\tfor e in self.props.data.events:\n\t\trow = dict(e)\n\t\tif row.get(\"id\") == event.id:\n\t\t\trow[\"end\"] = event.newEnd\n\t\tevents.append(row)\n\tself.props.data.events = events"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
