@@ -7,8 +7,10 @@
     --cal-text: var(--neutral-90, #1f2937);
     --cal-muted: var(--neutral-50, #9ca3af);
     --cal-border: var(--neutral-30, #e5e7eb);
+    --cal-line: var(--neutral-20, #f0f0f0);   // lighter internal grid lines
     --cal-bg: var(--neutral-10, #ffffff);
-    --cal-weekend-bg: var(--neutral-20, #f4f4f4);
+    --cal-weekend-bg: var(--neutral-20, #f6f7f9);
+    --cal-today: color-mix(in srgb, var(--cal-accent) 7%, var(--cal-bg)); // subtle today tint
 }
 
 .mustry-calendar {
@@ -92,12 +94,14 @@
     }
 
     .cal-weekday {
-        padding: 4px 6px;
-        font-size: 11px;
+        padding: 5px 6px;
+        font-size: 10px;
         font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
         color: var(--cal-muted);
         text-align: right;
-        border-right: 1px solid var(--cal-border);
+        border-right: 1px solid var(--cal-line);
         border-bottom: 1px solid var(--cal-border);
     }
 
@@ -124,12 +128,21 @@
         padding: 2px 4px 4px;
         overflow: hidden;
         cursor: pointer;
-        border-right: 1px solid var(--cal-border);
-        border-bottom: 1px solid var(--cal-border);
+        border-right: 1px solid var(--cal-line);
+        border-bottom: 1px solid var(--cal-line);
+        transition: background 0.12s ease;
+
+        &:hover {
+            background: color-mix(in srgb, var(--cal-accent) 4%, var(--cal-bg));
+        }
     }
 
     .cal-day--weekend {
         background: var(--cal-weekend-bg);
+    }
+
+    .cal-day--today {
+        background: var(--cal-today);
     }
 
     .cal-day--other {
@@ -160,22 +173,33 @@
         overflow: hidden;
     }
 
+    // Event chip: a soft tint of the event colour, a colour bar on the left, and
+    // readable dark-tinted text. Falls back to a solid fill where color-mix is
+    // unsupported. The event's colour is passed in as the `--ev` custom property.
     .cal-event {
+        --ev: var(--cal-accent);
         display: block;
         width: 100%;
         text-align: left;
         font-family: inherit;
         font-size: 11px;
-        line-height: 1.4;
-        padding: 1px 5px;
+        line-height: 1.5;
+        padding: 1px 6px;
         border-radius: 4px;
-        background: var(--cal-accent);
+        border-left: 3px solid var(--ev);
+        background: var(--ev);
+        background: color-mix(in srgb, var(--ev) 16%, var(--cal-bg));
         color: var(--cal-accent-text);
-        border: 1px solid var(--cal-accent);
+        color: color-mix(in srgb, var(--ev) 70%, var(--cal-text));
         cursor: pointer;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        transition: filter 0.12s ease;
+
+        &:hover {
+            filter: brightness(0.96);
+        }
     }
 
     .cal-more {
@@ -230,17 +254,18 @@
     }
 
     .cal-tg-dayhead {
-        padding: 4px 6px;
+        padding: 5px 6px;
         text-align: center;
         font-size: 12px;
         font-weight: 600;
         color: var(--cal-muted);
-        border-left: 1px solid var(--cal-border);
+        border-left: 1px solid var(--cal-line);
         border-bottom: 1px solid var(--cal-border);
     }
 
     .cal-tg-dayhead--today {
         color: var(--cal-accent);
+        background: var(--cal-today);
     }
 
     .cal-tg-allday {
@@ -288,27 +313,47 @@
     // repeating background (line every SLOT_PX, set inline as background-size).
     .cal-tg-col {
         position: relative;
-        border-left: 1px solid var(--cal-border);
-        background-image: linear-gradient(to bottom, var(--cal-border) 1px, transparent 1px);
+        border-left: 1px solid var(--cal-line);
+        background-image: linear-gradient(to bottom, var(--cal-line) 1px, transparent 1px);
         background-repeat: repeat-y;
         cursor: pointer;
     }
 
+    .cal-tg-col--today {
+        background-color: var(--cal-today);
+    }
+
     .cal-tg-event {
+        --ev: var(--cal-accent);
         position: absolute;
         box-sizing: border-box;
         font-family: inherit;
         font-size: 11px;
-        line-height: 1.25;
+        line-height: 1.3;
         text-align: left;
-        padding: 1px 4px;
-        border-radius: 4px;
-        background: var(--cal-accent);
+        padding: 2px 6px;
+        border-radius: 5px;
+        border-left: 3px solid var(--ev);
+        background: var(--ev);
+        background: color-mix(in srgb, var(--ev) 18%, var(--cal-bg));
         color: var(--cal-accent-text);
-        border: 1px solid var(--cal-accent);
+        color: color-mix(in srgb, var(--ev) 72%, var(--cal-text));
         overflow: hidden;
         cursor: pointer;
         z-index: 1;
+        transition: box-shadow 0.12s ease, filter 0.12s ease;
+
+        &:hover {
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+            filter: brightness(0.98);
+            z-index: 2;
+        }
+    }
+
+    .cal-tg-time {
+        display: block;
+        font-size: 10px;
+        opacity: 0.85;
     }
 
     .cal-tg-now {
@@ -317,7 +362,18 @@
         right: 0;
         height: 0;
         border-top: 2px solid #e11d48;
-        z-index: 2;
+        z-index: 4;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: -4px;
+            top: -4px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #e11d48;
+        }
     }
 
     // --- editing (week/day) ---
@@ -336,21 +392,30 @@
 
     // The drag/resize ghost and the create selection rectangle.
     .cal-tg-event--ghost {
-        opacity: 0.75;
+        background: color-mix(in srgb, var(--ev) 32%, var(--cal-bg));
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
         pointer-events: none;
-        z-index: 3;
+        z-index: 5;
     }
 
     .cal-tg-select {
         position: absolute;
         left: 0;
         right: 3px;
-        background: var(--cal-accent);
-        opacity: 0.25;
+        background: color-mix(in srgb, var(--cal-accent) 22%, transparent);
         border: 1px solid var(--cal-accent);
-        border-radius: 4px;
+        border-radius: 5px;
         pointer-events: none;
-        z-index: 3;
+        z-index: 5;
+        overflow: hidden;
+    }
+
+    .cal-tg-select-time {
+        display: block;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 600;
+        color: color-mix(in srgb, var(--cal-accent) 75%, var(--cal-text));
     }
 
     // Background (downtime / availability) bands behind the events.

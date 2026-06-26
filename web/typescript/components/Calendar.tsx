@@ -180,6 +180,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return isoDateTime(dayIso, min);
     }
 
+    /** Minutes-from-midnight -> "HH:mm". */
+    private hhmm(min: number): string {
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
+    }
+
     /** A timed event's [start, end] minutes (end falls back to the default duration). */
     private eventMinutes(ev: CalEvent): { s: number; e: number } {
         const sm = timeMinutes(ev.start);
@@ -467,7 +474,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     {shown.map((ev, i) => (
                         <button
                             type="button" className="cal-event" key={ev.id || i} title={ev.title}
-                            style={ev.color ? { background: ev.color, borderColor: ev.color } : undefined}
+                            style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                             onClick={(e) => this.onEventClick(ev, e)}
                         >{ev.title}</button>
                     ))}
@@ -508,15 +515,21 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const winStart = this.props.props.dayStartHour * 60;
         const top = ((p.startMin - winStart) / 60) * SLOT_PX;
         const height = ((p.endMin - p.startMin) / 60) * SLOT_PX;
+        const timeLabel = `${this.hhmm(p.startMin)} – ${this.hhmm(p.endMin)}`;
         if (p.mode === 'create') {
-            return <div className="cal-tg-select" style={{ top, height }} />;
+            return (
+                <div className="cal-tg-select" style={{ top, height }}>
+                    <span className="cal-tg-select-time">{timeLabel}</span>
+                </div>
+            );
         }
         return (
             <div
                 className="cal-tg-event cal-tg-event--ghost"
-                style={{ top, height, left: 0, width: 'calc(100% - 3px)', background: p.color, borderColor: p.color }}
+                style={{ top, height, left: 0, width: 'calc(100% - 3px)', ...(p.color ? { ['--ev' as string]: p.color } : {}) } as React.CSSProperties}
             >
                 {p.title || ''}
+                <span className="cal-tg-time">{timeLabel}</span>
             </div>
         );
     }
@@ -561,7 +574,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             {allDayEventsForDay(events || [], c.iso).map((ev, i) => (
                                 <button
                                     type="button" className="cal-event" key={ev.id || i} title={ev.title}
-                                    style={ev.color ? { background: ev.color, borderColor: ev.color } : undefined}
+                                    style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                                     onClick={(e) => this.onEventClick(ev, e)}
                                 >{ev.title}</button>
                             ))}
@@ -579,7 +592,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         </div>
                         {cols.map((c) => (
                             <div
-                                className="cal-tg-col"
+                                className={`cal-tg-col${c.isToday ? ' cal-tg-col--today' : ''}`}
                                 key={c.iso}
                                 data-day={c.iso}
                                 style={{ backgroundSize: `100% ${SLOT_PX}px` }}
@@ -612,12 +625,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                                 top, height,
                                                 left: `${(it.lane / it.lanes) * 100}%`,
                                                 width: `calc(${100 / it.lanes}% - 3px)`,
-                                                background: ev.color || undefined,
-                                                borderColor: ev.color || undefined
-                                            }}
+                                                ...(ev.color ? { ['--ev' as string]: ev.color } : {})
+                                            } as React.CSSProperties}
                                             onMouseDown={(e) => this.startMove(ev, e)}
                                         >
                                             {ev.title}
+                                            {height >= 34 && <span className="cal-tg-time">{this.hhmm(it.startMin)}–{this.hhmm(it.endMin)}</span>}
                                             {editable && (
                                                 <div className="cal-tg-resize" onMouseDown={(e) => this.startResize(ev, e)} />
                                             )}
