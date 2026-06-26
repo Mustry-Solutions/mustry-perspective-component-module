@@ -30,6 +30,63 @@ background, and overlapping events:
 > appends to / persists the event, then update `config.data.events`. If you drag and
 > "nothing sticks", that's expected until a handler writes it back.
 
+## Why "nothing happens" when I drag / create (read this first)
+
+The gestures **do** fire — verified in a live session: dragging an event fires
+`onEventDrop`, resizing fires `onEventResize`, dragging empty time fires `onSelect`,
+all with correct payloads. If it *looks* like nothing happens, it's one of two things:
+
+1. **You're in the Designer's design/edit mode.** There, mouse drags select and move
+   the *component*, not its contents. Switch to **Preview mode** (or open a real
+   session) to interact with the calendar.
+2. **It's a controlled component** — it never edits `config.data.events` itself. A
+   move/resize visually **snaps back**, and a create adds **nothing**, until *you*
+   handle the event and write the change back into your data.
+
+### Write-back recipes (paste into the component's event config in the Designer)
+
+Select the calendar → **Events** → add the component event → **Script** action.
+These mutate `data.events` directly (simplest for testing; in production you'd
+persist to a DB and re-query instead). Requires `config.editable` / `config.selectable`.
+
+**`onSelect`** — create a new event from a dragged-out range:
+
+```python
+events = list(self.props.data.events)
+events.append({
+    "id": "evt-" + str(system.date.toMillis(system.date.now())),
+    "title": "New event",
+    "start": event.start,
+    "end": event.end
+})
+self.props.data.events = events
+```
+
+**`onEventDrop`** — persist a move:
+
+```python
+events = []
+for e in self.props.data.events:
+    e = dict(e)
+    if e.get("id") == event.id:
+        e["start"] = event.newStart
+        e["end"] = event.newEnd
+    events.append(e)
+self.props.data.events = events
+```
+
+**`onEventResize`** — persist a resize:
+
+```python
+events = []
+for e in self.props.data.events:
+    e = dict(e)
+    if e.get("id") == event.id:
+        e["end"] = event.newEnd
+    events.append(e)
+self.props.data.events = events
+```
+
 ## Month view
 
 - [ ] Renders the current month; today has an accent circular badge; other-month days dimmed.
