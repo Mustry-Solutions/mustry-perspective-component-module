@@ -96,7 +96,7 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`) · `showToolbar` · `editable` · `selectable` · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `editable` · `selectable` · `builtInEditor` (open a built-in editor popover on create) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
 
 **`config.data.events`** — array of event objects:
 
@@ -116,7 +116,7 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 
 ### Events
 
-`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`). Payloads are complete so write-back needs no second lookup.
+`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`) · `onEventCreate` (full event, from the built-in editor). Payloads are complete so write-back needs no second lookup.
 
 ### Theming
 

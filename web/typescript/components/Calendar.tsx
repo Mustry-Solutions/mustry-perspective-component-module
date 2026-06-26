@@ -77,6 +77,7 @@ export interface CalendarProps {
     showToolbar: boolean;
     editable: boolean;
     selectable: boolean;
+    builtInEditor: boolean;
     weekStart: WeekStart;
     locale: string;
     showWeekends: boolean;
@@ -92,10 +93,22 @@ interface HoverInfo {
     rect: { top: number; bottom: number; left: number; right: number };
 }
 
+interface Editor {
+    title: string;
+    start: string;   // 'YYYY-MM-DDTHH:mm' (timed) or 'YYYY-MM-DD' (all-day)
+    end: string;
+    allDay: boolean;
+    color: string;
+    description: string;
+}
+
+const EDITOR_COLORS = ['#0c7bb3', '#27ae60', '#e67e22', '#e11d48', '#8e44ad', '#697077'];
+
 interface CalendarState {
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
     hover: HoverInfo | null;   // event under the cursor -> detail popover
+    editor: Editor | null;     // built-in new-event editor popover
 }
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
@@ -109,7 +122,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { cursor: today(), preview: null, hover: null };
+        this.state = { cursor: today(), preview: null, hover: null, editor: null };
     }
 
     componentDidMount(): void {
@@ -165,6 +178,61 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private hoverProps(ev: CalEvent): { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void } {
         return { onMouseEnter: (e) => this.onEventHover(ev, e), onMouseLeave: this.onEventLeave };
     }
+
+    // --- built-in new-event editor ----------------------------------------
+    /** Whether a create gesture should open the built-in editor (vs firing onSelect). */
+    private useEditor(): boolean {
+        return this.props.props.builtInEditor && this.props.props.selectable;
+    }
+
+    private openEditor(startIso: string, endIso: string, allDay: boolean): void {
+        this.hideHover();
+        const start = allDay ? startIso.slice(0, 10) : startIso.slice(0, 16);
+        const end = allDay ? (endIso || startIso).slice(0, 10) : endIso.slice(0, 16);
+        this.setState({ editor: { title: '', start, end, allDay, color: EDITOR_COLORS[0], description: '' } });
+    }
+
+    private updateEditor(patch: Partial<Editor>): void {
+        if (this.state.editor) {
+            this.setState({ editor: { ...this.state.editor, ...patch } });
+        }
+    }
+
+    private toggleEditorAllDay(allDay: boolean): void {
+        const ed = this.state.editor;
+        if (!ed) {
+            return;
+        }
+        if (allDay) {
+            this.updateEditor({ allDay: true, start: ed.start.slice(0, 10), end: ed.end.slice(0, 10) });
+        } else {
+            const s = ed.start.length >= 16 ? ed.start : `${ed.start.slice(0, 10)}T09:00`;
+            const e = ed.end.length >= 16 ? ed.end : `${ed.end.slice(0, 10)}T10:00`;
+            this.updateEditor({ allDay: false, start: s, end: e });
+        }
+    }
+
+    private editorCancel = (): void => {
+        this.setState({ editor: null });
+    };
+
+    private editorCreate = (): void => {
+        const ed = this.state.editor;
+        if (!ed) {
+            return;
+        }
+        const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
+        this.fireEvent('onEventCreate', {
+            id: `evt-${new Date().getTime()}`,
+            title: ed.title || 'New event',
+            start: norm(ed.start),
+            end: norm(ed.end),
+            allDay: ed.allDay,
+            color: ed.color,
+            description: ed.description
+        });
+        this.setState({ editor: null });
+    };
 
     // --- window / ranges ---------------------------------------------------
     private mondayFirst(): boolean {
@@ -386,12 +454,19 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             if (g.moved && preview) {
                 this.fireEvent('onEventResize', { ...this.eventPayload(g.ev!), newEnd: this.iso(preview.dayIso, preview.endMin) });
             }
-        } else {
-            if (g.moved && preview && this.props.props.selectable) {
-                this.fireEvent('onSelect', { start: this.iso(preview.dayIso, preview.startMin), end: this.iso(preview.dayIso, preview.endMin), allDay: false });
+        } else if (g.moved && preview && this.props.props.selectable) {
+            const start = this.iso(preview.dayIso, preview.startMin);
+            const end = this.iso(preview.dayIso, preview.endMin);
+            if (this.useEditor()) {
+                this.openEditor(start, end, false);
             } else {
-                this.fireEvent('onDateClick', { date: g.origDayIso });
+                this.fireEvent('onSelect', { start, end, allDay: false });
             }
+        } else if (this.useEditor()) {
+            // a plain click on empty time -> editor with a default one-hour slot
+            this.openEditor(this.iso(g.origDayIso, 9 * 60), this.iso(g.origDayIso, 10 * 60), false);
+        } else {
+            this.fireEvent('onDateClick', { date: g.origDayIso });
         }
     };
 
@@ -424,7 +499,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     private onDayClick = (iso: string): void => {
-        this.fireEvent('onDateClick', { date: iso });
+        if (this.useEditor()) {
+            this.openEditor(iso, iso, true);   // month: an all-day event on that day
+        } else {
+            this.fireEvent('onDateClick', { date: iso });
+        }
     };
 
     // --- toolbar -----------------------------------------------------------
@@ -624,6 +703,69 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** The built-in new-event editor popover (centered modal, portaled to body). */
+    private renderEditor(): React.ReactNode {
+        const ed = this.state.editor;
+        if (!ed) {
+            return null;
+        }
+        const dtType = ed.allDay ? 'date' : 'datetime-local';
+        return ReactDOM.createPortal(
+            <div className="cal-editor-backdrop" onMouseDown={this.editorCancel}>
+                <div
+                    className="cal-editor"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { this.editorCancel(); } }}
+                >
+                    <div className="cal-editor-head">New event</div>
+                    <label className="cal-editor-field">
+                        <span>Title</span>
+                        <input
+                            type="text" autoFocus value={ed.title} placeholder="Event title"
+                            onChange={(e) => this.updateEditor({ title: e.target.value })}
+                        />
+                    </label>
+                    <label className="cal-editor-check">
+                        <input type="checkbox" checked={ed.allDay} onChange={(e) => this.toggleEditorAllDay(e.target.checked)} />
+                        <span>All day</span>
+                    </label>
+                    <div className="cal-editor-row">
+                        <label className="cal-editor-field">
+                            <span>Start</span>
+                            <input type={dtType} value={ed.start} onChange={(e) => this.updateEditor({ start: e.target.value })} />
+                        </label>
+                        <label className="cal-editor-field">
+                            <span>End</span>
+                            <input type={dtType} value={ed.end} onChange={(e) => this.updateEditor({ end: e.target.value })} />
+                        </label>
+                    </div>
+                    <div className="cal-editor-field">
+                        <span>Colour</span>
+                        <div className="cal-editor-swatches">
+                            {EDITOR_COLORS.map((c) => (
+                                <button
+                                    type="button" key={c}
+                                    className={`cal-editor-swatch${ed.color === c ? ' is-selected' : ''}`}
+                                    style={{ background: c }}
+                                    onClick={() => this.updateEditor({ color: c })}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <label className="cal-editor-field">
+                        <span>Notes</span>
+                        <textarea rows={2} value={ed.description} onChange={(e) => this.updateEditor({ description: e.target.value })} />
+                    </label>
+                    <div className="cal-editor-actions">
+                        <button type="button" className="cal-editor-btn" onClick={this.editorCancel}>Cancel</button>
+                        <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={this.editorCreate}>Create</button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        );
+    }
+
     /** The events to render for the current window, with recurring series expanded. */
     private visibleEvents(): CalEvent[] {
         const r = this.visibleRange();
@@ -750,6 +892,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     : this.props.props.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}
                 {this.renderHoverPopover()}
+                {this.renderEditor()}
             </div>
         );
     }
@@ -775,6 +918,7 @@ export class CalendarMeta implements ComponentMeta {
             showToolbar: tree.readBoolean('config.showToolbar', true),
             editable: tree.readBoolean('config.editable', false),
             selectable: tree.readBoolean('config.selectable', false),
+            builtInEditor: tree.readBoolean('config.builtInEditor', false),
             weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
             locale: tree.readString('config.locale', ''),
             showWeekends: tree.readBoolean('config.showWeekends', true),

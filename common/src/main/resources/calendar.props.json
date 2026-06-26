@@ -34,6 +34,11 @@
                     "default": false,
                     "description": "Week/Day: allow dragging over empty time to select a range, firing onSelect (use it to open your own 'new event' editor)."
                 },
+                "builtInEditor": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true (with selectable), creating an event opens a built-in editor popover (title, time, colour, notes). Clicking Create fires onEventCreate with the configured event — you still persist it into data.events."
+                },
                 "showToolbar": {
                     "type": "boolean",
                     "default": true,

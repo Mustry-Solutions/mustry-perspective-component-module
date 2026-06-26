@@ -13,7 +13,7 @@
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "Calendar demo — editable. Drag empty time to create, drag an event to move, drag its bottom edge to resize. Edits persist (see the onSelect / onEventDrop / onEventResize scripts on the calendar).", "style": { "fontSize": "13px" } },
+        "props": { "text": "Calendar demo — editable. Drag empty time to create (a built-in editor pops open), drag an event to move, drag its bottom edge to resize. Edits persist via the onEventCreate / onEventDrop / onEventResize scripts on the calendar.", "style": { "fontSize": "13px" } },
         "meta": { "name": "help" },
         "position": { "x": 16, "y": 10, "width": 960, "height": 40 }
       },
@@ -21,7 +21,7 @@
         "type": "mustrysolutions.display.calendar",
         "version": 0,
         "props": {
-          "config": { "view": "week", "editable": true, "selectable": true, "scrollToHour": 8 },
+          "config": { "view": "week", "editable": true, "selectable": true, "builtInEditor": true, "scrollToHour": 8 },
           "data": {
             "events": [
               { "id": "seed-1", "title": "Standup", "start": "2026-06-24T09:00:00", "end": "2026-06-24T09:30:00", "color": "#0c7bb3", "description": "Daily team sync in the control room. Review overnight alarms and the day's PM tasks." },
@@ -34,6 +34,15 @@
         "position": { "x": 16, "y": 56, "width": 968, "height": 640 },
         "events": {
           "component": {
+            "onEventCreate": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tevents = list(self.props.data.events)\n\tevents.append({\"id\": event.id, \"title\": event.title, \"start\": event.start, \"end\": event.end, \"allDay\": event.allDay, \"color\": event.color, \"description\": event.description})\n\tself.props.data.events = events"
+                }
+              }
+            ],
             "onSelect": [
               {
                 "type": "script",

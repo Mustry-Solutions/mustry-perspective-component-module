@@ -1,0 +1,12 @@
+{
+    "type": "object",
+    "properties": {
+        "id": { "type": "string", "description": "A generated id for the new event (override if your store assigns one)." },
+        "title": { "type": "string", "description": "The entered title." },
+        "start": { "type": "string", "description": "Start (ISO; date-only when all-day)." },
+        "end": { "type": "string", "description": "End (ISO; date-only when all-day)." },
+        "allDay": { "type": "boolean", "description": "Whether the event is all-day." },
+        "color": { "type": "string", "description": "The chosen colour." },
+        "description": { "type": "string", "description": "The entered notes." }
+    }
+}

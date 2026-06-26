@@ -46,6 +46,10 @@ public class Calendar {
     public static final JsonSchema ON_EVENT_RESIZE_SCHEMA = JsonSchema.parse(
         Calendar.class.getResourceAsStream("/calendar.oneventresize.event.json"));
 
+    /** Payload schema for the onEventCreate component event (built-in editor). */
+    public static final JsonSchema ON_EVENT_CREATE_SCHEMA = JsonSchema.parse(
+        Calendar.class.getResourceAsStream("/calendar.oneventcreate.event.json"));
+
     /** The descriptor registered with Perspective's component registries. */
     public static final ComponentDescriptor DESCRIPTOR = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
         .setPaletteCategory(MustrySolutionsPerspectiveComponentsModule.COMPONENT_CATEGORY)
@@ -76,7 +80,11 @@ public class Calendar {
             new ComponentEventDescriptor(
                 "onEventResize",
                 "Fires when an event's bottom edge is dragged to change its end (editable).",
-                ON_EVENT_RESIZE_SCHEMA)))
+                ON_EVENT_RESIZE_SCHEMA),
+            new ComponentEventDescriptor(
+                "onEventCreate",
+                "Fires from the built-in editor's Create button with the configured new event.",
+                ON_EVENT_CREATE_SCHEMA)))
         .setResources(MustrySolutionsPerspectiveComponentsModule.BROWSER_RESOURCES)
         .build();
 }
