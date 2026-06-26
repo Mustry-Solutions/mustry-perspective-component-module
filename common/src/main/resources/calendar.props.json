@@ -115,6 +115,10 @@
                                 "type": "string",
                                 "description": "Chip colour (any CSS colour). Defaults to the theme accent."
                             },
+                            "description": {
+                                "type": "string",
+                                "description": "Optional detail text shown in the hover popover."
+                            },
                             "display": {
                                 "enum": ["default", "background"],
                                 "description": "'background' renders a translucent band behind events (week/day) — e.g. downtime or availability windows."

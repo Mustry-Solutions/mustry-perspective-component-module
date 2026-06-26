@@ -22,8 +22,9 @@ export interface CalEvent {
     end?: string;
     allDay?: boolean;
     color?: string;
-    display?: string;   // 'background' renders a translucent band behind events
-    rrule?: RRule;      // when set, the event recurs (expanded per visible window)
+    description?: string;  // shown in the hover detail popover
+    display?: string;      // 'background' renders a translucent band behind events
+    rrule?: RRule;         // when set, the event recurs (expanded per visible window)
 }
 
 export interface DayCell {

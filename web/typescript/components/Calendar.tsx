@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import {
     Component,
     ComponentMeta,
@@ -26,6 +27,7 @@ import {
     allDayEventsForDay,
     backgroundBandsForDay,
     expandEvents,
+    isTimed,
     timeMinutes,
     snapMinutes,
     minuteFromOffset,
@@ -85,10 +87,16 @@ export interface CalendarProps {
     events: CalEvent[];
 }
 
+interface HoverInfo {
+    event: CalEvent;
+    rect: { top: number; bottom: number; left: number; right: number };
+}
+
 interface CalendarState {
     view: CalView;
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
+    hover: HoverInfo | null;   // event under the cursor -> detail popover
 }
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
@@ -98,9 +106,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private gesture: Gesture | null = null;
     private colRects: Array<{ day: string; rect: DOMRect }> = [];
 
+    private hoverTimer = 0;
+
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { view: props.props.view || 'month', cursor: today(), preview: null };
+        this.state = { view: props.props.view || 'month', cursor: today(), preview: null, hover: null };
     }
 
     componentDidMount(): void {
@@ -114,12 +124,44 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     componentWillUnmount(): void {
         this.removeDocListeners();
+        this.clearHoverTimer();
     }
 
     private fireEvent(name: string, payload: object): void {
         if (this.props.eventsEnabled) {
             this.props.componentEvents.fireComponentEvent(name, payload);
         }
+    }
+
+    // --- hover detail popover ---------------------------------------------
+    private clearHoverTimer(): void {
+        if (this.hoverTimer) {
+            window.clearTimeout(this.hoverTimer);
+            this.hoverTimer = 0;
+        }
+    }
+
+    private hideHover(): void {
+        this.clearHoverTimer();
+        if (this.state.hover) {
+            this.setState({ hover: null });
+        }
+    }
+
+    private onEventHover = (ev: CalEvent, e: React.MouseEvent): void => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+        this.clearHoverTimer();
+        this.hoverTimer = window.setTimeout(() => this.setState({ hover: { event: ev, rect } }), 350);
+    };
+
+    private onEventLeave = (): void => {
+        this.hideHover();
+    };
+
+    /** Common hover props for any event element (chip / block / list row). */
+    private hoverProps(ev: CalEvent): { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void } {
+        return { onMouseEnter: (e) => this.onEventHover(ev, e), onMouseLeave: this.onEventLeave };
     }
 
     // --- window / ranges ---------------------------------------------------
@@ -241,6 +283,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         // Always start a gesture so a plain click resolves to onEventClick; only the
         // drag/preview behaviour is gated on `editable`.
         e.stopPropagation();
+        this.hideHover();
         const { s, e: end } = this.eventMinutes(ev);
         const day = ev.start.slice(0, 10);
         this.captureCols();
@@ -273,6 +316,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     private startCreate = (dayIso: string, e: React.MouseEvent): void => {
+        this.hideHover();
         this.captureCols();
         const col = this.colRects.filter((c) => c.day === dayIso)[0];
         if (!col) {
@@ -419,6 +463,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                 <button
                                     type="button" className="cal-list-event" key={ev.id || i}
                                     onClick={(e) => this.onEventClick(ev, e)}
+                                    {...this.hoverProps(ev)}
                                 >
                                     <span className="cal-list-dot" style={{ background: ev.color || 'var(--cal-accent)' }} />
                                     <span className="cal-list-time">
@@ -476,6 +521,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             type="button" className="cal-event" key={ev.id || i} title={ev.title}
                             style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                             onClick={(e) => this.onEventClick(ev, e)}
+                            {...this.hoverProps(ev)}
                         >{ev.title}</button>
                     ))}
                     {more > 0 && <div className="cal-more">+{more} more</div>}
@@ -534,6 +580,46 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** Hover detail popover (portaled to escape the calendar's clipping). */
+    private renderHoverPopover(): React.ReactNode {
+        const h = this.state.hover;
+        if (!h) {
+            return null;
+        }
+        const ev = h.event;
+        const { locale } = this.props.props;
+        const width = 240;
+        let left = h.rect.right + 8;
+        if (left + width > window.innerWidth - 8) {
+            left = Math.max(8, h.rect.left - width - 8);
+        }
+        const top = Math.max(8, Math.min(h.rect.top, window.innerHeight - 130));
+        const sDate = parseDate(ev.start);
+        const dateStr = sDate ? intlFormat(locale, { weekday: 'short', month: 'short', day: 'numeric' }).format(sDate) : '';
+        let timeStr: string;
+        if (isTimed(ev)) {
+            const sMin = timeMinutes(ev.start) as number;
+            let eMin = ev.end && ev.end.slice(0, 10) === ev.start.slice(0, 10) ? timeMinutes(ev.end) : null;
+            if (eMin === null || eMin <= sMin) {
+                eMin = sMin + DEFAULT_DUR_MIN;
+            }
+            timeStr = `${dateStr} · ${this.hhmm(sMin)} – ${this.hhmm(eMin)}`;
+        } else {
+            timeStr = `All day · ${dateStr}`;
+        }
+        return ReactDOM.createPortal(
+            <div className="cal-popover" style={{ top, left, width }}>
+                <div className="cal-popover-title">
+                    <span className="cal-popover-dot" style={{ background: ev.color || 'var(--cal-accent)' }} />
+                    <span>{ev.title}</span>
+                </div>
+                <div className="cal-popover-time">{timeStr}</div>
+                {ev.description ? <div className="cal-popover-desc">{ev.description}</div> : null}
+            </div>,
+            document.body
+        );
+    }
+
     /** The events to render for the current window, with recurring series expanded. */
     private visibleEvents(): CalEvent[] {
         const r = this.visibleRange();
@@ -576,12 +662,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     type="button" className="cal-event" key={ev.id || i} title={ev.title}
                                     style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                                     onClick={(e) => this.onEventClick(ev, e)}
+                                    {...this.hoverProps(ev)}
                                 >{ev.title}</button>
                             ))}
                         </div>
                     ))}
                 </div>
-                <div className="cal-tg-scroll" ref={this.scrollRef}>
+                <div className="cal-tg-scroll" ref={this.scrollRef} onScroll={() => this.hideHover()}>
                     <div className="cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
                         <div className="cal-tg-gutter">
                             {hours.map((h) => (
@@ -628,6 +715,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                                 ...(ev.color ? { ['--ev' as string]: ev.color } : {})
                                             } as React.CSSProperties}
                                             onMouseDown={(e) => this.startMove(ev, e)}
+                                            {...this.hoverProps(ev)}
                                         >
                                             {ev.title}
                                             {height >= 34 && <span className="cal-tg-time">{this.hhmm(it.startMin)}–{this.hhmm(it.endMin)}</span>}
@@ -657,6 +745,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 {this.state.view === 'month' ? this.renderMonth()
                     : this.state.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}
+                {this.renderHoverPopover()}
             </div>
         );
     }
@@ -696,6 +785,7 @@ export class CalendarMeta implements ComponentMeta {
                 end: e && e.end ? String(e.end) : undefined,
                 allDay: !!(e && e.allDay),
                 color: e && e.color ? String(e.color) : undefined,
+                description: e && e.description ? String(e.description) : undefined,
                 display: e && e.display ? String(e.display) : undefined,
                 rrule: e && e.rrule && e.rrule.freq ? e.rrule : undefined
             }))

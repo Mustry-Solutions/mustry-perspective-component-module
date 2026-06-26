@@ -494,3 +494,51 @@
         white-space: nowrap;
     }
 }
+
+// Hover detail popover — portaled to document.body, so it lives at the top level and
+// pulls in the theme variables itself (same pattern as the date picker's panel).
+.cal-popover {
+    @include cal-theme;
+    position: fixed;
+    z-index: 10001;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-family: inherit;
+    color: var(--cal-text);
+    background: var(--cal-bg);
+    border: 1px solid var(--cal-border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+
+    * { box-sizing: border-box; }
+
+    .cal-popover-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .cal-popover-dot {
+        flex: 0 0 auto;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+    }
+
+    .cal-popover-time {
+        margin-top: 3px;
+        font-size: 11px;
+        color: var(--cal-muted);
+    }
+
+    .cal-popover-desc {
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+}
