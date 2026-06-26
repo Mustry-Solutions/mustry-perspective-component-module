@@ -93,7 +93,6 @@ interface HoverInfo {
 }
 
 interface CalendarState {
-    view: CalView;
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
     hover: HoverInfo | null;   // event under the cursor -> detail popover
@@ -110,7 +109,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { view: props.props.view || 'month', cursor: today(), preview: null, hover: null };
+        this.state = { cursor: today(), preview: null, hover: null };
     }
 
     componentDidMount(): void {
@@ -118,8 +117,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.scrollToHour();
     }
 
-    componentDidUpdate(): void {
+    componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
         this.syncOutput();
+        if (prevProps.props.view !== this.props.props.view) {
+            this.scrollToHour();   // re-scroll the time grid after switching to week/day
+        }
     }
 
     componentWillUnmount(): void {
@@ -171,7 +173,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private days(): DayCol[] {
         const { showWeekends } = this.props.props;
-        if (this.state.view === 'day') {
+        if (this.props.props.view === 'day') {
             const d = this.state.cursor;
             const dow = d.getDay();
             return [{ iso: fmtDate(d), date: d, isToday: fmtDate(d) === fmtDate(today()), isWeekend: dow === 0 || dow === 6 }];
@@ -184,7 +186,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private visibleRange(): { start: string; end: string } {
-        if (this.state.view === 'month') {
+        if (this.props.props.view === 'month') {
             const g = this.monthGrid();
             return { start: g.visibleStart, end: g.visibleEnd };
         }
@@ -194,20 +196,19 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private syncOutput(): void {
         const r = this.visibleRange();
-        const sig = `${this.state.view}|${r.start}|${r.end}`;
+        const sig = `${this.props.props.view}|${r.start}|${r.end}`;
         if (sig === this.lastOutputSig) {
             return;
         }
         this.lastOutputSig = sig;
         const w = this.props.store.props;
-        w.write('output.currentView', this.state.view);
         w.write('output.visibleStart', r.start);
         w.write('output.visibleEnd', r.end);
     }
 
     private scrollToHour(): void {
         const el = this.scrollRef.current;
-        if (el && this.state.view !== 'month') {
+        if (el && this.props.props.view !== 'month') {
             const { scrollToHour, dayStartHour } = this.props.props;
             el.scrollTop = Math.max(0, (scrollToHour - dayStartHour) * SLOT_PX);
         }
@@ -396,7 +397,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     // --- navigation --------------------------------------------------------
     private step(dir: number): void {
-        const { view, cursor } = this.state;
+        const view = this.props.props.view;
+        const cursor = this.state.cursor;
         const next = view === 'month' ? addMonths(cursor, dir)
             : view === 'day' ? addDays(cursor, dir)
                 : addDays(cursor, dir * 7);   // week + list page by week
@@ -407,8 +409,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private next = (): void => this.step(1);
     private goToday = (): void => this.setState({ cursor: today() });
 
+    // `config.view` is the single source of truth and is two-way: switching the view
+    // writes it back so a binding / script can read (and set) the current view.
     private setView(view: CalView): void {
-        this.setState({ view }, () => this.scrollToHour());
+        this.props.store.props.write('config.view', view);
     }
 
     private onEventClick = (ev: CalEvent, e: React.MouseEvent): void => {
@@ -426,10 +430,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     // --- toolbar -----------------------------------------------------------
     private title(): string {
         const { locale } = this.props.props;
-        if (this.state.view === 'month') {
+        if (this.props.props.view === 'month') {
             return monthLabel(this.state.cursor, locale);
         }
-        if (this.state.view === 'day') {
+        if (this.props.props.view === 'day') {
             return intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                 .format(this.state.cursor);
         }
@@ -489,7 +493,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         <button
                             type="button"
                             key={v}
-                            className={`cal-view-btn${this.state.view === v ? ' cal-view-btn--active' : ''}`}
+                            className={`cal-view-btn${this.props.props.view === v ? ' cal-view-btn--active' : ''}`}
                             onClick={() => this.setView(v)}
                         >
                             {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -742,8 +746,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return (
             <div {...this.props.emit({ classes: ['mustry-calendar'] })}>
                 {showToolbar && this.renderToolbar()}
-                {this.state.view === 'month' ? this.renderMonth()
-                    : this.state.view === 'list' ? this.renderList()
+                {this.props.props.view === 'month' ? this.renderMonth()
+                    : this.props.props.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}
                 {this.renderHoverPopover()}
             </div>

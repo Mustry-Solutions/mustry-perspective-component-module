@@ -22,7 +22,7 @@
                 "view": {
                     "enum": ["month", "week", "day", "list"],
                     "default": "month",
-                    "description": "Initial view. The toolbar can switch between Month, Week, Day, and List at runtime."
+                    "description": "The active view (two-way): the toolbar writes the user's choice back here, and setting it switches the view."
                 },
                 "editable": {
                     "type": "boolean",
@@ -158,17 +158,12 @@
         "output": {
             "type": "object",
             "additionalProperties": false,
-            "description": "Read-only. Reflects the current view so bindings can fetch only what's visible.",
+            "description": "Read-only. The visible date window, so bindings can fetch only what's shown. (The active view is config.view — it's two-way.)",
             "default": {
-                "currentView": "month",
                 "visibleStart": "",
                 "visibleEnd": ""
             },
             "properties": {
-                "currentView": {
-                    "type": "string",
-                    "description": "The active view."
-                },
                 "visibleStart": {
                     "type": "string",
                     "description": "First date shown in the grid (ISO 'YYYY-MM-DD'). Bind your query: date >= visibleStart."

@@ -112,7 +112,7 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 | `display` | `"background"` for a downtime/availability band |
 | `rrule` | `{ freq: daily\|weekly\|monthly, interval?, count?, until?, byweekday?[] }` (byweekday: 0=Sun..6=Sat) |
 
-**`output`** (read-only) | `currentView`, `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`).
+**`output`** (read-only) | `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`). The active view is **`config.view`**, which is two-way (the toolbar writes the user's choice back to it).
 
 ### Events
 
