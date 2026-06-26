@@ -112,6 +112,8 @@ After changing a component, render it in a real Perspective session rather than 
 
 ## Roadmap / deferred work
 
+**Next components to build** (ranked by validated demand): see [`docs/component-ideas.md`](docs/component-ideas.md).
+
 ### Prop-schema versioning & migration (deferred)
 
 **Status: not started — deliberately deferred until the component is in real use.**
