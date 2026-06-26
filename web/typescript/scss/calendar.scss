@@ -1,0 +1,186 @@
+// Calendar component styles. Colours come from CSS variables defaulting to the
+// active Perspective theme (same pattern as the date picker), overridable via a
+// style class / project stylesheet: .mustry-calendar { --cal-accent: #...; }
+@mixin cal-theme {
+    --cal-accent: var(--callToAction, #0c7bb3);
+    --cal-accent-text: #ffffff;
+    --cal-text: var(--neutral-90, #1f2937);
+    --cal-muted: var(--neutral-50, #9ca3af);
+    --cal-border: var(--neutral-30, #e5e7eb);
+    --cal-bg: var(--neutral-10, #ffffff);
+    --cal-weekend-bg: var(--neutral-20, #f4f4f4);
+}
+
+.mustry-calendar {
+    @include cal-theme;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    font-family: inherit;
+    color: var(--cal-text);
+    background: var(--cal-bg);
+    border: 1px solid var(--cal-border);
+    border-radius: 8px;
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .cal-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 10px;
+        flex: 0 0 auto;
+    }
+
+    .cal-title {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .cal-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .cal-nav-btn,
+    .cal-today {
+        font-family: inherit;
+        border: 1px solid var(--cal-border);
+        background: var(--cal-bg);
+        color: var(--cal-accent);
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--cal-accent);
+        }
+    }
+
+    .cal-nav-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .cal-today {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .cal-body {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-top: 1px solid var(--cal-border);
+    }
+
+    .cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(var(--cal-cols, 7), 1fr);
+        flex: 0 0 auto;
+    }
+
+    .cal-weekday {
+        padding: 4px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--cal-muted);
+        text-align: right;
+        border-right: 1px solid var(--cal-border);
+        border-bottom: 1px solid var(--cal-border);
+    }
+
+    .cal-weeks {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    // Each week shares the available height; cells scale with the component height.
+    .cal-week {
+        flex: 1 1 0;
+        display: grid;
+        grid-template-columns: repeat(var(--cal-cols, 7), 1fr);
+        min-height: 0;
+    }
+
+    .cal-day {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-height: 0;
+        padding: 2px 4px 4px;
+        overflow: hidden;
+        cursor: pointer;
+        border-right: 1px solid var(--cal-border);
+        border-bottom: 1px solid var(--cal-border);
+    }
+
+    .cal-day--weekend {
+        background: var(--cal-weekend-bg);
+    }
+
+    .cal-day--other {
+        opacity: 0.45;
+    }
+
+    .cal-daynum {
+        align-self: flex-end;
+        font-size: 12px;
+        line-height: 1.4;
+        padding: 0 2px;
+    }
+
+    .cal-day--today .cal-daynum {
+        background: var(--cal-accent);
+        color: var(--cal-accent-text);
+        border-radius: 999px;
+        min-width: 20px;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .cal-events {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .cal-event {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font-family: inherit;
+        font-size: 11px;
+        line-height: 1.4;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--cal-accent);
+        color: var(--cal-accent-text);
+        border: 1px solid var(--cal-accent);
+        cursor: pointer;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cal-more {
+        font-size: 10px;
+        color: var(--cal-muted);
+        padding: 0 2px;
+    }
+}

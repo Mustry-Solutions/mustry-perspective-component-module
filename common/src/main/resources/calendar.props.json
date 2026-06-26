@@ -1,0 +1,124 @@
+{
+    "type": "object",
+    "properties": {
+        "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Calendar behaviour and appearance.",
+            "default": {
+                "view": "month",
+                "showToolbar": true,
+                "weekStart": "monday",
+                "locale": "",
+                "showWeekends": true,
+                "maxEventsPerDay": 3
+            },
+            "properties": {
+                "view": {
+                    "enum": ["month"],
+                    "default": "month",
+                    "description": "Calendar view. M0 ships 'month'; week/day/list views are planned."
+                },
+                "showToolbar": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the header toolbar (previous / next / today + the month title)."
+                },
+                "weekStart": {
+                    "enum": ["monday", "sunday"],
+                    "default": "monday",
+                    "description": "First day of the week."
+                },
+                "locale": {
+                    "type": "string",
+                    "default": "",
+                    "description": "BCP-47 locale for month/weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default."
+                },
+                "showWeekends": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When false, Saturday and Sunday columns are hidden."
+                },
+                "maxEventsPerDay": {
+                    "type": "number",
+                    "default": 3,
+                    "description": "Max event chips shown per day before a '+N more' link. 0 = show all."
+                }
+            }
+        },
+        "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The events to display. Bind 'events' to a query/dataset returning the events for the visible window (see output.visibleStart/visibleEnd).",
+            "default": {
+                "events": []
+            },
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Array of event objects. Rendered in a single pass — feed the whole visible window at once rather than per-event.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Stable identifier, echoed back in onEventClick (use it for write-back)."
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Event label shown on the chip."
+                            },
+                            "start": {
+                                "type": "string",
+                                "description": "Start, ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'."
+                            },
+                            "end": {
+                                "type": "string",
+                                "description": "End (optional), same format as start. Exclusive for all-day multi-day events."
+                            },
+                            "allDay": {
+                                "type": "boolean",
+                                "description": "All-day event (no time-of-day)."
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "Chip colour (any CSS colour). Defaults to the theme accent."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Read-only. Reflects the current view so bindings can fetch only what's visible.",
+            "default": {
+                "currentView": "month",
+                "visibleStart": "",
+                "visibleEnd": ""
+            },
+            "properties": {
+                "currentView": {
+                    "type": "string",
+                    "description": "The active view."
+                },
+                "visibleStart": {
+                    "type": "string",
+                    "description": "First date shown in the grid (ISO 'YYYY-MM-DD'). Bind your query: date >= visibleStart."
+                },
+                "visibleEnd": {
+                    "type": "string",
+                    "description": "One day past the last date shown (ISO 'YYYY-MM-DD'), half-open. Bind your query: date < visibleEnd."
+                }
+            }
+        },
+        "style": {
+            "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+            "default": {
+                "classes": ""
+            }
+        }
+    }
+}

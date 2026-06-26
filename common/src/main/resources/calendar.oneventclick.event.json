@@ -1,0 +1,25 @@
+{
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "The clicked event's id."
+        },
+        "title": {
+            "type": "string",
+            "description": "The clicked event's title."
+        },
+        "start": {
+            "type": "string",
+            "description": "The event's start (as provided in data.events)."
+        },
+        "end": {
+            "type": "string",
+            "description": "The event's end (as provided), if any."
+        },
+        "allDay": {
+            "type": "boolean",
+            "description": "Whether the event is all-day."
+        }
+    }
+}

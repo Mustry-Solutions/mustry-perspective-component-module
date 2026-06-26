@@ -20,21 +20,23 @@ users repeatedly say is *not* a calendar).
 A fourth, learned from the native Equipment Schedule: its edit events carried only
 `eventId`/`itemId`, forcing a second lookup. → **fire complete event payloads.**
 
-## Library: FullCalendar
+## Approach: custom build (no third-party calendar library)
 
-Wrap **FullCalendar** via `@fullcalendar/react` (v6 — peer-supports React 16.14,
-which is Perspective's React). It is the de-facto parity bar; the most-adopted
-third-party calendar module is a FullCalendar wrapper. Building from scratch (as we
-did the date picker) is the wrong call here — the surface (month/week/day/list +
-drag/resize/recurrence/overlap) is exactly what FullCalendar already solves well.
+Decision: **build it ourselves**, no FullCalendar — explicitly to avoid FullCalendar
+Premium (the resource-timeline view is a paid commercial license) and to keep full
+control of theming, behaviour, and dependencies.
 
-**Licensing caveat (important):**
-- Standard views (`daygrid`, `timegrid`, `list`, `interaction`, `rrule`) are **MIT
-  — free.** The MVP and most asks live entirely here.
-- **Resource/Timeline views (the room/equipment/production differentiator) are
-  FullCalendar Premium** — a paid commercial license (GPLv3 option exists only for
-  open-source distribution). So resource-timeline is a deliberate later phase gated
-  on a licensing decision; the free build covers the bulk of demand.
+Honest scoping (this is the trade-off we accept): the *easy* slice of a calendar
+(the month grid) is close to what we already built for the date picker, but the
+*valuable* slice (time-based week/day, overlap packing, drag/resize, recurrence) is
+genuinely hard — that's the ~8–10× effort where a library would have saved months.
+So we build **read-first and in milestones**, landing real value early (month +
+data binding + events) and treating drag/recurrence/resource-timeline as a long
+tail. We do NOT try to reach full "Outlook-style scheduler" parity in one shot.
+
+Where a focused, MIT-licensed helper makes sense we may pull it for a single hard
+sub-problem (e.g. the `rrule` library purely for recurrence *expansion*) — that's
+not a calendar framework and carries no premium licensing.
 
 ## Feature set (phased)
 
@@ -107,45 +109,58 @@ inline descriptions. Component id e.g. `mustrysolutions.display.calendar`.
 - `onEventResize` — `{ event, oldEnd, newEnd }`
 - `onDatesSet` — `{ view, start, end }` (visible range changed → refetch window)
 
-## Technical integration notes
+## Technical notes (custom build)
 
-- **React 16.14:** pin `@fullcalendar/react` v6 (peer supports 16.14). Verify at the
-  M0 spike.
-- **Bundle:** FullCalendar + plugins adds a few hundred KB to `MustryComponents.js`
-  — acceptable one-time load; confirm webpack build/size at M0.
-- **Theming:** FullCalendar v6 exposes `--fc-*` CSS variables. Map them to our
-  Perspective-theme-driven vars (the same pattern as the date picker's `--dtrp-*`
-  → `--callToAction`/`--neutral-*`), so the calendar auto-themes light/dark.
-- **Timezone:** feed `config.timezone` to FullCalendar's `timeZone`; reuse our
-  DST-correct resolution for any wall-clock ↔ instant conversion in payloads.
-- **Pure-logic + tests:** event normalization (prop array → FC events), timezone
-  mapping, and recurrence/visible-range math go in a `calendarLogic.ts` pure module
-  with Jest tests — same pattern as `pickerLogic.ts`.
+- **Second component in the module:** registration is additive — a new
+  `Calendar.java` descriptor, `registerComponent(...)` in both the gateway and
+  designer hooks, and a new entry in `web/typescript/index.ts`'s component array.
+  The bundle (`MustryComponents.js/.css`) and `BROWSER_RESOURCES` are shared.
+- **Reuse `dateUtils`:** month-grid construction (`startOfMonth`, `firstCellOffset`,
+  `addDays`, `weekdayHeaders`), week math (`startOfWeek`), and DST-correct timezone
+  resolution (`resolveZoned`) already exist and carry straight over.
+- **Pure-logic + tests:** all the non-trivial math goes in a `calendarLogic.ts` pure
+  module with Jest tests (same pattern as `pickerLogic.ts`): month-grid weeks, event
+  placement into day cells + "+N more" overflow, multi-day segmentation, and (later)
+  the time-grid **overlap-packing** algorithm and recurrence expansion.
+- **Theming:** define `--cal-*` CSS variables defaulting to the Perspective theme
+  (`--callToAction` / `--neutral-*`) with hex fallbacks — the exact pattern proven on
+  the date picker.
+- **Performance contract:** render the whole visible window from the single bound
+  `events` array in one pass; never per-event work. Emit `output.visibleRange` so the
+  author refetches only the window in view.
 
-## Risks
+## Risks (custom build)
 
-- **FullCalendar Premium** for resource-timeline (v2) — licensing decision required.
+- **Effort tail:** time-grid week/day (overlap packing), drag/resize (pointer math),
+  and recurrence are the hard ~80%. Mitigation: ship read-first, milestone by
+  milestone; don't promise scheduler parity early.
+- **Overlap-packing & drag correctness** are algorithmic — keep them in pure,
+  unit-tested functions so edge cases are pinned down without a browser.
+- **DST on a time grid** — trickier than the picker (which only touched timezone at
+  output). Handle wall-clock ↔ instant carefully in the week/day renderer.
 - **IA's "Planned" calendar** may eventually ship first-party — longevity risk.
-  Mitigate by shipping now and differentiating on industrial bindings, the
-  resource-timeline, and performance.
-- **Bundle size** and **React 16.14** compatibility — both de-risked at the M0 spike.
+  Mitigate by shipping now and differentiating on industrial bindings + performance.
 
 ## Reuse from the existing module
 
-Build/sign/deploy ops scripts; CSS-variable theming → Perspective theme; component-
-events pattern; pure-logic + Jest pattern; the `/verify-component` live harness;
-the `config/data/output/style` schema conventions with rich descriptions.
+Build/sign/deploy ops scripts; `dateUtils` (grid/week/timezone math); CSS-variable
+theming → Perspective theme; component-events pattern; pure-logic + Jest pattern;
+the `/verify-component` live harness; `config/data/output/style` schema conventions.
 
-## Milestones
+## Milestones (custom)
 
-- **M0 — Spike:** wrap `@fullcalendar/react`, render Month from a static events
-  array, deploy + live-verify. De-risks React-16 compat, bundle, theming.
-- **M1 — MVP:** the four views + toolbar + bound events (single pass) + color +
-  `onEventClick`/`onDatesSet` + timezone/locale/week-start.
-- **M2 — Editable:** drag/resize/select-to-create + rich component events.
-- **M3 — Scheduling polish:** RRule, all-day/multi-day, background events, business
-  hours, slot granularity, overflow/overlap, theming polish.
-- **M4 — (optional, licensed):** resource-timeline view.
+- **M0 — Scaffold + Month view (read):** second component registered end-to-end;
+  month grid (reusing `dateUtils`) with events from a bound JSON array placed into
+  day cells + "+N more" overflow; toolbar (prev/next/today + title); `output`
+  visibleRange/currentView; `onEventClick` + `onDateClick`; theming; pure
+  `calendarLogic.ts` + tests. Deploy + live-verify. **← starting here.**
+- **M1 — Week/Day time-grid (read):** the hard renderer — time axis, day columns,
+  events positioned by time, **overlap-packing** (pure, tested); view switcher.
+- **M2 — Editable:** select-to-create, drag-to-move, resize; rich component events
+  (`onSelect`/`onEventDrop`/`onEventResize`) with complete payloads.
+- **M3 — Scheduling polish:** recurrence (RRule expansion), all-day/multi-day
+  segments, background events (downtime overlays), business hours, slot granularity,
+  list view.
 
 Each milestone: pure-logic tested where applicable, and live-verified in a real
 Perspective session before "done".

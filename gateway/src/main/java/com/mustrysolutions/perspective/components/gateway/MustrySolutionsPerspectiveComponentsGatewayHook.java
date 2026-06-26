@@ -11,6 +11,7 @@ import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.perspective.common.api.ComponentRegistry;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 
+import com.mustrysolutions.perspective.components.common.comp.Calendar;
 import com.mustrysolutions.perspective.components.common.comp.DateTimeRangePicker;
 
 /**
@@ -39,6 +40,7 @@ public class MustrySolutionsPerspectiveComponentsGatewayHook extends AbstractGat
         if (this.componentRegistry != null) {
             log.info("Registering Mustry Solutions Perspective components.");
             this.componentRegistry.registerComponent(DateTimeRangePicker.DESCRIPTOR);
+            this.componentRegistry.registerComponent(Calendar.DESCRIPTOR);
         } else {
             log.error("Perspective component registry not found; components not registered.");
         }
@@ -48,6 +50,7 @@ public class MustrySolutionsPerspectiveComponentsGatewayHook extends AbstractGat
     public void shutdown() {
         if (this.componentRegistry != null) {
             this.componentRegistry.removeComponent(DateTimeRangePicker.COMPONENT_ID);
+            this.componentRegistry.removeComponent(Calendar.COMPONENT_ID);
         }
     }
 
