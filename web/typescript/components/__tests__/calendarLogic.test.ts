@@ -1,5 +1,6 @@
 import {
-    buildMonthGrid, eventDays, groupEventsByDay, splitForDay, CalEvent
+    buildMonthGrid, eventDays, groupEventsByDay, splitForDay,
+    weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay, CalEvent
 } from '../calendarLogic';
 
 const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 is a Monday)
@@ -92,5 +93,86 @@ describe('splitForDay', () => {
 
     it('0 cap shows everything', () => {
         expect(splitForDay(mk(10), 0).more).toBe(0);
+    });
+});
+
+describe('weekDays', () => {
+    it('Monday-first week of Wed 2026-06-24 is Mon 22 .. Sun 28', () => {
+        const cols = weekDays(new Date(2026, 5, 24), true, true, td);
+        expect(cols.map((c) => c.iso)).toEqual([
+            '2026-06-22', '2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26', '2026-06-27', '2026-06-28'
+        ]);
+    });
+
+    it('hides weekends -> Mon..Fri', () => {
+        const cols = weekDays(new Date(2026, 5, 24), true, false, td);
+        expect(cols.map((c) => c.iso)).toEqual([
+            '2026-06-22', '2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26'
+        ]);
+    });
+});
+
+describe('timeMinutes / isTimed', () => {
+    it('parses the time part', () => {
+        expect(timeMinutes('2026-06-10T09:30:00')).toBe(570);
+        expect(timeMinutes('2026-06-10')).toBeNull();
+    });
+    it('classifies timed vs all-day', () => {
+        expect(isTimed({ id: '1', title: 'A', start: '2026-06-10T09:00:00' })).toBe(true);
+        expect(isTimed({ id: '1', title: 'A', start: '2026-06-10' })).toBe(false);
+        expect(isTimed({ id: '1', title: 'A', start: '2026-06-10T09:00:00', allDay: true })).toBe(false);
+    });
+});
+
+describe('layoutDayEvents (overlap packing)', () => {
+    const day = '2026-06-24';
+    const ev = (id: string, s: string, e?: string): CalEvent => ({ id, title: id, start: `${day}T${s}`, end: e ? `${day}T${e}` : undefined });
+    const lay = (evs: CalEvent[]) => layoutDayEvents(evs, day, 0, 1440, 30);
+
+    it('non-overlapping events each get a single lane', () => {
+        const r = lay([ev('a', '09:00', '10:00'), ev('b', '11:00', '12:00')]);
+        expect(r.map((x) => [x.event.id, x.lane, x.lanes])).toEqual([['a', 0, 1], ['b', 0, 1]]);
+    });
+
+    it('two overlapping events split into two lanes', () => {
+        const r = lay([ev('a', '09:00', '10:30'), ev('b', '10:00', '11:00')]);
+        expect(r.find((x) => x.event.id === 'a')).toMatchObject({ lane: 0, lanes: 2 });
+        expect(r.find((x) => x.event.id === 'b')).toMatchObject({ lane: 1, lanes: 2 });
+    });
+
+    it('transitive overlap forms one cluster; a freed lane is reused', () => {
+        // c[0-30] & a[0-60] overlap; b[30-90] overlaps a -> all one cluster, 2 lanes
+        const r = lay([ev('a', '00:00', '01:00'), ev('b', '00:30', '01:30'), ev('c', '00:00', '00:30')]);
+        expect(r.every((x) => x.lanes === 2)).toBe(true);
+        const b = r.find((x) => x.event.id === 'b')!;
+        const c = r.find((x) => x.event.id === 'c')!;
+        expect(b.lane).toBe(c.lane); // b reuses c's lane after c ends
+    });
+
+    it('uses the default duration when an event has no end', () => {
+        const r = layoutDayEvents([ev('a', '09:00')], day, 0, 1440, 45);
+        expect(r[0]).toMatchObject({ startMin: 540, endMin: 585 });
+    });
+
+    it('clamps to the window and drops events outside it', () => {
+        const r = layoutDayEvents([ev('a', '06:00', '10:00'), ev('z', '23:00', '23:30')], day, 8 * 60, 18 * 60, 30);
+        expect(r.map((x) => x.event.id)).toEqual(['a']); // 'z' is outside 08:00-18:00
+        expect(r[0].startMin).toBe(8 * 60); // clamped from 06:00 to the window start
+    });
+
+    it('ignores all-day events', () => {
+        const r = lay([{ id: 'all', title: 'all', start: day, allDay: true }, ev('a', '09:00', '10:00')]);
+        expect(r.map((x) => x.event.id)).toEqual(['a']);
+    });
+});
+
+describe('allDayEventsForDay', () => {
+    it('returns all-day / date-only events covering the day, sorted', () => {
+        const events: CalEvent[] = [
+            { id: 'm', title: 'Multi', start: '2026-06-22', end: '2026-06-25', allDay: true },
+            { id: 't', title: 'Timed', start: '2026-06-24T09:00:00' },
+            { id: 'd', title: 'DateOnly', start: '2026-06-24' }
+        ];
+        expect(allDayEventsForDay(events, '2026-06-24').map((e) => e.id)).toEqual(['d', 'm']);
     });
 });

@@ -11,13 +11,16 @@
                 "weekStart": "monday",
                 "locale": "",
                 "showWeekends": true,
-                "maxEventsPerDay": 3
+                "maxEventsPerDay": 3,
+                "dayStartHour": 0,
+                "dayEndHour": 24,
+                "scrollToHour": 7
             },
             "properties": {
                 "view": {
-                    "enum": ["month"],
+                    "enum": ["month", "week", "day"],
                     "default": "month",
-                    "description": "Calendar view. M0 ships 'month'; week/day/list views are planned."
+                    "description": "Initial view. The toolbar can switch between Month, Week, and Day at runtime."
                 },
                 "showToolbar": {
                     "type": "boolean",
@@ -42,7 +45,22 @@
                 "maxEventsPerDay": {
                     "type": "number",
                     "default": 3,
-                    "description": "Max event chips shown per day before a '+N more' link. 0 = show all."
+                    "description": "Month view: max event chips per day before a '+N more' link. 0 = show all."
+                },
+                "dayStartHour": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Week/Day views: first hour shown on the time axis (0-24)."
+                },
+                "dayEndHour": {
+                    "type": "number",
+                    "default": 24,
+                    "description": "Week/Day views: last hour shown on the time axis (0-24, > dayStartHour)."
+                },
+                "scrollToHour": {
+                    "type": "number",
+                    "default": 7,
+                    "description": "Week/Day views: hour scrolled into view initially."
                 }
             }
         },

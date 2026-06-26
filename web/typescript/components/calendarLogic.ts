@@ -3,7 +3,7 @@
 // (Later milestones add time-grid overlap packing and recurrence expansion here.)
 
 import {
-    addDays, fmtDate, firstCellOffset, parseDate, sameDay, startOfMonth, today
+    addDays, fmtDate, firstCellOffset, parseDate, sameDay, startOfMonth, startOfWeek, today
 } from './dateUtils';
 
 export interface CalEvent {
@@ -115,4 +115,127 @@ export function splitForDay(dayEvents: CalEvent[], maxPerDay: number): { shown: 
     // Reserve one slot for the "+N more" line.
     const shown = dayEvents.slice(0, maxPerDay - 1);
     return { shown, more: dayEvents.length - shown.length };
+}
+
+// --- week / day time-grid ---------------------------------------------------
+
+export interface DayCol {
+    iso: string;
+    date: Date;
+    isToday: boolean;
+    isWeekend: boolean;
+}
+
+/** The day columns of the week containing `cursor` (respecting week-start & weekends). */
+export function weekDays(
+    cursor: Date, mondayFirst: boolean, showWeekends: boolean, todayDate: Date = today()
+): DayCol[] {
+    const start = startOfWeek(cursor, mondayFirst);
+    const cols: DayCol[] = [];
+    for (let i = 0; i < 7; i++) {
+        const date = addDays(start, i);
+        const dow = date.getDay();
+        const isWeekend = dow === 0 || dow === 6;
+        if (!showWeekends && isWeekend) {
+            continue;
+        }
+        cols.push({ iso: fmtDate(date), date, isToday: sameDay(date, todayDate), isWeekend });
+    }
+    return cols;
+}
+
+/** Minutes-from-midnight of an ISO datetime's time part, or null if it has none. */
+export function timeMinutes(iso: string): number | null {
+    const m = /T(\d{2}):(\d{2})/.exec(iso);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+/** An event is "timed" if it has a time-of-day and isn't flagged all-day. */
+export function isTimed(ev: CalEvent): boolean {
+    return !ev.allDay && timeMinutes(ev.start) !== null;
+}
+
+export interface TimedLayout {
+    event: CalEvent;
+    startMin: number;  // clamped to the visible window
+    endMin: number;
+    lane: number;      // 0-based column within its overlap cluster
+    lanes: number;     // total columns in that cluster
+}
+
+/**
+ * Lay out the timed events of one day on a vertical time grid: clamp to the visible
+ * window, then pack overlapping events into side-by-side lanes. Events that
+ * transitively overlap form a cluster; each gets a lane index and the cluster's lane
+ * count, from which the renderer derives left/width.
+ */
+export function layoutDayEvents(
+    events: CalEvent[], dayIso: string, winStart: number, winEnd: number, defaultDur: number
+): TimedLayout[] {
+    const items: TimedLayout[] = [];
+    for (const ev of events) {
+        if (!ev || !ev.start || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
+            continue;
+        }
+        const sMin = timeMinutes(ev.start) as number;
+        let eMin: number | null = null;
+        if (ev.end) {
+            const endDay = ev.end.slice(0, 10);
+            if (endDay === dayIso) {
+                eMin = timeMinutes(ev.end);     // ends this day
+            } else if (endDay > dayIso) {
+                eMin = winEnd;                  // continues past this day
+            }
+        }
+        if (eMin === null || eMin <= sMin) {
+            eMin = sMin + defaultDur;           // no usable end -> default duration
+        }
+        const top = Math.max(sMin, winStart);
+        const bot = Math.min(eMin, winEnd);
+        if (bot <= winStart || top >= winEnd) {
+            continue; // entirely outside the visible window
+        }
+        items.push({ event: ev, startMin: top, endMin: Math.max(bot, top + 1), lane: 0, lanes: 1 });
+    }
+    items.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+
+    let i = 0;
+    while (i < items.length) {
+        // Grow a cluster of transitively-overlapping events.
+        let j = i;
+        let clusterEnd = items[i].endMin;
+        while (j + 1 < items.length && items[j + 1].startMin < clusterEnd) {
+            j++;
+            clusterEnd = Math.max(clusterEnd, items[j].endMin);
+        }
+        // Greedy lane assignment within the cluster.
+        const laneEnds: number[] = [];
+        for (let k = i; k <= j; k++) {
+            let placed = false;
+            for (let l = 0; l < laneEnds.length; l++) {
+                if (laneEnds[l] <= items[k].startMin) {
+                    items[k].lane = l;
+                    laneEnds[l] = items[k].endMin;
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                items[k].lane = laneEnds.length;
+                laneEnds.push(items[k].endMin);
+            }
+        }
+        for (let k = i; k <= j; k++) {
+            items[k].lanes = laneEnds.length;
+        }
+        i = j + 1;
+    }
+    return items;
+}
+
+/** All-day (and date-only) events covering `dayIso`, sorted by title. */
+export function allDayEventsForDay(events: CalEvent[], dayIso: string): CalEvent[] {
+    return (events || [])
+        .filter((ev) => ev && ev.start && !isTimed(ev) && eventDays(ev).indexOf(dayIso) >= 0)
+        .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 }

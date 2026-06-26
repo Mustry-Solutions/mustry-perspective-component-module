@@ -183,4 +183,140 @@
         color: var(--cal-muted);
         padding: 0 2px;
     }
+
+    // --- view switcher (toolbar) ---
+    .cal-views {
+        display: flex;
+    }
+
+    .cal-view-btn {
+        font-family: inherit;
+        font-size: 12px;
+        padding: 4px 10px;
+        border: 1px solid var(--cal-border);
+        background: var(--cal-bg);
+        color: var(--cal-accent);
+        cursor: pointer;
+
+        &:first-child { border-radius: 6px 0 0 6px; }
+        &:last-child { border-radius: 0 6px 6px 0; }
+        &:not(:first-child) { border-left: none; }
+    }
+
+    .cal-view-btn--active {
+        background: var(--cal-accent);
+        color: var(--cal-accent-text);
+        border-color: var(--cal-accent);
+    }
+
+    // --- week / day time grid ---
+    .cal-tg {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-top: 1px solid var(--cal-border);
+    }
+
+    .cal-tg-head,
+    .cal-tg-allday,
+    .cal-tg-body {
+        display: grid;
+        grid-template-columns: 52px repeat(var(--cal-cols, 7), 1fr);
+    }
+
+    .cal-tg-gutter-cell {
+        border-right: 1px solid var(--cal-border);
+    }
+
+    .cal-tg-dayhead {
+        padding: 4px 6px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--cal-muted);
+        border-left: 1px solid var(--cal-border);
+        border-bottom: 1px solid var(--cal-border);
+    }
+
+    .cal-tg-dayhead--today {
+        color: var(--cal-accent);
+    }
+
+    .cal-tg-allday {
+        border-bottom: 1px solid var(--cal-border);
+        min-height: 22px;
+        max-height: 70px;
+        overflow-y: auto;
+    }
+
+    .cal-tg-allday-label {
+        font-size: 10px;
+        color: var(--cal-muted);
+        padding: 2px 4px;
+        text-align: right;
+    }
+
+    .cal-tg-allday-col {
+        border-left: 1px solid var(--cal-border);
+        padding: 2px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .cal-tg-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .cal-tg-body {
+        position: relative;
+    }
+
+    .cal-tg-hour {
+        font-size: 10px;
+        color: var(--cal-muted);
+        text-align: right;
+        padding: 1px 4px 0 0;
+        border-right: 1px solid var(--cal-border);
+        box-sizing: border-box;
+    }
+
+    // Day columns: a relative positioning context with hour grid-lines drawn as a
+    // repeating background (line every SLOT_PX, set inline as background-size).
+    .cal-tg-col {
+        position: relative;
+        border-left: 1px solid var(--cal-border);
+        background-image: linear-gradient(to bottom, var(--cal-border) 1px, transparent 1px);
+        background-repeat: repeat-y;
+        cursor: pointer;
+    }
+
+    .cal-tg-event {
+        position: absolute;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 11px;
+        line-height: 1.25;
+        text-align: left;
+        padding: 1px 4px;
+        border-radius: 4px;
+        background: var(--cal-accent);
+        color: var(--cal-accent-text);
+        border: 1px solid var(--cal-accent);
+        overflow: hidden;
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    .cal-tg-now {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 0;
+        border-top: 2px solid #e11d48;
+        z-index: 2;
+    }
 }
