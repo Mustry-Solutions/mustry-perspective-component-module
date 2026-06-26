@@ -3,8 +3,17 @@
 // (Later milestones add time-grid overlap packing and recurrence expansion here.)
 
 import {
-    addDays, fmtDate, firstCellOffset, pad2, parseDate, sameDay, startOfMonth, startOfWeek, today
+    addDays, daysBetween, fmtDate, firstCellOffset, pad2, parseDate, sameDay,
+    startOfMonth, startOfWeek, today
 } from './dateUtils';
+
+export interface RRule {
+    freq: 'daily' | 'weekly' | 'monthly';
+    interval?: number;     // every N units (default 1)
+    count?: number;        // max occurrences in the series
+    until?: string;        // ISO 'YYYY-MM-DD', inclusive
+    byweekday?: number[];  // weekly only: 0=Sun .. 6=Sat
+}
 
 export interface CalEvent {
     id: string;
@@ -13,6 +22,8 @@ export interface CalEvent {
     end?: string;
     allDay?: boolean;
     color?: string;
+    display?: string;   // 'background' renders a translucent band behind events
+    rrule?: RRule;      // when set, the event recurs (expanded per visible window)
 }
 
 export interface DayCell {
@@ -174,7 +185,7 @@ export function layoutDayEvents(
 ): TimedLayout[] {
     const items: TimedLayout[] = [];
     for (const ev of events) {
-        if (!ev || !ev.start || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
+        if (!ev || !ev.start || ev.display === 'background' || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
             continue;
         }
         const sMin = timeMinutes(ev.start) as number;
@@ -256,6 +267,131 @@ export function isoDateTime(dayIso: string, min: number): string {
 /** All-day (and date-only) events covering `dayIso`, sorted by title. */
 export function allDayEventsForDay(events: CalEvent[], dayIso: string): CalEvent[] {
     return (events || [])
-        .filter((ev) => ev && ev.start && !isTimed(ev) && eventDays(ev).indexOf(dayIso) >= 0)
+        .filter((ev) => ev && ev.start && ev.display !== 'background' && !isTimed(ev) && eventDays(ev).indexOf(dayIso) >= 0)
         .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+}
+
+export interface BgBand {
+    id: string;
+    startMin: number;
+    endMin: number;
+    color?: string;
+}
+
+/** Timed background events on `dayIso` as clamped bands (no packing — full width). */
+export function backgroundBandsForDay(events: CalEvent[], dayIso: string, winStart: number, winEnd: number): BgBand[] {
+    const out: BgBand[] = [];
+    for (const ev of events) {
+        if (!ev || ev.display !== 'background' || !ev.start || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
+            continue;
+        }
+        const sMin = timeMinutes(ev.start) as number;
+        let eMin = ev.end && ev.end.slice(0, 10) === dayIso ? timeMinutes(ev.end) : winEnd;
+        if (eMin === null || eMin <= sMin) {
+            eMin = sMin + 60;
+        }
+        const top = Math.max(sMin, winStart);
+        const bot = Math.min(eMin, winEnd);
+        if (bot <= winStart || top >= winEnd) {
+            continue;
+        }
+        out.push({ id: ev.id, startMin: top, endMin: Math.max(bot, top + 1), color: ev.color });
+    }
+    return out;
+}
+
+// --- recurrence expansion ---------------------------------------------------
+
+const MAX_OCC = 1000;
+
+/** Occurrence start dates of a recurring series, from its base up to `winEnd`. */
+function occurrenceStartDates(base: Date, r: RRule, winEnd: Date): Date[] {
+    const interval = Math.max(1, r.interval || 1);
+    const until = r.until ? parseDate(r.until) : null;
+    const limit = r.count && r.count > 0 ? r.count : MAX_OCC;
+    const dates: Date[] = [];
+    const pastUntil = (d: Date) => until !== null && d.getTime() > until.getTime();
+
+    if (r.freq === 'weekly' && r.byweekday && r.byweekday.length) {
+        const wds = r.byweekday.slice().sort((a, b) => a - b);
+        const weekRef = addDays(base, -base.getDay()); // Sunday of the base's week
+        for (let k = 0; dates.length < limit && k < MAX_OCC; k++) {
+            const weekBase = addDays(weekRef, k * interval * 7);
+            if (weekBase.getTime() >= winEnd.getTime() || (until && weekBase.getTime() > until.getTime())) {
+                break;
+            }
+            for (const wd of wds) {
+                const d = addDays(weekBase, wd);
+                if (d.getTime() < base.getTime() || pastUntil(d) || d.getTime() >= winEnd.getTime()) {
+                    continue;
+                }
+                if (dates.length < limit) {
+                    dates.push(d);
+                }
+            }
+        }
+        return dates;
+    }
+
+    for (let n = 0; dates.length < limit && n < MAX_OCC; n++) {
+        let d: Date;
+        if (r.freq === 'daily') {
+            d = addDays(base, n * interval);
+        } else if (r.freq === 'weekly') {
+            d = addDays(base, n * interval * 7);
+        } else {
+            d = new Date(base.getFullYear(), base.getMonth() + n * interval, base.getDate());
+            if (d.getDate() !== base.getDate()) {
+                continue; // skipped a short month (e.g. day 31)
+            }
+        }
+        if (pastUntil(d) || d.getTime() >= winEnd.getTime()) {
+            break;
+        }
+        dates.push(d);
+    }
+    return dates;
+}
+
+function expandOne(ev: CalEvent, winStart: Date, winEnd: Date): CalEvent[] {
+    const base = parseDate(ev.start);
+    if (!base || !ev.rrule) {
+        return [ev];
+    }
+    const startTime = ev.start.length > 10 ? ev.start.slice(10) : '';
+    const baseEnd = ev.end ? parseDate(ev.end) : null;
+    const endOffsetDays = baseEnd ? daysBetween(base, baseEnd) : 0;
+    const endTime = ev.end && ev.end.length > 10 ? ev.end.slice(10) : '';
+    const out: CalEvent[] = [];
+    for (const d of occurrenceStartDates(base, ev.rrule, winEnd)) {
+        if (d.getTime() < winStart.getTime()) {
+            continue; // before the visible window
+        }
+        out.push({
+            ...ev,
+            id: `${ev.id}::${fmtDate(d)}`,
+            start: fmtDate(d) + startTime,
+            end: ev.end ? fmtDate(addDays(d, endOffsetDays)) + endTime : undefined,
+            rrule: undefined
+        });
+    }
+    return out;
+}
+
+/** Expand recurring events into concrete occurrences within [winStart, winEnd). */
+export function expandEvents(events: CalEvent[], winStart: Date, winEnd: Date): CalEvent[] {
+    const out: CalEvent[] = [];
+    for (const ev of events) {
+        if (!ev || !ev.start) {
+            continue;
+        }
+        if (ev.rrule && ev.rrule.freq) {
+            for (const occ of expandOne(ev, winStart, winEnd)) {
+                out.push(occ);
+            }
+        } else {
+            out.push(ev);
+        }
+    }
+    return out;
 }

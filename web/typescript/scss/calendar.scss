@@ -352,4 +352,80 @@
         pointer-events: none;
         z-index: 3;
     }
+
+    // Background (downtime / availability) bands behind the events.
+    .cal-tg-bg {
+        position: absolute;
+        left: 0;
+        right: 0;
+        background: var(--neutral-20, #f0f0f0);
+        opacity: 0.55;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    // --- list / agenda view ---
+    .cal-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        border-top: 1px solid var(--cal-border);
+    }
+
+    .cal-list-empty {
+        padding: 16px;
+        color: var(--cal-muted);
+        text-align: center;
+    }
+
+    .cal-list-date {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--cal-muted);
+        padding: 6px 12px 4px;
+        border-bottom: 1px solid var(--cal-border);
+    }
+
+    .cal-list-date--today {
+        color: var(--cal-accent);
+    }
+
+    .cal-list-event {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 13px;
+        text-align: left;
+        padding: 5px 12px;
+        cursor: pointer;
+        color: var(--cal-text);
+
+        &:hover {
+            background: var(--cal-weekend-bg);
+        }
+    }
+
+    .cal-list-dot {
+        flex: 0 0 auto;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .cal-list-time {
+        flex: 0 0 auto;
+        width: 56px;
+        color: var(--cal-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cal-list-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }

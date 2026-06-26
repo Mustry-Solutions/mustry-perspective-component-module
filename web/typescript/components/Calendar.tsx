@@ -13,6 +13,7 @@ import {
     fmtDate,
     intlFormat,
     monthLabel,
+    parseDate,
     startOfMonth,
     today
 } from './dateUtils';
@@ -23,6 +24,8 @@ import {
     weekDays,
     layoutDayEvents,
     allDayEventsForDay,
+    backgroundBandsForDay,
+    expandEvents,
     timeMinutes,
     snapMinutes,
     minuteFromOffset,
@@ -37,7 +40,7 @@ import {
 export const COMPONENT_TYPE = 'mustrysolutions.display.calendar';
 
 type WeekStart = 'monday' | 'sunday';
-type CalView = 'month' | 'week' | 'day';
+type CalView = 'month' | 'week' | 'day' | 'list';
 
 const SLOT_PX = 42;         // pixels per hour on the time grid
 const DEFAULT_DUR_MIN = 60; // assumed duration for a timed event with no end
@@ -60,6 +63,8 @@ interface Gesture {
 interface Preview {
     mode: GestureMode;
     eventId?: string;
+    title?: string;
+    color?: string;
     dayIso: string;
     startMin: number;
     endMin: number;
@@ -239,7 +244,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.addDocListeners();
         if (this.props.props.editable) {
             e.preventDefault();
-            this.setState({ preview: { mode: 'move', eventId: ev.id, dayIso: day, startMin: s, endMin: end } });
+            this.setState({ preview: { mode: 'move', eventId: ev.id, title: ev.title, color: ev.color, dayIso: day, startMin: s, endMin: end } });
         }
     };
 
@@ -257,7 +262,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             origStartMin: s, origEndMin: end, durationMin: end - s, origDayIso: day, moved: false
         };
         this.addDocListeners();
-        this.setState({ preview: { mode: 'resize', eventId: ev.id, dayIso: day, startMin: s, endMin: end } });
+        this.setState({ preview: { mode: 'resize', eventId: ev.id, title: ev.title, color: ev.color, dayIso: day, startMin: s, endMin: end } });
     };
 
     private startCreate = (dayIso: string, e: React.MouseEvent): void => {
@@ -292,11 +297,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const col = this.colAt(e.clientX) || this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
             const start = Math.max(winStart, Math.min(winEnd - g.durationMin, g.origStartMin + delta));
-            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, dayIso: col.day, startMin: start, endMin: start + g.durationMin } });
+            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: g.ev!.color, dayIso: col.day, startMin: start, endMin: start + g.durationMin } });
         } else if (g.mode === 'resize') {
             const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
             const end = Math.max(g.origStartMin + SNAP_MIN, Math.min(winEnd, g.origEndMin + delta));
-            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, dayIso: g.origDayIso, startMin: g.origStartMin, endMin: end } });
+            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: g.ev!.color, dayIso: g.origDayIso, startMin: g.origStartMin, endMin: end } });
         } else if (this.props.props.selectable) {
             const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const cur = this.minuteAtY(col.rect, e.clientY);
@@ -342,8 +347,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private step(dir: number): void {
         const { view, cursor } = this.state;
         const next = view === 'month' ? addMonths(cursor, dir)
-            : view === 'week' ? addDays(cursor, dir * 7)
-                : addDays(cursor, dir);
+            : view === 'day' ? addDays(cursor, dir)
+                : addDays(cursor, dir * 7);   // week + list page by week
         this.setState({ cursor: next });
     }
 
@@ -385,8 +390,45 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return `${dm.format(a)} – ${dmy.format(b)}`;
     }
 
+    /** Agenda list of the visible week's events, grouped by day. */
+    private renderList(): React.ReactNode {
+        const { locale } = this.props.props;
+        const cols = this.days();
+        const byDay = groupEventsByDay(this.visibleEvents());
+        const dayFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+        const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+        const rows = cols
+            .map((c) => ({ c, evs: byDay[c.iso] || [] }))
+            .filter((r) => r.evs.length > 0);
+        return (
+            <div className="cal-list">
+                {rows.length === 0 && <div className="cal-list-empty">No events</div>}
+                {rows.map(({ c, evs }) => (
+                    <div className="cal-list-day" key={c.iso}>
+                        <div className={`cal-list-date${c.isToday ? ' cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>
+                        {evs.map((ev, i) => {
+                            const tm = timeMinutes(ev.start);
+                            return (
+                                <button
+                                    type="button" className="cal-list-event" key={ev.id || i}
+                                    onClick={(e) => this.onEventClick(ev, e)}
+                                >
+                                    <span className="cal-list-dot" style={{ background: ev.color || 'var(--cal-accent)' }} />
+                                    <span className="cal-list-time">
+                                        {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
+                                    </span>
+                                    <span className="cal-list-title">{ev.title}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     private renderToolbar(): React.ReactNode {
-        const views: CalView[] = ['month', 'week', 'day'];
+        const views: CalView[] = ['month', 'week', 'day', 'list'];
         return (
             <div className="cal-toolbar">
                 <div className="cal-title">{this.title()}</div>
@@ -436,9 +478,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private renderMonth(): React.ReactNode {
-        const { locale, events } = this.props.props;
+        const { locale } = this.props.props;
         const g = this.monthGrid();
-        const byDay = groupEventsByDay(events || []);
+        const byDay = groupEventsByDay(this.visibleEvents());
         const wdFmt = intlFormat(locale, { weekday: 'short' });
         return (
             <div className="cal-body" style={{ ['--cal-cols' as keyof React.CSSProperties]: g.weeks[0].length } as React.CSSProperties}>
@@ -469,20 +511,27 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (p.mode === 'create') {
             return <div className="cal-tg-select" style={{ top, height }} />;
         }
-        const ev = (this.props.props.events || []).filter((e) => e.id === p.eventId)[0];
-        const color = ev && ev.color ? ev.color : undefined;
         return (
             <div
                 className="cal-tg-event cal-tg-event--ghost"
-                style={{ top, height, left: 0, width: 'calc(100% - 3px)', background: color, borderColor: color }}
+                style={{ top, height, left: 0, width: 'calc(100% - 3px)', background: p.color, borderColor: p.color }}
             >
-                {ev ? ev.title : ''}
+                {p.title || ''}
             </div>
         );
     }
 
+    /** The events to render for the current window, with recurring series expanded. */
+    private visibleEvents(): CalEvent[] {
+        const r = this.visibleRange();
+        const s = parseDate(r.start) || today();
+        const e = parseDate(r.end) || today();
+        return expandEvents(this.props.props.events || [], s, e);
+    }
+
     private renderTimeGrid(): React.ReactNode {
-        const { locale, events, editable, dayStartHour, dayEndHour } = this.props.props;
+        const { locale, editable, dayStartHour, dayEndHour } = this.props.props;
+        const events = this.visibleEvents();
         const cols = this.days();
         const winStart = dayStartHour * 60;
         const winEnd = dayEndHour * 60;
@@ -536,7 +585,18 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                 style={{ backgroundSize: `100% ${SLOT_PX}px` }}
                                 onMouseDown={(e) => this.startCreate(c.iso, e)}
                             >
-                                {layoutDayEvents(events || [], c.iso, winStart, winEnd, DEFAULT_DUR_MIN).map((it, i) => {
+                                {backgroundBandsForDay(events, c.iso, winStart, winEnd).map((b, i) => (
+                                    <div
+                                        className="cal-tg-bg"
+                                        key={b.id || `bg${i}`}
+                                        style={{
+                                            top: ((b.startMin - winStart) / 60) * SLOT_PX,
+                                            height: ((b.endMin - b.startMin) / 60) * SLOT_PX,
+                                            background: b.color || undefined
+                                        }}
+                                    />
+                                ))}
+                                {layoutDayEvents(events, c.iso, winStart, winEnd, DEFAULT_DUR_MIN).map((it, i) => {
                                     const ev = it.event;
                                     if (this.state.preview && this.state.preview.eventId === ev.id) {
                                         return null; // hidden while dragging; the ghost is shown instead
@@ -581,7 +641,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return (
             <div {...this.props.emit({ classes: ['mustry-calendar'] })}>
                 {showToolbar && this.renderToolbar()}
-                {this.state.view === 'month' ? this.renderMonth() : this.renderTimeGrid()}
+                {this.state.view === 'month' ? this.renderMonth()
+                    : this.state.view === 'list' ? this.renderList()
+                        : this.renderTimeGrid()}
             </div>
         );
     }
@@ -620,7 +682,9 @@ export class CalendarMeta implements ComponentMeta {
                 start: String((e && e.start) || ''),
                 end: e && e.end ? String(e.end) : undefined,
                 allDay: !!(e && e.allDay),
-                color: e && e.color ? String(e.color) : undefined
+                color: e && e.color ? String(e.color) : undefined,
+                display: e && e.display ? String(e.display) : undefined,
+                rrule: e && e.rrule && e.rrule.freq ? e.rrule : undefined
             }))
         };
     }

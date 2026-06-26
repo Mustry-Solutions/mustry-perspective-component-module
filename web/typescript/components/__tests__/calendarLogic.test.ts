@@ -1,7 +1,8 @@
 import {
     buildMonthGrid, eventDays, groupEventsByDay, splitForDay,
     weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay,
-    snapMinutes, minuteFromOffset, isoDateTime, CalEvent
+    snapMinutes, minuteFromOffset, isoDateTime,
+    expandEvents, backgroundBandsForDay, CalEvent
 } from '../calendarLogic';
 
 const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 is a Monday)
@@ -205,5 +206,66 @@ describe('allDayEventsForDay', () => {
             { id: 'd', title: 'DateOnly', start: '2026-06-24' }
         ];
         expect(allDayEventsForDay(events, '2026-06-24').map((e) => e.id)).toEqual(['d', 'm']);
+    });
+});
+
+describe('backgroundBandsForDay', () => {
+    it('returns timed background events as clamped bands, excludes normal events', () => {
+        const events: CalEvent[] = [
+            { id: 'dt', title: 'Downtime', start: '2026-06-24T02:00:00', end: '2026-06-24T04:00:00', color: '#fee', display: 'background' },
+            { id: 'n', title: 'Normal', start: '2026-06-24T09:00:00' }
+        ];
+        const bands = backgroundBandsForDay(events, '2026-06-24', 0, 1440);
+        expect(bands).toEqual([{ id: 'dt', startMin: 120, endMin: 240, color: '#fee' }]);
+    });
+
+    it('excludes background events from the packed layout', () => {
+        const events: CalEvent[] = [
+            { id: 'dt', title: 'Downtime', start: '2026-06-24T02:00:00', end: '2026-06-24T04:00:00', display: 'background' }
+        ];
+        expect(layoutDayEvents(events, '2026-06-24', 0, 1440, 30)).toEqual([]);
+    });
+});
+
+describe('expandEvents (recurrence)', () => {
+    const win = (a: string, b: string) => [new Date(a + 'T00:00:00'), new Date(b + 'T00:00:00')] as [Date, Date];
+
+    it('passes through non-recurring events unchanged', () => {
+        const e: CalEvent = { id: '1', title: 'One', start: '2026-06-10T09:00:00' };
+        const [s, en] = win('2026-06-01', '2026-07-01');
+        expect(expandEvents([e], s, en)).toEqual([e]);
+    });
+
+    it('daily with interval + count preserves the time of day', () => {
+        const e: CalEvent = { id: 'd', title: 'Daily', start: '2026-06-01T09:00:00', end: '2026-06-01T09:30:00', rrule: { freq: 'daily', interval: 2, count: 3 } };
+        const [s, en] = win('2026-06-01', '2026-07-01');
+        const occ = expandEvents([e], s, en);
+        expect(occ.map((o) => o.start)).toEqual(['2026-06-01T09:00:00', '2026-06-03T09:00:00', '2026-06-05T09:00:00']);
+        expect(occ.map((o) => o.end)).toEqual(['2026-06-01T09:30:00', '2026-06-03T09:30:00', '2026-06-05T09:30:00']);
+        expect(occ.every((o) => o.rrule === undefined)).toBe(true);
+        expect(new Set(occ.map((o) => o.id)).size).toBe(3); // unique per occurrence
+    });
+
+    it('weekly byweekday emits each listed weekday', () => {
+        // base Mon 2026-06-01; Mondays(1) and Wednesdays(3)
+        const e: CalEvent = { id: 'w', title: 'WK', start: '2026-06-01', allDay: true, rrule: { freq: 'weekly', byweekday: [1, 3], until: '2026-06-14' } };
+        const [s, en] = win('2026-06-01', '2026-07-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual([
+            '2026-06-01', '2026-06-03', '2026-06-08', '2026-06-10'
+        ]); // Mon/Wed of weeks 1 & 2, stopped by until 06-14
+    });
+
+    it('monthly keeps the day-of-month and respects until', () => {
+        const e: CalEvent = { id: 'm', title: 'M', start: '2026-01-15', allDay: true, rrule: { freq: 'monthly', until: '2026-04-30' } };
+        const [s, en] = win('2026-01-01', '2027-01-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual([
+            '2026-01-15', '2026-02-15', '2026-03-15', '2026-04-15'
+        ]);
+    });
+
+    it('only emits occurrences inside the window', () => {
+        const e: CalEvent = { id: 'd', title: 'D', start: '2026-06-01', allDay: true, rrule: { freq: 'daily' } };
+        const [s, en] = win('2026-06-10', '2026-06-13');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-10', '2026-06-11', '2026-06-12']);
     });
 });

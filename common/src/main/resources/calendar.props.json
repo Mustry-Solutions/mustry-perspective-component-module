@@ -20,9 +20,9 @@
             },
             "properties": {
                 "view": {
-                    "enum": ["month", "week", "day"],
+                    "enum": ["month", "week", "day", "list"],
                     "default": "month",
-                    "description": "Initial view. The toolbar can switch between Month, Week, and Day at runtime."
+                    "description": "Initial view. The toolbar can switch between Month, Week, Day, and List at runtime."
                 },
                 "editable": {
                     "type": "boolean",
@@ -114,6 +114,37 @@
                             "color": {
                                 "type": "string",
                                 "description": "Chip colour (any CSS colour). Defaults to the theme accent."
+                            },
+                            "display": {
+                                "enum": ["default", "background"],
+                                "description": "'background' renders a translucent band behind events (week/day) — e.g. downtime or availability windows."
+                            },
+                            "rrule": {
+                                "type": "object",
+                                "description": "Optional recurrence. When set, the event repeats and is expanded per visible window.",
+                                "properties": {
+                                    "freq": {
+                                        "enum": ["daily", "weekly", "monthly"],
+                                        "description": "Recurrence frequency."
+                                    },
+                                    "interval": {
+                                        "type": "number",
+                                        "description": "Repeat every N units (default 1)."
+                                    },
+                                    "count": {
+                                        "type": "number",
+                                        "description": "Max number of occurrences in the series."
+                                    },
+                                    "until": {
+                                        "type": "string",
+                                        "description": "Last date (ISO 'YYYY-MM-DD', inclusive)."
+                                    },
+                                    "byweekday": {
+                                        "type": "array",
+                                        "description": "Weekly only: weekdays to repeat on (0=Sun .. 6=Sat).",
+                                        "items": { "type": "number" }
+                                    }
+                                }
                             }
                         }
                     }
