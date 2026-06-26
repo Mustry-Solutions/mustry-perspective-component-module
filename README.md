@@ -108,6 +108,7 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 | `end` | optional; exclusive for all-day multi-day |
 | `allDay` | boolean |
 | `color` | any CSS colour |
+| `description` | optional text shown in the hover popover |
 | `display` | `"background"` for a downtime/availability band |
 | `rrule` | `{ freq: daily\|weekly\|monthly, interval?, count?, until?, byweekday?[] }` (byweekday: 0=Sun..6=Sat) |
 
