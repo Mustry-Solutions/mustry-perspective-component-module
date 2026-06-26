@@ -1,0 +1,12 @@
+{
+    "type": "object",
+    "properties": {
+        "id": { "type": "string", "description": "The moved event's id." },
+        "title": { "type": "string", "description": "The moved event's title." },
+        "start": { "type": "string", "description": "The event's original start." },
+        "end": { "type": "string", "description": "The event's original end, if any." },
+        "allDay": { "type": "boolean", "description": "Whether the event is all-day." },
+        "newStart": { "type": "string", "description": "The new start after the drop, ISO datetime." },
+        "newEnd": { "type": "string", "description": "The new end after the drop, ISO datetime (duration preserved)." }
+    }
+}

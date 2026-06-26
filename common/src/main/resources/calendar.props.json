@@ -8,6 +8,8 @@
             "default": {
                 "view": "month",
                 "showToolbar": true,
+                "editable": false,
+                "selectable": false,
                 "weekStart": "monday",
                 "locale": "",
                 "showWeekends": true,
@@ -21,6 +23,16 @@
                     "enum": ["month", "week", "day"],
                     "default": "month",
                     "description": "Initial view. The toolbar can switch between Month, Week, and Day at runtime."
+                },
+                "editable": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Week/Day: allow dragging events to move them and dragging their bottom edge to resize. The component does not persist changes — handle onEventDrop / onEventResize and write back."
+                },
+                "selectable": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Week/Day: allow dragging over empty time to select a range, firing onSelect (use it to open your own 'new event' editor)."
                 },
                 "showToolbar": {
                     "type": "boolean",

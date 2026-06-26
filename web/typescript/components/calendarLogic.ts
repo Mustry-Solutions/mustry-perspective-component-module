@@ -3,7 +3,7 @@
 // (Later milestones add time-grid overlap packing and recurrence expansion here.)
 
 import {
-    addDays, fmtDate, firstCellOffset, parseDate, sameDay, startOfMonth, startOfWeek, today
+    addDays, fmtDate, firstCellOffset, pad2, parseDate, sameDay, startOfMonth, startOfWeek, today
 } from './dateUtils';
 
 export interface CalEvent {
@@ -231,6 +231,26 @@ export function layoutDayEvents(
         i = j + 1;
     }
     return items;
+}
+
+// --- editing gesture math (pure) -------------------------------------------
+
+/** Round minutes to the nearest `snap`. */
+export function snapMinutes(min: number, snap: number): number {
+    return Math.round(min / snap) * snap;
+}
+
+/** Convert a pixel offset within a day column into snapped, window-clamped minutes. */
+export function minuteFromOffset(
+    offsetY: number, slotPx: number, winStartMin: number, winEndMin: number, snap: number
+): number {
+    const m = winStartMin + (offsetY / slotPx) * 60;
+    return Math.max(winStartMin, Math.min(winEndMin, snapMinutes(m, snap)));
+}
+
+/** Build an ISO 'YYYY-MM-DDTHH:mm:ss' from a day and minutes-from-midnight. */
+export function isoDateTime(dayIso: string, min: number): string {
+    return `${dayIso}T${pad2(Math.floor(min / 60))}:${pad2(min % 60)}:00`;
 }
 
 /** All-day (and date-only) events covering `dayIso`, sorted by title. */

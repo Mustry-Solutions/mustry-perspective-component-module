@@ -1,6 +1,7 @@
 import {
     buildMonthGrid, eventDays, groupEventsByDay, splitForDay,
-    weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay, CalEvent
+    weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay,
+    snapMinutes, minuteFromOffset, isoDateTime, CalEvent
 } from '../calendarLogic';
 
 const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 is a Monday)
@@ -163,6 +164,36 @@ describe('layoutDayEvents (overlap packing)', () => {
     it('ignores all-day events', () => {
         const r = lay([{ id: 'all', title: 'all', start: day, allDay: true }, ev('a', '09:00', '10:00')]);
         expect(r.map((x) => x.event.id)).toEqual(['a']);
+    });
+});
+
+describe('editing gesture math', () => {
+    it('snapMinutes rounds to the nearest step', () => {
+        expect(snapMinutes(7, 15)).toBe(0);
+        expect(snapMinutes(8, 15)).toBe(15);
+        expect(snapMinutes(547, 15)).toBe(540);
+        expect(snapMinutes(548, 15)).toBe(555);
+    });
+
+    it('minuteFromOffset maps pixels to snapped, clamped minutes', () => {
+        // 42px/hour, window 0..1440, snap 15
+        expect(minuteFromOffset(0, 42, 0, 1440, 15)).toBe(0);
+        expect(minuteFromOffset(42, 42, 0, 1440, 15)).toBe(60);     // one hour down
+        expect(minuteFromOffset(63, 42, 0, 1440, 15)).toBe(90);     // 1.5h
+        expect(minuteFromOffset(-100, 42, 0, 1440, 15)).toBe(0);    // clamped to window start
+        expect(minuteFromOffset(99999, 42, 0, 1440, 15)).toBe(1440); // clamped to window end
+    });
+
+    it('minuteFromOffset respects a non-zero window start', () => {
+        // window 8:00..18:00; offset 0 is the top = 480 min
+        expect(minuteFromOffset(0, 42, 480, 1080, 15)).toBe(480);
+        expect(minuteFromOffset(42, 42, 480, 1080, 15)).toBe(540);
+    });
+
+    it('isoDateTime builds a zero-padded ISO datetime', () => {
+        expect(isoDateTime('2026-06-24', 540)).toBe('2026-06-24T09:00:00');
+        expect(isoDateTime('2026-06-24', 9 * 60 + 5)).toBe('2026-06-24T09:05:00');
+        expect(isoDateTime('2026-06-24', 0)).toBe('2026-06-24T00:00:00');
     });
 });
 

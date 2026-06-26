@@ -1,0 +1,8 @@
+{
+    "type": "object",
+    "properties": {
+        "start": { "type": "string", "description": "Selection start, ISO 'YYYY-MM-DDTHH:mm:ss'." },
+        "end": { "type": "string", "description": "Selection end, ISO 'YYYY-MM-DDTHH:mm:ss'." },
+        "allDay": { "type": "boolean", "description": "Whether the selection is all-day." }
+    }
+}

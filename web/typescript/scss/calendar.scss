@@ -319,4 +319,37 @@
         border-top: 2px solid #e11d48;
         z-index: 2;
     }
+
+    // --- editing (week/day) ---
+    .cal-tg-event--draggable {
+        cursor: grab;
+    }
+
+    .cal-tg-resize {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 6px;
+        cursor: ns-resize;
+    }
+
+    // The drag/resize ghost and the create selection rectangle.
+    .cal-tg-event--ghost {
+        opacity: 0.75;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .cal-tg-select {
+        position: absolute;
+        left: 0;
+        right: 3px;
+        background: var(--cal-accent);
+        opacity: 0.25;
+        border: 1px solid var(--cal-accent);
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 3;
+    }
 }
