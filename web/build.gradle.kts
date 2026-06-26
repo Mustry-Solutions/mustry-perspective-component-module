@@ -27,6 +27,21 @@ val webpack by tasks.registering(NpmTask::class) {
     outputs.dir(projectOutput)
 }
 
+// Run the TypeScript unit tests (Jest) via the package.json "test" script.
+val jestTest by tasks.registering(NpmTask::class) {
+    group = "verification"
+    description = "Runs the web (React/TypeScript) unit tests with Jest."
+    args.set(listOf("test"))
+    dependsOn(tasks.named("npmInstall"))
+    inputs.dir("typescript")
+    inputs.files("package.json", "package-lock.json", "jest.config.js", "tsconfig.json", "tsconfig.test.json")
+}
+
+// Hook the JS tests into `gradlew check` (and therefore `build`).
+tasks.named("check") {
+    dependsOn(jestTest)
+}
+
 tasks.named("processResources") {
     dependsOn(webpack)
 }
