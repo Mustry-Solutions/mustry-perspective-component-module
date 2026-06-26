@@ -1,10 +1,10 @@
-.mustry-datetime-range-picker {
-    // --- Theming -------------------------------------------------------------
-    // Every colour comes from a CSS custom property that defaults to the active
-    // Perspective theme (so the component follows light/dark and branding), with a
-    // hard fallback. Override any of these via a Perspective style class on the
-    // component or a rule in the project stylesheet, e.g.
-    //   .mustry-datetime-range-picker { --dtrp-accent: #2e7d32; }
+// --- Theming -----------------------------------------------------------------
+// Every colour comes from a CSS custom property that defaults to the active
+// Perspective theme (so the component follows light/dark and branding), with a
+// hard fallback. Override any of these via a Perspective style class on the
+// component or a rule in the project stylesheet, e.g.
+//   .mustry-datetime-range-picker { --dtrp-accent: #2e7d32; }
+@mixin dtrp-theme {
     --dtrp-accent: var(--callToAction, #0a66c2);
     --dtrp-accent-text: var(--callToActionForeground, #ffffff);
     --dtrp-range: var(--neutral-20, #d6e6f7);
@@ -12,7 +12,10 @@
     --dtrp-muted: var(--neutral-50, #9ca3af);
     --dtrp-border: var(--neutral-30, #e5e7eb);
     --dtrp-bg: var(--neutral-10, #ffffff);
+}
 
+.mustry-datetime-range-picker {
+    @include dtrp-theme;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -305,5 +308,76 @@
         .dtrp-times {
             margin-top: 0;
         }
+    }
+}
+
+// --- popover mode: trigger field + floating panel ---------------------------
+.mustry-dtrp-trigger-root {
+    @include dtrp-theme;
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+
+    * {
+        box-sizing: border-box;
+    }
+
+    &.is-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .dtrp-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        padding: 6px 10px;
+        font-family: inherit;
+        font-size: 13px;
+        text-align: left;
+        color: var(--dtrp-text);
+        background: var(--dtrp-bg);
+        border: 1px solid var(--dtrp-border);
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:disabled {
+            cursor: not-allowed;
+        }
+
+        &:hover:not(:disabled) {
+            border-color: var(--dtrp-accent);
+        }
+    }
+
+    .dtrp-trigger-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dtrp-trigger-icon {
+        flex: 0 0 auto;
+        color: var(--dtrp-muted);
+    }
+}
+
+// The portaled floating calendar panel. It also carries .mustry-datetime-range-picker
+// (for styling + theme vars); these rules win by coming later in the source.
+.dtrp-popover-panel {
+    position: fixed;
+    z-index: 10000;
+    height: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+
+    // Content-sized (no fixed container height to stretch into), so give the grid
+    // fixed-height rows instead of flex-filling.
+    .dtrp-grid {
+        flex: 0 0 auto;
+        grid-auto-rows: 34px;
     }
 }

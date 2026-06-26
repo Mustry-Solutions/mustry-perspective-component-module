@@ -9,6 +9,8 @@
             "description": "Configuration: behaviour, constraints, and layout.",
             "default": {
                 "enabled": true,
+                "display": "inline",
+                "popover": { "placeholder": "Select dates", "closeOnSelect": true },
                 "disableDates": "past",
                 "dateBounds": { "earliest": "", "latest": "" },
                 "spanDays": { "min": 0, "max": 0 },
@@ -44,6 +46,29 @@
                     "type": "boolean",
                     "default": true,
                     "description": "When false, the picker is display-only: all interaction (day clicks, month nav, time/date inputs, presets, clear) is disabled and the component is dimmed. The current selection is still shown."
+                },
+                "display": {
+                    "enum": ["inline", "popover"],
+                    "default": "inline",
+                    "description": "'inline' = the calendar is always visible. 'popover' = a small trigger field shows the selected range and opens the calendar in a floating panel when clicked."
+                },
+                "popover": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Options for display = 'popover'.",
+                    "default": { "placeholder": "Select dates", "closeOnSelect": true },
+                    "properties": {
+                        "placeholder": {
+                            "type": "string",
+                            "default": "Select dates",
+                            "description": "Trigger text shown when no range is selected."
+                        },
+                        "closeOnSelect": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Close the popover automatically once a complete range (or a preset) is chosen."
+                        }
+                    }
                 },
                 "disableDates": {
                     "enum": ["past", "future", "none"],

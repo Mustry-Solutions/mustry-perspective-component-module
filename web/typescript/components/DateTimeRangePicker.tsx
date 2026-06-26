@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import {
     Component,
     ComponentMeta,
@@ -8,6 +9,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
+    intlFormat,
     addDays,
     addMonths,
     clampSec,
@@ -40,6 +42,7 @@ type Granularity = 'day' | 'hour' | 'minute' | 'second';
 type WeekStart = 'monday' | 'sunday';
 type LayoutMode = 'auto' | 'compact' | 'oneMonth' | 'twoMonths';
 type ResolvedLayout = 'compact' | 'oneMonth' | 'twoMonths';
+type DisplayMode = 'inline' | 'popover';
 type PresetUnit = 'hours' | 'days' | 'weeks' | 'months';
 type PresetType = 'rolling' | 'calendar';
 type PresetPeriod =
@@ -72,6 +75,9 @@ interface LabelConfig {
 export interface DateTimeRangePickerProps {
     // configuration
     enabled: boolean;
+    display: DisplayMode;
+    popoverPlaceholder: string;
+    popoverCloseOnSelect: boolean;
     showClear: boolean;
     labels: LabelConfig;
     disableDates: DisableMode;
@@ -103,6 +109,10 @@ interface DateTimeRangePickerState {
     hover: Date | null;       // hovered day during preview
     containerWidth: number;   // measured rendered width, drives compact mode
     containerHeight: number;  // measured rendered height, drives compact mode
+    open: boolean;            // popover panel open (display = 'popover')
+    panelTop: number;
+    panelLeft: number;
+    panelWidth: number;
 }
 
 type DayState = 'empty' | 'disabled' | 'today' | 'default' | 'start' | 'end' | 'inrange' | 'single';
@@ -127,9 +137,24 @@ export class DateTimeRangePicker
             anchor: null,
             hover: null,
             containerWidth: 99999,   // start in full mode until measured
-            containerHeight: 99999
+            containerHeight: 99999,
+            open: false,
+            panelTop: 0,
+            panelLeft: 0,
+            panelWidth: 0
         };
     }
+
+    private triggerEl: HTMLElement | null = null;
+    private panelEl: HTMLElement | null = null;
+
+    private setTriggerEl = (el: HTMLElement | null): void => {
+        this.triggerEl = el;
+    };
+
+    private setPanelEl = (el: HTMLElement | null): void => {
+        this.panelEl = el;
+    };
 
     componentDidMount(): void {
         this.syncOutputs();
@@ -152,6 +177,97 @@ export class DateTimeRangePicker
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
+        }
+        this.removeWindowListeners();
+    }
+
+    // --- popover ----------------------------------------------------------
+    private addWindowListeners(): void {
+        window.addEventListener('mousedown', this.onOutsidePointer, true);
+        window.addEventListener('keydown', this.onKeyDown, true);
+        window.addEventListener('resize', this.reposition, true);
+        window.addEventListener('scroll', this.reposition, true);
+    }
+
+    private removeWindowListeners(): void {
+        window.removeEventListener('mousedown', this.onOutsidePointer, true);
+        window.removeEventListener('keydown', this.onKeyDown, true);
+        window.removeEventListener('resize', this.reposition, true);
+        window.removeEventListener('scroll', this.reposition, true);
+    }
+
+    private openPanel(): void {
+        this.computePanelPosition();
+        this.setState({ open: true });
+        this.addWindowListeners();
+    }
+
+    private closePanel(): void {
+        if (!this.state.open) {
+            return;
+        }
+        this.removeWindowListeners();
+        this.setState({ open: false });
+    }
+
+    private togglePanel = (): void => {
+        if (!this.props.props.enabled) {
+            return;
+        }
+        if (this.state.open) {
+            this.closePanel();
+        } else {
+            this.openPanel();
+        }
+    };
+
+    private onOutsidePointer = (e: MouseEvent): void => {
+        const target = e.target as Node;
+        if ((this.panelEl && this.panelEl.contains(target))
+            || (this.triggerEl && this.triggerEl.contains(target))) {
+            return;
+        }
+        this.closePanel();
+    };
+
+    private onKeyDown = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') {
+            this.closePanel();
+        }
+    };
+
+    private reposition = (): void => {
+        if (this.state.open) {
+            this.computePanelPosition();
+        }
+    };
+
+    /** Anchor the floating panel below the trigger (flip above if there's no room). */
+    private computePanelPosition(): void {
+        const el = this.triggerEl;
+        if (!el) {
+            return;
+        }
+        const rect = el.getBoundingClientRect();
+        const width = this.popoverLayout() === 'twoMonths' ? 600 : 300;
+        const estHeight = 380;
+        const gap = 4;
+        let top = rect.bottom + gap;
+        if (top + estHeight > window.innerHeight && rect.top - gap - estHeight > 0) {
+            top = rect.top - gap - estHeight;
+        }
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+        this.setState({ panelTop: top, panelLeft: left, panelWidth: width });
+    }
+
+    /** Layout inside the popover panel (size-based 'auto' isn't measured here). */
+    private popoverLayout(): ResolvedLayout {
+        return this.props.props.layout === 'twoMonths' ? 'twoMonths' : 'oneMonth';
+    }
+
+    private maybeCloseAfterSelect(): void {
+        if (this.props.props.display === 'popover' && this.props.props.popoverCloseOnSelect) {
+            this.closePanel();
         }
     }
 
@@ -273,6 +389,7 @@ export class DateTimeRangePicker
             write.write('selection.startDate', fmtDate(lo));
             write.write('selection.endDate', fmtDate(hi));
             this.setState({ anchor: null, hover: null });
+            this.maybeCloseAfterSelect();
             return;
         }
 
@@ -408,6 +525,7 @@ export class DateTimeRangePicker
         this.fireEvent('onPresetSelected', {
             label: p.label, type: p.type, amount: p.amount, unit: p.unit, period: p.period
         });
+        this.maybeCloseAfterSelect();
     };
 
     /** Adapt a rolling preset's label to its direction ("Last ..." -> "Next ..." forward). */
@@ -896,9 +1014,7 @@ export class DateTimeRangePicker
         );
     }
 
-    render() {
-        const { emit } = this.props;
-        const mode = this.resolveLayout();
+    private surfaceClasses(mode: ResolvedLayout): string[] {
         const classes = ['mustry-datetime-range-picker'];
         if (!this.props.props.enabled) {
             classes.push('is-disabled');
@@ -909,9 +1025,86 @@ export class DateTimeRangePicker
         if (mode === 'twoMonths') {
             classes.push('is-two-months');
         }
+        return classes;
+    }
+
+    private renderBody(mode: ResolvedLayout): React.ReactNode {
+        return mode === 'compact' ? this.renderCompact() : this.renderFull(mode === 'twoMonths');
+    }
+
+    /** The floating calendar panel for popover mode (portaled to escape clipping). */
+    private renderPanel(): React.ReactNode {
+        const mode = this.popoverLayout();
+        const classes = [...this.surfaceClasses(mode), 'dtrp-popover-panel'];
+        const style: React.CSSProperties = {
+            top: this.state.panelTop,
+            left: this.state.panelLeft,
+            width: this.state.panelWidth
+        };
         return (
-            <div {...emit({ classes })}>
-                {mode === 'compact' ? this.renderCompact() : this.renderFull(mode === 'twoMonths')}
+            <div className={classes.join(' ')} style={style} ref={this.setPanelEl}>
+                {this.renderBody(mode)}
+            </div>
+        );
+    }
+
+    private renderPopover(): React.ReactNode {
+        const { enabled } = this.props.props;
+        const rootClasses = ['mustry-dtrp-trigger-root'];
+        if (!enabled) {
+            rootClasses.push('is-disabled');
+        }
+        return (
+            <div {...this.props.emit({ classes: rootClasses })}>
+                <button
+                    type="button"
+                    className="dtrp-trigger"
+                    ref={this.setTriggerEl}
+                    disabled={!enabled}
+                    aria-haspopup="dialog"
+                    aria-expanded={this.state.open}
+                    onClick={this.togglePanel}
+                >
+                    <span className="dtrp-trigger-text">{this.formatTrigger()}</span>
+                    <svg
+                        className="dtrp-trigger-icon"
+                        width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"
+                    >
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="3" y1="9" x2="21" y2="9" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                    </svg>
+                </button>
+                {this.state.open && ReactDOM.createPortal(this.renderPanel(), document.body)}
+            </div>
+        );
+    }
+
+    /** Trigger text: the formatted range, or the placeholder when nothing is selected. */
+    private formatTrigger(): string {
+        const { startDate, endDate, granularity, locale, popoverPlaceholder } = this.props.props;
+        const s = parseDate(startDate);
+        const e = parseDate(endDate);
+        if (!s || !e) {
+            return popoverPlaceholder;
+        }
+        const opts: Intl.DateTimeFormatOptions = granularity === 'day'
+            ? { year: 'numeric', month: 'short', day: '2-digit' }
+            : { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        const fmt = intlFormat(locale, opts);
+        return `${fmt.format(combine(s, this.effStartSec()))} – ${fmt.format(combine(e, this.effEndSec()))}`;
+    }
+
+    render() {
+        if (this.props.props.display === 'popover') {
+            return this.renderPopover();
+        }
+        const mode = this.resolveLayout();
+        return (
+            <div {...this.props.emit({ classes: this.surfaceClasses(mode) })}>
+                {this.renderBody(mode)}
             </div>
         );
     }
@@ -936,6 +1129,9 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
             // Public prop paths are grouped (config.dateBounds.*, config.spanDays.*,
             // config.breakpoints.*); internal field names are kept flat for brevity.
             enabled: tree.readBoolean('config.enabled', true),
+            display: tree.readString('config.display', 'inline') as DisplayMode,
+            popoverPlaceholder: tree.readString('config.popover.placeholder', 'Select dates'),
+            popoverCloseOnSelect: tree.readBoolean('config.popover.closeOnSelect', true),
             showClear: tree.readBoolean('config.showClear', true),
             labels: {
                 startTime: tree.readString('config.labels.startTime', 'Start time'),

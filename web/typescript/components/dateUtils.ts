@@ -120,7 +120,7 @@ export function fmtDateTime(d: Date): string {
     return `${fmtDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
-function intlFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+export function intlFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
     try {
         return new Intl.DateTimeFormat(locale || undefined, options);
     } catch (e) {
