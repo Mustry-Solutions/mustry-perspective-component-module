@@ -1,5 +1,10 @@
 # Calendar / Scheduler component — build plan
 
+**Status: M0–M3 built, tested, and live-verified** (`mustrysolutions.display.calendar`).
+See the [README Calendar section](../README.md#calendar--scheduler) and the
+[manual test checklist](calendar-manual-test.md). Remaining future polish:
+multi-day spanning *bars* in week/day (per-day chips today).
+
 Researched June 2026 (IA forum + Ideas/Canny portal + FullCalendar). This is the
 strongest validated gap in Perspective: the "Perspective Calendar" idea is at
 **44 votes, status "Planned"**, IA surveyed users in 2023, and there is still no

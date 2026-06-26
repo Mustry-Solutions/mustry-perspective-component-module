@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It currently ships one component — a **Date/Time Range Picker** — with more to follow.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It currently ships two components — a **Date/Time Range Picker** and a **Calendar / Scheduler** — with more to follow.
 
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
@@ -66,6 +66,62 @@ Colours come from CSS custom properties that default to the active Perspective t
 ```
 
 Variables: `--dtrp-accent`, `--dtrp-accent-text`, `--dtrp-range`, `--dtrp-text`, `--dtrp-muted`, `--dtrp-border`, `--dtrp-bg`.
+
+---
+
+## Calendar / Scheduler
+
+A month / week / day / list calendar bound to a list of events. Component id `mustrysolutions.display.calendar`. Built from scratch (no FullCalendar / no third-party licence).
+
+### Features
+
+- **Views** — Month, time-based Week & Day (with overlap-packed events), and a List/agenda view; switchable from the toolbar.
+- **Data-bound** — renders `config.data.events` (a JSON array) in a single pass; emits the visible window so bindings fetch only what's shown.
+- **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
+- **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly), expanded per visible window.
+- **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
+- **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
+
+### How events work — important
+
+The calendar is a **controlled, read-from-data component. It never changes `config.data.events` itself.** To show events, you populate that array (statically, or by binding it to a Named Query / dataset). Editing gestures **only fire component events** — to actually add/move/resize an event you handle the event and write back to your own source:
+
+| To… | Do this |
+|---|---|
+| **Show** events | Set / bind `config.data.events` (bind it to `output.visibleStart`/`visibleEnd` so you only fetch the visible window). |
+| **Add** an event | Set `config.selectable = true`; on **`onSelect`**, open your editor / insert a row, then update `config.data.events` (or re-run your query). |
+| **Move / resize** | Set `config.editable = true`; on **`onEventDrop`** / **`onEventResize`**, persist `newStart`/`newEnd` and update the data. |
+
+So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onSelect`/`onEventDrop`; the event appears only once your handler writes it back into `config.data.events`.
+
+### Property reference
+
+**`config`** | `view` (`month`/`week`/`day`/`list`) · `showToolbar` · `editable` · `selectable` · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
+
+**`config.data.events`** — array of event objects:
+
+| Field | Notes |
+|---|---|
+| `id` | echoed back in events (use for write-back) |
+| `title` | label |
+| `start` | ISO `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm:ss` |
+| `end` | optional; exclusive for all-day multi-day |
+| `allDay` | boolean |
+| `color` | any CSS colour |
+| `display` | `"background"` for a downtime/availability band |
+| `rrule` | `{ freq: daily\|weekly\|monthly, interval?, count?, until?, byweekday?[] }` (byweekday: 0=Sun..6=Sat) |
+
+**`output`** (read-only) | `currentView`, `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`).
+
+### Events
+
+`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`). Payloads are complete so write-back needs no second lookup.
+
+### Theming
+
+Override the `--cal-*` CSS variables via a style class / project stylesheet: `--cal-accent`, `--cal-accent-text`, `--cal-text`, `--cal-muted`, `--cal-border`, `--cal-bg`, `--cal-weekend-bg`. They default to the active Perspective theme.
+
+> Manual test checklist: [`docs/calendar-manual-test.md`](docs/calendar-manual-test.md).
 
 ---
 
