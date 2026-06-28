@@ -49,26 +49,26 @@ ops/verify/project/com.inductiveautomation.perspective/views/CalendarDemo/
 
 1. The calendar renders `config.data.events`.
 2. The demo has `builtInEditor = true`, so creating (drag empty time) and clicking an
-   event open a built-in editor popup; and it wires a **single `onEventsChanged`**
-   script that fires for **every** mutation (create / edit / delete / move / resize)
-   with `{ action, event }`. The script upserts-or-deletes by `id` into
+   event open a built-in editor popup; and it wires a **single `onChange`** script
+   that fires for **every** mutation (create / edit / delete / move / resize) with
+   `{ action, event }`. The script upserts-or-deletes by `id` into
    `self.props.data.events`.
 3. Because `data.events` changed, the calendar **re-renders** and the change appears.
 
-That's the entire pattern: *the component asks "what happened?", your script decides
+That's the entire pattern: *the component asks "what changed?", your script decides
 "what to store", and the calendar just displays whatever's in `data.events`.* In
 production you'd write to a database and re-query instead of mutating the prop, but
 the loop is identical.
 
-> You can also handle the **granular** events instead — `onSelect` / `onEventCreate`
-> (add), `onEventDrop` / `onEventResize` (move/resize), `onEventChange` /
-> `onEventDelete` (editor Save/Delete). `onEventsChanged` is just the one-stop version,
-> and it's also the place to **trigger downstream logic** (notify, refresh, audit).
+> `onChange` is the one place to persist **and** to **trigger downstream logic**
+> (notify, refresh, audit). The only other events are the *intent* events —
+> `onSelect` (drag empty range) and `onEventClick` (click an event) — which you use
+> when you build your own editing UI instead of the built-in editor.
 
 ## Why "nothing happens" when I drag / create (read this first)
 
-The gestures **do** fire — verified in a live session: dragging an event fires
-`onEventDrop`, resizing fires `onEventResize`, dragging empty time fires `onSelect`,
+The gestures **do** fire — verified in a live session: dragging or resizing an event
+fires `onChange`, dragging empty time fires `onChange` (built-in editor) or `onSelect`,
 all with correct payloads. If it *looks* like nothing happens, it's one of two things:
 
 1. **You're in the Designer's design/edit mode.** There, mouse drags select and move
@@ -84,45 +84,8 @@ Select the calendar → **Events** → add the component event → **Script** ac
 These mutate `data.events` directly (simplest for testing; in production you'd
 persist to a DB and re-query instead). Requires `config.editable` / `config.selectable`.
 
-**`onSelect`** — create a new event from a dragged-out range:
-
-```python
-events = list(self.props.data.events)
-events.append({
-    "id": "evt-" + str(system.date.toMillis(system.date.now())),
-    "title": "New event",
-    "start": event.start,
-    "end": event.end
-})
-self.props.data.events = events
-```
-
-**`onEventDrop`** — persist a move:
-
-```python
-events = []
-for e in self.props.data.events:
-    e = dict(e)
-    if e.get("id") == event.id:
-        e["start"] = event.newStart
-        e["end"] = event.newEnd
-    events.append(e)
-self.props.data.events = events
-```
-
-**`onEventResize`** — persist a resize:
-
-```python
-events = []
-for e in self.props.data.events:
-    e = dict(e)
-    if e.get("id") == event.id:
-        e["end"] = event.newEnd
-    events.append(e)
-self.props.data.events = events
-```
-
-**`onEventsChanged`** — the one handler that replaces all of the above (recommended):
+**`onChange`** — the single handler for every mutation (create / edit / delete / move /
+resize). Upsert-or-delete by id. This is all you need:
 
 ```python
 ev = event.event
@@ -139,6 +102,20 @@ for e in self.props.data.events:
     events.append(cur)
 if event.action != "delete" and not found:
     events.append(row)
+self.props.data.events = events
+```
+
+**`onSelect`** — only if you skip the built-in editor and create with your own UI
+(a dragged-out range gives you `start` / `end`; you assign an id and append):
+
+```python
+events = list(self.props.data.events)
+events.append({
+    "id": "evt-" + str(system.date.toMillis(system.date.now())),
+    "title": "New event",
+    "start": event.start,
+    "end": event.end
+})
 self.props.data.events = events
 ```
 
@@ -174,24 +151,24 @@ self.props.data.events = events
 ## Editing (set `config.editable = true`)
 
 - [ ] Hovering an event shows a grab cursor; a resize handle sits at its bottom edge.
-- [ ] **Drag** an event — a ghost follows, snapping to 15 min; release fires `onEventDrop` (log it).
-- [ ] Drag across day columns changes the day in the payload (`newStart`).
-- [ ] **Resize** from the bottom edge changes the end; release fires `onEventResize`.
+- [ ] **Drag** an event — a ghost follows, snapping to 15 min; release fires `onChange` (`action = "move"`).
+- [ ] Drag across day columns changes the day in the payload (`event.start`).
+- [ ] **Resize** from the bottom edge changes the end; release fires `onChange` (`action = "resize"`).
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
-- [ ] A plain **click** (no drag) fires `onEventClick`, not drop — **unless** `builtInEditor` is on (see below).
+- [ ] A plain **click** (no drag) fires `onEventClick` — **unless** `builtInEditor` is on, where it opens the editor (see below).
 
 ## Built-in editor: edit & delete (set `config.editable = true` + `config.builtInEditor = true`)
 
 - [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/colour/notes populated, the event's colour pre-selected).
-- [ ] Change a field and **Save** — fires `onEventChange` (and `onEventsChanged` with `action = "edit"`); with the demo's write-back the event **updates in place** (no duplicate).
-- [ ] **Delete** removes the event — fires `onEventDelete` (and `onEventsChanged` with `action = "delete"`); with write-back it disappears.
-- [ ] Move/resize an event — fires `onEventsChanged` with `action = "move"` / `"resize"` alongside `onEventDrop` / `onEventResize`.
+- [ ] Change a field and **Save** — fires `onChange` (`action = "edit"`); with the demo's write-back the event **updates in place** (no duplicate).
+- [ ] **Delete** removes the event — fires `onChange` (`action = "delete"`); with write-back it disappears.
+- [ ] Move/resize an event — fires `onChange` (`action = "move"` / `"resize"`).
 
 ## Selecting / creating (set `config.selectable = true`)
 
-- [ ] **Drag over empty time** shows a selection box; release fires `onSelect` (or, with `builtInEditor`, opens the editor → **Create** fires `onEventCreate` + `onEventsChanged` `action = "create"`).
+- [ ] **Drag over empty time** shows a selection box; release fires `onSelect` (or, with `builtInEditor`, opens the editor → **Create** fires `onChange` `action = "create"`).
 - [ ] Clicking empty time (no drag) fires `onDateClick`.
-- [ ] Wire `onSelect` (or `onEventsChanged`) to append to `config.data.events` → the new event appears.
+- [ ] Wire `onChange` (or `onSelect`) to update `config.data.events` → the new event appears.
 
 ## Theming & i18n
 

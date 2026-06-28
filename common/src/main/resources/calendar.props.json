@@ -27,7 +27,7 @@
                 "editable": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Week/Day: allow dragging events to move them and dragging their bottom edge to resize. The component does not persist changes — handle onEventDrop / onEventResize and write back."
+                    "description": "Week/Day: allow dragging events to move them and dragging their bottom edge to resize. The component does not persist changes — handle onChange (action 'move' / 'resize') and write back into data.events."
                 },
                 "selectable": {
                     "type": "boolean",
@@ -37,7 +37,7 @@
                 "builtInEditor": {
                     "type": "boolean",
                     "default": false,
-                    "description": "When true (with selectable), creating an event opens a built-in editor popover (title, time, colour, notes). Clicking Create fires onEventCreate with the configured event — you still persist it into data.events."
+                    "description": "When true: creating (with selectable) opens a built-in editor popover, and clicking an event (with editable) opens it pre-filled to edit or delete. Create/Save/Delete all fire onChange — you still persist the result into data.events."
                 },
                 "showToolbar": {
                     "type": "boolean",

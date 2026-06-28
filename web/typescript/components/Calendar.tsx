@@ -150,13 +150,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     /**
-     * Fires the unified `onEventsChanged` event for ANY mutation (create / edit /
-     * delete / move / resize). `event` is always the resulting event with its final
-     * start/end, so a single handler can persist or trigger downstream logic without
-     * caring which gesture produced it. Granular events still fire alongside it.
+     * Fires `onChange` for ANY data mutation (create / edit / delete / move / resize).
+     * `event` is always the resulting event with its final start/end, so a single
+     * handler can persist or trigger downstream logic without caring which gesture
+     * produced it. This is the one "the data should change" event; onEventClick /
+     * onDateClick / onSelect are the "the user did something" intent events.
      */
     private fireChange(action: 'create' | 'edit' | 'delete' | 'move' | 'resize', event: object): void {
-        this.fireEvent('onEventsChanged', { action, event });
+        this.fireEvent('onChange', { action, event });
     }
 
     // --- hover detail popover ---------------------------------------------
@@ -266,8 +267,6 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             color: ed.color,
             description: ed.description
         };
-        // Granular event (onEventCreate / onEventChange) + the unified onEventsChanged.
-        this.fireEvent(isEdit ? 'onEventChange' : 'onEventCreate', event);
         this.fireChange(isEdit ? 'edit' : 'create', event);
         this.setState({ editor: null });
     };
@@ -287,7 +286,6 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             color: ed.color,
             description: ed.description
         };
-        this.fireEvent('onEventDelete', event);
         this.fireChange('delete', event);
         this.setState({ editor: null });
     };
@@ -371,7 +369,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return { id: ev.id || '', title: ev.title || '', start: ev.start || '', end: ev.end || '', allDay: !!ev.allDay };
     }
 
-    /** A complete event object (incl. colour/notes) with start/end overrides applied — for onEventsChanged. */
+    /** A complete event object (incl. colour/notes) with start/end overrides applied — for onChange. */
     private changedEvent(ev: CalEvent, over: { start?: string; end?: string }): object {
         return {
             id: ev.id || '',
@@ -523,12 +521,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             }
             const newStart = this.iso(preview.dayIso, preview.startMin);
             const newEnd = this.iso(preview.dayIso, preview.endMin);
-            this.fireEvent('onEventDrop', { ...this.eventPayload(g.ev!), newStart, newEnd });
             this.fireChange('move', this.changedEvent(g.ev!, { start: newStart, end: newEnd }));
         } else if (g.mode === 'resize') {
             if (g.moved && preview) {
                 const newEnd = this.iso(preview.dayIso, preview.endMin);
-                this.fireEvent('onEventResize', { ...this.eventPayload(g.ev!), newEnd });
                 this.fireChange('resize', this.changedEvent(g.ev!, { end: newEnd }));
             }
         } else if (g.moved && preview && this.props.props.selectable) {

@@ -78,8 +78,8 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **Views** — Month, time-based Week & Day (with overlap-packed events), and a List/agenda view; switchable from the toolbar.
 - **Data-bound** — renders `config.data.events` (a JSON array) in a single pass; emits the visible window so bindings fetch only what's shown.
 - **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
-- **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`). Each action fires a component event; you persist the result.
-- **Unified change event** — `onEventsChanged` fires for *every* mutation (create / edit / delete / move / resize) with `{ action, event }`, so one script can persist or trigger downstream logic instead of wiring up five handlers.
+- **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`).
+- **One change event** — `onChange` fires for *every* data mutation (create / edit / delete / move / resize) with `{ action, event }`, so a single script persists the change and triggers any downstream logic.
 - **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly), expanded per visible window.
 - **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
 - **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
@@ -88,17 +88,18 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 
 The calendar is a **controlled, read-from-data component. It never changes `config.data.events` itself.** To show events, you populate that array (statically, or by binding it to a Named Query / dataset). Editing gestures **only fire component events** — to actually add/move/resize an event you handle the event and write back to your own source:
 
+There are two kinds of events. **Intent** events (`onEventClick`, `onDateClick`, `onSelect`) say *"the user did something"* — wire them when you build your own editing UI. The **change** event (`onChange`) says *"the data should change"* — it's the single hook for persistence.
+
 | To… | Do this |
 |---|---|
 | **Show** events | Set / bind `config.data.events` (bind it to `output.visibleStart`/`visibleEnd` so you only fetch the visible window). |
-| **Add** an event | Set `config.selectable = true`; on **`onSelect`**, open your editor / insert a row, then update `config.data.events` (or re-run your query). |
-| **Move / resize** | Set `config.editable = true`; on **`onEventDrop`** / **`onEventResize`**, persist `newStart`/`newEnd` and update the data. |
-| **Edit / delete** | Set `config.editable = true` **and** `config.builtInEditor = true`; clicking an event opens the editor pre-filled. **Save** fires **`onEventChange`**, **Delete** fires **`onEventDelete`** — persist the change. |
-| **Everything, in one script** | Handle **`onEventsChanged`** — it fires for all of the above with `{ action, event }`, where `event` always carries the final start/end. Upsert on create/edit/move/resize, remove on delete. |
+| **Persist any change** | Handle **`onChange`** — it fires for create / edit / delete / move / resize with `{ action, event }`, where `event` always carries the final start/end. Upsert on every action except `delete`, where you remove by id. This is the one handler you need. |
+| **Edit / delete in-place** | Set `config.editable = true` **and** `config.builtInEditor = true`; clicking an event opens the editor pre-filled (Save / Delete → `onChange`). |
+| **Use your own editor** | Leave `builtInEditor` off; handle `onSelect` (create) and `onEventClick` (open your form). Moves/resizes still fire `onChange`. |
 
-So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onSelect`/`onEventDrop`/`onEventsChanged`; the event appears only once your handler writes it back into `config.data.events`.
+So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onChange` (or `onSelect`); the event appears only once your handler writes it back into `config.data.events`.
 
-**The one-handler recipe** (`onEventsChanged`) — upsert-or-delete by id, covering every mutation:
+**The one-handler recipe** (`onChange`) — upsert-or-delete by id, covering every mutation:
 
 ```python
 ev = event.event
@@ -140,9 +141,11 @@ self.props.data.events = events
 
 ### Events
 
-`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`) · `onEventCreate` (full event, built-in editor Create) · `onEventChange` (full event, built-in editor Save on an existing event) · `onEventDelete` (full event, built-in editor Delete) · **`onEventsChanged`** (`{ action: create|edit|delete|move|resize, event }` — fires for every mutation; the single hook for persistence / triggering downstream logic). Payloads are complete so write-back needs no second lookup.
+**Intent** (the user did something): `onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}` — dragged-out empty range).
 
-> When the built-in editor is on (`builtInEditor` + `editable`), clicking an event opens the editor instead of firing `onEventClick`.
+**Change** (the data should change): **`onChange`** (`{ action: create|edit|delete|move|resize, event }`) — fires for every mutation; the single hook for persistence and triggering downstream logic. `event` always carries the final start/end, so write-back needs no second lookup.
+
+> When the built-in editor is on (`builtInEditor` + `editable`), clicking an event opens the editor instead of firing `onEventClick`, and create/edit/delete all surface through `onChange`.
 
 ### Theming
 

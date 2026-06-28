@@ -13,7 +13,7 @@
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "Calendar demo — editable. Drag empty time to create (editor pops open), click an event to edit/delete it, drag to move, drag the bottom edge to resize. Every change (create/edit/delete/move/resize) persists via a single onEventsChanged script on the calendar.", "style": { "fontSize": "13px" } },
+        "props": { "text": "Calendar demo — editable. Drag empty time to create (editor pops open), click an event to edit/delete it, drag to move, drag the bottom edge to resize. Every change (create/edit/delete/move/resize) persists via a single onChange script on the calendar.", "style": { "fontSize": "13px" } },
         "meta": { "name": "help" },
         "position": { "x": 16, "y": 10, "width": 960, "height": 40 }
       },
@@ -34,7 +34,7 @@
         "position": { "x": 16, "y": 56, "width": 968, "height": 640 },
         "events": {
           "component": {
-            "onEventsChanged": [
+            "onChange": [
               {
                 "type": "script",
                 "scope": "G",
