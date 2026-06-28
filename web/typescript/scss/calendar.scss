@@ -60,9 +60,15 @@
         color: var(--cal-accent);
         border-radius: 6px;
         cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 
         &:hover {
             border-color: var(--cal-accent);
+            background: color-mix(in srgb, var(--cal-accent) 8%, var(--cal-bg));
+        }
+
+        &:active {
+            transform: scale(0.96);
         }
     }
 
@@ -195,10 +201,16 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        transition: filter 0.12s ease;
+        transition: filter 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
 
         &:hover {
             filter: brightness(0.96);
+            transform: translateY(-1px);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.14);
+        }
+
+        &:active {
+            transform: translateY(0) scale(0.99);
         }
     }
 
@@ -221,10 +233,15 @@
         background: var(--cal-bg);
         color: var(--cal-accent);
         cursor: pointer;
+        transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 
         &:first-child { border-radius: 6px 0 0 6px; }
         &:last-child { border-radius: 0 6px 6px 0; }
         &:not(:first-child) { border-left: none; }
+
+        &:hover:not(.cal-view-btn--active) {
+            background: color-mix(in srgb, var(--cal-accent) 8%, var(--cal-bg));
+        }
     }
 
     .cal-view-btn--active {
@@ -341,12 +358,17 @@
         overflow: hidden;
         cursor: pointer;
         z-index: 1;
-        transition: box-shadow 0.12s ease, filter 0.12s ease;
+        transition: box-shadow 0.12s ease, filter 0.12s ease, transform 0.12s ease;
 
         &:hover {
-            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             filter: brightness(0.98);
+            transform: translateY(-1px);
             z-index: 2;
+        }
+
+        &:active {
+            transform: scale(0.99);
         }
     }
 
@@ -393,9 +415,13 @@
     // The drag/resize ghost and the create selection rectangle.
     .cal-tg-event--ghost {
         background: color-mix(in srgb, var(--ev) 32%, var(--cal-bg));
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+        opacity: 0.96;
         pointer-events: none;
         z-index: 5;
+        // Ease between 15-min snaps so the ghost glides instead of jumping.
+        transition: top 0.09s ease-out, height 0.09s ease-out;
+        will-change: top, height;
     }
 
     .cal-tg-select {
@@ -408,6 +434,9 @@
         pointer-events: none;
         z-index: 5;
         overflow: hidden;
+        animation: cal-fade-in 0.12s ease;
+        transition: top 0.09s ease-out, height 0.09s ease-out;
+        will-change: top, height;
     }
 
     .cal-tg-select-time {
@@ -510,6 +539,8 @@
     border-radius: 8px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
     pointer-events: none;
+    transform-origin: top left;
+    animation: cal-pop-in 0.14s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 
     * { box-sizing: border-box; }
 
@@ -552,6 +583,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.28);
+    animation: cal-fade-in 0.16s ease;
 }
 
 .cal-editor {
@@ -566,6 +598,7 @@
     border: 1px solid var(--cal-border);
     border-radius: 10px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    animation: cal-pop-in 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 
     * { box-sizing: border-box; }
 
@@ -636,6 +669,10 @@
         border: 2px solid transparent;
         cursor: pointer;
         padding: 0;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+        &:hover { transform: scale(1.15); }
+        &:active { transform: scale(1.02); }
 
         &.is-selected {
             border-color: var(--cal-text);
@@ -655,9 +692,12 @@
         border-radius: 50%;
         border: 2px solid transparent;
         cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
         // Conic rainbow = the universal "choose a colour" affordance.
         background:
             conic-gradient(red, #ff0, lime, cyan, blue, magenta, red);
+
+        &:hover { transform: scale(1.15); }
 
         input[type='color'] {
             position: absolute;
@@ -710,14 +750,18 @@
         background: var(--cal-bg);
         color: var(--cal-text);
         cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease, filter 0.15s ease, transform 0.1s ease;
 
         &:hover { border-color: var(--cal-accent); }
+        &:active { transform: scale(0.97); }
     }
 
     .cal-editor-btn--primary {
         background: var(--cal-accent);
         border-color: var(--cal-accent);
         color: var(--cal-accent-text);
+
+        &:hover { filter: brightness(1.06); }
     }
 
     .cal-editor-btn--danger {
@@ -725,5 +769,46 @@
         border-color: var(--cal-border);
 
         &:hover { border-color: #e11d48; background: rgba(225, 29, 72, 0.08); }
+    }
+}
+
+// --- micro-interactions / animations ----------------------------------------
+@keyframes cal-event-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cal-view-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cal-pop-in {
+    from { opacity: 0; transform: scale(0.96) translateY(4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cal-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+// A freshly-created event fades + scales in (applied for one cycle, then removed).
+.mustry-calendar .cal-anim-enter {
+    animation: cal-event-in 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+// The active view gently fades up when you switch month / week / day / list.
+.mustry-calendar .cal-anim-view {
+    animation: cal-view-in 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+// Respect users who prefer reduced motion — drop every transition/animation we add.
+@media (prefers-reduced-motion: reduce) {
+    .mustry-calendar, .mustry-calendar *,
+    .cal-popover, .cal-popover *,
+    .cal-editor-backdrop, .cal-editor, .cal-editor * {
+        animation: none !important;
+        transition: none !important;
     }
 }

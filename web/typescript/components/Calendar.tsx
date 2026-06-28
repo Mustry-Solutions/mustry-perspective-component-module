@@ -105,6 +105,9 @@ interface Editor {
 
 const EDITOR_COLORS = ['#0c7bb3', '#27ae60', '#e67e22', '#e11d48', '#8e44ad', '#697077'];
 
+/** How long the create / enter animation runs before the chip settles (keep ≥ the CSS animation). */
+const ENTER_MS = 380;
+
 interface CalendarState {
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
@@ -121,12 +124,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private hoverTimer = 0;
 
+    // Enter-animation bookkeeping: animate an event chip only when a brand-new id
+    // first appears (create / new data), not on initial load or navigation.
+    private seenIds = new Set<string>();
+    private pendingEnter = new Set<string>();
+    private mounted = false;
+    private enterTimers: number[] = [];
+
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
         this.state = { cursor: today(), preview: null, hover: null, editor: null };
     }
 
     componentDidMount(): void {
+        // Seed the "already seen" set so the initial events don't fire the create
+        // animation (the container fades in instead).
+        (this.props.props.events || []).forEach((e) => { if (e.id) { this.seenIds.add(e.id); } });
+        this.mounted = true;
         this.syncOutput();
         this.scrollToHour();
     }
@@ -136,11 +150,38 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (prevProps.props.view !== this.props.props.view) {
             this.scrollToHour();   // re-scroll the time grid after switching to week/day
         }
+        this.detectNewEvents();
     }
 
     componentWillUnmount(): void {
         this.removeDocListeners();
         this.clearHoverTimer();
+        this.enterTimers.forEach((t) => window.clearTimeout(t));
+    }
+
+    /** After a render, mark freshly-appeared event ids so their chips finish the enter animation, then settle. */
+    private detectNewEvents(): void {
+        const fresh: string[] = [];
+        (this.props.props.events || []).forEach((e) => {
+            if (e.id && !this.seenIds.has(e.id) && !this.pendingEnter.has(e.id)) {
+                this.pendingEnter.add(e.id);
+                fresh.push(e.id);
+            }
+        });
+        if (!fresh.length) {
+            return;
+        }
+        const t = window.setTimeout(() => {
+            fresh.forEach((id) => { this.pendingEnter.delete(id); this.seenIds.add(id); });
+            this.forceUpdate();   // drop the enter class once the animation has played
+        }, ENTER_MS);
+        this.enterTimers.push(t);
+    }
+
+    /** Enter-animation class for an event chip: set once for a never-seen base id. */
+    private enterClass(occId: string): string {
+        const base = (occId || '').split('::')[0];
+        return this.mounted && !!base && !this.seenIds.has(base) ? ' cal-anim-enter' : '';
     }
 
     private fireEvent(name: string, payload: object): void {
@@ -612,7 +653,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             .map((c) => ({ c, evs: byDay[c.iso] || [] }))
             .filter((r) => r.evs.length > 0);
         return (
-            <div className="cal-list">
+            <div className="cal-list cal-anim-view" key="list">
                 {rows.length === 0 && <div className="cal-list-empty">No events</div>}
                 {rows.map(({ c, evs }) => (
                     <div className="cal-list-day" key={c.iso}>
@@ -621,7 +662,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             const tm = timeMinutes(ev.start);
                             return (
                                 <button
-                                    type="button" className="cal-list-event" key={ev.id || i}
+                                    type="button" className={`cal-list-event${this.enterClass(ev.id || '')}`} key={ev.id || i}
                                     onClick={(e) => this.onEventClick(ev, e)}
                                     {...this.hoverProps(ev)}
                                 >
@@ -678,7 +719,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 <div className="cal-events">
                     {shown.map((ev, i) => (
                         <button
-                            type="button" className="cal-event" key={ev.id || i} title={ev.title}
+                            type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
                             style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                             onClick={(e) => this.onEventClick(ev, e)}
                             {...this.hoverProps(ev)}
@@ -696,7 +737,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const byDay = groupEventsByDay(this.visibleEvents());
         const wdFmt = intlFormat(locale, { weekday: 'short' });
         return (
-            <div className="cal-body" style={{ ['--cal-cols' as keyof React.CSSProperties]: g.weeks[0].length } as React.CSSProperties}>
+            <div className="cal-body cal-anim-view" key="month" style={{ ['--cal-cols' as keyof React.CSSProperties]: g.weeks[0].length } as React.CSSProperties}>
                 <div className="cal-weekdays">
                     {g.weeks[0].map((c) => <div className="cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
                 </div>
@@ -884,7 +925,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const colStyle = { ['--cal-cols' as keyof React.CSSProperties]: cols.length } as React.CSSProperties;
 
         return (
-            <div className="cal-tg">
+            <div className="cal-tg cal-anim-view" key={this.props.props.view}>
                 <div className="cal-tg-head" style={colStyle}>
                     <div className="cal-tg-gutter-cell" />
                     {cols.map((c) => (
@@ -899,7 +940,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         <div className="cal-tg-allday-col" key={c.iso}>
                             {allDayEventsForDay(events || [], c.iso).map((ev, i) => (
                                 <button
-                                    type="button" className="cal-event" key={ev.id || i} title={ev.title}
+                                    type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
                                     style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
                                     onClick={(e) => this.onEventClick(ev, e)}
                                     {...this.hoverProps(ev)}
@@ -946,7 +987,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     return (
                                         <button
                                             type="button"
-                                            className={`cal-tg-event${editable ? ' cal-tg-event--draggable' : ''}`}
+                                            className={`cal-tg-event${editable ? ' cal-tg-event--draggable' : ''}${this.enterClass(ev.id || '')}`}
                                             key={ev.id || i} title={ev.title}
                                             style={{
                                                 top, height,
