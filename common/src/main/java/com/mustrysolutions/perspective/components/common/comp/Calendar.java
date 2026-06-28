@@ -50,6 +50,18 @@ public class Calendar {
     public static final JsonSchema ON_EVENT_CREATE_SCHEMA = JsonSchema.parse(
         Calendar.class.getResourceAsStream("/calendar.oneventcreate.event.json"));
 
+    /** Payload schema for the onEventChange component event (built-in editor edit). */
+    public static final JsonSchema ON_EVENT_CHANGE_SCHEMA = JsonSchema.parse(
+        Calendar.class.getResourceAsStream("/calendar.oneventchange.event.json"));
+
+    /** Payload schema for the onEventDelete component event (built-in editor delete). */
+    public static final JsonSchema ON_EVENT_DELETE_SCHEMA = JsonSchema.parse(
+        Calendar.class.getResourceAsStream("/calendar.oneventdelete.event.json"));
+
+    /** Payload schema for the unified onEventsChanged component event. */
+    public static final JsonSchema ON_EVENTS_CHANGED_SCHEMA = JsonSchema.parse(
+        Calendar.class.getResourceAsStream("/calendar.oneventschanged.event.json"));
+
     /** The descriptor registered with Perspective's component registries. */
     public static final ComponentDescriptor DESCRIPTOR = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
         .setPaletteCategory(MustrySolutionsPerspectiveComponentsModule.COMPONENT_CATEGORY)
@@ -84,7 +96,19 @@ public class Calendar {
             new ComponentEventDescriptor(
                 "onEventCreate",
                 "Fires from the built-in editor's Create button with the configured new event.",
-                ON_EVENT_CREATE_SCHEMA)))
+                ON_EVENT_CREATE_SCHEMA),
+            new ComponentEventDescriptor(
+                "onEventChange",
+                "Fires from the built-in editor's Save button when an existing event is edited. Payload is the full updated event.",
+                ON_EVENT_CHANGE_SCHEMA),
+            new ComponentEventDescriptor(
+                "onEventDelete",
+                "Fires from the built-in editor's Delete button. Payload is the removed event (use its id).",
+                ON_EVENT_DELETE_SCHEMA),
+            new ComponentEventDescriptor(
+                "onEventsChanged",
+                "Unified change event — fires for ANY mutation (create/edit/delete/move/resize). Payload: { action, event }. Handle this one to persist or trigger downstream logic in a single place.",
+                ON_EVENTS_CHANGED_SCHEMA)))
         .setResources(MustrySolutionsPerspectiveComponentsModule.BROWSER_RESOURCES)
         .build();
 }

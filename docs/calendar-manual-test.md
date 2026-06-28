@@ -48,16 +48,22 @@ ops/verify/project/com.inductiveautomation.perspective/views/CalendarDemo/
 **How it works (the whole trick):**
 
 1. The calendar renders `config.data.events`.
-2. A drag-create fires **`onSelect`**; the script on that event **appends** a new
-   event to `self.props.data.events`.
-3. Because `data.events` changed, the calendar **re-renders** and the new event
-   appears. (Move = `onEventDrop` updates an event's start/end; resize =
-   `onEventResize` updates its end — same idea.)
+2. The demo has `builtInEditor = true`, so creating (drag empty time) and clicking an
+   event open a built-in editor popup; and it wires a **single `onEventsChanged`**
+   script that fires for **every** mutation (create / edit / delete / move / resize)
+   with `{ action, event }`. The script upserts-or-deletes by `id` into
+   `self.props.data.events`.
+3. Because `data.events` changed, the calendar **re-renders** and the change appears.
 
 That's the entire pattern: *the component asks "what happened?", your script decides
 "what to store", and the calendar just displays whatever's in `data.events`.* In
 production you'd write to a database and re-query instead of mutating the prop, but
 the loop is identical.
+
+> You can also handle the **granular** events instead — `onSelect` / `onEventCreate`
+> (add), `onEventDrop` / `onEventResize` (move/resize), `onEventChange` /
+> `onEventDelete` (editor Save/Delete). `onEventsChanged` is just the one-stop version,
+> and it's also the place to **trigger downstream logic** (notify, refresh, audit).
 
 ## Why "nothing happens" when I drag / create (read this first)
 
@@ -116,6 +122,26 @@ for e in self.props.data.events:
 self.props.data.events = events
 ```
 
+**`onEventsChanged`** — the one handler that replaces all of the above (recommended):
+
+```python
+ev = event.event
+row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
+       "allDay": ev.allDay, "color": ev.color, "description": ev.description}
+events, found = [], False
+for e in self.props.data.events:
+    cur = dict(e)
+    if cur.get("id") == ev.id:
+        found = True
+        if event.action == "delete":
+            continue
+        cur = row
+    events.append(cur)
+if event.action != "delete" and not found:
+    events.append(row)
+self.props.data.events = events
+```
+
 ## Month view
 
 - [ ] Renders the current month; today has an accent circular badge; other-month days dimmed.
@@ -152,13 +178,20 @@ self.props.data.events = events
 - [ ] Drag across day columns changes the day in the payload (`newStart`).
 - [ ] **Resize** from the bottom edge changes the end; release fires `onEventResize`.
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
-- [ ] A plain **click** (no drag) fires `onEventClick`, not drop.
+- [ ] A plain **click** (no drag) fires `onEventClick`, not drop — **unless** `builtInEditor` is on (see below).
+
+## Built-in editor: edit & delete (set `config.editable = true` + `config.builtInEditor = true`)
+
+- [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/colour/notes populated, the event's colour pre-selected).
+- [ ] Change a field and **Save** — fires `onEventChange` (and `onEventsChanged` with `action = "edit"`); with the demo's write-back the event **updates in place** (no duplicate).
+- [ ] **Delete** removes the event — fires `onEventDelete` (and `onEventsChanged` with `action = "delete"`); with write-back it disappears.
+- [ ] Move/resize an event — fires `onEventsChanged` with `action = "move"` / `"resize"` alongside `onEventDrop` / `onEventResize`.
 
 ## Selecting / creating (set `config.selectable = true`)
 
-- [ ] **Drag over empty time** shows a selection box; release fires `onSelect` (`{start, end}`).
+- [ ] **Drag over empty time** shows a selection box; release fires `onSelect` (or, with `builtInEditor`, opens the editor → **Create** fires `onEventCreate` + `onEventsChanged` `action = "create"`).
 - [ ] Clicking empty time (no drag) fires `onDateClick`.
-- [ ] Wire `onSelect` to append to `config.data.events` → the new event appears.
+- [ ] Wire `onSelect` (or `onEventsChanged`) to append to `config.data.events` → the new event appears.
 
 ## Theming & i18n
 

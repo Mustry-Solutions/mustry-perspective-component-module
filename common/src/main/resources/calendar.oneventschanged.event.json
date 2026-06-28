@@ -1,0 +1,22 @@
+{
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "description": "What happened: 'create', 'edit', 'delete', 'move' (dragged), or 'resize'."
+        },
+        "event": {
+            "type": "object",
+            "description": "The resulting event, with its final start/end. For 'delete' it's the removed event.",
+            "properties": {
+                "id": { "type": "string", "description": "The event's id." },
+                "title": { "type": "string", "description": "The event's title." },
+                "start": { "type": "string", "description": "Final start (ISO; date-only when all-day)." },
+                "end": { "type": "string", "description": "Final end (ISO; date-only when all-day)." },
+                "allDay": { "type": "boolean", "description": "Whether the event is all-day." },
+                "color": { "type": "string", "description": "The event's colour." },
+                "description": { "type": "string", "description": "The event's notes." }
+            }
+        }
+    }
+}

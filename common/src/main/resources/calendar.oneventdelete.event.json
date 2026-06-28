@@ -1,0 +1,12 @@
+{
+    "type": "object",
+    "properties": {
+        "id": { "type": "string", "description": "The deleted event's id (use it to remove the row)." },
+        "title": { "type": "string", "description": "The deleted event's title." },
+        "start": { "type": "string", "description": "The deleted event's start." },
+        "end": { "type": "string", "description": "The deleted event's end, if any." },
+        "allDay": { "type": "boolean", "description": "Whether the event was all-day." },
+        "color": { "type": "string", "description": "The event's colour." },
+        "description": { "type": "string", "description": "The event's notes." }
+    }
+}

@@ -78,6 +78,8 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **Views** — Month, time-based Week & Day (with overlap-packed events), and a List/agenda view; switchable from the toolbar.
 - **Data-bound** — renders `config.data.events` (a JSON array) in a single pass; emits the visible window so bindings fetch only what's shown.
 - **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
+- **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`). Each action fires a component event; you persist the result.
+- **Unified change event** — `onEventsChanged` fires for *every* mutation (create / edit / delete / move / resize) with `{ action, event }`, so one script can persist or trigger downstream logic instead of wiring up five handlers.
 - **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly), expanded per visible window.
 - **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
 - **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
@@ -91,12 +93,34 @@ The calendar is a **controlled, read-from-data component. It never changes `conf
 | **Show** events | Set / bind `config.data.events` (bind it to `output.visibleStart`/`visibleEnd` so you only fetch the visible window). |
 | **Add** an event | Set `config.selectable = true`; on **`onSelect`**, open your editor / insert a row, then update `config.data.events` (or re-run your query). |
 | **Move / resize** | Set `config.editable = true`; on **`onEventDrop`** / **`onEventResize`**, persist `newStart`/`newEnd` and update the data. |
+| **Edit / delete** | Set `config.editable = true` **and** `config.builtInEditor = true`; clicking an event opens the editor pre-filled. **Save** fires **`onEventChange`**, **Delete** fires **`onEventDelete`** — persist the change. |
+| **Everything, in one script** | Handle **`onEventsChanged`** — it fires for all of the above with `{ action, event }`, where `event` always carries the final start/end. Upsert on create/edit/move/resize, remove on delete. |
 
-So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onSelect`/`onEventDrop`; the event appears only once your handler writes it back into `config.data.events`.
+So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onSelect`/`onEventDrop`/`onEventsChanged`; the event appears only once your handler writes it back into `config.data.events`.
+
+**The one-handler recipe** (`onEventsChanged`) — upsert-or-delete by id, covering every mutation:
+
+```python
+ev = event.event
+row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
+       "allDay": ev.allDay, "color": ev.color, "description": ev.description}
+events, found = [], False
+for e in self.props.data.events:
+    cur = dict(e)
+    if cur.get("id") == ev.id:
+        found = True
+        if event.action == "delete":
+            continue
+        cur = row
+    events.append(cur)
+if event.action != "delete" and not found:
+    events.append(row)
+self.props.data.events = events
+```
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `editable` · `selectable` · `builtInEditor` (open a built-in editor popover on create) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
 
 **`config.data.events`** — array of event objects:
 
@@ -116,7 +140,9 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 
 ### Events
 
-`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`) · `onEventCreate` (full event, from the built-in editor). Payloads are complete so write-back needs no second lookup.
+`onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}`) · `onEventDrop` (`{…event, newStart, newEnd}`) · `onEventResize` (`{…event, newEnd}`) · `onEventCreate` (full event, built-in editor Create) · `onEventChange` (full event, built-in editor Save on an existing event) · `onEventDelete` (full event, built-in editor Delete) · **`onEventsChanged`** (`{ action: create|edit|delete|move|resize, event }` — fires for every mutation; the single hook for persistence / triggering downstream logic). Payloads are complete so write-back needs no second lookup.
+
+> When the built-in editor is on (`builtInEditor` + `editable`), clicking an event opens the editor instead of firing `onEventClick`.
 
 ### Theming
 

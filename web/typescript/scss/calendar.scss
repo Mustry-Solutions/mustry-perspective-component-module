@@ -691,9 +691,14 @@
 
     .cal-editor-actions {
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
         gap: 8px;
         margin-top: 6px;
+    }
+
+    // Pushes Cancel/Save to the right while Delete (when editing) stays on the left.
+    .cal-editor-actions-spacer {
+        flex: 1 1 auto;
     }
 
     .cal-editor-btn {
@@ -713,5 +718,12 @@
         background: var(--cal-accent);
         border-color: var(--cal-accent);
         color: var(--cal-accent-text);
+    }
+
+    .cal-editor-btn--danger {
+        color: #e11d48;
+        border-color: var(--cal-border);
+
+        &:hover { border-color: #e11d48; background: rgba(225, 29, 72, 0.08); }
     }
 }

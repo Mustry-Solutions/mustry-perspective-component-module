@@ -94,6 +94,7 @@ interface HoverInfo {
 }
 
 interface Editor {
+    id: string | null;   // null = creating a new event; set = editing an existing one
     title: string;
     start: string;   // 'YYYY-MM-DDTHH:mm' (timed) or 'YYYY-MM-DD' (all-day)
     end: string;
@@ -148,6 +149,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     }
 
+    /**
+     * Fires the unified `onEventsChanged` event for ANY mutation (create / edit /
+     * delete / move / resize). `event` is always the resulting event with its final
+     * start/end, so a single handler can persist or trigger downstream logic without
+     * caring which gesture produced it. Granular events still fire alongside it.
+     */
+    private fireChange(action: 'create' | 'edit' | 'delete' | 'move' | 'resize', event: object): void {
+        this.fireEvent('onEventsChanged', { action, event });
+    }
+
     // --- hover detail popover ---------------------------------------------
     private clearHoverTimer(): void {
         if (this.hoverTimer) {
@@ -189,7 +200,30 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.hideHover();
         const start = allDay ? startIso.slice(0, 10) : startIso.slice(0, 16);
         const end = allDay ? (endIso || startIso).slice(0, 10) : endIso.slice(0, 16);
-        this.setState({ editor: { title: '', start, end, allDay, color: EDITOR_COLORS[0], description: '' } });
+        this.setState({ editor: { id: null, title: '', start, end, allDay, color: EDITOR_COLORS[0], description: '' } });
+    }
+
+    /** Whether clicking an existing event opens the built-in editor (vs firing onEventClick). */
+    private useEditorForEdit(): boolean {
+        return this.props.props.builtInEditor && this.props.props.editable;
+    }
+
+    /** Open the built-in editor pre-filled from an existing event, to edit it in place. */
+    private openEditorForEvent(ev: CalEvent): void {
+        this.hideHover();
+        const allDay = !!ev.allDay;
+        const cut = (v: string | undefined) => (v || '').slice(0, allDay ? 10 : 16);
+        this.setState({
+            editor: {
+                id: ev.id || '',
+                title: ev.title || '',
+                start: cut(ev.start),
+                end: cut(ev.end || ev.start),
+                allDay,
+                color: ev.color || EDITOR_COLORS[0],
+                description: ev.description || ''
+            }
+        });
     }
 
     private updateEditor(patch: Partial<Editor>): void {
@@ -216,21 +250,45 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.setState({ editor: null });
     };
 
-    private editorCreate = (): void => {
+    private editorSave = (): void => {
         const ed = this.state.editor;
         if (!ed) {
             return;
         }
         const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
-        this.fireEvent('onEventCreate', {
-            id: `evt-${new Date().getTime()}`,
+        const isEdit = ed.id !== null;
+        const event = {
+            id: isEdit ? ed.id : `evt-${new Date().getTime()}`,
             title: ed.title || 'New event',
             start: norm(ed.start),
             end: norm(ed.end),
             allDay: ed.allDay,
             color: ed.color,
             description: ed.description
-        });
+        };
+        // Granular event (onEventCreate / onEventChange) + the unified onEventsChanged.
+        this.fireEvent(isEdit ? 'onEventChange' : 'onEventCreate', event);
+        this.fireChange(isEdit ? 'edit' : 'create', event);
+        this.setState({ editor: null });
+    };
+
+    private editorDelete = (): void => {
+        const ed = this.state.editor;
+        if (!ed || ed.id === null) {
+            return;
+        }
+        const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
+        const event = {
+            id: ed.id,
+            title: ed.title || '',
+            start: norm(ed.start),
+            end: norm(ed.end),
+            allDay: ed.allDay,
+            color: ed.color,
+            description: ed.description
+        };
+        this.fireEvent('onEventDelete', event);
+        this.fireChange('delete', event);
         this.setState({ editor: null });
     };
 
@@ -311,6 +369,19 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private eventPayload(ev: CalEvent): object {
         return { id: ev.id || '', title: ev.title || '', start: ev.start || '', end: ev.end || '', allDay: !!ev.allDay };
+    }
+
+    /** A complete event object (incl. colour/notes) with start/end overrides applied — for onEventsChanged. */
+    private changedEvent(ev: CalEvent, over: { start?: string; end?: string }): object {
+        return {
+            id: ev.id || '',
+            title: ev.title || '',
+            start: over.start ?? ev.start ?? '',
+            end: over.end ?? ev.end ?? '',
+            allDay: !!ev.allDay,
+            color: ev.color || '',
+            description: ev.description || ''
+        };
     }
 
     private captureCols(): void {
@@ -442,17 +513,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
         if (g.mode === 'move') {
             if (!this.props.props.editable || !g.moved || !preview) {
-                this.fireEvent('onEventClick', this.eventPayload(g.ev!));
+                // A plain click (no drag): open the editor to edit, else fire onEventClick.
+                if (this.useEditorForEdit()) {
+                    this.openEditorForEvent(g.ev!);
+                } else {
+                    this.fireEvent('onEventClick', this.eventPayload(g.ev!));
+                }
                 return;
             }
-            this.fireEvent('onEventDrop', {
-                ...this.eventPayload(g.ev!),
-                newStart: this.iso(preview.dayIso, preview.startMin),
-                newEnd: this.iso(preview.dayIso, preview.endMin)
-            });
+            const newStart = this.iso(preview.dayIso, preview.startMin);
+            const newEnd = this.iso(preview.dayIso, preview.endMin);
+            this.fireEvent('onEventDrop', { ...this.eventPayload(g.ev!), newStart, newEnd });
+            this.fireChange('move', this.changedEvent(g.ev!, { start: newStart, end: newEnd }));
         } else if (g.mode === 'resize') {
             if (g.moved && preview) {
-                this.fireEvent('onEventResize', { ...this.eventPayload(g.ev!), newEnd: this.iso(preview.dayIso, preview.endMin) });
+                const newEnd = this.iso(preview.dayIso, preview.endMin);
+                this.fireEvent('onEventResize', { ...this.eventPayload(g.ev!), newEnd });
+                this.fireChange('resize', this.changedEvent(g.ev!, { end: newEnd }));
             }
         } else if (g.moved && preview && this.props.props.selectable) {
             const start = this.iso(preview.dayIso, preview.startMin);
@@ -492,6 +569,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private onEventClick = (ev: CalEvent, e: React.MouseEvent): void => {
         e.stopPropagation();
+        if (this.useEditorForEdit()) {
+            this.openEditorForEvent(ev);
+            return;
+        }
         this.fireEvent('onEventClick', {
             id: ev.id || '', title: ev.title || '', start: ev.start || '',
             end: ev.end || '', allDay: !!ev.allDay
@@ -710,6 +791,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             return null;
         }
         const dtType = ed.allDay ? 'date' : 'datetime-local';
+        const isEdit = ed.id !== null;
         return ReactDOM.createPortal(
             <div className="cal-editor-backdrop" onMouseDown={this.editorCancel}>
                 <div
@@ -717,7 +799,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     onMouseDown={(e) => e.stopPropagation()}
                     onKeyDown={(e) => { if (e.key === 'Escape') { this.editorCancel(); } }}
                 >
-                    <div className="cal-editor-head">New event</div>
+                    <div className="cal-editor-head">{isEdit ? 'Edit event' : 'New event'}</div>
                     <label className="cal-editor-field">
                         <span>Title</span>
                         <input
@@ -769,8 +851,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         <textarea rows={2} value={ed.description} onChange={(e) => this.updateEditor({ description: e.target.value })} />
                     </label>
                     <div className="cal-editor-actions">
+                        {isEdit && (
+                            <button type="button" className="cal-editor-btn cal-editor-btn--danger" onClick={this.editorDelete}>Delete</button>
+                        )}
+                        <span className="cal-editor-actions-spacer" />
                         <button type="button" className="cal-editor-btn" onClick={this.editorCancel}>Cancel</button>
-                        <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={this.editorCreate}>Create</button>
+                        <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={this.editorSave}>{isEdit ? 'Save' : 'Create'}</button>
                     </div>
                 </div>
             </div>,
