@@ -1046,16 +1046,29 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             left = Math.max(8, h.rect.left - width - 8);
         }
         const top = Math.max(8, Math.min(h.rect.top, window.innerHeight - 130));
+        const dFmt = intlFormat(locale, { weekday: 'short', month: 'short', day: 'numeric' });
         const sDate = parseDate(ev.start);
-        const dateStr = sDate ? intlFormat(locale, { weekday: 'short', month: 'short', day: 'numeric' }).format(sDate) : '';
+        const dateStr = sDate ? dFmt.format(sDate) : '';
+        const sameDay = !ev.end || ev.end.slice(0, 10) === ev.start.slice(0, 10);
         let timeStr: string;
         if (isTimed(ev)) {
             const sMin = timeMinutes(ev.start) as number;
-            let eMin = ev.end && ev.end.slice(0, 10) === ev.start.slice(0, 10) ? timeMinutes(ev.end) : null;
-            if (eMin === null || eMin <= sMin) {
-                eMin = sMin + DEFAULT_DUR_MIN;
+            const eDate = ev.end ? parseDate(ev.end) : null;
+            const eMinRaw = ev.end ? timeMinutes(ev.end) : null;
+            if (!sameDay && eDate && eMinRaw !== null) {
+                // crosses midnight / spans days -> show the end date too
+                timeStr = `${dateStr} ${this.hhmm(sMin)} – ${dFmt.format(eDate)} ${this.hhmm(eMinRaw)}`;
+            } else {
+                let eMin = eMinRaw !== null ? eMinRaw : null;
+                if (eMin === null || eMin <= sMin) {
+                    eMin = sMin + DEFAULT_DUR_MIN;
+                }
+                timeStr = `${dateStr} · ${this.hhmm(sMin)} – ${this.hhmm(eMin)}`;
             }
-            timeStr = `${dateStr} · ${this.hhmm(sMin)} – ${this.hhmm(eMin)}`;
+        } else if (!sameDay && ev.end) {
+            // multi-day all-day: end is exclusive, so the last shown day is end - 1
+            const lastDate = addDays(parseDate(ev.end) as Date, -1);
+            timeStr = `All day · ${dateStr} – ${dFmt.format(lastDate)}`;
         } else {
             timeStr = `All day · ${dateStr}`;
         }
