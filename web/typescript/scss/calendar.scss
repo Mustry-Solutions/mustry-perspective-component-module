@@ -1090,6 +1090,66 @@
     }
 }
 
+// --- category icons + event status (top-level so portaled popovers match) ---
+// Small inline icon (Ignition IconRenderer outputs an <svg>).
+.cal-ev-icon {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+
+    svg {
+        width: 13px;
+        height: 13px;
+        display: block;
+    }
+}
+
+.cal-legend-icon svg { width: 14px; height: 14px; }
+
+// Event status modifiers.
+.cal-ev--done,
+.cal-ev--cancelled {
+    text-decoration: line-through;
+}
+
+.cal-ev--done { opacity: 0.6; }
+.cal-ev--cancelled { opacity: 0.55; }
+
+.cal-ev--tentative {
+    opacity: 0.9;
+    font-style: italic;
+}
+
+// Striped fill for tentative chips/bars (not list/popover rows).
+.mustry-calendar .cal-mbar.cal-ev--tentative,
+.mustry-calendar .cal-tg-event.cal-ev--tentative {
+    position: relative;
+    font-style: normal;
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            45deg,
+            color-mix(in srgb, var(--ev) 22%, transparent) 0 5px,
+            transparent 5px 10px
+        );
+    }
+}
+
+// Status badge in the hover popover.
+.cal-popover-status {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--cal-muted);
+}
+
 // --- micro-interactions / animations ----------------------------------------
 @keyframes cal-event-in {
     from { opacity: 0; transform: scale(0.9); }

@@ -173,6 +173,12 @@ self.props.data.events = events
 - [ ] Clicking empty time (no drag) fires `onDateClick`.
 - [ ] Wire `onChange` (or `onSelect`) to update `config.data.events` → the new event appears.
 
+## Categories, icons & status
+
+- [ ] Define `config.categories` with `icon` (e.g. `material/build`) → events of that category show the icon (in the category colour) on every view, and the legend shows it.
+- [ ] An event with `status: "tentative"` renders striped/faded; `"done"` / `"cancelled"` render struck-through + dimmed; unset renders normal.
+- [ ] Icons + status appear consistently across month bars, week/day blocks, the all-day strip, the day-overflow popover, the list view, and the hover popover.
+
 ## Theming & i18n
 
 - [ ] Set a project-stylesheet rule `.mustry-calendar { --cal-accent: #2e7d32; }` → accents change.

@@ -23,6 +23,7 @@ export interface CalEvent {
     allDay?: boolean;
     color?: string;
     category?: string;     // category id; supplies the colour unless `color` overrides it
+    status?: string;       // 'tentative' | 'cancelled' | 'done' — anything else renders normal
     description?: string;  // shown in the hover detail popover
     display?: string;      // 'background' renders a translucent band behind events
     rrule?: RRule;         // when set, the event recurs (expanded per visible window)

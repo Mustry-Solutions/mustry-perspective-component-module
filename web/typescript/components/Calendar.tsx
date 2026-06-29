@@ -4,6 +4,7 @@ import {
     Component,
     ComponentMeta,
     ComponentProps,
+    IconRenderer,
     PComponent,
     PropertyTree,
     Size2d
@@ -77,6 +78,7 @@ export interface Category {
     id: string;
     label: string;
     color: string;
+    icon?: string;   // Ignition icon path (library/name), e.g. 'material/build'
 }
 
 export interface CalendarProps {
@@ -860,7 +862,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             const tm = timeMinutes(ev.start);
                             return (
                                 <button
-                                    type="button" className={`cal-list-event${this.enterClass(ev.id || '')}`} key={ev.id || i}
+                                    type="button" className={`cal-list-event${this.statusClass(ev)}${this.enterClass(ev.id || '')}`} key={ev.id || i}
                                     onClick={(e) => this.onEventClick(ev, e)}
                                     {...this.hoverProps(ev)}
                                 >
@@ -868,6 +870,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     <span className="cal-list-time">
                                         {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                     </span>
+                                    {this.renderEventIcon(ev)}
                                     <span className="cal-list-title">{ev.title}</span>
                                 </button>
                             );
@@ -943,7 +946,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return (
             <button
                 type="button" key={key} title={ev.title}
-                className={cls.join(' ') + this.enterClass(ev.id || '')}
+                className={cls.join(' ') + this.statusClass(ev) + this.enterClass(ev.id || '')}
                 style={{
                     gridColumn: `${seg.startCol + colOffset} / ${seg.endCol + colOffset + 1}`,
                     gridRow: seg.lane + 1,
@@ -952,6 +955,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 onClick={(e) => this.onEventClick(ev, e)}
                 {...this.hoverProps(ev)}
             >
+                {this.renderEventIcon(ev)}
                 {tm !== null && <span className="cal-mbar-time">{this.hhmm(tm)}</span>}
                 <span className="cal-mbar-title">{ev.title}</span>
             </button>
@@ -1072,11 +1076,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         } else {
             timeStr = `All day · ${dateStr}`;
         }
+        const statusLabel = ev.status === 'tentative' ? 'Tentative'
+            : ev.status === 'cancelled' ? 'Cancelled'
+                : ev.status === 'done' ? 'Done' : '';
         return ReactDOM.createPortal(
             <div className="cal-popover" style={{ top, left, width }}>
                 <div className="cal-popover-title">
-                    <span className="cal-popover-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
-                    <span>{ev.title}</span>
+                    {this.eventIcon(ev)
+                        ? <span className="cal-ev-icon"><IconRenderer path={this.eventIcon(ev) as string} color={this.resolveColor(ev) || 'currentColor'} /></span>
+                        : <span className="cal-popover-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />}
+                    <span className="cal-popover-name">{ev.title}</span>
+                    {statusLabel ? <span className="cal-popover-status">{statusLabel}</span> : null}
                 </div>
                 <div className="cal-popover-time">{timeStr}</div>
                 {ev.description ? <div className="cal-popover-desc">{ev.description}</div> : null}
@@ -1191,6 +1201,35 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return cat ? cat.color : undefined;
     }
 
+    /** The icon path for an event, taken from its category (undefined = no icon). */
+    private eventIcon(ev: CalEvent): string | undefined {
+        const cat = (this.props.props.categories || []).find((c) => c.id === ev.category);
+        return cat ? cat.icon : undefined;
+    }
+
+    /** Status modifier class for an event chip ('' for normal/unset). */
+    private statusClass(ev: CalEvent): string {
+        switch (ev.status) {
+            case 'tentative': return ' cal-ev--tentative';
+            case 'cancelled': return ' cal-ev--cancelled';
+            case 'done': return ' cal-ev--done';
+            default: return '';
+        }
+    }
+
+    /** An event's category icon as a small inline element (null if none). */
+    private renderEventIcon(ev: CalEvent): React.ReactNode {
+        const icon = this.eventIcon(ev);
+        if (!icon) {
+            return null;
+        }
+        return (
+            <span className="cal-ev-icon">
+                <IconRenderer path={icon} color={this.resolveColor(ev) || 'currentColor'} />
+            </span>
+        );
+    }
+
     /** Inline `--ev` custom-property style for an event chip (undefined → CSS falls back to the accent). */
     private evVar(ev: CalEvent): React.CSSProperties | undefined {
         const c = this.resolveColor(ev);
@@ -1274,7 +1313,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     return (
                                         <button
                                             type="button"
-                                            className={cls.join(' ') + ec}
+                                            className={cls.join(' ') + this.statusClass(ev) + ec}
                                             key={ev.id || i} title={ev.title}
                                             style={{
                                                 top, height,
@@ -1285,6 +1324,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                             onMouseDown={(e) => (movable ? this.startMove(ev, e) : this.onEventClick(ev, e))}
                                             {...this.hoverProps(ev)}
                                         >
+                                            {this.renderEventIcon(ev)}
                                             {ev.title}
                                             {height >= 34 && !it.continuesUp && (
                                                 <span className="cal-tg-time">
@@ -1372,7 +1412,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             aria-pressed={!hidden}
                             title={hidden ? `Show ${c.label}` : `Hide ${c.label}`}
                         >
-                            <span className="cal-legend-dot" style={{ background: c.color }} />
+                            {c.icon
+                                ? <span className="cal-ev-icon cal-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
+                                : <span className="cal-legend-dot" style={{ background: c.color }} />}
                             <span className="cal-legend-label">{c.label}</span>
                         </button>
                     );
@@ -1405,7 +1447,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         const tm = timeMinutes(ev.start);
                         return (
                             <button
-                                type="button" key={ev.id || i} className="cal-daypop-event"
+                                type="button" key={ev.id || i} className={`cal-daypop-event${this.statusClass(ev)}`}
                                 onClick={(e) => this.activateFromDayPop(ev, e)}
                                 title={ev.title}
                             >
@@ -1413,6 +1455,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                 <span className="cal-daypop-time">
                                     {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                 </span>
+                                {this.renderEventIcon(ev)}
                                 <span className="cal-daypop-title">{ev.title}</span>
                             </button>
                         );
@@ -1465,7 +1508,8 @@ export class CalendarMeta implements ComponentMeta {
                 .map((c: any) => ({
                     id: String((c && c.id) || ''),
                     label: String((c && (c.label ?? c.id)) || ''),
-                    color: String((c && c.color) || '')
+                    color: String((c && c.color) || ''),
+                    icon: c && c.icon ? String(c.icon) : undefined
                 }))
                 .filter((c: Category) => c.id),
             editable: tree.readBoolean('config.editable', false),
@@ -1485,6 +1529,7 @@ export class CalendarMeta implements ComponentMeta {
                 allDay: !!(e && e.allDay),
                 color: e && e.color ? String(e.color) : undefined,
                 category: e && e.category ? String(e.category) : undefined,
+                status: e && e.status ? String(e.status) : undefined,
                 description: e && e.description ? String(e.description) : undefined,
                 display: e && e.display ? String(e.display) : undefined,
                 rrule: e && e.rrule && e.rrule.freq ? e.rrule : undefined

@@ -95,7 +95,8 @@
                         "properties": {
                             "id": { "type": "string", "description": "Category id — set an event's 'category' to this to colour it and group it under this legend item." },
                             "label": { "type": "string", "description": "Display name in the legend." },
-                            "color": { "type": "string", "description": "Category colour (any CSS colour)." }
+                            "color": { "type": "string", "description": "Category colour (any CSS colour)." },
+                            "icon": { "type": "string", "description": "Optional Ignition icon path (library/name, e.g. 'material/build') shown on this category's events and in the legend." }
                         }
                     }
                 }
@@ -143,6 +144,10 @@
                             "category": {
                                 "type": "string",
                                 "description": "Category id (see config.categories) — supplies the chip colour and the legend grouping unless 'color' is set."
+                            },
+                            "status": {
+                                "enum": ["tentative", "cancelled", "done"],
+                                "description": "Optional visual state: 'tentative' (striped/faded), 'cancelled' or 'done' (struck through). Unset renders as a normal solid event."
                             },
                             "description": {
                                 "type": "string",
