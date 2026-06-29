@@ -80,6 +80,8 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
 - **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`).
 - **One change event** — `onChange` fires for *every* data mutation (create / edit / delete / move / resize) with `{ action, event }`, so a single script persists the change and triggers any downstream logic.
+- **Categories & legend** — define `config.categories` (`{id, label, color}`); an event's `category` supplies its colour and a bottom **legend** groups them. The legend is interactive — click an item to **filter** that category in/out (mirrored to `output.hiddenCategories`); hide the whole legend with `config.showLegend = false`.
+- **Mini-month navigator** — the toolbar title opens a compact month picker to jump anywhere (`config.showMiniNav`).
 - **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly), expanded per visible window.
 - **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
 - **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
@@ -121,7 +123,7 @@ self.props.data.events = events
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `showLegend` · `categories` (`[{id, label, color}]`).
 
 **`config.data.events`** — array of event objects:
 
@@ -132,12 +134,13 @@ self.props.data.events = events
 | `start` | ISO `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm:ss` |
 | `end` | optional; exclusive for all-day multi-day |
 | `allDay` | boolean |
-| `color` | any CSS colour |
+| `color` | any CSS colour (overrides the category colour) |
+| `category` | category id (see `config.categories`) — supplies the colour + legend grouping unless `color` is set |
 | `description` | optional text shown in the hover popover |
 | `display` | `"background"` for a downtime/availability band |
 | `rrule` | `{ freq: daily\|weekly\|monthly, interval?, count?, until?, byweekday?[] }` (byweekday: 0=Sun..6=Sat) |
 
-**`output`** (read-only) | `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`). The active view is **`config.view`**, which is two-way (the toolbar writes the user's choice back to it).
+**`output`** (read-only) | `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`) · `hiddenCategories` (ids currently filtered out via the legend — put a change script here to react). The active view is **`config.view`**, which is two-way (the toolbar writes the user's choice back to it).
 
 ### Events
 

@@ -72,10 +72,18 @@ interface Preview {
     endMin: number;
 }
 
+export interface Category {
+    id: string;
+    label: string;
+    color: string;
+}
+
 export interface CalendarProps {
     view: CalView;
     showToolbar: boolean;
     showMiniNav: boolean;
+    categories: Category[];
+    showLegend: boolean;
     editable: boolean;
     selectable: boolean;
     builtInEditor: boolean;
@@ -120,6 +128,7 @@ interface CalendarState {
     hover: HoverInfo | null;   // event under the cursor -> detail popover
     editor: Editor | null;     // built-in new-event editor popover
     mini: MiniNav | null;      // mini-month navigator popover (null = closed)
+    hiddenCats: Set<string>;   // category ids hidden via the legend filter
 }
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
@@ -140,7 +149,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { cursor: today(), preview: null, hover: null, editor: null, mini: null };
+        this.state = { cursor: today(), preview: null, hover: null, editor: null, mini: null, hiddenCats: new Set() };
     }
 
     componentDidMount(): void {
@@ -676,6 +685,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     };
 
+    // --- category legend filter -------------------------------------------
+    /** Toggle a category's visibility (legend click) and mirror the hidden set to output. */
+    private toggleCategory(id: string): void {
+        const hiddenCats = new Set(this.state.hiddenCats);
+        if (hiddenCats.has(id)) {
+            hiddenCats.delete(id);
+        } else {
+            hiddenCats.add(id);
+        }
+        this.setState({ hiddenCats }, () => {
+            this.props.store.props.write('output.hiddenCategories', Array.from(this.state.hiddenCats));
+        });
+    }
+
     private onEventClick = (ev: CalEvent, e: React.MouseEvent): void => {
         e.stopPropagation();
         if (this.useEditorForEdit()) {
@@ -991,7 +1014,22 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const r = this.visibleRange();
         const s = parseDate(r.start) || today();
         const e = parseDate(r.end) || today();
-        return expandEvents(this.props.props.events || [], s, e);
+        const hidden = this.state.hiddenCats;
+        return expandEvents(this.props.props.events || [], s, e)
+            .filter((ev) => !(ev.category && hidden.has(ev.category)))   // legend filter
+            .map((ev) => {
+                const c = this.resolveColor(ev);          // category supplies colour unless overridden
+                return c === ev.color ? ev : { ...ev, color: c };
+            });
+    }
+
+    /** Effective colour for an event: explicit `color` wins, else its category's colour, else default. */
+    private resolveColor(ev: CalEvent): string | undefined {
+        if (ev.color) {
+            return ev.color;
+        }
+        const cat = (this.props.props.categories || []).find((c) => c.id === ev.category);
+        return cat ? cat.color : undefined;
     }
 
     private renderTimeGrid(): React.ReactNode {
@@ -1147,6 +1185,34 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** Category legend (bottom footer). Click an item to show/hide that category's events. */
+    private renderLegend(): React.ReactNode {
+        const cats = this.props.props.categories || [];
+        if (!this.props.props.showLegend || cats.length === 0) {
+            return null;
+        }
+        return (
+            <div className="cal-legend" role="group" aria-label="Categories">
+                {cats.map((c) => {
+                    const hidden = this.state.hiddenCats.has(c.id);
+                    return (
+                        <button
+                            type="button"
+                            key={c.id}
+                            className={`cal-legend-item${hidden ? ' is-hidden' : ''}`}
+                            onClick={() => this.toggleCategory(c.id)}
+                            aria-pressed={!hidden}
+                            title={hidden ? `Show ${c.label}` : `Hide ${c.label}`}
+                        >
+                            <span className="cal-legend-dot" style={{ background: c.color }} />
+                            <span className="cal-legend-label">{c.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
     render(): React.ReactNode {
         const { showToolbar } = this.props.props;
         return (
@@ -1155,6 +1221,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 {this.props.props.view === 'month' ? this.renderMonth()
                     : this.props.props.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}
+                {this.renderLegend()}
                 {this.renderHoverPopover()}
                 {this.renderEditor()}
                 {this.renderMini()}
@@ -1182,6 +1249,14 @@ export class CalendarMeta implements ComponentMeta {
             view: tree.readString('config.view', 'month') as CalView,
             showToolbar: tree.readBoolean('config.showToolbar', true),
             showMiniNav: tree.readBoolean('config.showMiniNav', true),
+            showLegend: tree.readBoolean('config.showLegend', true),
+            categories: (tree.readArray('config.categories', []) || [])
+                .map((c: any) => ({
+                    id: String((c && c.id) || ''),
+                    label: String((c && (c.label ?? c.id)) || ''),
+                    color: String((c && c.color) || '')
+                }))
+                .filter((c: Category) => c.id),
             editable: tree.readBoolean('config.editable', false),
             selectable: tree.readBoolean('config.selectable', false),
             builtInEditor: tree.readBoolean('config.builtInEditor', false),
@@ -1199,6 +1274,7 @@ export class CalendarMeta implements ComponentMeta {
                 end: e && e.end ? String(e.end) : undefined,
                 allDay: !!(e && e.allDay),
                 color: e && e.color ? String(e.color) : undefined,
+                category: e && e.category ? String(e.category) : undefined,
                 description: e && e.description ? String(e.description) : undefined,
                 display: e && e.display ? String(e.display) : undefined,
                 rrule: e && e.rrule && e.rrule.freq ? e.rrule : undefined

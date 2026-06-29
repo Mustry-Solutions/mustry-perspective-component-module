@@ -553,6 +553,49 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    // --- category legend (bottom footer) ---
+    .cal-legend {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 12px;
+        padding: 7px 12px;
+        border-top: 1px solid var(--cal-border);
+    }
+
+    .cal-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--cal-text);
+        background: none;
+        border: none;
+        padding: 2px 4px;
+        margin: -2px -4px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.15s ease, opacity 0.15s ease;
+
+        &:hover { background: color-mix(in srgb, var(--cal-accent) 8%, var(--cal-bg)); }
+
+        &.is-hidden {
+            opacity: 0.45;
+            .cal-legend-label { text-decoration: line-through; }
+            .cal-legend-dot { background: var(--cal-muted) !important; }
+        }
+    }
+
+    .cal-legend-dot {
+        flex: 0 0 auto;
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
+        transition: background 0.15s ease;
+    }
 }
 
 // Hover detail popover — portaled to document.body, so it lives at the top level and

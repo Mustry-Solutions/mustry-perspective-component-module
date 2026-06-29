@@ -17,7 +17,9 @@
                 "maxEventsPerDay": 3,
                 "dayStartHour": 0,
                 "dayEndHour": 24,
-                "scrollToHour": 7
+                "scrollToHour": 7,
+                "showLegend": true,
+                "categories": []
             },
             "properties": {
                 "view": {
@@ -84,6 +86,24 @@
                     "type": "number",
                     "default": 7,
                     "description": "Week/Day views: hour scrolled into view initially."
+                },
+                "showLegend": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the category legend (bottom). Only appears when categories are defined; click an item to filter that category."
+                },
+                "categories": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Event categories shown in the legend. An event's colour comes from its category (matched by id) unless the event sets its own 'color'.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": { "type": "string", "description": "Category id — set an event's 'category' to this to colour it and group it under this legend item." },
+                            "label": { "type": "string", "description": "Display name in the legend." },
+                            "color": { "type": "string", "description": "Category colour (any CSS colour)." }
+                        }
+                    }
                 }
             }
         },
@@ -124,7 +144,11 @@
                             },
                             "color": {
                                 "type": "string",
-                                "description": "Chip colour (any CSS colour). Defaults to the theme accent."
+                                "description": "Chip colour (any CSS colour). Overrides the category colour; defaults to the theme accent."
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "Category id (see config.categories) — supplies the chip colour and the legend grouping unless 'color' is set."
                             },
                             "description": {
                                 "type": "string",
@@ -172,7 +196,8 @@
             "description": "Read-only. The visible date window, so bindings can fetch only what's shown. (The active view is config.view — it's two-way.)",
             "default": {
                 "visibleStart": "",
-                "visibleEnd": ""
+                "visibleEnd": "",
+                "hiddenCategories": []
             },
             "properties": {
                 "visibleStart": {
@@ -182,6 +207,11 @@
                 "visibleEnd": {
                     "type": "string",
                     "description": "One day past the last date shown (ISO 'YYYY-MM-DD'), half-open. Bind your query: date < visibleEnd."
+                },
+                "hiddenCategories": {
+                    "type": "array",
+                    "description": "Category ids currently hidden via the legend filter. Put a change script here to react to filtering.",
+                    "items": { "type": "string" }
                 }
             }
         },
