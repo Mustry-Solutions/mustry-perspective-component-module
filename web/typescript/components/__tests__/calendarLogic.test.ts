@@ -166,6 +166,40 @@ describe('layoutDayEvents (overlap packing)', () => {
         const r = lay([{ id: 'all', title: 'all', start: day, allDay: true }, ev('a', '09:00', '10:00')]);
         expect(r.map((x) => x.event.id)).toEqual(['a']);
     });
+
+    describe('timed multi-day segments', () => {
+        // overnight: 2026-06-24 22:00 -> 2026-06-25 06:00
+        const overnight: CalEvent = { id: 'on', title: 'on', start: '2026-06-24T22:00', end: '2026-06-25T06:00' };
+
+        it('start day: from start to the window end, marked continuesDown', () => {
+            const r = layoutDayEvents([overnight], '2026-06-24', 0, 1440, 30);
+            expect(r[0]).toMatchObject({ startMin: 22 * 60, endMin: 1440, continuesDown: true });
+            expect(r[0].continuesUp).toBeFalsy();
+        });
+
+        it('end day: from the window start to the end time, marked continuesUp', () => {
+            const r = layoutDayEvents([overnight], '2026-06-25', 0, 1440, 30);
+            expect(r[0]).toMatchObject({ startMin: 0, endMin: 6 * 60, continuesUp: true });
+            expect(r[0].continuesDown).toBeFalsy();
+        });
+
+        it('middle day: spans the whole window, continues both ways', () => {
+            const threeDay: CalEvent = { id: '3', title: '3', start: '2026-06-24T10:00', end: '2026-06-26T11:00' };
+            const r = layoutDayEvents([threeDay], '2026-06-25', 0, 1440, 30);
+            expect(r[0]).toMatchObject({ startMin: 0, endMin: 1440, continuesUp: true, continuesDown: true });
+        });
+
+        it('does not render on days outside the span', () => {
+            expect(layoutDayEvents([overnight], '2026-06-26', 0, 1440, 30)).toHaveLength(0);
+            expect(layoutDayEvents([overnight], '2026-06-23', 0, 1440, 30)).toHaveLength(0);
+        });
+
+        it('skips the end day when the event ends exactly at midnight', () => {
+            const tilMidnight: CalEvent = { id: 'm', title: 'm', start: '2026-06-24T20:00', end: '2026-06-25T00:00' };
+            expect(layoutDayEvents([tilMidnight], '2026-06-25', 0, 1440, 30)).toHaveLength(0);
+            expect(layoutDayEvents([tilMidnight], '2026-06-24', 0, 1440, 30)[0]).toMatchObject({ endMin: 1440, continuesDown: true });
+        });
+    });
 });
 
 describe('editing gesture math', () => {

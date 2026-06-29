@@ -429,6 +429,19 @@
         }
     }
 
+    // Multi-day timed segments: flatten the continued edge so it reads as carrying on.
+    .cal-tg-event--cont-up {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-top: 2px dashed color-mix(in srgb, var(--ev) 55%, var(--cal-bg));
+    }
+
+    .cal-tg-event--cont-down {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-bottom: 2px dashed color-mix(in srgb, var(--ev) 55%, var(--cal-bg));
+    }
+
     .cal-tg-time {
         display: block;
         font-size: 10px;

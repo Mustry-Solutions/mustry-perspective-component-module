@@ -1224,10 +1224,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     }
                                     const top = ((it.startMin - winStart) / 60) * SLOT_PX;
                                     const height = ((it.endMin - it.startMin) / 60) * SLOT_PX;
+                                    // Drag/resize only single-day timed events; multi-day segments are click-to-edit.
+                                    const movable = editable && !it.continuesUp && !it.continuesDown;
+                                    const cls = ['cal-tg-event'];
+                                    if (movable) { cls.push('cal-tg-event--draggable'); }
+                                    if (it.continuesUp) { cls.push('cal-tg-event--cont-up'); }
+                                    if (it.continuesDown) { cls.push('cal-tg-event--cont-down'); }
+                                    const ec = this.enterClass(ev.id || '');
                                     return (
                                         <button
                                             type="button"
-                                            className={`cal-tg-event${editable ? ' cal-tg-event--draggable' : ''}${this.enterClass(ev.id || '')}`}
+                                            className={cls.join(' ') + ec}
                                             key={ev.id || i} title={ev.title}
                                             style={{
                                                 top, height,
@@ -1235,12 +1242,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                                 width: `calc(${100 / it.lanes}% - 3px)`,
                                                 ...(this.resolveColor(ev) ? { ['--ev' as string]: this.resolveColor(ev) } : {})
                                             } as React.CSSProperties}
-                                            onMouseDown={(e) => this.startMove(ev, e)}
+                                            onMouseDown={(e) => (movable ? this.startMove(ev, e) : this.onEventClick(ev, e))}
                                             {...this.hoverProps(ev)}
                                         >
                                             {ev.title}
-                                            {height >= 34 && <span className="cal-tg-time">{this.hhmm(it.startMin)}–{this.hhmm(it.endMin)}</span>}
-                                            {editable && (
+                                            {height >= 34 && !it.continuesUp && (
+                                                <span className="cal-tg-time">
+                                                    {this.hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${this.hhmm(it.endMin)}`}
+                                                </span>
+                                            )}
+                                            {movable && (
                                                 <div className="cal-tg-resize" onMouseDown={(e) => this.startResize(ev, e)} />
                                             )}
                                         </button>

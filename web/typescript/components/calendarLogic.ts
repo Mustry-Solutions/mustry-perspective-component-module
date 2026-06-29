@@ -174,6 +174,8 @@ export interface TimedLayout {
     endMin: number;
     lane: number;      // 0-based column within its overlap cluster
     lanes: number;     // total columns in that cluster
+    continuesUp?: boolean;    // event began on an earlier day (segment top is a continuation)
+    continuesDown?: boolean;  // event continues onto a later day (segment bottom is a continuation)
 }
 
 /**
@@ -187,28 +189,35 @@ export function layoutDayEvents(
 ): TimedLayout[] {
     const items: TimedLayout[] = [];
     for (const ev of events) {
-        if (!ev || !ev.start || ev.display === 'background' || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
+        if (!ev || !ev.start || ev.display === 'background' || !isTimed(ev)) {
             continue;
         }
-        const sMin = timeMinutes(ev.start) as number;
-        let eMin: number | null = null;
-        if (ev.end) {
-            const endDay = ev.end.slice(0, 10);
-            if (endDay === dayIso) {
-                eMin = timeMinutes(ev.end);     // ends this day
-            } else if (endDay > dayIso) {
-                eMin = winEnd;                  // continues past this day
-            }
+        // Multi-day timed events render a clamped segment on each day they cross.
+        const startDay = ev.start.slice(0, 10);
+        const endDay = ev.end && ev.end.length >= 10 ? ev.end.slice(0, 10) : startDay;
+        if (dayIso < startDay || dayIso > endDay) {
+            continue; // not on this day
         }
+        const isStart = dayIso === startDay;
+        const isEnd = dayIso === endDay;
+        const sMin = isStart ? (timeMinutes(ev.start) as number) : winStart;
+        let eMin: number | null = isEnd ? (ev.end ? timeMinutes(ev.end) : null) : winEnd;
         if (eMin === null || eMin <= sMin) {
-            eMin = sMin + defaultDur;           // no usable end -> default duration
+            if (isStart && isEnd) {
+                eMin = sMin + defaultDur;   // single-day, no/invalid end -> default duration
+            } else {
+                continue;                   // e.g. ends at 00:00 on the end day -> nothing to show
+            }
         }
         const top = Math.max(sMin, winStart);
         const bot = Math.min(eMin, winEnd);
         if (bot <= winStart || top >= winEnd) {
             continue; // entirely outside the visible window
         }
-        items.push({ event: ev, startMin: top, endMin: Math.max(bot, top + 1), lane: 0, lanes: 1 });
+        items.push({
+            event: ev, startMin: top, endMin: Math.max(bot, top + 1), lane: 0, lanes: 1,
+            continuesUp: !isStart, continuesDown: !isEnd
+        });
     }
     items.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
 
