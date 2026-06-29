@@ -84,7 +84,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         (this.props.props.events || []).forEach((e) => { if (e.id) { this.seenIds.add(e.id); } });
         this.mounted = true;
         this.syncOutput();
-        this.scrollToHour();
+        this.scrollTimeGrid();
         // Re-measure the month-cell capacity whenever the component is resized.
         if (typeof ResizeObserver !== 'undefined' && this.rootRef.current) {
             this.resizeObs = new ResizeObserver(() => this.recomputeMonthCap());
@@ -96,7 +96,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
         this.syncOutput();
         if (prevProps.props.view !== this.props.props.view) {
-            this.scrollToHour();   // re-scroll the time grid after switching to week/day
+            this.scrollTimeGrid();   // re-scroll the time grid after switching to week/day
         }
         this.detectNewEvents();
         this.recomputeMonthCap();   // week-count (5/6) or view changes can change the fit
@@ -353,10 +353,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         w.write('output.visibleEnd', r.end);
     }
 
-    private scrollToHour(): void {
+    /** Position the time-grid scroll: centre on "now" when scrollToNow is on and today is
+     *  in view, otherwise scroll to the configured scrollToHour. */
+    private scrollTimeGrid(): void {
         const el = this.scrollRef.current;
-        if (el && this.props.props.view !== 'month') {
-            const { scrollToHour, dayStartHour } = this.props.props;
+        if (!el) {
+            return;   // not the week/day time-grid (no scroll container)
+        }
+        const { scrollToNow, scrollToHour, dayStartHour } = this.props.props;
+        const winStart = dayStartHour * 60;
+        const todayVisible = this.days().some((c) => c.iso === fmtDate(today()));
+        if (scrollToNow && todayVisible) {
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            const y = ((nowMin - winStart) / 60) * SLOT_PX;
+            const max = el.scrollHeight - el.clientHeight;
+            el.scrollTop = Math.max(0, Math.min(y - el.clientHeight / 2, max));   // centre "now"
+        } else {
             el.scrollTop = Math.max(0, (scrollToHour - dayStartHour) * SLOT_PX);
         }
     }
@@ -574,7 +587,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private prev = (): void => this.step(-1);
     private next = (): void => this.step(1);
-    private goToday = (): void => this.setState({ cursor: today() });
+    private goToday = (): void => this.setState({ cursor: today() }, () => this.scrollTimeGrid());
 
     // `config.view` is the single source of truth and is two-way: switching the view
     // writes it back so a binding / script can read (and set) the current view.
@@ -984,6 +997,7 @@ export class CalendarMeta implements ComponentMeta {
             dayStartHour: tree.readNumber('config.dayStartHour', 0),
             dayEndHour: tree.readNumber('config.dayEndHour', 24),
             scrollToHour: tree.readNumber('config.scrollToHour', 7),
+            scrollToNow: tree.readBoolean('config.scrollToNow', false),
             events: (tree.readArray('data.events', []) || []).map((e: any) => ({
                 id: String((e && e.id) || ''),
                 title: String((e && e.title) || ''),

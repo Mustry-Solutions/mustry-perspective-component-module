@@ -144,6 +144,7 @@ self.props.data.events = events
 
 - [ ] Toolbar switches Month / Week / Day / List; the title adapts (range vs single day).
 - [ ] Time axis labels; the grid auto-scrolls to `scrollToHour`.
+- [ ] With `scrollToNow = true`: on open / view-switch / **Today**, the grid centres on the current time when today is in view; on other weeks it falls back to `scrollToHour`.
 - [ ] `dayStartHour` / `dayEndHour` bound the visible hours.
 - [ ] Timed events sit at the right time and height; **overlapping events split into side-by-side lanes** (Inspection + Design review on the 24th).
 - [ ] All-day events appear in the top **all-day strip**; multi-day spans it.

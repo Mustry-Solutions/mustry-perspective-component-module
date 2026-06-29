@@ -18,6 +18,7 @@
                 "dayStartHour": 0,
                 "dayEndHour": 24,
                 "scrollToHour": 7,
+                "scrollToNow": false,
                 "showLegend": true,
                 "categories": []
             },
@@ -85,7 +86,12 @@
                 "scrollToHour": {
                     "type": "number",
                     "default": 7,
-                    "description": "Week/Day views: hour scrolled into view initially."
+                    "description": "Week/Day views: hour scrolled into view initially (used when scrollToNow is off or today isn't in view)."
+                },
+                "scrollToNow": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Week/Day views: on open / view-switch / Today, centre the grid on the current time when today is in view (else fall back to scrollToHour)."
                 },
                 "showLegend": {
                     "type": "boolean",

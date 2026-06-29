@@ -23,7 +23,7 @@
         "props": {
           "config": {
             "view": "week", "editable": true, "selectable": true, "builtInEditor": true, "scrollToHour": 8,
-            "showLegend": true, "showExport": true,
+            "scrollToNow": true, "showLegend": true, "showExport": true,
             "categories": [
               { "id": "ops", "label": "Operations", "color": "#0c7bb3", "icon": "material/settings" },
               { "id": "maint", "label": "Maintenance", "color": "#e67e22", "icon": "material/build" },
