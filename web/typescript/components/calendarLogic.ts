@@ -118,6 +118,35 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
     return map;
 }
 
+/** Quote a CSV cell only when it contains a comma, quote, or newline (RFC 4180). */
+function csvCell(v: string): string {
+    return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** Serialise events to CSV text (one row per event, CRLF line endings). */
+export function eventsToCsv(events: CalEvent[]): string {
+    const cols = ['id', 'title', 'start', 'end', 'allDay', 'category', 'status', 'color', 'description', 'rrule'];
+    const rows = [cols.join(',')];
+    for (const ev of events || []) {
+        if (!ev) {
+            continue;
+        }
+        rows.push([
+            ev.id || '',
+            ev.title || '',
+            ev.start || '',
+            ev.end || '',
+            ev.allDay ? 'true' : 'false',
+            ev.category || '',
+            ev.status || '',
+            ev.color || '',
+            ev.description || '',
+            ev.rrule ? JSON.stringify(ev.rrule) : ''
+        ].map((c) => csvCell(String(c))).join(','));
+    }
+    return rows.join('\r\n');
+}
+
 /** A horizontal event bar within one month week-row. */
 export interface WeekSeg {
     event: CalEvent;

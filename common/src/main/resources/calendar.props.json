@@ -9,6 +9,7 @@
                 "view": "month",
                 "showToolbar": true,
                 "showMiniNav": true,
+                "showExport": false,
                 "editable": false,
                 "selectable": false,
                 "weekStart": "monday",
@@ -50,6 +51,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Make the toolbar title a button that opens a mini-month navigator; click a day to jump the calendar there."
+                },
+                "showExport": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show a toolbar button that downloads the loaded events as a CSV file."
                 },
                 "weekStart": {
                     "enum": ["monday", "sunday"],

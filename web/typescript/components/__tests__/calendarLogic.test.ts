@@ -1,7 +1,7 @@
 import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay,
-    snapMinutes, minuteFromOffset, isoDateTime,
+    snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv,
     expandEvents, backgroundBandsForDay, CalEvent
 } from '../calendarLogic';
 
@@ -338,5 +338,34 @@ describe('expandEvents (recurrence)', () => {
         const e: CalEvent = { id: 'd', title: 'D', start: '2026-06-01', allDay: true, rrule: { freq: 'daily' } };
         const [s, en] = win('2026-06-10', '2026-06-13');
         expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-10', '2026-06-11', '2026-06-12']);
+    });
+});
+
+describe('eventsToCsv', () => {
+    it('emits a header and one row per event', () => {
+        const csv = eventsToCsv([
+            { id: '1', title: 'Standup', start: '2026-06-24T09:00', end: '2026-06-24T09:30', category: 'meeting' },
+            { id: '2', title: 'Lunch', start: '2026-06-24T12:00', allDay: false, status: 'done' }
+        ]);
+        const lines = csv.split('\r\n');
+        expect(lines[0]).toBe('id,title,start,end,allDay,category,status,color,description,rrule');
+        expect(lines[1]).toBe('1,Standup,2026-06-24T09:00,2026-06-24T09:30,false,meeting,,,,');
+        expect(lines[2]).toBe('2,Lunch,2026-06-24T12:00,,false,,done,,,');
+        expect(lines).toHaveLength(3);
+    });
+
+    it('quotes and escapes cells with commas, quotes, or newlines', () => {
+        const csv = eventsToCsv([
+            { id: '1', title: 'A, B', start: 's', description: 'has "quotes"\nand newline' }
+        ]);
+        const row = csv.split('\r\n')[1];
+        expect(row).toContain('"A, B"');
+        expect(row).toContain('"has ""quotes""\nand newline"');
+    });
+
+    it('serialises rrule as JSON and handles an empty list', () => {
+        expect(eventsToCsv([]).split('\r\n')).toHaveLength(1);   // header only
+        const csv = eventsToCsv([{ id: '1', title: 'R', start: 's', rrule: { freq: 'daily', count: 3 } }]);
+        expect(csv.split('\r\n')[1]).toContain('"{""freq"":""daily"",""count"":3}"');
     });
 });

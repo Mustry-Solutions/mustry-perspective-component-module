@@ -179,6 +179,12 @@ self.props.data.events = events
 - [ ] An event with `status: "tentative"` renders striped/faded; `"done"` / `"cancelled"` render struck-through + dimmed; unset renders normal.
 - [ ] Icons + status appear consistently across month bars, week/day blocks, the all-day strip, the day-overflow popover, the list view, and the hover popover.
 
+## CSV export
+
+- [ ] Set `config.showExport = true` → a download button appears in the toolbar.
+- [ ] Clicking it downloads `calendar-events.csv` with a header row + one row per loaded event (id, title, start, end, allDay, category, status, color, description, rrule).
+- [ ] Fields with commas / quotes / newlines are quoted/escaped correctly.
+
 ## Theming & i18n
 
 - [ ] Set a project-stylesheet rule `.mustry-calendar { --cal-accent: #2e7d32; }` → accents change.

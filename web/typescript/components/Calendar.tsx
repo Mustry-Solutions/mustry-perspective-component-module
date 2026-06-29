@@ -24,6 +24,7 @@ import {
     groupEventsByDay,
     layoutWeekSegments,
     clampWeekLanes,
+    eventsToCsv,
     weekDays,
     layoutDayEvents,
     backgroundBandsForDay,
@@ -85,6 +86,7 @@ export interface CalendarProps {
     view: CalView;
     showToolbar: boolean;
     showMiniNav: boolean;
+    showExport: boolean;
     categories: Category[];
     showLegend: boolean;
     editable: boolean;
@@ -678,6 +680,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.props.store.props.write('config.view', view);
     }
 
+    /** Export the loaded events to a CSV file (downloaded client-side). */
+    private exportCsv = (): void => {
+        const csv = eventsToCsv(this.props.props.events || []);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'calendar-events.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    };
+
     // --- mini-month navigator (popover from the toolbar title) -------------
     private toggleMini = (e: React.MouseEvent): void => {
         if (this.state.mini) {
@@ -912,6 +928,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     ))}
                 </div>
                 <div className="cal-nav">
+                    {this.props.props.showExport && (
+                        <button type="button" className="cal-nav-btn cal-export-btn" onClick={this.exportCsv} title="Export events to CSV" aria-label="Export to CSV">
+                            <IconRenderer path="material/get_app" color="var(--cal-accent)" />
+                        </button>
+                    )}
                     <button type="button" className="cal-nav-btn" onClick={this.prev} aria-label="Previous">‹</button>
                     <button type="button" className="cal-today" onClick={this.goToday}>Today</button>
                     <button type="button" className="cal-nav-btn" onClick={this.next} aria-label="Next">›</button>
@@ -1503,6 +1524,7 @@ export class CalendarMeta implements ComponentMeta {
             view: tree.readString('config.view', 'month') as CalView,
             showToolbar: tree.readBoolean('config.showToolbar', true),
             showMiniNav: tree.readBoolean('config.showMiniNav', true),
+            showExport: tree.readBoolean('config.showExport', false),
             showLegend: tree.readBoolean('config.showLegend', true),
             categories: (tree.readArray('config.categories', []) || [])
                 .map((c: any) => ({

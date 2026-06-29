@@ -83,6 +83,19 @@
         gap: 4px;
     }
 
+    // Export (CSV) toolbar button — an icon button matching the nav buttons.
+    .cal-export-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+    }
+
     .cal-nav-btn,
     .cal-today {
         font-family: inherit;
