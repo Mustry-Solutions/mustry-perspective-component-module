@@ -106,7 +106,8 @@ So if you drag on the calendar and "nothing happens", that's expected — the ge
 ```python
 ev = event.event
 row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
-       "allDay": ev.allDay, "color": ev.color, "description": ev.description}
+       "allDay": ev.allDay, "category": ev.category, "color": ev.color,
+       "description": ev.description}
 events, found = [], False
 for e in self.props.data.events:
     cur = dict(e)

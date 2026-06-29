@@ -108,11 +108,9 @@ interface Editor {
     start: string;   // 'YYYY-MM-DDTHH:mm' (timed) or 'YYYY-MM-DD' (all-day)
     end: string;
     allDay: boolean;
-    color: string;
+    category: string;   // category id ('' = none); the category supplies the colour
     description: string;
 }
-
-const EDITOR_COLORS = ['#0c7bb3', '#27ae60', '#e67e22', '#e11d48', '#8e44ad', '#697077'];
 
 /** How long the create / enter animation runs before the chip settles (keep ≥ the CSS animation). */
 const ENTER_MS = 380;
@@ -255,11 +253,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return this.props.props.builtInEditor && this.props.props.selectable;
     }
 
+    /** Default category for a new event: the first configured category, or none. */
+    private defaultCategory(): string {
+        const cats = this.props.props.categories || [];
+        return cats.length ? cats[0].id : '';
+    }
+
     private openEditor(startIso: string, endIso: string, allDay: boolean): void {
         this.hideHover();
         const start = allDay ? startIso.slice(0, 10) : startIso.slice(0, 16);
         const end = allDay ? (endIso || startIso).slice(0, 10) : endIso.slice(0, 16);
-        this.setState({ editor: { id: null, title: '', start, end, allDay, color: EDITOR_COLORS[0], description: '' } });
+        this.setState({ editor: { id: null, title: '', start, end, allDay, category: this.defaultCategory(), description: '' } });
     }
 
     /** Whether clicking an existing event opens the built-in editor (vs firing onEventClick). */
@@ -279,7 +283,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 start: cut(ev.start),
                 end: cut(ev.end || ev.start),
                 allDay,
-                color: ev.color || EDITOR_COLORS[0],
+                category: ev.category || '',
                 description: ev.description || ''
             }
         });
@@ -322,7 +326,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             start: norm(ed.start),
             end: norm(ed.end),
             allDay: ed.allDay,
-            color: ed.color,
+            category: ed.category,   // colour is derived from the category, not set here
             description: ed.description
         };
         this.fireChange(isEdit ? 'edit' : 'create', event);
@@ -341,7 +345,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             start: norm(ed.start),
             end: norm(ed.end),
             allDay: ed.allDay,
-            color: ed.color,
+            category: ed.category,
             description: ed.description
         };
         this.fireChange('delete', event);
@@ -424,10 +428,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private eventPayload(ev: CalEvent): object {
-        return { id: ev.id || '', title: ev.title || '', start: ev.start || '', end: ev.end || '', allDay: !!ev.allDay };
+        return { id: ev.id || '', title: ev.title || '', start: ev.start || '', end: ev.end || '', allDay: !!ev.allDay, category: ev.category || '' };
     }
 
-    /** A complete event object (incl. colour/notes) with start/end overrides applied — for onChange. */
+    /** A complete event object (incl. category/notes, raw colour) with start/end overrides applied — for onChange. */
     private changedEvent(ev: CalEvent, over: { start?: string; end?: string }): object {
         return {
             id: ev.id || '',
@@ -435,7 +439,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             start: over.start ?? ev.start ?? '',
             end: over.end ?? ev.end ?? '',
             allDay: !!ev.allDay,
-            color: ev.color || '',
+            color: ev.color || '',         // raw override only (empty when category-coloured)
+            category: ev.category || '',
             description: ev.description || ''
         };
     }
@@ -490,7 +495,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.addDocListeners();
         if (this.props.props.editable) {
             e.preventDefault();
-            this.setState({ preview: { mode: 'move', eventId: ev.id, title: ev.title, color: ev.color, dayIso: day, startMin: s, endMin: end } });
+            this.setState({ preview: { mode: 'move', eventId: ev.id, title: ev.title, color: this.resolveColor(ev), dayIso: day, startMin: s, endMin: end } });
         }
     };
 
@@ -508,7 +513,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             origStartMin: s, origEndMin: end, durationMin: end - s, origDayIso: day, moved: false
         };
         this.addDocListeners();
-        this.setState({ preview: { mode: 'resize', eventId: ev.id, title: ev.title, color: ev.color, dayIso: day, startMin: s, endMin: end } });
+        this.setState({ preview: { mode: 'resize', eventId: ev.id, title: ev.title, color: this.resolveColor(ev), dayIso: day, startMin: s, endMin: end } });
     };
 
     private startCreate = (dayIso: string, e: React.MouseEvent): void => {
@@ -544,11 +549,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const col = this.colAt(e.clientX) || this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
             const start = Math.max(winStart, Math.min(winEnd - g.durationMin, g.origStartMin + delta));
-            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: g.ev!.color, dayIso: col.day, startMin: start, endMin: start + g.durationMin } });
+            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: col.day, startMin: start, endMin: start + g.durationMin } });
         } else if (g.mode === 'resize') {
             const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
             const end = Math.max(g.origStartMin + SNAP_MIN, Math.min(winEnd, g.origEndMin + delta));
-            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: g.ev!.color, dayIso: g.origDayIso, startMin: g.origStartMin, endMin: end } });
+            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin: g.origStartMin, endMin: end } });
         } else if (this.props.props.selectable) {
             const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const cur = this.minuteAtY(col.rect, e.clientY);
@@ -761,7 +766,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                     onClick={(e) => this.onEventClick(ev, e)}
                                     {...this.hoverProps(ev)}
                                 >
-                                    <span className="cal-list-dot" style={{ background: ev.color || 'var(--cal-accent)' }} />
+                                    <span className="cal-list-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
                                     <span className="cal-list-time">
                                         {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                     </span>
@@ -828,7 +833,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     {shown.map((ev, i) => (
                         <button
                             type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
-                            style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
+                            style={this.evVar(ev)}
                             onClick={(e) => this.onEventClick(ev, e)}
                             {...this.hoverProps(ev)}
                         >{ev.title}</button>
@@ -919,7 +924,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return ReactDOM.createPortal(
             <div className="cal-popover" style={{ top, left, width }}>
                 <div className="cal-popover-title">
-                    <span className="cal-popover-dot" style={{ background: ev.color || 'var(--cal-accent)' }} />
+                    <span className="cal-popover-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
                     <span>{ev.title}</span>
                 </div>
                 <div className="cal-popover-time">{timeStr}</div>
@@ -966,31 +971,24 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             <input type={dtType} value={ed.end} onChange={(e) => this.updateEditor({ end: e.target.value })} />
                         </label>
                     </div>
-                    <div className="cal-editor-field">
-                        <span>Colour</span>
-                        <div className="cal-editor-swatches">
-                            {EDITOR_COLORS.map((c) => (
-                                <button
-                                    type="button" key={c}
-                                    className={`cal-editor-swatch${ed.color === c ? ' is-selected' : ''}`}
-                                    style={{ background: c }}
-                                    onClick={() => this.updateEditor({ color: c })}
-                                />
-                            ))}
-                            <label
-                                className={`cal-editor-color-custom${EDITOR_COLORS.indexOf(ed.color) === -1 ? ' is-custom' : ''}`}
-                                title="Pick a custom colour"
-                                style={EDITOR_COLORS.indexOf(ed.color) === -1 ? { background: ed.color } : undefined}
-                            >
-                                <input
-                                    type="color"
-                                    value={ed.color}
-                                    onChange={(e) => this.updateEditor({ color: e.target.value })}
-                                />
-                                <span className="cal-editor-color-plus" aria-hidden="true">+</span>
-                            </label>
-                        </div>
-                    </div>
+                    {(this.props.props.categories || []).length > 0 && (
+                        <label className="cal-editor-field">
+                            <span>Category</span>
+                            <div className="cal-editor-catrow">
+                                <span className="cal-editor-cat-dot" style={{ background: this.categoryColor(ed.category) || 'var(--cal-muted)' }} />
+                                <select
+                                    className="cal-editor-select"
+                                    value={ed.category}
+                                    onChange={(e) => this.updateEditor({ category: e.target.value })}
+                                >
+                                    <option value="">None</option>
+                                    {(this.props.props.categories || []).map((c) => (
+                                        <option key={c.id} value={c.id}>{c.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </label>
+                    )}
                     <label className="cal-editor-field">
                         <span>Notes</span>
                         <textarea rows={2} value={ed.description} onChange={(e) => this.updateEditor({ description: e.target.value })} />
@@ -1015,26 +1013,37 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const s = parseDate(r.start) || today();
         const e = parseDate(r.end) || today();
         const hidden = this.state.hiddenCats;
+        // Keep events raw (category + any explicit colour) — colour is resolved at render
+        // time via resolveColor, so editing/moving never bakes a category colour onto the event.
         return expandEvents(this.props.props.events || [], s, e)
-            .filter((ev) => !(ev.category && hidden.has(ev.category)))   // legend filter
-            .map((ev) => {
-                const c = this.resolveColor(ev);          // category supplies colour unless overridden
-                return c === ev.color ? ev : { ...ev, color: c };
-            });
+            .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
-    /** Effective colour for an event: explicit `color` wins, else its category's colour, else default. */
+    /** Effective colour for an event: explicit `color` wins, else its category's colour, else undefined (theme accent). */
     private resolveColor(ev: CalEvent): string | undefined {
         if (ev.color) {
             return ev.color;
         }
-        const cat = (this.props.props.categories || []).find((c) => c.id === ev.category);
+        return this.categoryColor(ev.category);
+    }
+
+    /** A category's colour by id (undefined if none / unknown). */
+    private categoryColor(id?: string): string | undefined {
+        const cat = (this.props.props.categories || []).find((c) => c.id === id);
         return cat ? cat.color : undefined;
+    }
+
+    /** Inline `--ev` custom-property style for an event chip (undefined → CSS falls back to the accent). */
+    private evVar(ev: CalEvent): React.CSSProperties | undefined {
+        const c = this.resolveColor(ev);
+        return c ? ({ ['--ev' as string]: c } as React.CSSProperties) : undefined;
     }
 
     private renderTimeGrid(): React.ReactNode {
         const { locale, editable, dayStartHour, dayEndHour } = this.props.props;
         const events = this.visibleEvents();
+        // Background bands read their colour off the event, so resolve category colours here.
+        const bgEvents = events.map((e) => ({ ...e, color: this.resolveColor(e) }));
         const cols = this.days();
         const winStart = dayStartHour * 60;
         const winEnd = dayEndHour * 60;
@@ -1064,7 +1073,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             {allDayEventsForDay(events || [], c.iso).map((ev, i) => (
                                 <button
                                     type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
-                                    style={ev.color ? ({ ['--ev' as string]: ev.color } as React.CSSProperties) : undefined}
+                                    style={this.evVar(ev)}
                                     onClick={(e) => this.onEventClick(ev, e)}
                                     {...this.hoverProps(ev)}
                                 >{ev.title}</button>
@@ -1089,7 +1098,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                 style={{ backgroundSize: `100% ${SLOT_PX}px` }}
                                 onMouseDown={(e) => this.startCreate(c.iso, e)}
                             >
-                                {backgroundBandsForDay(events, c.iso, winStart, winEnd).map((b, i) => (
+                                {backgroundBandsForDay(bgEvents, c.iso, winStart, winEnd).map((b, i) => (
                                     <div
                                         className="cal-tg-bg"
                                         key={b.id || `bg${i}`}
@@ -1116,7 +1125,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                                 top, height,
                                                 left: `${(it.lane / it.lanes) * 100}%`,
                                                 width: `calc(${100 / it.lanes}% - 3px)`,
-                                                ...(ev.color ? { ['--ev' as string]: ev.color } : {})
+                                                ...(this.resolveColor(ev) ? { ['--ev' as string]: this.resolveColor(ev) } : {})
                                             } as React.CSSProperties}
                                             onMouseDown={(e) => this.startMove(ev, e)}
                                             {...this.hoverProps(ev)}

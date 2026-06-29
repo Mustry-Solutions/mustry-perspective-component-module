@@ -14,7 +14,8 @@
                 "start": { "type": "string", "description": "Final start (ISO; date-only when all-day)." },
                 "end": { "type": "string", "description": "Final end (ISO; date-only when all-day)." },
                 "allDay": { "type": "boolean", "description": "Whether the event is all-day." },
-                "color": { "type": "string", "description": "The event's colour." },
+                "category": { "type": "string", "description": "The event's category id (supplies its colour)." },
+                "color": { "type": "string", "description": "Explicit colour override, if any (empty when the category supplies the colour)." },
                 "description": { "type": "string", "description": "The event's notes." }
             }
         }

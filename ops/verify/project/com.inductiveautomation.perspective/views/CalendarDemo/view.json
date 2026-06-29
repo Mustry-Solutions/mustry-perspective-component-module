@@ -48,7 +48,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\t# One handler for every mutation: create / edit / delete / move / resize.\n\tev = event.event\n\taction = event.action\n\trow = {\"id\": ev.id, \"title\": ev.title, \"start\": ev.start, \"end\": ev.end, \"allDay\": ev.allDay, \"color\": ev.color, \"description\": ev.description}\n\tevents = []\n\tfound = False\n\tfor e in self.props.data.events:\n\t\tcur = dict(e)\n\t\tif cur.get(\"id\") == ev.id:\n\t\t\tfound = True\n\t\t\tif action == \"delete\":\n\t\t\t\tcontinue\n\t\t\tcur = row\n\t\tevents.append(cur)\n\tif action != \"delete\" and not found:\n\t\tevents.append(row)\n\tself.props.data.events = events"
+                  "script": "\t# One handler for every mutation: create / edit / delete / move / resize.\n\tev = event.event\n\taction = event.action\n\trow = {\"id\": ev.id, \"title\": ev.title, \"start\": ev.start, \"end\": ev.end, \"allDay\": ev.allDay, \"category\": ev.category, \"description\": ev.description}\n\tevents = []\n\tfound = False\n\tfor e in self.props.data.events:\n\t\tcur = dict(e)\n\t\tif cur.get(\"id\") == ev.id:\n\t\t\tfound = True\n\t\t\tif action == \"delete\":\n\t\t\t\tcontinue\n\t\t\tcur = row\n\t\tevents.append(cur)\n\tif action != \"delete\" and not found:\n\t\tevents.append(row)\n\tself.props.data.events = events"
                 }
               }
             ]

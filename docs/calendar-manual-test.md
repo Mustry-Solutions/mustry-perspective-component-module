@@ -90,7 +90,8 @@ resize). Upsert-or-delete by id. This is all you need:
 ```python
 ev = event.event
 row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
-       "allDay": ev.allDay, "color": ev.color, "description": ev.description}
+       "allDay": ev.allDay, "category": ev.category, "color": ev.color,
+       "description": ev.description}
 events, found = [], False
 for e in self.props.data.events:
     cur = dict(e)
@@ -159,7 +160,7 @@ self.props.data.events = events
 
 ## Built-in editor: edit & delete (set `config.editable = true` + `config.builtInEditor = true`)
 
-- [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/colour/notes populated, the event's colour pre-selected).
+- [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/category/notes populated, the event's category pre-selected). The **Category** field appears only when `config.categories` are defined; the colour follows the category.
 - [ ] Change a field and **Save** — fires `onChange` (`action = "edit"`); with the demo's write-back the event **updates in place** (no duplicate).
 - [ ] **Delete** removes the event — fires `onChange` (`action = "delete"`); with write-back it disappears.
 - [ ] Move/resize an event — fires `onChange` (`action = "move"` / `"resize"`).
