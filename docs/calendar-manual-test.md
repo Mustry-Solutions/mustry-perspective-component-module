@@ -126,7 +126,8 @@ self.props.data.events = events
 - [ ] `weekStart` = monday vs sunday shifts the columns and weekday headers.
 - [ ] `showWeekends = false` hides Sat/Sun (5-day weeks).
 - [ ] Events show as coloured chips on the right day(s); `color` is honoured.
-- [ ] A day with many events shows `maxEventsPerDay` then a **"+N more"** line.
+- [ ] A day's cell **auto-fits** as many event chips as its height allows, then shows a **"+N more"** line (resize the component / row → the count adjusts).
+- [ ] Clicking **"+N more"** (or the **date number**) opens a popover listing **all** that day's events; clicking one opens/edits it; click-outside / Esc closes it.
 - [ ] Multi-day all-day "Audit" appears on 22/23/24 but **not** 25 (exclusive end).
 - [ ] Prev / next / **Today** navigate months; the title updates.
 - [ ] `output.visibleStart` / `visibleEnd` update on navigation (check the props).

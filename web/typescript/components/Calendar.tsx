@@ -90,7 +90,6 @@ export interface CalendarProps {
     weekStart: WeekStart;
     locale: string;
     showWeekends: boolean;
-    maxEventsPerDay: number;
     dayStartHour: number;
     dayEndHour: number;
     scrollToHour: number;
@@ -124,19 +123,29 @@ interface MiniNav {
     month: Date;   // the month shown in the mini grid (independent of the main cursor)
 }
 
+interface DayPop {
+    iso: string;   // the day whose events are listed
+    rect: { top: number; bottom: number; left: number; right: number };  // anchor (cell) rect
+}
+
 interface CalendarState {
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
     hover: HoverInfo | null;   // event under the cursor -> detail popover
     editor: Editor | null;     // built-in new-event editor popover
     mini: MiniNav | null;      // mini-month navigator popover (null = closed)
+    dayPop: DayPop | null;     // month-view "all events for a day" popover
     hiddenCats: Set<string>;   // category ids hidden via the legend filter
+    monthCap: number;          // how many chips fit a month cell (auto-fit; measured at runtime)
 }
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
 
     private lastOutputSig = '';
     private scrollRef = React.createRef<HTMLDivElement>();
+    private rootRef = React.createRef<HTMLDivElement>();
+    private weeksRef = React.createRef<HTMLDivElement>();
+    private resizeObs: ResizeObserver | null = null;
     private gesture: Gesture | null = null;
     private colRects: Array<{ day: string; rect: DOMRect }> = [];
 
@@ -151,7 +160,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { cursor: today(), preview: null, hover: null, editor: null, mini: null, hiddenCats: new Set() };
+        this.state = {
+            cursor: today(), preview: null, hover: null, editor: null,
+            mini: null, dayPop: null, hiddenCats: new Set(), monthCap: 3
+        };
     }
 
     componentDidMount(): void {
@@ -161,6 +173,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.mounted = true;
         this.syncOutput();
         this.scrollToHour();
+        // Re-measure the month-cell capacity whenever the component is resized.
+        if (typeof ResizeObserver !== 'undefined' && this.rootRef.current) {
+            this.resizeObs = new ResizeObserver(() => this.recomputeMonthCap());
+            this.resizeObs.observe(this.rootRef.current);
+        }
+        this.recomputeMonthCap();
     }
 
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
@@ -169,13 +187,40 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             this.scrollToHour();   // re-scroll the time grid after switching to week/day
         }
         this.detectNewEvents();
+        this.recomputeMonthCap();   // week-count (5/6) or view changes can change the fit
     }
 
     componentWillUnmount(): void {
         this.removeDocListeners();
         this.closeMiniListeners();
+        this.closeDayPopListeners();
         this.clearHoverTimer();
         this.enterTimers.forEach((t) => window.clearTimeout(t));
+        if (this.resizeObs) {
+            this.resizeObs.disconnect();
+        }
+    }
+
+    /** Measure how many event chips fit a month cell and store it (auto-fit → "+N more"). */
+    private recomputeMonthCap(): void {
+        if (this.props.props.view !== 'month') {
+            return;
+        }
+        const weeks = this.weeksRef.current;
+        const dayEl = weeks ? weeks.querySelector('.cal-day') as HTMLElement | null : null;
+        if (!dayEl) {
+            return;
+        }
+        const chip = weeks!.querySelector('.cal-event') as HTMLElement | null;
+        const chipRow = (chip ? chip.getBoundingClientRect().height : 19) + 2;   // chip + gap
+        const numEl = dayEl.querySelector('.cal-daynum') as HTMLElement | null;
+        const numH = numEl ? numEl.getBoundingClientRect().height : 18;
+        // clientHeight = content + padding; subtract vertical padding, the date row, and the row gap.
+        const avail = dayEl.clientHeight - 6 - numH - 2;
+        const cap = Math.max(1, Math.floor((avail + 2) / chipRow));   // +gap: last chip has no trailing gap
+        if (cap !== this.state.monthCap) {
+            this.setState({ monthCap: cap });
+        }
     }
 
     /** After a render, mark freshly-appeared event ids so their chips finish the enter animation, then settle. */
@@ -694,6 +739,54 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     };
 
+    // --- month-view "all events for a day" popover ------------------------
+    private openDayPop(iso: string, e: React.MouseEvent): void {
+        e.stopPropagation();   // don't let the cell's create-click fire too
+        const cell = (e.currentTarget as HTMLElement).closest('.cal-day') as HTMLElement | null;
+        const r = (cell || (e.currentTarget as HTMLElement)).getBoundingClientRect();
+        this.hideHover();
+        this.setState({ dayPop: { iso, rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right } } });
+        this.openDayPopListeners();
+    }
+
+    private closeDayPop(): void {
+        this.closeDayPopListeners();
+        if (this.state.dayPop) {
+            this.setState({ dayPop: null });
+        }
+    }
+
+    private openDayPopListeners(): void {
+        document.addEventListener('mousedown', this.onDocDayPop, true);
+        document.addEventListener('keydown', this.onDayPopKey, true);
+    }
+
+    private closeDayPopListeners(): void {
+        document.removeEventListener('mousedown', this.onDocDayPop, true);
+        document.removeEventListener('keydown', this.onDayPopKey, true);
+    }
+
+    private onDocDayPop = (e: MouseEvent): void => {
+        const t = e.target as HTMLElement | null;
+        // Clicks inside the popover, or on a trigger (date number / "+N more"), manage themselves.
+        if (t && (t.closest('.cal-daypop') || t.closest('.cal-daynum') || t.closest('.cal-more'))) {
+            return;
+        }
+        this.closeDayPop();
+    };
+
+    private onDayPopKey = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') {
+            this.closeDayPop();
+        }
+    };
+
+    /** Click an event inside the day popover: close it, then edit (built-in editor) or fire onEventClick. */
+    private activateFromDayPop = (ev: CalEvent, e: React.MouseEvent): void => {
+        this.closeDayPop();
+        this.onEventClick(ev, e);
+    };
+
     // --- category legend filter -------------------------------------------
     /** Toggle a category's visibility (legend click) and mirror the hidden set to output. */
     private toggleCategory(id: string): void {
@@ -825,14 +918,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     // --- month view --------------------------------------------------------
     private renderDay(cell: DayCell, dayEvents: CalEvent[]): React.ReactNode {
-        const { shown, more } = splitForDay(dayEvents, this.props.props.maxEventsPerDay);
+        const { shown, more } = splitForDay(dayEvents, this.state.monthCap);
         const cls = ['cal-day'];
         if (!cell.inMonth) { cls.push('cal-day--other'); }
         if (cell.isToday) { cls.push('cal-day--today'); }
         if (cell.isWeekend) { cls.push('cal-day--weekend'); }
         return (
             <div className={cls.join(' ')} key={cell.iso} onClick={() => this.onDayClick(cell.iso)}>
-                <div className="cal-daynum">{cell.date.getDate()}</div>
+                <button type="button" className="cal-daynum" onClick={(e) => this.openDayPop(cell.iso, e)} title="Show this day's events">
+                    {cell.date.getDate()}
+                </button>
                 <div className="cal-events">
                     {shown.map((ev, i) => (
                         <button
@@ -842,7 +937,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                             {...this.hoverProps(ev)}
                         >{ev.title}</button>
                     ))}
-                    {more > 0 && <div className="cal-more">+{more} more</div>}
+                    {more > 0 && (
+                        <button type="button" className="cal-more" onClick={(e) => this.openDayPop(cell.iso, e)}>+{more} more</button>
+                    )}
                 </div>
             </div>
         );
@@ -858,7 +955,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 <div className="cal-weekdays">
                     {g.weeks[0].map((c) => <div className="cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
                 </div>
-                <div className="cal-weeks">
+                <div className="cal-weeks" ref={this.weeksRef}>
                     {g.weeks.map((week, wi) => (
                         <div className="cal-week" key={wi}>
                             {week.map((cell) => this.renderDay(cell, byDay[cell.iso] || []))}
@@ -1233,10 +1330,52 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** Month-view popover listing every event for one day (from "+N more" / the date number). */
+    private renderDayPop(): React.ReactNode {
+        const dp = this.state.dayPop;
+        if (!dp) {
+            return null;
+        }
+        const { locale } = this.props.props;
+        const evs = groupEventsByDay(this.visibleEvents())[dp.iso] || [];
+        const d = parseDate(dp.iso) || today();
+        const headFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+        const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+        const W = 240;
+        const left = Math.max(6, Math.min(dp.rect.left, window.innerWidth - W - 6));
+        const top = Math.max(6, Math.min(dp.rect.top, window.innerHeight - 320));
+        return ReactDOM.createPortal(
+            <div className="cal-daypop" style={{ top, left, width: W }} onMouseDown={(e) => e.stopPropagation()}>
+                <div className="cal-daypop-head">{headFmt.format(d)}</div>
+                <div className="cal-daypop-list">
+                    {evs.length === 0 ? (
+                        <div className="cal-daypop-empty">No events</div>
+                    ) : evs.map((ev, i) => {
+                        const tm = timeMinutes(ev.start);
+                        return (
+                            <button
+                                type="button" key={ev.id || i} className="cal-daypop-event"
+                                onClick={(e) => this.activateFromDayPop(ev, e)}
+                                title={ev.title}
+                            >
+                                <span className="cal-daypop-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
+                                <span className="cal-daypop-time">
+                                    {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
+                                </span>
+                                <span className="cal-daypop-title">{ev.title}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>,
+            document.body
+        );
+    }
+
     render(): React.ReactNode {
         const { showToolbar } = this.props.props;
         return (
-            <div {...this.props.emit({ classes: ['mustry-calendar'] })}>
+            <div {...this.props.emit({ classes: ['mustry-calendar'] })} ref={this.rootRef}>
                 {showToolbar && this.renderToolbar()}
                 {this.props.props.view === 'month' ? this.renderMonth()
                     : this.props.props.view === 'list' ? this.renderList()
@@ -1245,6 +1384,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 {this.renderHoverPopover()}
                 {this.renderEditor()}
                 {this.renderMini()}
+                {this.renderDayPop()}
             </div>
         );
     }
@@ -1283,7 +1423,6 @@ export class CalendarMeta implements ComponentMeta {
             weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
             locale: tree.readString('config.locale', ''),
             showWeekends: tree.readBoolean('config.showWeekends', true),
-            maxEventsPerDay: tree.readNumber('config.maxEventsPerDay', 3),
             dayStartHour: tree.readNumber('config.dayStartHour', 0),
             dayEndHour: tree.readNumber('config.dayEndHour', 24),
             scrollToHour: tree.readNumber('config.scrollToHour', 7),

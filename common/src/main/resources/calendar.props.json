@@ -14,7 +14,6 @@
                 "weekStart": "monday",
                 "locale": "",
                 "showWeekends": true,
-                "maxEventsPerDay": 3,
                 "dayStartHour": 0,
                 "dayEndHour": 24,
                 "scrollToHour": 7,
@@ -66,11 +65,6 @@
                     "type": "boolean",
                     "default": true,
                     "description": "When false, Saturday and Sunday columns are hidden."
-                },
-                "maxEventsPerDay": {
-                    "type": "number",
-                    "default": 3,
-                    "description": "Month view: max event chips per day before a '+N more' link. 0 = show all."
                 },
                 "dayStartHour": {
                     "type": "number",

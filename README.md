@@ -76,6 +76,7 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 ### Features
 
 - **Views** — Month, time-based Week & Day (with overlap-packed events), and a List/agenda view; switchable from the toolbar.
+- **Busy days** — month cells **auto-fit** as many events as the cell height allows, then collapse to "+N more"; clicking it (or the date number) opens a popover listing **all** that day's events (each clickable to open/edit).
 - **Data-bound** — renders `config.data.events` (a JSON array) in a single pass; emits the visible window so bindings fetch only what's shown.
 - **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
 - **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`).
@@ -124,7 +125,7 @@ self.props.data.events = events
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `maxEventsPerDay` (month "+N more") · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `showLegend` · `categories` (`[{id, label, color}]`).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `showLegend` · `categories` (`[{id, label, color}]`).
 
 **`config.data.events`** — array of event objects:
 
