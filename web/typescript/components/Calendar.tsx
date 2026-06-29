@@ -115,6 +115,10 @@ interface Editor {
 /** How long the create / enter animation runs before the chip settles (keep ≥ the CSS animation). */
 const ENTER_MS = 380;
 
+/** Colour for uncategorised events when categories are in use — a neutral grey so
+ *  "None" events are clearly distinct from any defined category. */
+const UNCATEGORIZED_COLOR = '#6b7280';
+
 interface MiniNav {
     rect: { top: number; bottom: number; left: number; right: number };  // anchor (title) rect
     month: Date;   // the month shown in the mini grid (independent of the main cursor)
@@ -975,7 +979,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         <label className="cal-editor-field">
                             <span>Category</span>
                             <div className="cal-editor-catrow">
-                                <span className="cal-editor-cat-dot" style={{ background: this.categoryColor(ed.category) || 'var(--cal-muted)' }} />
+                                <span className="cal-editor-cat-dot" style={{ background: this.categoryColor(ed.category) || UNCATEGORIZED_COLOR }} />
                                 <select
                                     className="cal-editor-select"
                                     value={ed.category}
@@ -1019,12 +1023,19 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
-    /** Effective colour for an event: explicit `color` wins, else its category's colour, else undefined (theme accent). */
+    /** Effective colour: explicit `color` > category colour > neutral grey (if categories
+     *  are in use) > undefined (no categories at all → CSS falls back to the theme accent). */
     private resolveColor(ev: CalEvent): string | undefined {
         if (ev.color) {
             return ev.color;
         }
-        return this.categoryColor(ev.category);
+        const c = this.categoryColor(ev.category);
+        if (c) {
+            return c;
+        }
+        // Uncategorised but categories exist: use a neutral colour so it's clearly not
+        // one of the defined categories (rather than borrowing the theme accent).
+        return (this.props.props.categories || []).length ? UNCATEGORIZED_COLOR : undefined;
     }
 
     /** A category's colour by id (undefined if none / unknown). */
