@@ -7,6 +7,10 @@
     "/demo": {
       "viewPath": "CalendarDemo",
       "viewParams": {}
+    },
+    "/stress": {
+      "viewPath": "CalendarStress",
+      "viewParams": {}
     }
   },
   "shared": {},
