@@ -1,5 +1,5 @@
 import {
-    buildMonthGrid, eventDays, groupEventsByDay, splitForDay,
+    buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay,
     snapMinutes, minuteFromOffset, isoDateTime,
     expandEvents, backgroundBandsForDay, CalEvent
@@ -79,22 +79,59 @@ describe('groupEventsByDay', () => {
     });
 });
 
-describe('splitForDay', () => {
-    const mk = (n: number): CalEvent[] =>
-        Array.from({ length: n }, (_, i) => ({ id: `${i}`, title: `E${i}`, start: '2026-06-10' }));
+describe('layoutWeekSegments / clampWeekLanes', () => {
+    // Mon 2026-06-22 .. Sun 2026-06-28
+    const week = ['2026-06-22', '2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26', '2026-06-27', '2026-06-28'];
 
-    it('shows all when under the cap', () => {
-        expect(splitForDay(mk(3), 3)).toEqual({ shown: mk(3), more: 0 });
+    it('a single-day event is a one-column bar', () => {
+        const segs = layoutWeekSegments(week, [{ id: 'a', title: 'a', start: '2026-06-24' }]);
+        expect(segs[0]).toMatchObject({ startCol: 2, endCol: 2, lane: 0, continuesLeft: false, continuesRight: false });
     });
 
-    it('reserves a slot for "+N more" when over the cap', () => {
-        const r = splitForDay(mk(6), 3);
-        expect(r.shown).toHaveLength(2); // cap-1
-        expect(r.more).toBe(4);
+    it('a multi-day all-day event spans columns (exclusive end)', () => {
+        // 22 -> 25 exclusive = 22,23,24
+        const segs = layoutWeekSegments(week, [{ id: 'm', title: 'm', start: '2026-06-22', end: '2026-06-25', allDay: true }]);
+        expect(segs[0]).toMatchObject({ startCol: 0, endCol: 2, continuesLeft: false, continuesRight: false });
     });
 
-    it('0 cap shows everything', () => {
-        expect(splitForDay(mk(10), 0).more).toBe(0);
+    it('marks continuesLeft/Right when the event overflows the week', () => {
+        const segs = layoutWeekSegments(week, [{ id: 'x', title: 'x', start: '2026-06-20', end: '2026-07-02', allDay: true }]);
+        expect(segs[0]).toMatchObject({ startCol: 0, endCol: 6, continuesLeft: true, continuesRight: true });
+    });
+
+    it('overlapping spans get separate lanes; longer span on top', () => {
+        const segs = layoutWeekSegments(week, [
+            { id: 'long', title: 'long', start: '2026-06-23', end: '2026-06-26', allDay: true }, // 23,24,25
+            { id: 'short', title: 'short', start: '2026-06-24', allDay: true }                    // 24
+        ]);
+        expect(segs.find((s) => s.event.id === 'long')!.lane).toBe(0);
+        expect(segs.find((s) => s.event.id === 'short')!.lane).toBe(1);
+    });
+
+    it('reuses a lane when spans do not overlap in columns', () => {
+        const segs = layoutWeekSegments(week, [
+            { id: 'a', title: 'a', start: '2026-06-22', end: '2026-06-24', allDay: true }, // 22,23
+            { id: 'b', title: 'b', start: '2026-06-25', end: '2026-06-27', allDay: true }  // 25,26
+        ]);
+        expect(segs.every((s) => s.lane === 0)).toBe(true);
+    });
+
+    it('clampWeekLanes reserves the last lane for "+N more" and counts per day', () => {
+        const segs = layoutWeekSegments(week, [
+            { id: 'a', title: 'a', start: '2026-06-24', allDay: true },
+            { id: 'b', title: 'b', start: '2026-06-24', allDay: true },
+            { id: 'c', title: 'c', start: '2026-06-24', allDay: true }
+        ]);
+        const { visible, more } = clampWeekLanes(segs, 7, 2);   // cap 2 -> 1 visible lane + a more row
+        expect(visible).toHaveLength(1);
+        expect(more[2]).toBe(2);   // Wed (col 2) hides 2
+    });
+
+    it('clampWeekLanes shows all when within capacity', () => {
+        const segs = layoutWeekSegments(week, [{ id: 'a', title: 'a', start: '2026-06-24' }]);
+        const { visible, more } = clampWeekLanes(segs, 3, 3);
+        expect(visible).toHaveLength(1);
+        expect(more.every((n) => n === 0)).toBe(true);
     });
 });
 

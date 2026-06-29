@@ -117,17 +117,114 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
     return map;
 }
 
-/** Split a day's events into the chips to show and the hidden overflow count. */
-export function splitForDay(dayEvents: CalEvent[], maxPerDay: number): { shown: CalEvent[]; more: number } {
-    if (!dayEvents || dayEvents.length === 0) {
-        return { shown: [], more: 0 };
+/** A horizontal event bar within one month week-row. */
+export interface WeekSeg {
+    event: CalEvent;
+    startCol: number;       // first column (0-based) the bar occupies in the week
+    endCol: number;         // last column (inclusive)
+    lane: number;           // row within the cell's event area
+    continuesLeft: boolean;  // event started before this week
+    continuesRight: boolean; // event continues after this week
+}
+
+/**
+ * Lay out a month week-row's events as horizontal bars: each event becomes a
+ * column-span segment, packed into lanes so nothing overlaps. Multi-day all-day
+ * events span columns; everything else is a single column. Bars are ordered with
+ * the longest spans on top, then by start column / all-day / time.
+ */
+export function layoutWeekSegments(weekIsos: string[], events: CalEvent[]): WeekSeg[] {
+    const cols = weekIsos.length;
+    if (cols === 0) {
+        return [];
     }
-    if (maxPerDay <= 0 || dayEvents.length <= maxPerDay) {
-        return { shown: dayEvents, more: 0 };
+    const first = weekIsos[0];
+    const last = weekIsos[cols - 1];
+    const segs: WeekSeg[] = [];
+    for (const ev of events) {
+        if (!ev || !ev.start || ev.display === 'background') {
+            continue;
+        }
+        const days = eventDays(ev);
+        if (!days.length) {
+            continue;
+        }
+        const evStart = days[0];
+        const evEnd = days[days.length - 1];
+        if (evEnd < first || evStart > last) {
+            continue; // not in this week
+        }
+        let startCol = -1;
+        let endCol = -1;
+        for (let i = 0; i < cols; i++) {
+            if (weekIsos[i] >= evStart && weekIsos[i] <= evEnd) {
+                if (startCol < 0) { startCol = i; }
+                endCol = i;
+            }
+        }
+        if (startCol < 0) {
+            continue; // covers only hidden (weekend) days in this week
+        }
+        segs.push({
+            event: ev, startCol, endCol, lane: 0,
+            continuesLeft: evStart < weekIsos[startCol],
+            continuesRight: evEnd > weekIsos[endCol]
+        });
     }
-    // Reserve one slot for the "+N more" line.
-    const shown = dayEvents.slice(0, maxPerDay - 1);
-    return { shown, more: dayEvents.length - shown.length };
+    segs.sort((a, b) => {
+        const sa = a.endCol - a.startCol;
+        const sb = b.endCol - b.startCol;
+        if (sa !== sb) { return sb - sa; }                       // longer spans on top
+        if (a.startCol !== b.startCol) { return a.startCol - b.startCol; }
+        const aAll = a.event.allDay ? 0 : 1;
+        const bAll = b.event.allDay ? 0 : 1;
+        if (aAll !== bAll) { return aAll - bAll; }               // all-day before timed
+        return (a.event.start || '').localeCompare(b.event.start || '');
+    });
+    const laneEnd: number[] = [];   // laneEnd[l] = last column occupied in lane l
+    for (const s of segs) {
+        let placed = false;
+        for (let l = 0; l < laneEnd.length; l++) {
+            if (laneEnd[l] < s.startCol) {
+                s.lane = l;
+                laneEnd[l] = s.endCol;
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            s.lane = laneEnd.length;
+            laneEnd.push(s.endCol);
+        }
+    }
+    return segs;
+}
+
+/**
+ * Given laid-out week segments and the number of lanes that fit a cell (`cap`),
+ * return the bars to show plus a per-column "+N more" count. When anything
+ * overflows, the last visible lane is reserved for the "+N more" indicator.
+ */
+export function clampWeekLanes(
+    segs: WeekSeg[], cols: number, cap: number
+): { visible: WeekSeg[]; more: number[]; lanesShown: number } {
+    const more = new Array(cols).fill(0);
+    const maxLane = segs.reduce((m, s) => Math.max(m, s.lane), -1);
+    if (cap <= 0 || maxLane < cap) {
+        return { visible: segs, more, lanesShown: maxLane + 1 };
+    }
+    const lanesShown = Math.max(0, cap - 1);   // reserve the last lane for "+N more"
+    const visible: WeekSeg[] = [];
+    for (const s of segs) {
+        if (s.lane < lanesShown) {
+            visible.push(s);
+        } else {
+            for (let c = s.startCol; c <= s.endCol; c++) {
+                more[c]++;
+            }
+        }
+    }
+    return { visible, more, lanesShown };
 }
 
 // --- week / day time-grid ---------------------------------------------------

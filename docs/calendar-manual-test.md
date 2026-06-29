@@ -128,7 +128,8 @@ self.props.data.events = events
 - [ ] Events show as coloured chips on the right day(s); `color` is honoured.
 - [ ] A day's cell **auto-fits** as many event chips as its height allows, then shows a **"+N more"** line (resize the component / row → the count adjusts).
 - [ ] Clicking **"+N more"** (or the **date number**) opens a popover listing **all** that day's events; clicking one opens/edits it; click-outside / Esc closes it.
-- [ ] Multi-day all-day "Audit" appears on 22/23/24 but **not** 25 (exclusive end).
+- [ ] Multi-day all-day events render as one **continuous spanning bar** across their days (22/23/24, **not** 25 — exclusive end), not separate per-day chips; overlapping bars stack on lanes.
+- [ ] In **week/day** view, a multi-day all-day event is a single spanning bar in the **all-day strip**; an overnight timed event shows on both days (start day → bottom, next day top → end) with dashed continuation edges.
 - [ ] Prev / next / **Today** navigate months; the title updates.
 - [ ] `output.visibleStart` / `visibleEnd` update on navigation (check the props).
 
@@ -187,6 +188,6 @@ self.props.data.events = events
 
 ## Known limitations (by design / future)
 
-- Multi-day events show as **per-day chips**, not continuous spanning **bars** (future polish).
+- Multi-day **all-day** events render as continuous **spanning bars** (month grid + week/day all-day strip); multi-day **timed** events render a clamped segment on each day they cross (week/day grid).
 - Editing recurring events fires the event for the **occurrence** (id `base::date`) — handle it as an exception in your own data.
 - The component **does not persist** — all writes are your responsibility via the events.

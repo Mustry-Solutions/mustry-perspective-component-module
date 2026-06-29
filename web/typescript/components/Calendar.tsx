@@ -21,10 +21,10 @@ import {
 import {
     buildMonthGrid,
     groupEventsByDay,
-    splitForDay,
+    layoutWeekSegments,
+    clampWeekLanes,
     weekDays,
     layoutDayEvents,
-    allDayEventsForDay,
     backgroundBandsForDay,
     expandEvents,
     isTimed,
@@ -35,7 +35,8 @@ import {
     CalEvent,
     DayCell,
     DayCol,
-    MonthGrid
+    MonthGrid,
+    WeekSeg
 } from './calendarLogic';
 
 // Must match Calendar.COMPONENT_ID on the Java side.
@@ -211,8 +212,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!dayEl) {
             return;
         }
-        const chip = weeks!.querySelector('.cal-event') as HTMLElement | null;
-        const chipRow = (chip ? chip.getBoundingClientRect().height : 19) + 2;   // chip + gap
+        const chip = weeks!.querySelector('.cal-mbar') as HTMLElement | null;
+        const chipRow = (chip ? chip.getBoundingClientRect().height : 18) + 2;   // bar + gap
         const numEl = dayEl.querySelector('.cal-daynum') as HTMLElement | null;
         const numH = numEl ? numEl.getBoundingClientRect().height : 18;
         // clientHeight = content + padding; subtract vertical padding, the date row, and the row gap.
@@ -917,8 +918,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     // --- month view --------------------------------------------------------
-    private renderDay(cell: DayCell, dayEvents: CalEvent[]): React.ReactNode {
-        const { shown, more } = splitForDay(dayEvents, this.state.monthCap);
+    /** A month cell: background + date number. Events are drawn as bars in the week overlay. */
+    private renderDayCell(cell: DayCell): React.ReactNode {
         const cls = ['cal-day'];
         if (!cell.inMonth) { cls.push('cal-day--other'); }
         if (cell.isToday) { cls.push('cal-day--today'); }
@@ -928,19 +929,49 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 <button type="button" className="cal-daynum" onClick={(e) => this.openDayPop(cell.iso, e)} title="Show this day's events">
                     {cell.date.getDate()}
                 </button>
-                <div className="cal-events">
-                    {shown.map((ev, i) => (
-                        <button
-                            type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
-                            style={this.evVar(ev)}
-                            onClick={(e) => this.onEventClick(ev, e)}
-                            {...this.hoverProps(ev)}
-                        >{ev.title}</button>
-                    ))}
-                    {more > 0 && (
-                        <button type="button" className="cal-more" onClick={(e) => this.openDayPop(cell.iso, e)}>+{more} more</button>
-                    )}
-                </div>
+            </div>
+        );
+    }
+
+    /** One event bar (a column-span segment on a lane row). `colOffset` shifts for a leading gutter column. */
+    private renderBar(seg: WeekSeg, colOffset: number, key: string): React.ReactNode {
+        const ev = seg.event;
+        const tm = !ev.allDay && seg.startCol === seg.endCol ? timeMinutes(ev.start) : null;
+        const cls = ['cal-mbar'];
+        if (seg.continuesLeft) { cls.push('cal-mbar--cont-left'); }
+        if (seg.continuesRight) { cls.push('cal-mbar--cont-right'); }
+        return (
+            <button
+                type="button" key={key} title={ev.title}
+                className={cls.join(' ') + this.enterClass(ev.id || '')}
+                style={{
+                    gridColumn: `${seg.startCol + colOffset} / ${seg.endCol + colOffset + 1}`,
+                    gridRow: seg.lane + 1,
+                    ...(this.resolveColor(ev) ? { ['--ev' as string]: this.resolveColor(ev) } : {})
+                } as React.CSSProperties}
+                onClick={(e) => this.onEventClick(ev, e)}
+                {...this.hoverProps(ev)}
+            >
+                {tm !== null && <span className="cal-mbar-time">{this.hhmm(tm)}</span>}
+                <span className="cal-mbar-title">{ev.title}</span>
+            </button>
+        );
+    }
+
+    /** Event bars for one month week-row, positioned by column-span and lane over the day cells. */
+    private renderWeekBars(weekIsos: string[], visible: WeekSeg[], more: number[]): React.ReactNode {
+        const overflow = more.some((n) => n > 0);
+        const moreRow = Math.max(1, this.state.monthCap);   // the reserved "+N more" row (1-based)
+        return (
+            <div className="cal-week-bars">
+                {visible.map((seg, i) => this.renderBar(seg, 1, seg.event.id || `${i}`))}
+                {overflow && more.map((n, col) => (n > 0 ? (
+                    <button
+                        type="button" key={`more-${col}`} className="cal-more cal-more--bar"
+                        style={{ gridColumn: `${col + 1} / ${col + 2}`, gridRow: moreRow }}
+                        onClick={(e) => this.openDayPop(weekIsos[col], e)}
+                    >+{n} more</button>
+                ) : null))}
             </div>
         );
     }
@@ -948,7 +979,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private renderMonth(): React.ReactNode {
         const { locale } = this.props.props;
         const g = this.monthGrid();
-        const byDay = groupEventsByDay(this.visibleEvents());
+        const events = this.visibleEvents();
         const wdFmt = intlFormat(locale, { weekday: 'short' });
         return (
             <div className="cal-body cal-anim-view" key="month" style={{ ['--cal-cols' as keyof React.CSSProperties]: g.weeks[0].length } as React.CSSProperties}>
@@ -956,11 +987,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     {g.weeks[0].map((c) => <div className="cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
                 </div>
                 <div className="cal-weeks" ref={this.weeksRef}>
-                    {g.weeks.map((week, wi) => (
-                        <div className="cal-week" key={wi}>
-                            {week.map((cell) => this.renderDay(cell, byDay[cell.iso] || []))}
-                        </div>
-                    ))}
+                    {g.weeks.map((week, wi) => {
+                        const weekIsos = week.map((c) => c.iso);
+                        const segs = layoutWeekSegments(weekIsos, events);
+                        const { visible, more } = clampWeekLanes(segs, week.length, this.state.monthCap);
+                        return (
+                            <div className="cal-week" key={wi}>
+                                {week.map((cell) => this.renderDayCell(cell))}
+                                {this.renderWeekBars(weekIsos, visible, more)}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -1176,18 +1213,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 </div>
                 <div className="cal-tg-allday" style={colStyle}>
                     <div className="cal-tg-gutter-cell cal-tg-allday-label">all-day</div>
-                    {cols.map((c) => (
-                        <div className="cal-tg-allday-col" key={c.iso}>
-                            {allDayEventsForDay(events || [], c.iso).map((ev, i) => (
-                                <button
-                                    type="button" className={`cal-event${this.enterClass(ev.id || '')}`} key={ev.id || i} title={ev.title}
-                                    style={this.evVar(ev)}
-                                    onClick={(e) => this.onEventClick(ev, e)}
-                                    {...this.hoverProps(ev)}
-                                >{ev.title}</button>
-                            ))}
-                        </div>
-                    ))}
+                    {layoutWeekSegments(cols.map((c) => c.iso), events.filter((e) => e.allDay))
+                        .map((seg, i) => this.renderBar(seg, 2, seg.event.id || `ad-${i}`))}
                 </div>
                 <div className="cal-tg-scroll" ref={this.scrollRef} onScroll={() => this.hideHover()}>
                     <div className="cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
