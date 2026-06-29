@@ -1,0 +1,64 @@
+// Calendar toolbar: title (optionally a mini-nav trigger), view switcher, export + nav.
+import * as React from 'react';
+import { IconRenderer } from '@inductiveautomation/perspective-client';
+import { CalView } from './types';
+
+const VIEWS: CalView[] = ['month', 'week', 'day', 'list'];
+
+interface ToolbarProps {
+    title: string;
+    view: CalView;
+    showMiniNav: boolean;
+    miniOpen: boolean;
+    showExport: boolean;
+    onToggleMini: (e: React.MouseEvent) => void;
+    onSetView: (v: CalView) => void;
+    onExport: () => void;
+    onPrev: () => void;
+    onToday: () => void;
+    onNext: () => void;
+}
+
+export function Toolbar(props: ToolbarProps): React.ReactElement {
+    const { title, view, showMiniNav, miniOpen, showExport, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
+    return (
+        <div className="cal-toolbar">
+            {showMiniNav ? (
+                <button
+                    type="button"
+                    className={`cal-title cal-title--btn${miniOpen ? ' is-open' : ''}`}
+                    onClick={onToggleMini}
+                    aria-haspopup="true"
+                    aria-expanded={miniOpen}
+                >
+                    {title}
+                    <span className="cal-title-caret" aria-hidden="true">▾</span>
+                </button>
+            ) : (
+                <div className="cal-title">{title}</div>
+            )}
+            <div className="cal-views">
+                {VIEWS.map((v) => (
+                    <button
+                        type="button"
+                        key={v}
+                        className={`cal-view-btn${view === v ? ' cal-view-btn--active' : ''}`}
+                        onClick={() => onSetView(v)}
+                    >
+                        {v.charAt(0).toUpperCase() + v.slice(1)}
+                    </button>
+                ))}
+            </div>
+            <div className="cal-nav">
+                {showExport && (
+                    <button type="button" className="cal-nav-btn cal-export-btn" onClick={onExport} title="Export events to CSV" aria-label="Export to CSV">
+                        <IconRenderer path="material/get_app" color="var(--cal-accent)" />
+                    </button>
+                )}
+                <button type="button" className="cal-nav-btn" onClick={onPrev} aria-label="Previous">‹</button>
+                <button type="button" className="cal-today" onClick={onToday}>Today</button>
+                <button type="button" className="cal-nav-btn" onClick={onNext} aria-label="Next">›</button>
+            </div>
+        </div>
+    );
+}

@@ -3,7 +3,6 @@ import {
     Component,
     ComponentMeta,
     ComponentProps,
-    IconRenderer,
     PComponent,
     PropertyTree,
     Size2d
@@ -21,43 +20,32 @@ import {
 import {
     buildMonthGrid,
     groupEventsByDay,
-    layoutWeekSegments,
-    clampWeekLanes,
     eventsToCsv,
     weekDays,
-    layoutDayEvents,
-    backgroundBandsForDay,
     expandEvents,
-    isTimed,
-    hhmm,
     timeMinutes,
     snapMinutes,
     minuteFromOffset,
     isoDateTime,
     CalEvent,
-    DayCell,
     DayCol,
-    MonthGrid,
-    WeekSeg
+    MonthGrid
 } from './calendarLogic';
 import {
-    WeekStart, CalView, GestureMode, Gesture, Preview, HoverInfo, Editor, MiniNav, DayPop,
+    WeekStart, CalView, Gesture, Editor, MiniNav, DayPop,
     Category, CalendarProps, CalendarState,
     SLOT_PX, DEFAULT_DUR_MIN, SNAP_MIN, ENTER_MS
 } from './calendar/types';
-import {
-    EventIcon,
-    resolveColor as styleResolveColor,
-    categoryColor as styleCategoryColor,
-    eventIcon as styleEventIcon,
-    statusClass as styleStatusClass,
-    evVar as styleEvVar
-} from './calendar/eventStyle';
+import { resolveColor as styleResolveColor } from './calendar/eventStyle';
 import { Legend } from './calendar/Legend';
 import { HoverPopover } from './calendar/HoverPopover';
 import { DayPopover } from './calendar/DayPopover';
 import { MiniMonthNav } from './calendar/MiniMonthNav';
 import { EventEditor } from './calendar/EventEditor';
+import { Toolbar } from './calendar/Toolbar';
+import { MonthView } from './calendar/MonthView';
+import { TimeGrid } from './calendar/TimeGrid';
+import { ListView } from './calendar/ListView';
 
 // Must match Calendar.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.calendar';
@@ -772,202 +760,54 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return `${dm.format(a)} – ${dmy.format(b)}`;
     }
 
-    /** Agenda list of the visible week's events, grouped by day. */
     private renderList(): React.ReactNode {
-        const { locale } = this.props.props;
-        const cols = this.days();
-        const byDay = groupEventsByDay(this.visibleEvents());
-        const dayFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
-        const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
-        const rows = cols
-            .map((c) => ({ c, evs: byDay[c.iso] || [] }))
-            .filter((r) => r.evs.length > 0);
         return (
-            <div className="cal-list cal-anim-view" key="list">
-                {rows.length === 0 && <div className="cal-list-empty">No events</div>}
-                {rows.map(({ c, evs }) => (
-                    <div className="cal-list-day" key={c.iso}>
-                        <div className={`cal-list-date${c.isToday ? ' cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>
-                        {evs.map((ev, i) => {
-                            const tm = timeMinutes(ev.start);
-                            return (
-                                <button
-                                    type="button" className={`cal-list-event${this.statusClass(ev)}${this.enterClass(ev.id || '')}`} key={ev.id || i}
-                                    onClick={(e) => this.onEventClick(ev, e)}
-                                    {...this.hoverProps(ev)}
-                                >
-                                    <span className="cal-list-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
-                                    <span className="cal-list-time">
-                                        {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
-                                    </span>
-                                    {this.renderEventIcon(ev)}
-                                    <span className="cal-list-title">{ev.title}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                ))}
-            </div>
+            <ListView
+                cols={this.days()}
+                events={this.visibleEvents()}
+                locale={this.props.props.locale}
+                categories={this.props.props.categories}
+                enterClass={(id) => this.enterClass(id)}
+                hoverProps={(ev) => this.hoverProps(ev)}
+                onEventClick={(ev, e) => this.onEventClick(ev, e)}
+            />
         );
     }
 
     private renderToolbar(): React.ReactNode {
-        const views: CalView[] = ['month', 'week', 'day', 'list'];
         return (
-            <div className="cal-toolbar">
-                {this.props.props.showMiniNav ? (
-                    <button
-                        type="button"
-                        className={`cal-title cal-title--btn${this.state.mini ? ' is-open' : ''}`}
-                        onClick={this.toggleMini}
-                        aria-haspopup="true"
-                        aria-expanded={this.state.mini ? true : false}
-                    >
-                        {this.title()}
-                        <span className="cal-title-caret" aria-hidden="true">▾</span>
-                    </button>
-                ) : (
-                    <div className="cal-title">{this.title()}</div>
-                )}
-                <div className="cal-views">
-                    {views.map((v) => (
-                        <button
-                            type="button"
-                            key={v}
-                            className={`cal-view-btn${this.props.props.view === v ? ' cal-view-btn--active' : ''}`}
-                            onClick={() => this.setView(v)}
-                        >
-                            {v.charAt(0).toUpperCase() + v.slice(1)}
-                        </button>
-                    ))}
-                </div>
-                <div className="cal-nav">
-                    {this.props.props.showExport && (
-                        <button type="button" className="cal-nav-btn cal-export-btn" onClick={this.exportCsv} title="Export events to CSV" aria-label="Export to CSV">
-                            <IconRenderer path="material/get_app" color="var(--cal-accent)" />
-                        </button>
-                    )}
-                    <button type="button" className="cal-nav-btn" onClick={this.prev} aria-label="Previous">‹</button>
-                    <button type="button" className="cal-today" onClick={this.goToday}>Today</button>
-                    <button type="button" className="cal-nav-btn" onClick={this.next} aria-label="Next">›</button>
-                </div>
-            </div>
+            <Toolbar
+                title={this.title()}
+                view={this.props.props.view}
+                showMiniNav={this.props.props.showMiniNav}
+                miniOpen={!!this.state.mini}
+                showExport={this.props.props.showExport}
+                onToggleMini={this.toggleMini}
+                onSetView={(v) => this.setView(v)}
+                onExport={this.exportCsv}
+                onPrev={this.prev}
+                onToday={this.goToday}
+                onNext={this.next}
+            />
         );
     }
 
     // --- month view --------------------------------------------------------
-    /** A month cell: background + date number. Events are drawn as bars in the week overlay. */
-    private renderDayCell(cell: DayCell): React.ReactNode {
-        const cls = ['cal-day'];
-        if (!cell.inMonth) { cls.push('cal-day--other'); }
-        if (cell.isToday) { cls.push('cal-day--today'); }
-        if (cell.isWeekend) { cls.push('cal-day--weekend'); }
-        return (
-            <div className={cls.join(' ')} key={cell.iso} onClick={() => this.onDayClick(cell.iso)}>
-                <button type="button" className="cal-daynum" onClick={(e) => this.openDayPop(cell.iso, e)} title="Show this day's events">
-                    {cell.date.getDate()}
-                </button>
-            </div>
-        );
-    }
-
-    /** One event bar (a column-span segment on a lane row). `colOffset` shifts for a leading gutter column. */
-    private renderBar(seg: WeekSeg, colOffset: number, key: string): React.ReactNode {
-        const ev = seg.event;
-        const tm = !ev.allDay && seg.startCol === seg.endCol ? timeMinutes(ev.start) : null;
-        const cls = ['cal-mbar'];
-        if (seg.continuesLeft) { cls.push('cal-mbar--cont-left'); }
-        if (seg.continuesRight) { cls.push('cal-mbar--cont-right'); }
-        return (
-            <button
-                type="button" key={key} title={ev.title}
-                className={cls.join(' ') + this.statusClass(ev) + this.enterClass(ev.id || '')}
-                style={{
-                    gridColumn: `${seg.startCol + colOffset} / ${seg.endCol + colOffset + 1}`,
-                    gridRow: seg.lane + 1,
-                    ...(this.resolveColor(ev) ? { ['--ev' as string]: this.resolveColor(ev) } : {})
-                } as React.CSSProperties}
-                onClick={(e) => this.onEventClick(ev, e)}
-                {...this.hoverProps(ev)}
-            >
-                {this.renderEventIcon(ev)}
-                {tm !== null && <span className="cal-mbar-time">{hhmm(tm)}</span>}
-                <span className="cal-mbar-title">{ev.title}</span>
-            </button>
-        );
-    }
-
-    /** Event bars for one month week-row, positioned by column-span and lane over the day cells. */
-    private renderWeekBars(weekIsos: string[], visible: WeekSeg[], more: number[]): React.ReactNode {
-        const overflow = more.some((n) => n > 0);
-        const moreRow = Math.max(1, this.state.monthCap);   // the reserved "+N more" row (1-based)
-        return (
-            <div className="cal-week-bars">
-                {visible.map((seg, i) => this.renderBar(seg, 1, seg.event.id || `${i}`))}
-                {overflow && more.map((n, col) => (n > 0 ? (
-                    <button
-                        type="button" key={`more-${col}`} className="cal-more cal-more--bar"
-                        style={{ gridColumn: `${col + 1} / ${col + 2}`, gridRow: moreRow }}
-                        onClick={(e) => this.openDayPop(weekIsos[col], e)}
-                    >+{n} more</button>
-                ) : null))}
-            </div>
-        );
-    }
-
     private renderMonth(): React.ReactNode {
-        const { locale } = this.props.props;
-        const g = this.monthGrid();
-        const events = this.visibleEvents();
-        const wdFmt = intlFormat(locale, { weekday: 'short' });
         return (
-            <div className="cal-body cal-anim-view" key="month" style={{ ['--cal-cols' as keyof React.CSSProperties]: g.weeks[0].length } as React.CSSProperties}>
-                <div className="cal-weekdays">
-                    {g.weeks[0].map((c) => <div className="cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
-                </div>
-                <div className="cal-weeks" ref={this.weeksRef}>
-                    {g.weeks.map((week, wi) => {
-                        const weekIsos = week.map((c) => c.iso);
-                        const segs = layoutWeekSegments(weekIsos, events);
-                        const { visible, more } = clampWeekLanes(segs, week.length, this.state.monthCap);
-                        return (
-                            <div className="cal-week" key={wi}>
-                                {week.map((cell) => this.renderDayCell(cell))}
-                                {this.renderWeekBars(weekIsos, visible, more)}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    }
-
-    // --- week / day time-grid ---------------------------------------------
-    /** The drag/resize ghost or create selection rectangle, if active in this column. */
-    private renderPreview(dayIso: string): React.ReactNode {
-        const p = this.state.preview;
-        if (!p || p.dayIso !== dayIso) {
-            return null;
-        }
-        const winStart = this.props.props.dayStartHour * 60;
-        const top = ((p.startMin - winStart) / 60) * SLOT_PX;
-        const height = ((p.endMin - p.startMin) / 60) * SLOT_PX;
-        const timeLabel = `${hhmm(p.startMin)} – ${hhmm(p.endMin)}`;
-        if (p.mode === 'create') {
-            return (
-                <div className="cal-tg-select" style={{ top, height }}>
-                    <span className="cal-tg-select-time">{timeLabel}</span>
-                </div>
-            );
-        }
-        return (
-            <div
-                className="cal-tg-event cal-tg-event--ghost"
-                style={{ top, height, left: 0, width: 'calc(100% - 3px)', ...(p.color ? { ['--ev' as string]: p.color } : {}) } as React.CSSProperties}
-            >
-                {p.title || ''}
-                <span className="cal-tg-time">{timeLabel}</span>
-            </div>
+            <MonthView
+                grid={this.monthGrid()}
+                events={this.visibleEvents()}
+                locale={this.props.props.locale}
+                monthCap={this.state.monthCap}
+                categories={this.props.props.categories}
+                weeksRef={this.weeksRef}
+                enterClass={(id) => this.enterClass(id)}
+                hoverProps={(ev) => this.hoverProps(ev)}
+                onDayClick={(iso) => this.onDayClick(iso)}
+                openDayPop={(iso, e) => this.openDayPop(iso, e)}
+                onEventClick={(ev, e) => this.onEventClick(ev, e)}
+            />
         );
     }
 
@@ -1009,142 +849,32 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
-    // Thin delegates to the pure helpers in ./calendar/eventStyle (kept so the many
-    // in-class call sites stay unchanged).
+    /** Resolve an event's display colour — used by the drag/resize preview ghost. */
     private resolveColor(ev: CalEvent): string | undefined {
         return styleResolveColor(this.props.props.categories, ev);
     }
 
-    private categoryColor(id?: string): string | undefined {
-        return styleCategoryColor(this.props.props.categories, id);
-    }
-
-    private eventIcon(ev: CalEvent): string | undefined {
-        return styleEventIcon(this.props.props.categories, ev);
-    }
-
-    private statusClass(ev: CalEvent): string {
-        return styleStatusClass(ev);
-    }
-
-    private renderEventIcon(ev: CalEvent): React.ReactNode {
-        return <EventIcon ev={ev} categories={this.props.props.categories} />;
-    }
-
-    private evVar(ev: CalEvent): React.CSSProperties | undefined {
-        return styleEvVar(this.props.props.categories, ev);
-    }
-
     private renderTimeGrid(): React.ReactNode {
-        const { locale, editable, dayStartHour, dayEndHour } = this.props.props;
-        const events = this.visibleEvents();
-        // Background bands read their colour off the event, so resolve category colours here.
-        const bgEvents = events.map((e) => ({ ...e, color: this.resolveColor(e) }));
-        const cols = this.days();
-        const winStart = dayStartHour * 60;
-        const winEnd = dayEndHour * 60;
-        const gridHeight = ((winEnd - winStart) / 60) * SLOT_PX;
-        const hours: number[] = [];
-        for (let h = dayStartHour; h < dayEndHour; h++) { hours.push(h); }
-        const headFmt = intlFormat(locale, { weekday: 'short', day: 'numeric' });
-        const hourFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
-        const now = new Date();
-        const nowMin = now.getHours() * 60 + now.getMinutes();
-        const colStyle = { ['--cal-cols' as keyof React.CSSProperties]: cols.length } as React.CSSProperties;
-
         return (
-            <div className="cal-tg cal-anim-view" key={this.props.props.view}>
-                <div className="cal-tg-head" style={colStyle}>
-                    <div className="cal-tg-gutter-cell" />
-                    {cols.map((c) => (
-                        <div className={`cal-tg-dayhead${c.isToday ? ' cal-tg-dayhead--today' : ''}`} key={c.iso}>
-                            {headFmt.format(c.date)}
-                        </div>
-                    ))}
-                </div>
-                <div className="cal-tg-allday" style={colStyle}>
-                    <div className="cal-tg-gutter-cell cal-tg-allday-label">all-day</div>
-                    {layoutWeekSegments(cols.map((c) => c.iso), events.filter((e) => e.allDay))
-                        .map((seg, i) => this.renderBar(seg, 2, seg.event.id || `ad-${i}`))}
-                </div>
-                <div className="cal-tg-scroll" ref={this.scrollRef} onScroll={() => this.hideHover()}>
-                    <div className="cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
-                        <div className="cal-tg-gutter">
-                            {hours.map((h) => (
-                                <div className="cal-tg-hour" key={h} style={{ height: SLOT_PX }}>
-                                    <span>{hourFmt.format(new Date(2000, 0, 1, h, 0))}</span>
-                                </div>
-                            ))}
-                        </div>
-                        {cols.map((c) => (
-                            <div
-                                className={`cal-tg-col${c.isToday ? ' cal-tg-col--today' : ''}`}
-                                key={c.iso}
-                                data-day={c.iso}
-                                style={{ backgroundSize: `100% ${SLOT_PX}px` }}
-                                onMouseDown={(e) => this.startCreate(c.iso, e)}
-                            >
-                                {backgroundBandsForDay(bgEvents, c.iso, winStart, winEnd).map((b, i) => (
-                                    <div
-                                        className="cal-tg-bg"
-                                        key={b.id || `bg${i}`}
-                                        style={{
-                                            top: ((b.startMin - winStart) / 60) * SLOT_PX,
-                                            height: ((b.endMin - b.startMin) / 60) * SLOT_PX,
-                                            background: b.color || undefined
-                                        }}
-                                    />
-                                ))}
-                                {layoutDayEvents(events, c.iso, winStart, winEnd, DEFAULT_DUR_MIN).map((it, i) => {
-                                    const ev = it.event;
-                                    if (this.state.preview && this.state.preview.eventId === ev.id) {
-                                        return null; // hidden while dragging; the ghost is shown instead
-                                    }
-                                    const top = ((it.startMin - winStart) / 60) * SLOT_PX;
-                                    const height = ((it.endMin - it.startMin) / 60) * SLOT_PX;
-                                    // Drag/resize only single-day timed events; multi-day segments are click-to-edit.
-                                    const movable = editable && !it.continuesUp && !it.continuesDown;
-                                    const cls = ['cal-tg-event'];
-                                    if (movable) { cls.push('cal-tg-event--draggable'); }
-                                    if (it.continuesUp) { cls.push('cal-tg-event--cont-up'); }
-                                    if (it.continuesDown) { cls.push('cal-tg-event--cont-down'); }
-                                    const ec = this.enterClass(ev.id || '');
-                                    return (
-                                        <button
-                                            type="button"
-                                            className={cls.join(' ') + this.statusClass(ev) + ec}
-                                            key={ev.id || i} title={ev.title}
-                                            style={{
-                                                top, height,
-                                                left: `${(it.lane / it.lanes) * 100}%`,
-                                                width: `calc(${100 / it.lanes}% - 3px)`,
-                                                ...(this.resolveColor(ev) ? { ['--ev' as string]: this.resolveColor(ev) } : {})
-                                            } as React.CSSProperties}
-                                            onMouseDown={(e) => (movable ? this.startMove(ev, e) : this.onEventClick(ev, e))}
-                                            {...this.hoverProps(ev)}
-                                        >
-                                            {this.renderEventIcon(ev)}
-                                            {ev.title}
-                                            {height >= 34 && !it.continuesUp && (
-                                                <span className="cal-tg-time">
-                                                    {hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${hhmm(it.endMin)}`}
-                                                </span>
-                                            )}
-                                            {movable && (
-                                                <div className="cal-tg-resize" onMouseDown={(e) => this.startResize(ev, e)} />
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                                {this.renderPreview(c.iso)}
-                                {c.isToday && nowMin >= winStart && nowMin <= winEnd && (
-                                    <div className="cal-tg-now" style={{ top: ((nowMin - winStart) / 60) * SLOT_PX }} />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+            <TimeGrid
+                cols={this.days()}
+                events={this.visibleEvents()}
+                locale={this.props.props.locale}
+                view={this.props.props.view}
+                editable={this.props.props.editable}
+                dayStartHour={this.props.props.dayStartHour}
+                dayEndHour={this.props.props.dayEndHour}
+                preview={this.state.preview}
+                categories={this.props.props.categories}
+                scrollRef={this.scrollRef}
+                enterClass={(id) => this.enterClass(id)}
+                hoverProps={(ev) => this.hoverProps(ev)}
+                onEventClick={(ev, e) => this.onEventClick(ev, e)}
+                onStartCreate={(iso, e) => this.startCreate(iso, e)}
+                onStartMove={(ev, e) => this.startMove(ev, e)}
+                onStartResize={(ev, e) => this.startResize(ev, e)}
+                onScroll={() => this.hideHover()}
+            />
         );
     }
 
