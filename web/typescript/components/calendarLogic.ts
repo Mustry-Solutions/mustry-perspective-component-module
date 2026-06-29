@@ -284,6 +284,13 @@ export function weekDays(
     return cols;
 }
 
+/** Format minutes-from-midnight as zero-padded "HH:mm". */
+export function hhmm(min: number): string {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
+}
+
 /** Minutes-from-midnight of an ISO datetime's time part, or null if it has none. */
 export function timeMinutes(iso: string): number | null {
     const m = /T(\d{2}):(\d{2})/.exec(iso);

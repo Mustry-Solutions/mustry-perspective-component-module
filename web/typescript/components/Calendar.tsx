@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 import {
     Component,
     ComponentMeta,
@@ -30,6 +29,7 @@ import {
     backgroundBandsForDay,
     expandEvents,
     isTimed,
+    hhmm,
     timeMinutes,
     snapMinutes,
     minuteFromOffset,
@@ -40,109 +40,28 @@ import {
     MonthGrid,
     WeekSeg
 } from './calendarLogic';
+import {
+    WeekStart, CalView, GestureMode, Gesture, Preview, HoverInfo, Editor, MiniNav, DayPop,
+    Category, CalendarProps, CalendarState,
+    SLOT_PX, DEFAULT_DUR_MIN, SNAP_MIN, ENTER_MS
+} from './calendar/types';
+import {
+    EventIcon,
+    resolveColor as styleResolveColor,
+    categoryColor as styleCategoryColor,
+    eventIcon as styleEventIcon,
+    statusClass as styleStatusClass,
+    evVar as styleEvVar
+} from './calendar/eventStyle';
+import { Legend } from './calendar/Legend';
+import { HoverPopover } from './calendar/HoverPopover';
+import { DayPopover } from './calendar/DayPopover';
+import { MiniMonthNav } from './calendar/MiniMonthNav';
+import { EventEditor } from './calendar/EventEditor';
 
 // Must match Calendar.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.calendar';
 
-type WeekStart = 'monday' | 'sunday';
-type CalView = 'month' | 'week' | 'day' | 'list';
-
-const SLOT_PX = 42;         // pixels per hour on the time grid
-const DEFAULT_DUR_MIN = 60; // assumed duration for a timed event with no end
-const SNAP_MIN = 15;        // drag/resize snapping granularity
-
-type GestureMode = 'move' | 'resize' | 'create';
-
-interface Gesture {
-    mode: GestureMode;
-    ev?: CalEvent;            // move / resize target
-    startClientX: number;
-    startClientY: number;
-    origStartMin: number;
-    origEndMin: number;
-    durationMin: number;
-    origDayIso: string;
-    moved: boolean;
-}
-
-interface Preview {
-    mode: GestureMode;
-    eventId?: string;
-    title?: string;
-    color?: string;
-    dayIso: string;
-    startMin: number;
-    endMin: number;
-}
-
-export interface Category {
-    id: string;
-    label: string;
-    color: string;
-    icon?: string;   // Ignition icon path (library/name), e.g. 'material/build'
-}
-
-export interface CalendarProps {
-    view: CalView;
-    showToolbar: boolean;
-    showMiniNav: boolean;
-    showExport: boolean;
-    categories: Category[];
-    showLegend: boolean;
-    editable: boolean;
-    selectable: boolean;
-    builtInEditor: boolean;
-    weekStart: WeekStart;
-    locale: string;
-    showWeekends: boolean;
-    dayStartHour: number;
-    dayEndHour: number;
-    scrollToHour: number;
-    events: CalEvent[];
-}
-
-interface HoverInfo {
-    event: CalEvent;
-    rect: { top: number; bottom: number; left: number; right: number };
-}
-
-interface Editor {
-    id: string | null;   // null = creating a new event; set = editing an existing one
-    title: string;
-    start: string;   // 'YYYY-MM-DDTHH:mm' (timed) or 'YYYY-MM-DD' (all-day)
-    end: string;
-    allDay: boolean;
-    category: string;   // category id ('' = none); the category supplies the colour
-    description: string;
-}
-
-/** How long the create / enter animation runs before the chip settles (keep ≥ the CSS animation). */
-const ENTER_MS = 380;
-
-/** Colour for uncategorised events when categories are in use — a neutral grey so
- *  "None" events are clearly distinct from any defined category. */
-const UNCATEGORIZED_COLOR = '#6b7280';
-
-interface MiniNav {
-    rect: { top: number; bottom: number; left: number; right: number };  // anchor (title) rect
-    month: Date;   // the month shown in the mini grid (independent of the main cursor)
-}
-
-interface DayPop {
-    iso: string;   // the day whose events are listed
-    rect: { top: number; bottom: number; left: number; right: number };  // anchor (cell) rect
-}
-
-interface CalendarState {
-    cursor: Date;   // anchor day (drives the displayed month / week / day)
-    preview: Preview | null;
-    hover: HoverInfo | null;   // event under the cursor -> detail popover
-    editor: Editor | null;     // built-in new-event editor popover
-    mini: MiniNav | null;      // mini-month navigator popover (null = closed)
-    dayPop: DayPop | null;     // month-view "all events for a day" popover
-    hiddenCats: Set<string>;   // category ids hidden via the legend filter
-    monthCap: number;          // how many chips fit a month cell (auto-fit; measured at runtime)
-}
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
 
@@ -464,11 +383,6 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     /** Minutes-from-midnight -> "HH:mm". */
-    private hhmm(min: number): string {
-        const h = Math.floor(min / 60);
-        const m = min % 60;
-        return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
-    }
 
     /** A timed event's [start, end] minutes (end falls back to the default duration). */
     private eventMinutes(ev: CalEvent): { s: number; e: number } {
@@ -977,7 +891,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 {...this.hoverProps(ev)}
             >
                 {this.renderEventIcon(ev)}
-                {tm !== null && <span className="cal-mbar-time">{this.hhmm(tm)}</span>}
+                {tm !== null && <span className="cal-mbar-time">{hhmm(tm)}</span>}
                 <span className="cal-mbar-title">{ev.title}</span>
             </button>
         );
@@ -1038,7 +952,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const winStart = this.props.props.dayStartHour * 60;
         const top = ((p.startMin - winStart) / 60) * SLOT_PX;
         const height = ((p.endMin - p.startMin) / 60) * SLOT_PX;
-        const timeLabel = `${this.hhmm(p.startMin)} – ${this.hhmm(p.endMin)}`;
+        const timeLabel = `${hhmm(p.startMin)} – ${hhmm(p.endMin)}`;
         if (p.mode === 'create') {
             return (
                 <div className="cal-tg-select" style={{ top, height }}>
@@ -1057,63 +971,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
-    /** Hover detail popover (portaled to escape the calendar's clipping). */
     private renderHoverPopover(): React.ReactNode {
-        const h = this.state.hover;
-        if (!h) {
+        if (!this.state.hover) {
             return null;
         }
-        const ev = h.event;
-        const { locale } = this.props.props;
-        const width = 240;
-        let left = h.rect.right + 8;
-        if (left + width > window.innerWidth - 8) {
-            left = Math.max(8, h.rect.left - width - 8);
-        }
-        const top = Math.max(8, Math.min(h.rect.top, window.innerHeight - 130));
-        const dFmt = intlFormat(locale, { weekday: 'short', month: 'short', day: 'numeric' });
-        const sDate = parseDate(ev.start);
-        const dateStr = sDate ? dFmt.format(sDate) : '';
-        const sameDay = !ev.end || ev.end.slice(0, 10) === ev.start.slice(0, 10);
-        let timeStr: string;
-        if (isTimed(ev)) {
-            const sMin = timeMinutes(ev.start) as number;
-            const eDate = ev.end ? parseDate(ev.end) : null;
-            const eMinRaw = ev.end ? timeMinutes(ev.end) : null;
-            if (!sameDay && eDate && eMinRaw !== null) {
-                // crosses midnight / spans days -> show the end date too
-                timeStr = `${dateStr} ${this.hhmm(sMin)} – ${dFmt.format(eDate)} ${this.hhmm(eMinRaw)}`;
-            } else {
-                let eMin = eMinRaw !== null ? eMinRaw : null;
-                if (eMin === null || eMin <= sMin) {
-                    eMin = sMin + DEFAULT_DUR_MIN;
-                }
-                timeStr = `${dateStr} · ${this.hhmm(sMin)} – ${this.hhmm(eMin)}`;
-            }
-        } else if (!sameDay && ev.end) {
-            // multi-day all-day: end is exclusive, so the last shown day is end - 1
-            const lastDate = addDays(parseDate(ev.end) as Date, -1);
-            timeStr = `All day · ${dateStr} – ${dFmt.format(lastDate)}`;
-        } else {
-            timeStr = `All day · ${dateStr}`;
-        }
-        const statusLabel = ev.status === 'tentative' ? 'Tentative'
-            : ev.status === 'cancelled' ? 'Cancelled'
-                : ev.status === 'done' ? 'Done' : '';
-        return ReactDOM.createPortal(
-            <div className="cal-popover" style={{ top, left, width }}>
-                <div className="cal-popover-title">
-                    {this.eventIcon(ev)
-                        ? <span className="cal-ev-icon"><IconRenderer path={this.eventIcon(ev) as string} color={this.resolveColor(ev) || 'currentColor'} /></span>
-                        : <span className="cal-popover-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />}
-                    <span className="cal-popover-name">{ev.title}</span>
-                    {statusLabel ? <span className="cal-popover-status">{statusLabel}</span> : null}
-                </div>
-                <div className="cal-popover-time">{timeStr}</div>
-                {ev.description ? <div className="cal-popover-desc">{ev.description}</div> : null}
-            </div>,
-            document.body
-        );
+        return <HoverPopover hover={this.state.hover} locale={this.props.props.locale} categories={this.props.props.categories} />;
     }
 
     /** The built-in new-event editor popover (centered modal, portaled to body). */
@@ -1122,70 +984,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!ed) {
             return null;
         }
-        const dtType = ed.allDay ? 'date' : 'datetime-local';
-        const isEdit = ed.id !== null;
-        return ReactDOM.createPortal(
-            <div className="cal-editor-backdrop" onMouseDown={this.editorCancel}>
-                <div
-                    className="cal-editor"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { this.editorCancel(); } }}
-                >
-                    <div className="cal-editor-head">{isEdit ? 'Edit event' : 'New event'}</div>
-                    <label className="cal-editor-field">
-                        <span>Title</span>
-                        <input
-                            type="text" autoFocus value={ed.title} placeholder="Event title"
-                            onChange={(e) => this.updateEditor({ title: e.target.value })}
-                        />
-                    </label>
-                    <label className="cal-editor-check">
-                        <input type="checkbox" checked={ed.allDay} onChange={(e) => this.toggleEditorAllDay(e.target.checked)} />
-                        <span>All day</span>
-                    </label>
-                    <div className="cal-editor-row">
-                        <label className="cal-editor-field">
-                            <span>Start</span>
-                            <input type={dtType} value={ed.start} onChange={(e) => this.updateEditor({ start: e.target.value })} />
-                        </label>
-                        <label className="cal-editor-field">
-                            <span>End</span>
-                            <input type={dtType} value={ed.end} onChange={(e) => this.updateEditor({ end: e.target.value })} />
-                        </label>
-                    </div>
-                    {(this.props.props.categories || []).length > 0 && (
-                        <label className="cal-editor-field">
-                            <span>Category</span>
-                            <div className="cal-editor-catrow">
-                                <span className="cal-editor-cat-dot" style={{ background: this.categoryColor(ed.category) || UNCATEGORIZED_COLOR }} />
-                                <select
-                                    className="cal-editor-select"
-                                    value={ed.category}
-                                    onChange={(e) => this.updateEditor({ category: e.target.value })}
-                                >
-                                    <option value="">None</option>
-                                    {(this.props.props.categories || []).map((c) => (
-                                        <option key={c.id} value={c.id}>{c.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </label>
-                    )}
-                    <label className="cal-editor-field">
-                        <span>Notes</span>
-                        <textarea rows={2} value={ed.description} onChange={(e) => this.updateEditor({ description: e.target.value })} />
-                    </label>
-                    <div className="cal-editor-actions">
-                        {isEdit && (
-                            <button type="button" className="cal-editor-btn cal-editor-btn--danger" onClick={this.editorDelete}>Delete</button>
-                        )}
-                        <span className="cal-editor-actions-spacer" />
-                        <button type="button" className="cal-editor-btn" onClick={this.editorCancel}>Cancel</button>
-                        <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={this.editorSave}>{isEdit ? 'Save' : 'Create'}</button>
-                    </div>
-                </div>
-            </div>,
-            document.body
+        return (
+            <EventEditor
+                editor={ed}
+                categories={this.props.props.categories || []}
+                onUpdate={(patch) => this.updateEditor(patch)}
+                onToggleAllDay={(allDay) => this.toggleEditorAllDay(allDay)}
+                onCancel={this.editorCancel}
+                onSave={this.editorSave}
+                onDelete={this.editorDelete}
+            />
         );
     }
 
@@ -1201,60 +1009,30 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
-    /** Effective colour: explicit `color` > category colour > neutral grey (if categories
-     *  are in use) > undefined (no categories at all → CSS falls back to the theme accent). */
+    // Thin delegates to the pure helpers in ./calendar/eventStyle (kept so the many
+    // in-class call sites stay unchanged).
     private resolveColor(ev: CalEvent): string | undefined {
-        if (ev.color) {
-            return ev.color;
-        }
-        const c = this.categoryColor(ev.category);
-        if (c) {
-            return c;
-        }
-        // Uncategorised but categories exist: use a neutral colour so it's clearly not
-        // one of the defined categories (rather than borrowing the theme accent).
-        return (this.props.props.categories || []).length ? UNCATEGORIZED_COLOR : undefined;
+        return styleResolveColor(this.props.props.categories, ev);
     }
 
-    /** A category's colour by id (undefined if none / unknown). */
     private categoryColor(id?: string): string | undefined {
-        const cat = (this.props.props.categories || []).find((c) => c.id === id);
-        return cat ? cat.color : undefined;
+        return styleCategoryColor(this.props.props.categories, id);
     }
 
-    /** The icon path for an event, taken from its category (undefined = no icon). */
     private eventIcon(ev: CalEvent): string | undefined {
-        const cat = (this.props.props.categories || []).find((c) => c.id === ev.category);
-        return cat ? cat.icon : undefined;
+        return styleEventIcon(this.props.props.categories, ev);
     }
 
-    /** Status modifier class for an event chip ('' for normal/unset). */
     private statusClass(ev: CalEvent): string {
-        switch (ev.status) {
-            case 'tentative': return ' cal-ev--tentative';
-            case 'cancelled': return ' cal-ev--cancelled';
-            case 'done': return ' cal-ev--done';
-            default: return '';
-        }
+        return styleStatusClass(ev);
     }
 
-    /** An event's category icon as a small inline element (null if none). */
     private renderEventIcon(ev: CalEvent): React.ReactNode {
-        const icon = this.eventIcon(ev);
-        if (!icon) {
-            return null;
-        }
-        return (
-            <span className="cal-ev-icon">
-                <IconRenderer path={icon} color={this.resolveColor(ev) || 'currentColor'} />
-            </span>
-        );
+        return <EventIcon ev={ev} categories={this.props.props.categories} />;
     }
 
-    /** Inline `--ev` custom-property style for an event chip (undefined → CSS falls back to the accent). */
     private evVar(ev: CalEvent): React.CSSProperties | undefined {
-        const c = this.resolveColor(ev);
-        return c ? ({ ['--ev' as string]: c } as React.CSSProperties) : undefined;
+        return styleEvVar(this.props.props.categories, ev);
     }
 
     private renderTimeGrid(): React.ReactNode {
@@ -1349,7 +1127,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                                             {ev.title}
                                             {height >= 34 && !it.continuesUp && (
                                                 <span className="cal-tg-time">
-                                                    {this.hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${this.hhmm(it.endMin)}`}
+                                                    {hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${hhmm(it.endMin)}`}
                                                 </span>
                                             )}
                                             {movable && (
@@ -1376,71 +1154,30 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!m) {
             return null;
         }
-        const { locale, view } = this.props.props;
-        const grid = buildMonthGrid(startOfMonth(m.month), this.mondayFirst(), true);
-        const wdFmt = intlFormat(locale, { weekday: 'narrow' });
-        const range = this.visibleRange();
-        const cursorIso = fmtDate(this.state.cursor);
-        const showRange = view !== 'month';   // for month the range is the whole grid — not useful
-        const MINI_W = 236;
-        const left = Math.max(6, Math.min(m.rect.left, window.innerWidth - MINI_W - 6));
-        return ReactDOM.createPortal(
-            <div className="cal-mini" style={{ top: m.rect.bottom + 6, left, width: MINI_W }} onMouseDown={(e) => e.stopPropagation()}>
-                <div className="cal-mini-head">
-                    <button type="button" className="cal-mini-nav" onClick={() => this.miniStep(-1)} aria-label="Previous month">‹</button>
-                    <span className="cal-mini-title">{monthLabel(m.month, locale)}</span>
-                    <button type="button" className="cal-mini-nav" onClick={() => this.miniStep(1)} aria-label="Next month">›</button>
-                </div>
-                <div className="cal-mini-grid">
-                    {grid.weeks[0].map((c) => <div className="cal-mini-wd" key={`wd-${c.iso}`}>{wdFmt.format(c.date)}</div>)}
-                    {grid.weeks.flat().map((c) => {
-                        const cls = ['cal-mini-day'];
-                        if (!c.inMonth) { cls.push('cal-mini-day--other'); }
-                        if (showRange && c.iso >= range.start && c.iso < range.end) { cls.push('cal-mini-day--range'); }
-                        if (c.isToday) { cls.push('cal-mini-day--today'); }
-                        if (c.iso === cursorIso) { cls.push('cal-mini-day--selected'); }
-                        return (
-                            <button type="button" key={c.iso} className={cls.join(' ')} onClick={() => this.miniPick(c.iso)}>
-                                {c.date.getDate()}
-                            </button>
-                        );
-                    })}
-                </div>
-                <div className="cal-mini-foot">
-                    <button type="button" className="cal-mini-today" onClick={() => this.miniPick(fmtDate(today()))}>Today</button>
-                </div>
-            </div>,
-            document.body
+        return (
+            <MiniMonthNav
+                mini={m}
+                locale={this.props.props.locale}
+                mondayFirst={this.mondayFirst()}
+                range={this.visibleRange()}
+                cursorIso={fmtDate(this.state.cursor)}
+                showRange={this.props.props.view !== 'month'}
+                onStep={(dir) => this.miniStep(dir)}
+                onPick={(iso) => this.miniPick(iso)}
+            />
         );
     }
 
-    /** Category legend (bottom footer). Click an item to show/hide that category's events. */
     private renderLegend(): React.ReactNode {
-        const cats = this.props.props.categories || [];
-        if (!this.props.props.showLegend || cats.length === 0) {
+        if (!this.props.props.showLegend) {
             return null;
         }
         return (
-            <div className="cal-legend" role="group" aria-label="Categories">
-                {cats.map((c) => {
-                    const hidden = this.state.hiddenCats.has(c.id);
-                    return (
-                        <button
-                            type="button"
-                            key={c.id}
-                            className={`cal-legend-item${hidden ? ' is-hidden' : ''}`}
-                            onClick={() => this.toggleCategory(c.id)}
-                            aria-pressed={!hidden}
-                            title={hidden ? `Show ${c.label}` : `Hide ${c.label}`}
-                        >
-                            {c.icon
-                                ? <span className="cal-ev-icon cal-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
-                                : <span className="cal-legend-dot" style={{ background: c.color }} />}
-                            <span className="cal-legend-label">{c.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
+            <Legend
+                categories={this.props.props.categories || []}
+                hiddenCats={this.state.hiddenCats}
+                onToggle={(id) => this.toggleCategory(id)}
+            />
         );
     }
 
@@ -1450,40 +1187,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!dp) {
             return null;
         }
-        const { locale } = this.props.props;
-        const evs = groupEventsByDay(this.visibleEvents())[dp.iso] || [];
-        const d = parseDate(dp.iso) || today();
-        const headFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
-        const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
-        const W = 240;
-        const left = Math.max(6, Math.min(dp.rect.left, window.innerWidth - W - 6));
-        const top = Math.max(6, Math.min(dp.rect.top, window.innerHeight - 320));
-        return ReactDOM.createPortal(
-            <div className="cal-daypop" style={{ top, left, width: W }} onMouseDown={(e) => e.stopPropagation()}>
-                <div className="cal-daypop-head">{headFmt.format(d)}</div>
-                <div className="cal-daypop-list">
-                    {evs.length === 0 ? (
-                        <div className="cal-daypop-empty">No events</div>
-                    ) : evs.map((ev, i) => {
-                        const tm = timeMinutes(ev.start);
-                        return (
-                            <button
-                                type="button" key={ev.id || i} className={`cal-daypop-event${this.statusClass(ev)}`}
-                                onClick={(e) => this.activateFromDayPop(ev, e)}
-                                title={ev.title}
-                            >
-                                <span className="cal-daypop-dot" style={{ background: this.resolveColor(ev) || 'var(--cal-accent)' }} />
-                                <span className="cal-daypop-time">
-                                    {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
-                                </span>
-                                {this.renderEventIcon(ev)}
-                                <span className="cal-daypop-title">{ev.title}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>,
-            document.body
+        return (
+            <DayPopover
+                dayPop={dp}
+                events={groupEventsByDay(this.visibleEvents())[dp.iso] || []}
+                locale={this.props.props.locale}
+                categories={this.props.props.categories}
+                onActivate={(ev, e) => this.activateFromDayPop(ev, e)}
+            />
         );
     }
 
