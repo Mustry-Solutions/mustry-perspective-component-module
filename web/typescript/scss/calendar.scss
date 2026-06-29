@@ -46,6 +46,37 @@
         font-weight: 600;
     }
 
+    // The title doubles as the mini-month trigger when showMiniNav is on.
+    .cal-title--btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-family: inherit;
+        color: var(--cal-text);
+        background: none;
+        border: none;
+        padding: 3px 8px;
+        margin: -3px -8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover,
+        &.is-open {
+            background: color-mix(in srgb, var(--cal-accent) 9%, var(--cal-bg));
+        }
+
+        .cal-title-caret {
+            font-size: 10px;
+            color: var(--cal-muted);
+            transition: transform 0.18s ease;
+        }
+
+        &.is-open .cal-title-caret {
+            transform: rotate(180deg);
+        }
+    }
+
     .cal-nav {
         display: flex;
         align-items: center;
@@ -574,6 +605,109 @@
     }
 }
 
+// Mini-month navigator — portaled to document.body, anchored under the title.
+.cal-mini {
+    @include cal-theme;
+    position: fixed;
+    z-index: 10001;
+    box-sizing: border-box;
+    padding: 10px;
+    font-family: inherit;
+    color: var(--cal-text);
+    background: var(--cal-bg);
+    border: 1px solid var(--cal-border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    transform-origin: top left;
+    animation: cal-pop-in 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+
+    * { box-sizing: border-box; }
+
+    .cal-mini-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    .cal-mini-title {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .cal-mini-nav {
+        width: 24px;
+        height: 24px;
+        border: none;
+        background: none;
+        border-radius: 6px;
+        color: var(--cal-accent);
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover { background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-bg)); }
+    }
+
+    .cal-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+    }
+
+    .cal-mini-wd {
+        text-align: center;
+        font-size: 10px;
+        color: var(--cal-muted);
+        padding-bottom: 2px;
+    }
+
+    .cal-mini-day {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: none;
+        border-radius: 50%;
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--cal-text);
+        cursor: pointer;
+        transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease;
+
+        &:hover { background: color-mix(in srgb, var(--cal-accent) 14%, var(--cal-bg)); }
+        &:active { transform: scale(0.9); }
+    }
+
+    // Order matters: range < today < selected so the stronger state wins.
+    .cal-mini-day--other { color: var(--cal-muted); opacity: 0.5; }
+    .cal-mini-day--range { background: color-mix(in srgb, var(--cal-accent) 13%, var(--cal-bg)); }
+    .cal-mini-day--today { font-weight: 700; color: var(--cal-accent); }
+    .cal-mini-day--selected { background: var(--cal-accent); color: var(--cal-accent-text); }
+
+    .cal-mini-foot {
+        margin-top: 8px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .cal-mini-today {
+        font-family: inherit;
+        font-size: 12px;
+        padding: 4px 14px;
+        border: 1px solid var(--cal-border);
+        border-radius: 6px;
+        background: var(--cal-bg);
+        color: var(--cal-accent);
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &:hover { border-color: var(--cal-accent); }
+    }
+}
+
 // Built-in new-event editor (centered modal, portaled to document.body).
 .cal-editor-backdrop {
     position: fixed;
@@ -807,6 +941,7 @@
 @media (prefers-reduced-motion: reduce) {
     .mustry-calendar, .mustry-calendar *,
     .cal-popover, .cal-popover *,
+    .cal-mini, .cal-mini *,
     .cal-editor-backdrop, .cal-editor, .cal-editor * {
         animation: none !important;
         transition: none !important;

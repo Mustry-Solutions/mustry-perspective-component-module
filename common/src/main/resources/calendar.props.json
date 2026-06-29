@@ -8,6 +8,7 @@
             "default": {
                 "view": "month",
                 "showToolbar": true,
+                "showMiniNav": true,
                 "editable": false,
                 "selectable": false,
                 "weekStart": "monday",
@@ -43,6 +44,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show the header toolbar (previous / next / today + the month title)."
+                },
+                "showMiniNav": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Make the toolbar title a button that opens a mini-month navigator; click a day to jump the calendar there."
                 },
                 "weekStart": {
                     "enum": ["monday", "sunday"],

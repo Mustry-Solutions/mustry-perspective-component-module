@@ -75,6 +75,7 @@ interface Preview {
 export interface CalendarProps {
     view: CalView;
     showToolbar: boolean;
+    showMiniNav: boolean;
     editable: boolean;
     selectable: boolean;
     builtInEditor: boolean;
@@ -108,11 +109,17 @@ const EDITOR_COLORS = ['#0c7bb3', '#27ae60', '#e67e22', '#e11d48', '#8e44ad', '#
 /** How long the create / enter animation runs before the chip settles (keep ≥ the CSS animation). */
 const ENTER_MS = 380;
 
+interface MiniNav {
+    rect: { top: number; bottom: number; left: number; right: number };  // anchor (title) rect
+    month: Date;   // the month shown in the mini grid (independent of the main cursor)
+}
+
 interface CalendarState {
     cursor: Date;   // anchor day (drives the displayed month / week / day)
     preview: Preview | null;
     hover: HoverInfo | null;   // event under the cursor -> detail popover
     editor: Editor | null;     // built-in new-event editor popover
+    mini: MiniNav | null;      // mini-month navigator popover (null = closed)
 }
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {
@@ -133,7 +140,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
-        this.state = { cursor: today(), preview: null, hover: null, editor: null };
+        this.state = { cursor: today(), preview: null, hover: null, editor: null, mini: null };
     }
 
     componentDidMount(): void {
@@ -155,6 +162,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     componentWillUnmount(): void {
         this.removeDocListeners();
+        this.closeMiniListeners();
         this.clearHoverTimer();
         this.enterTimers.forEach((t) => window.clearTimeout(t));
     }
@@ -604,6 +612,70 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.props.store.props.write('config.view', view);
     }
 
+    // --- mini-month navigator (popover from the toolbar title) -------------
+    private toggleMini = (e: React.MouseEvent): void => {
+        if (this.state.mini) {
+            this.closeMini();
+            return;
+        }
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        this.setState({
+            mini: {
+                rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+                month: startOfMonth(this.state.cursor)
+            }
+        });
+        this.openMiniListeners();
+    };
+
+    private miniStep(dir: number): void {
+        const m = this.state.mini;
+        if (m) {
+            this.setState({ mini: { ...m, month: addMonths(m.month, dir) } });
+        }
+    }
+
+    /** Pick a day in the mini grid: jump the main calendar there (keeping the current view) and close. */
+    private miniPick(iso: string): void {
+        const d = parseDate(iso);
+        this.closeMini();
+        if (d) {
+            this.setState({ cursor: d });
+        }
+    }
+
+    private closeMini(): void {
+        this.closeMiniListeners();
+        if (this.state.mini) {
+            this.setState({ mini: null });
+        }
+    }
+
+    private openMiniListeners(): void {
+        document.addEventListener('mousedown', this.onDocMini, true);
+        document.addEventListener('keydown', this.onMiniKey, true);
+    }
+
+    private closeMiniListeners(): void {
+        document.removeEventListener('mousedown', this.onDocMini, true);
+        document.removeEventListener('keydown', this.onMiniKey, true);
+    }
+
+    private onDocMini = (e: MouseEvent): void => {
+        const t = e.target as HTMLElement | null;
+        // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
+        if (t && (t.closest('.cal-mini') || t.closest('.cal-title--btn'))) {
+            return;
+        }
+        this.closeMini();
+    };
+
+    private onMiniKey = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') {
+            this.closeMini();
+        }
+    };
+
     private onEventClick = (ev: CalEvent, e: React.MouseEvent): void => {
         e.stopPropagation();
         if (this.useEditorForEdit()) {
@@ -684,7 +756,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const views: CalView[] = ['month', 'week', 'day', 'list'];
         return (
             <div className="cal-toolbar">
-                <div className="cal-title">{this.title()}</div>
+                {this.props.props.showMiniNav ? (
+                    <button
+                        type="button"
+                        className={`cal-title cal-title--btn${this.state.mini ? ' is-open' : ''}`}
+                        onClick={this.toggleMini}
+                        aria-haspopup="true"
+                        aria-expanded={this.state.mini ? true : false}
+                    >
+                        {this.title()}
+                        <span className="cal-title-caret" aria-hidden="true">▾</span>
+                    </button>
+                ) : (
+                    <div className="cal-title">{this.title()}</div>
+                )}
                 <div className="cal-views">
                     {views.map((v) => (
                         <button
@@ -1018,6 +1103,50 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** Mini-month navigator — a compact month grid in a popover anchored under the title. */
+    private renderMini(): React.ReactNode {
+        const m = this.state.mini;
+        if (!m) {
+            return null;
+        }
+        const { locale, view } = this.props.props;
+        const grid = buildMonthGrid(startOfMonth(m.month), this.mondayFirst(), true);
+        const wdFmt = intlFormat(locale, { weekday: 'narrow' });
+        const range = this.visibleRange();
+        const cursorIso = fmtDate(this.state.cursor);
+        const showRange = view !== 'month';   // for month the range is the whole grid — not useful
+        const MINI_W = 236;
+        const left = Math.max(6, Math.min(m.rect.left, window.innerWidth - MINI_W - 6));
+        return ReactDOM.createPortal(
+            <div className="cal-mini" style={{ top: m.rect.bottom + 6, left, width: MINI_W }} onMouseDown={(e) => e.stopPropagation()}>
+                <div className="cal-mini-head">
+                    <button type="button" className="cal-mini-nav" onClick={() => this.miniStep(-1)} aria-label="Previous month">‹</button>
+                    <span className="cal-mini-title">{monthLabel(m.month, locale)}</span>
+                    <button type="button" className="cal-mini-nav" onClick={() => this.miniStep(1)} aria-label="Next month">›</button>
+                </div>
+                <div className="cal-mini-grid">
+                    {grid.weeks[0].map((c) => <div className="cal-mini-wd" key={`wd-${c.iso}`}>{wdFmt.format(c.date)}</div>)}
+                    {grid.weeks.flat().map((c) => {
+                        const cls = ['cal-mini-day'];
+                        if (!c.inMonth) { cls.push('cal-mini-day--other'); }
+                        if (showRange && c.iso >= range.start && c.iso < range.end) { cls.push('cal-mini-day--range'); }
+                        if (c.isToday) { cls.push('cal-mini-day--today'); }
+                        if (c.iso === cursorIso) { cls.push('cal-mini-day--selected'); }
+                        return (
+                            <button type="button" key={c.iso} className={cls.join(' ')} onClick={() => this.miniPick(c.iso)}>
+                                {c.date.getDate()}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className="cal-mini-foot">
+                    <button type="button" className="cal-mini-today" onClick={() => this.miniPick(fmtDate(today()))}>Today</button>
+                </div>
+            </div>,
+            document.body
+        );
+    }
+
     render(): React.ReactNode {
         const { showToolbar } = this.props.props;
         return (
@@ -1028,6 +1157,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         : this.renderTimeGrid()}
                 {this.renderHoverPopover()}
                 {this.renderEditor()}
+                {this.renderMini()}
             </div>
         );
     }
@@ -1051,6 +1181,7 @@ export class CalendarMeta implements ComponentMeta {
         return {
             view: tree.readString('config.view', 'month') as CalView,
             showToolbar: tree.readBoolean('config.showToolbar', true),
+            showMiniNav: tree.readBoolean('config.showMiniNav', true),
             editable: tree.readBoolean('config.editable', false),
             selectable: tree.readBoolean('config.selectable', false),
             builtInEditor: tree.readBoolean('config.builtInEditor', false),
