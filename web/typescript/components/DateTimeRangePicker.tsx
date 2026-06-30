@@ -41,57 +41,11 @@ import {
     PresetPeriod,
     PresetDef
 } from './pickerLogic';
+import { DateTimeRangePickerProps, DisplayMode, WeekStart } from './pickerTypes';
+import { mapPickerProps } from './pickerProps';
 
 // Must match DateTimeRangePicker.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
-
-type WeekStart = 'monday' | 'sunday';
-type DisplayMode = 'inline' | 'popover';
-
-interface LabelConfig {
-    startTime: string;
-    endTime: string;
-    startDate: string;
-    endDate: string;
-    clear: string;
-    selectRange: string;
-    invalidRange: string;
-    sameDay: string;
-    previousMonth: string;
-    nextMonth: string;
-}
-
-export interface DateTimeRangePickerProps {
-    // configuration
-    enabled: boolean;
-    display: DisplayMode;
-    popoverPlaceholder: string;
-    popoverCloseOnSelect: boolean;
-    popoverDateFormat: string;
-    showClear: boolean;
-    labels: LabelConfig;
-    disableDates: DisableMode;
-    earliestDate: string;
-    latestDate: string;
-    minSpanDays: number;
-    maxSpanDays: number;
-    durationLabelThresholdHours: number;
-    granularity: Granularity;
-    weekStart: WeekStart;
-    timezone: string;
-    locale: string;
-    layout: LayoutMode;
-    compactBelowHeight: number;
-    compactBelowWidth: number;
-    twoMonthsAboveWidth: number;
-    showPresets: boolean;
-    presets: PresetDef[];
-    // selection (two-way)
-    startDate: string;     // "YYYY-MM-DD" or ""
-    endDate: string;       // "YYYY-MM-DD" or ""
-    startTimeSec: number;  // 0..86399
-    endTimeSec: number;    // 0..86399
-}
 
 interface DateTimeRangePickerState {
     viewMonth: Date;          // first day of the displayed month
@@ -1018,55 +972,6 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
     }
 
     getPropsReducer(tree: PropertyTree): DateTimeRangePickerProps {
-        return {
-            // Public prop paths are grouped (config.dateBounds.*, config.spanDays.*,
-            // config.breakpoints.*); internal field names are kept flat for brevity.
-            enabled: tree.readBoolean('config.enabled', true),
-            display: tree.readString('config.display', 'inline') as DisplayMode,
-            popoverPlaceholder: tree.readString('config.popover.placeholder', 'Select dates'),
-            popoverCloseOnSelect: tree.readBoolean('config.popover.closeOnSelect', true),
-            popoverDateFormat: tree.readString('config.popover.dateFormat', 'DD/MM/YYYY'),
-            showClear: tree.readBoolean('config.showClear', true),
-            labels: {
-                startTime: tree.readString('config.labels.startTime', 'Start time'),
-                endTime: tree.readString('config.labels.endTime', 'End time'),
-                startDate: tree.readString('config.labels.startDate', 'Start'),
-                endDate: tree.readString('config.labels.endDate', 'End'),
-                clear: tree.readString('config.labels.clear', 'Clear'),
-                selectRange: tree.readString('config.labels.selectRange', 'Select a range'),
-                invalidRange: tree.readString('config.labels.invalidRange', 'Invalid range'),
-                sameDay: tree.readString('config.labels.sameDay', 'Same day'),
-                previousMonth: tree.readString('config.labels.previousMonth', 'Previous month'),
-                nextMonth: tree.readString('config.labels.nextMonth', 'Next month')
-            },
-            disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
-            earliestDate: tree.readString('config.dateBounds.earliest', ''),
-            latestDate: tree.readString('config.dateBounds.latest', ''),
-            minSpanDays: tree.readNumber('config.spanDays.min', 0),
-            maxSpanDays: tree.readNumber('config.spanDays.max', 0),
-            durationLabelThresholdHours: tree.readNumber('config.durationLabelThresholdHours', 24),
-            granularity: tree.readString('config.granularity', 'second') as Granularity,
-            weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
-            timezone: tree.readString('config.timezone', ''),
-            locale: tree.readString('config.locale', ''),
-            layout: tree.readString('config.layout', 'auto') as LayoutMode,
-            compactBelowHeight: tree.readNumber('config.breakpoints.compactBelowHeight', 260),
-            compactBelowWidth: tree.readNumber('config.breakpoints.compactBelowWidth', 240),
-            twoMonthsAboveWidth: tree.readNumber('config.breakpoints.twoMonthsAboveWidth', 560),
-            showPresets: tree.readBoolean('config.showPresets', true),
-            presets: (tree.readArray('config.presets', []) || []).map((p: any) => ({
-                // Public item shape nests type-specific fields under rolling/calendar;
-                // flatten here so the rest of the component stays simple.
-                label: String((p && p.label) || ''),
-                type: ((p && p.type) === 'calendar' ? 'calendar' : 'rolling') as PresetType,
-                amount: Number((p && p.rolling && p.rolling.amount) || 0),
-                unit: ((p && p.rolling && p.rolling.unit) || 'days') as PresetUnit,
-                period: ((p && p.calendar && p.calendar.period) || 'thisMonth') as PresetPeriod
-            })),
-            startDate: tree.readString('selection.startDate', ''),
-            endDate: tree.readString('selection.endDate', ''),
-            startTimeSec: tree.readNumber('selection.startTimeSec', 0),
-            endTimeSec: tree.readNumber('selection.endTimeSec', 86399)
-        };
+        return mapPickerProps(tree);
     }
 }
