@@ -129,7 +129,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
         const sec = this.props.props.refreshSeconds;
         if (sec && sec > 0) {
-            this.refreshTimer = window.setInterval(() => this.forceUpdate(), Math.max(1, sec) * 1000);
+            this.refreshTimer = window.setInterval(() => {
+                // Don't re-render mid-interaction — it could dismiss an open native picker
+                // in the editor, and it's pointless while a drag is in progress.
+                if (this.state.editor || this.gesture) {
+                    return;
+                }
+                this.forceUpdate();
+            }, Math.max(1, sec) * 1000);
         }
     }
 
