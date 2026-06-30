@@ -1,8 +1,9 @@
 // Built-in new/edit-event editor (centered modal, portaled to document.body).
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { Category, Editor } from './types';
-import { categoryColor, UNCATEGORIZED_COLOR } from './eventStyle';
+import { UNCATEGORIZED_COLOR } from './eventStyle';
 
 interface EventEditorProps {
     editor: Editor;
@@ -19,6 +20,8 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
     const { editor: ed, categories, timezone, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
+    const selCat = (categories || []).find((c) => c.id === ed.category);
+    const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
     return ReactDOM.createPortal(
         <div className="cal-editor-backdrop" onMouseDown={onCancel}>
             <div
@@ -55,7 +58,13 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                     <label className="cal-editor-field">
                         <span>Category</span>
                         <div className="cal-editor-catrow">
-                            <span className="cal-editor-cat-dot" style={{ background: categoryColor(categories, ed.category) || UNCATEGORIZED_COLOR }} />
+                            {selCat && selCat.icon ? (
+                                <span className="cal-editor-cat-icon">
+                                    <IconRenderer path={selCat.icon} color={catColor} />
+                                </span>
+                            ) : (
+                                <span className="cal-editor-cat-dot" style={{ background: catColor }} />
+                            )}
                             <select
                                 className="cal-editor-select"
                                 value={ed.category}

@@ -1057,6 +1057,17 @@
         transition: background 0.15s ease;
     }
 
+    // The selected category's icon (in its colour) — same footprint as the dot.
+    .cal-editor-cat-icon {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+
+        svg { width: 16px; height: 16px; display: block; }
+    }
+
     .cal-editor-select {
         flex: 1 1 auto;
         font-family: inherit;
