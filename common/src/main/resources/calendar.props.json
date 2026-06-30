@@ -19,6 +19,7 @@
                 "dayEndHour": 24,
                 "scrollToHour": 7,
                 "scrollToNow": false,
+                "refreshSeconds": 0,
                 "showLegend": true,
                 "categories": []
             },
@@ -92,6 +93,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Week/Day views: on open / view-switch / Today, centre the grid on the current time when today is in view (else fall back to scrollToHour)."
+                },
+                "refreshSeconds": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Re-render the calendar every N seconds so the now-indicator ticks live (and 'today' stays current). 0 = off; 60 is typical."
                 },
                 "showLegend": {
                     "type": "boolean",

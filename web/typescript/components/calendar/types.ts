@@ -35,6 +35,7 @@ export interface CalendarProps {
     dayEndHour: number;
     scrollToHour: number;
     scrollToNow: boolean;
+    refreshSeconds: number;
     events: CalEvent[];
 }
 

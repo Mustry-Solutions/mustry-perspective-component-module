@@ -62,6 +62,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private colRects: Array<{ day: string; rect: DOMRect }> = [];
 
     private hoverTimer = 0;
+    private refreshTimer = 0;   // periodic re-render so the now-indicator ticks live
 
     // Enter-animation bookkeeping: animate an event chip only when a brand-new id
     // first appears (create / new data), not on initial load or navigation.
@@ -91,6 +92,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             this.resizeObs.observe(this.rootRef.current);
         }
         this.recomputeMonthCap();
+        this.setupRefreshTimer();
     }
 
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
@@ -100,6 +102,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
         this.detectNewEvents();
         this.recomputeMonthCap();   // week-count (5/6) or view changes can change the fit
+        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
+            this.setupRefreshTimer();
+        }
     }
 
     componentWillUnmount(): void {
@@ -108,8 +113,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.closeDayPopListeners();
         this.clearHoverTimer();
         this.enterTimers.forEach((t) => window.clearTimeout(t));
+        if (this.refreshTimer) {
+            window.clearInterval(this.refreshTimer);
+        }
         if (this.resizeObs) {
             this.resizeObs.disconnect();
+        }
+    }
+
+    /** (Re)start the periodic re-render so time-sensitive bits (the now-indicator) stay live. */
+    private setupRefreshTimer(): void {
+        if (this.refreshTimer) {
+            window.clearInterval(this.refreshTimer);
+            this.refreshTimer = 0;
+        }
+        const sec = this.props.props.refreshSeconds;
+        if (sec && sec > 0) {
+            this.refreshTimer = window.setInterval(() => this.forceUpdate(), Math.max(1, sec) * 1000);
         }
     }
 
@@ -998,6 +1018,7 @@ export class CalendarMeta implements ComponentMeta {
             dayEndHour: tree.readNumber('config.dayEndHour', 24),
             scrollToHour: tree.readNumber('config.scrollToHour', 7),
             scrollToNow: tree.readBoolean('config.scrollToNow', false),
+            refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
             events: (tree.readArray('data.events', []) || []).map((e: any) => ({
                 id: String((e && e.id) || ''),
                 title: String((e && e.title) || ''),

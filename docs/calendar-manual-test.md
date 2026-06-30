@@ -149,6 +149,7 @@ self.props.data.events = events
 - [ ] Timed events sit at the right time and height; **overlapping events split into side-by-side lanes** (Inspection + Design review on the 24th).
 - [ ] All-day events appear in the top **all-day strip**; multi-day spans it.
 - [ ] A **now-indicator** (red line) shows on today's column.
+- [ ] With `refreshSeconds > 0` (e.g. 60), the now-indicator ticks down on its own over time (the calendar re-renders on that interval) without changing the scroll position.
 - [ ] Background "Maint downtime" renders as a translucent band **behind** events (02:00–05:00).
 - [ ] Day view shows a single column for the cursor day; nav steps by one day.
 
