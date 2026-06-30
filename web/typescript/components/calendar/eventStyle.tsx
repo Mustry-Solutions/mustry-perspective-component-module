@@ -44,12 +44,6 @@ export function statusClass(ev: CalEvent): string {
     }
 }
 
-/** Inline `--ev` custom-property style for an event chip (undefined → CSS falls back to the accent). */
-export function evVar(categories: Category[], ev: CalEvent): React.CSSProperties | undefined {
-    const c = resolveColor(categories, ev);
-    return c ? ({ ['--ev' as string]: c } as React.CSSProperties) : undefined;
-}
-
 /** An event's category icon as a small inline element (renders nothing if there's no icon). */
 export function EventIcon({ ev, categories }: { ev: CalEvent; categories: Category[] }): React.ReactElement | null {
     const icon = eventIcon(categories, ev);

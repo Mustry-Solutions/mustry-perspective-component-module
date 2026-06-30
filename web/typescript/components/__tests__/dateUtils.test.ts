@@ -2,7 +2,7 @@ import {
     pad2, startOfDay, startOfMonth, addMonths, addDays, daysInMonth,
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
-    fmtDateTime, formatPattern, resolveZoned
+    formatPattern, resolveZoned
 } from '../dateUtils';
 
 describe('pad2', () => {
@@ -146,12 +146,6 @@ describe('time-of-day helpers', () => {
         const c = combine(new Date(2026, 5, 15), 45296);
         expect(c.getDate()).toBe(15);
         expect(secondsOfDay(c)).toBe(45296);
-    });
-});
-
-describe('fmtDateTime', () => {
-    it('formats local wall-clock without offset', () => {
-        expect(fmtDateTime(new Date(2026, 5, 5, 9, 8, 7))).toBe('2026-06-05T09:08:07');
     });
 });
 

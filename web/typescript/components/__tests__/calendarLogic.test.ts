@@ -1,6 +1,6 @@
 import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
-    weekDays, timeMinutes, isTimed, layoutDayEvents, allDayEventsForDay,
+    weekDays, timeMinutes, isTimed, layoutDayEvents,
     snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv,
     expandEvents, backgroundBandsForDay, CalEvent
 } from '../calendarLogic';
@@ -266,17 +266,6 @@ describe('editing gesture math', () => {
         expect(isoDateTime('2026-06-24', 540)).toBe('2026-06-24T09:00:00');
         expect(isoDateTime('2026-06-24', 9 * 60 + 5)).toBe('2026-06-24T09:05:00');
         expect(isoDateTime('2026-06-24', 0)).toBe('2026-06-24T00:00:00');
-    });
-});
-
-describe('allDayEventsForDay', () => {
-    it('returns all-day / date-only events covering the day, sorted', () => {
-        const events: CalEvent[] = [
-            { id: 'm', title: 'Multi', start: '2026-06-22', end: '2026-06-25', allDay: true },
-            { id: 't', title: 'Timed', start: '2026-06-24T09:00:00' },
-            { id: 'd', title: 'DateOnly', start: '2026-06-24' }
-        ];
-        expect(allDayEventsForDay(events, '2026-06-24').map((e) => e.id)).toEqual(['d', 'm']);
     });
 });
 

@@ -115,11 +115,6 @@ export function combine(dateOnly: Date, sec: number): Date {
     return d;
 }
 
-/** "YYYY-MM-DDTHH:mm:ss" local wall-clock (no timezone offset). */
-export function fmtDateTime(d: Date): string {
-    return `${fmtDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-}
-
 /** Format a date with a token pattern (YYYY, YY, MM, M, DD, D, HH, mm, ss). */
 export function formatPattern(d: Date, pattern: string): string {
     const map: { [k: string]: string } = {

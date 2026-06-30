@@ -409,13 +409,6 @@ export function isoDateTime(dayIso: string, min: number): string {
     return `${dayIso}T${pad2(Math.floor(min / 60))}:${pad2(min % 60)}:00`;
 }
 
-/** All-day (and date-only) events covering `dayIso`, sorted by title. */
-export function allDayEventsForDay(events: CalEvent[], dayIso: string): CalEvent[] {
-    return (events || [])
-        .filter((ev) => ev && ev.start && ev.display !== 'background' && !isTimed(ev) && eventDays(ev).indexOf(dayIso) >= 0)
-        .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-}
-
 export interface BgBand {
     id: string;
     startMin: number;
