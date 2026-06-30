@@ -956,6 +956,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 events={this.visibleEvents()}
                 locale={this.props.props.locale}
                 categories={this.props.props.categories}
+                emptyMessage={this.props.props.emptyMessage}
                 enterClass={(id) => this.enterClass(id)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
@@ -971,6 +972,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 showMiniNav={this.props.props.showMiniNav}
                 miniOpen={!!this.state.mini}
                 showExport={this.props.props.showExport}
+                emptyLabel={(this.props.props.events || []).length === 0 ? this.props.props.emptyMessage : ''}
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
                 onExport={this.exportCsv}

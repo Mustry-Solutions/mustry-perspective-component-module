@@ -25,6 +25,7 @@ export interface CalendarProps {
     showExport: boolean;
     categories: Category[];
     showLegend: boolean;
+    emptyMessage: string;   // shown in the header (and list) when no events are configured; '' = hidden
     editable: boolean;
     selectable: boolean;
     builtInEditor: boolean;

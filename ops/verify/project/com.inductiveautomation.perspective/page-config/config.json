@@ -11,6 +11,10 @@
     "/stress": {
       "viewPath": "CalendarStress",
       "viewParams": {}
+    },
+    "/empty": {
+      "viewPath": "CalendarEmpty",
+      "viewParams": {}
     }
   },
   "shared": {},

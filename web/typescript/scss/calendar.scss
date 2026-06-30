@@ -46,6 +46,18 @@
         font-weight: 600;
     }
 
+    // Subtle "nothing configured" badge next to the title (no events in the dataset).
+    .cal-empty-badge {
+        margin-left: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--cal-muted);
+        background: color-mix(in srgb, var(--cal-muted) 14%, transparent);
+        white-space: nowrap;
+    }
+
     // The title doubles as the mini-month trigger when showMiniNav is on.
     .cal-title--btn {
         display: inline-flex;

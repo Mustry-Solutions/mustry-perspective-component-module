@@ -21,8 +21,14 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.scrollToHour).toBe(7);
         expect(p.scrollToNow).toBe(false);
         expect(p.refreshSeconds).toBe(0);
+        expect(p.emptyMessage).toBe('No events');
         expect(p.categories).toEqual([]);
         expect(p.events).toEqual([]);
+    });
+
+    it('reads a custom (or empty/opt-out) emptyMessage', () => {
+        expect(mapCalendarProps(stubReader({ config: { emptyMessage: 'Nothing scheduled' } })).emptyMessage).toBe('Nothing scheduled');
+        expect(mapCalendarProps(stubReader({ config: { emptyMessage: '' } })).emptyMessage).toBe('');
     });
 
     it('reads config overrides', () => {

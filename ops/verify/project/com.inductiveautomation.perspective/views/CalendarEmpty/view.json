@@ -1,0 +1,36 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1000, "height": 720 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Empty-state fixture — no events configured. The header shows a subtle 'No events' badge; the grid is still usable (drag empty time to create).", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 10, "width": 960, "height": 40 }
+      },
+      {
+        "type": "mustrysolutions.display.calendar",
+        "version": 0,
+        "props": {
+          "config": {
+            "view": "month", "editable": true, "selectable": true, "builtInEditor": true,
+            "showLegend": true
+          },
+          "data": { "events": [] }
+        },
+        "custom": {},
+        "meta": { "name": "calendar" },
+        "position": { "x": 16, "y": 56, "width": 968, "height": 640 }
+      }
+    ]
+  }
+}

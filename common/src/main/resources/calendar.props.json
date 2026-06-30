@@ -22,6 +22,7 @@
                 "scrollToNow": false,
                 "refreshSeconds": 0,
                 "showLegend": true,
+                "emptyMessage": "No events",
                 "categories": []
             },
             "properties": {
@@ -109,6 +110,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show the category legend (bottom). Only appears when categories are defined; click an item to filter that category."
+                },
+                "emptyMessage": {
+                    "type": "string",
+                    "default": "No events",
+                    "description": "Shown as a subtle header badge (and in the list view) when no events are configured (data.events is empty). Empty string = no message."
                 },
                 "categories": {
                     "type": "array",

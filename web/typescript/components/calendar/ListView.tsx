@@ -10,12 +10,13 @@ interface ListViewProps {
     events: CalEvent[];
     locale: string;
     categories: Category[];
+    emptyMessage: string;
     enterClass: (id: string) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
 }
 
-export function ListView({ cols, events, locale, categories, enterClass, hoverProps, onEventClick }: ListViewProps): React.ReactElement {
+export function ListView({ cols, events, locale, categories, emptyMessage, enterClass, hoverProps, onEventClick }: ListViewProps): React.ReactElement {
     const byDay = groupEventsByDay(events);
     const dayFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -24,7 +25,7 @@ export function ListView({ cols, events, locale, categories, enterClass, hoverPr
         .filter((r) => r.evs.length > 0);
     return (
         <div className="cal-list cal-anim-view" key="list">
-            {rows.length === 0 && <div className="cal-list-empty">No events</div>}
+            {rows.length === 0 && <div className="cal-list-empty">{emptyMessage || 'No events'}</div>}
             {rows.map(({ c, evs }) => (
                 <div className="cal-list-day" key={c.iso}>
                     <div className={`cal-list-date${c.isToday ? ' cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>

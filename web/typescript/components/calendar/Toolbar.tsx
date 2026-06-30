@@ -11,6 +11,7 @@ interface ToolbarProps {
     showMiniNav: boolean;
     miniOpen: boolean;
     showExport: boolean;
+    emptyLabel: string;   // shown as a muted badge by the title when no events are configured ('' = hidden)
     onToggleMini: (e: React.MouseEvent) => void;
     onSetView: (v: CalView) => void;
     onExport: () => void;
@@ -20,7 +21,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
-    const { title, view, showMiniNav, miniOpen, showExport, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
+    const { title, view, showMiniNav, miniOpen, showExport, emptyLabel, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
     return (
         <div className="cal-toolbar">
             {showMiniNav ? (
@@ -37,6 +38,7 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
             ) : (
                 <div className="cal-title">{title}</div>
             )}
+            {emptyLabel && <span className="cal-empty-badge" title={emptyLabel}>{emptyLabel}</span>}
             <div className="cal-views">
                 {VIEWS.map((v) => (
                     <button

@@ -18,6 +18,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
                 icon: c && c.icon ? String(c.icon) : undefined
             }))
             .filter((c: Category) => c.id),
+        emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         editable: tree.readBoolean('config.editable', false),
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
