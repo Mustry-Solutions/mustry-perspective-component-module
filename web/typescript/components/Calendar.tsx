@@ -42,6 +42,7 @@ import {
 } from './calendar/types';
 import { resolveColor as styleResolveColor } from './calendar/eventStyle';
 import { mapCalendarProps } from './calendarProps';
+import { colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision } from './calendar/gestureLogic';
 import { Legend } from './calendar/Legend';
 import { HoverPopover } from './calendar/HoverPopover';
 import { DayPopover } from './calendar/DayPopover';
@@ -598,12 +599,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private colAt(clientX: number): { day: string; rect: DOMRect } | null {
-        for (const c of this.colRects) {
-            if (clientX >= c.rect.left && clientX < c.rect.right) {
-                return c;
-            }
-        }
-        return null;
+        const hit = colAtX(this.colRects.map((c) => ({ day: c.day, left: c.rect.left, right: c.rect.right })), clientX);
+        return hit ? this.colRects.filter((c) => c.day === hit.day)[0] : null;
     }
 
     private minuteAtY(rect: DOMRect, clientY: number): number {
@@ -677,30 +674,28 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!g) {
             return;
         }
-        if (!g.moved && Math.abs(e.clientY - g.startClientY) + Math.abs(e.clientX - g.startClientX) > 4) {
+        if (!g.moved && hasMoved(e.clientX - g.startClientX, e.clientY - g.startClientY)) {
             g.moved = true;
         }
         const { dayStartHour, dayEndHour } = this.props.props;
         const winStart = dayStartHour * 60;
         const winEnd = dayEndHour * 60;
+        const deltaMin = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
         if (g.mode === 'move') {
             if (!this.props.props.editable) {
                 return;
             }
             const col = this.colAt(e.clientX) || this.colRects.filter((c) => c.day === g.origDayIso)[0];
-            const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
-            const start = Math.max(winStart, Math.min(winEnd - g.durationMin, g.origStartMin + delta));
-            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: col.day, startMin: start, endMin: start + g.durationMin } });
+            const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd);
+            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: col.day, startMin, endMin } });
         } else if (g.mode === 'resize') {
-            const delta = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
-            const end = Math.max(g.origStartMin + SNAP_MIN, Math.min(winEnd, g.origEndMin + delta));
-            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin: g.origStartMin, endMin: end } });
+            const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, SNAP_MIN);
+            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin, endMin } });
         } else if (this.props.props.selectable) {
             const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const cur = this.minuteAtY(col.rect, e.clientY);
-            const a = Math.min(g.origStartMin, cur);
-            const b = Math.max(g.origStartMin, cur);
-            this.setState({ preview: { mode: 'create', dayIso: g.origDayIso, startMin: a, endMin: Math.max(b, a + SNAP_MIN) } });
+            const { startMin, endMin } = createPreview(g.origStartMin, cur, SNAP_MIN);
+            this.setState({ preview: { mode: 'create', dayIso: g.origDayIso, startMin, endMin } });
         }
     };
 
@@ -713,37 +708,46 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!g) {
             return;
         }
-        if (g.mode === 'move') {
-            if (!this.props.props.editable || !g.moved || !preview) {
-                // A plain click (no drag): open the editor to edit, else fire onEventClick.
-                if (this.useEditorForEdit()) {
-                    this.openEditorForEvent(g.ev!);
-                } else {
-                    this.fireEvent('onEventClick', this.eventPayload(g.ev!));
-                }
-                return;
-            }
-            const newStart = this.iso(preview.dayIso, preview.startMin);
-            const newEnd = this.iso(preview.dayIso, preview.endMin);
-            this.fireMoveResize('move', g.ev!, { start: newStart, end: newEnd });
-        } else if (g.mode === 'resize') {
-            if (g.moved && preview) {
-                const newEnd = this.iso(preview.dayIso, preview.endMin);
-                this.fireMoveResize('resize', g.ev!, { end: newEnd });
-            }
-        } else if (g.moved && preview && this.props.props.selectable) {
-            const start = this.iso(preview.dayIso, preview.startMin);
-            const end = this.iso(preview.dayIso, preview.endMin);
-            if (this.useEditor()) {
-                this.openEditor(start, end, false);   // editor works in zone-local wall clock
-            } else {
+        const kind = commitDecision(g.mode, g.moved, !!preview, {
+            editable: this.props.props.editable,
+            selectable: this.props.props.selectable,
+            useEditor: this.useEditor(),
+            useEditorForEdit: this.useEditorForEdit()
+        });
+        switch (kind) {
+            case 'editEvent':
+                this.openEditorForEvent(g.ev!);
+                break;
+            case 'eventClick':
+                this.fireEvent('onEventClick', this.eventPayload(g.ev!));
+                break;
+            case 'move':
+                this.fireMoveResize('move', g.ev!, {
+                    start: this.iso(preview!.dayIso, preview!.startMin),
+                    end: this.iso(preview!.dayIso, preview!.endMin)
+                });
+                break;
+            case 'resize':
+                this.fireMoveResize('resize', g.ev!, { end: this.iso(preview!.dayIso, preview!.endMin) });
+                break;
+            case 'selectEditor':
+                this.openEditor(this.iso(preview!.dayIso, preview!.startMin), this.iso(preview!.dayIso, preview!.endMin), false);
+                break;
+            case 'select': {
+                const start = this.iso(preview!.dayIso, preview!.startMin);
+                const end = this.iso(preview!.dayIso, preview!.endMin);
                 this.fireEvent('onSelect', { start: this.emitTime(start, false), end: this.emitTime(end, false), allDay: false });
+                break;
             }
-        } else if (this.useEditor()) {
-            // a plain click on empty time -> editor with a default one-hour slot
-            this.openEditor(this.iso(g.origDayIso, 9 * 60), this.iso(g.origDayIso, 10 * 60), false);
-        } else {
-            this.fireEvent('onDateClick', { date: g.origDayIso });
+            case 'createEditor':
+                // a plain click on empty time -> editor with a default one-hour slot
+                this.openEditor(this.iso(g.origDayIso, 9 * 60), this.iso(g.origDayIso, 10 * 60), false);
+                break;
+            case 'dateClick':
+                this.fireEvent('onDateClick', { date: g.origDayIso });
+                break;
+            default:
+                break;
         }
     };
 
