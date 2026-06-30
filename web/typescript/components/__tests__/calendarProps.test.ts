@@ -26,6 +26,16 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.events).toEqual([]);
     });
 
+    it('accepts valid slotMinutes (divisors of 60) and rejects the rest', () => {
+        const slot = (v: any) => mapCalendarProps(stubReader({ config: { slotMinutes: v } })).slotMinutes;
+        expect(slot(15)).toBe(15);
+        expect(slot(5)).toBe(5);
+        expect(slot(30)).toBe(30);
+        expect(slot(7)).toBe(60);    // not a divisor -> fallback
+        expect(slot(0)).toBe(60);    // out of range -> fallback
+        expect(slot(90)).toBe(60);   // > 60 -> fallback
+    });
+
     it('reads a custom (or empty/opt-out) emptyMessage', () => {
         expect(mapCalendarProps(stubReader({ config: { emptyMessage: 'Nothing scheduled' } })).emptyMessage).toBe('Nothing scheduled');
         expect(mapCalendarProps(stubReader({ config: { emptyMessage: '' } })).emptyMessage).toBe('');
@@ -44,6 +54,7 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.timezone).toBe('America/Chicago');
         expect(p.dayStartHour).toBe(6);
         expect(p.dayEndHour).toBe(20);
+        expect(p.slotMinutes).toBe(60);   // default
         expect(p.scrollToNow).toBe(true);
         expect(p.refreshSeconds).toBe(60);
         expect(p.showWeekends).toBe(false);

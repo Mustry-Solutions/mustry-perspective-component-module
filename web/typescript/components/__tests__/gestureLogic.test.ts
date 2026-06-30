@@ -1,6 +1,16 @@
 import {
     colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision, GestureFlags
 } from '../calendar/gestureLogic';
+import { hourHeightPx, SLOT_PX } from '../calendar/types';
+
+describe('hourHeightPx (grid resolution)', () => {
+    it('keeps the base height for coarse grids and grows so fine slots stay grabbable', () => {
+        expect(hourHeightPx(60)).toBe(SLOT_PX);   // unchanged at 60 min
+        expect(hourHeightPx(30)).toBe(SLOT_PX);   // 30-min slot = 21px, still fine
+        expect(hourHeightPx(15)).toBe(56);        // 14px per 15-min slot
+        expect(hourHeightPx(5)).toBe(168);        // 14px per 5-min slot (tall, scrollable)
+    });
+});
 
 describe('colAtX', () => {
     const cols = [

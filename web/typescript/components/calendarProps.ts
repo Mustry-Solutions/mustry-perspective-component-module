@@ -28,6 +28,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         showWeekends: tree.readBoolean('config.showWeekends', true),
         dayStartHour: tree.readNumber('config.dayStartHour', 0),
         dayEndHour: tree.readNumber('config.dayEndHour', 24),
+        slotMinutes: ((v) => (Number.isFinite(v) && v >= 5 && v <= 60 && 60 % v === 0 ? v : 60))(tree.readNumber('config.slotMinutes', 60)),
         scrollToHour: tree.readNumber('config.scrollToHour', 7),
         scrollToNow: tree.readBoolean('config.scrollToNow', false),
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),

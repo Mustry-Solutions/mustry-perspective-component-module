@@ -24,7 +24,7 @@
           "config": {
             "view": "week", "editable": true, "selectable": true, "builtInEditor": true, "scrollToHour": 8,
             "scrollToNow": true, "refreshSeconds": 60, "showLegend": true, "showExport": true,
-            "timezone": "America/Chicago",
+            "timezone": "America/Chicago", "slotMinutes": 15,
             "categories": [
               { "id": "ops", "label": "Operations", "color": "#0c7bb3", "icon": "material/settings" },
               { "id": "maint", "label": "Maintenance", "color": "#e67e22", "icon": "material/build" },

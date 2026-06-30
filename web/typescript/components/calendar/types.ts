@@ -6,10 +6,17 @@ export type CalView = 'month' | 'week' | 'day' | 'list';
 export type GestureMode = 'move' | 'resize' | 'create';
 
 // --- layout constants ---
-export const SLOT_PX = 42;         // pixels per hour on the time grid
+export const SLOT_PX = 42;         // base pixels per hour (slotMinutes = 60)
+export const MIN_SLOT_PX = 14;     // keep each sub-slot tall enough to see/grab
 export const DEFAULT_DUR_MIN = 60; // assumed duration for a timed event with no end
-export const SNAP_MIN = 15;        // drag/resize snapping granularity
+export const SNAP_MIN = 15;        // default drag/resize snapping granularity (fallback)
 export const ENTER_MS = 380;       // create/enter animation duration (keep ≥ the CSS animation)
+
+/** Pixels per hour for a given slot resolution. Coarse grids keep the base height;
+ *  finer grids grow (taller, scrollable) so each sub-slot stays grabbable. */
+export function hourHeightPx(slotMinutes: number): number {
+    return Math.max(SLOT_PX, (MIN_SLOT_PX * 60) / Math.max(1, slotMinutes));
+}
 
 export interface Category {
     id: string;
@@ -35,6 +42,7 @@ export interface CalendarProps {
     showWeekends: boolean;
     dayStartHour: number;
     dayEndHour: number;
+    slotMinutes: number;   // week/day grid resolution + snapping (a divisor of 60: 60/30/15/10/5)
     scrollToHour: number;
     scrollToNow: boolean;
     refreshSeconds: number;

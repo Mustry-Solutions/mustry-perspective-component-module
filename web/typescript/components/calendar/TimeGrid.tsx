@@ -5,7 +5,7 @@ import { intlFormat } from '../dateUtils';
 import {
     CalEvent, DayCol, hhmm, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
 } from '../calendarLogic';
-import { Category, CalView, Preview, SLOT_PX, DEFAULT_DUR_MIN } from './types';
+import { Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
 import { EventIcon, resolveColor, statusClass } from './eventStyle';
 import { EventBar } from './EventBar';
 
@@ -17,6 +17,7 @@ interface TimeGridProps {
     editable: boolean;
     dayStartHour: number;
     dayEndHour: number;
+    slotMinutes: number;  // grid resolution (divisor of 60); drives gridlines + row height
     nowMinutes: number;   // minutes-from-midnight of "now" in the display zone
     preview: Preview | null;
     categories: Category[];
@@ -32,19 +33,30 @@ interface TimeGridProps {
 
 export function TimeGrid(props: TimeGridProps): React.ReactElement {
     const {
-        cols, events, locale, view, editable, dayStartHour, dayEndHour, nowMinutes, preview, categories,
+        cols, events, locale, view, editable, dayStartHour, dayEndHour, slotMinutes, nowMinutes, preview, categories,
         scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
     } = props;
 
+    const hourPx = hourHeightPx(slotMinutes);
+    const slotPx = (hourPx * slotMinutes) / 60;   // pixels per sub-slot gridline
     const winStart = dayStartHour * 60;
     const winEnd = dayEndHour * 60;
-    const gridHeight = ((winEnd - winStart) / 60) * SLOT_PX;
+    const gridHeight = ((winEnd - winStart) / 60) * hourPx;
     const hours: number[] = [];
     for (let h = dayStartHour; h < dayEndHour; h++) { hours.push(h); }
     const headFmt = intlFormat(locale, { weekday: 'short', day: 'numeric' });
     const hourFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
     const nowMin = nowMinutes;
     const colStyle = { ['--cal-cols' as keyof React.CSSProperties]: cols.length } as React.CSSProperties;
+    // Column gridlines: a strong line per hour, plus faint sub-slot lines when finer than 60 min.
+    const colBg: React.CSSProperties = slotMinutes < 60
+        ? {
+            backgroundImage:
+                'linear-gradient(to bottom, var(--cal-line) 1px, transparent 1px), ' +
+                'linear-gradient(to bottom, color-mix(in srgb, var(--cal-line) 45%, transparent) 1px, transparent 1px)',
+            backgroundSize: `100% ${hourPx}px, 100% ${slotPx}px`
+        }
+        : { backgroundSize: `100% ${hourPx}px` };
     // Background bands read colour off the event, so resolve category colours up front.
     const bgEvents = events.map((e) => ({ ...e, color: resolveColor(categories, e) }));
 
@@ -52,8 +64,8 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
         if (!preview || preview.dayIso !== dayIso) {
             return null;
         }
-        const top = ((preview.startMin - winStart) / 60) * SLOT_PX;
-        const height = ((preview.endMin - preview.startMin) / 60) * SLOT_PX;
+        const top = ((preview.startMin - winStart) / 60) * hourPx;
+        const height = ((preview.endMin - preview.startMin) / 60) * hourPx;
         const timeLabel = `${hhmm(preview.startMin)} – ${hhmm(preview.endMin)}`;
         if (preview.mode === 'create') {
             return (
@@ -97,7 +109,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                 <div className="cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
                     <div className="cal-tg-gutter">
                         {hours.map((h) => (
-                            <div className="cal-tg-hour" key={h} style={{ height: SLOT_PX }}>
+                            <div className="cal-tg-hour" key={h} style={{ height: hourPx }}>
                                 <span>{hourFmt.format(new Date(2000, 0, 1, h, 0))}</span>
                             </div>
                         ))}
@@ -107,7 +119,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                             className={`cal-tg-col${c.isToday ? ' cal-tg-col--today' : ''}`}
                             key={c.iso}
                             data-day={c.iso}
-                            style={{ backgroundSize: `100% ${SLOT_PX}px` }}
+                            style={colBg}
                             onMouseDown={(e) => onStartCreate(c.iso, e)}
                         >
                             {backgroundBandsForDay(bgEvents, c.iso, winStart, winEnd).map((b, i) => (
@@ -115,8 +127,8 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                     className="cal-tg-bg"
                                     key={b.id || `bg${i}`}
                                     style={{
-                                        top: ((b.startMin - winStart) / 60) * SLOT_PX,
-                                        height: ((b.endMin - b.startMin) / 60) * SLOT_PX,
+                                        top: ((b.startMin - winStart) / 60) * hourPx,
+                                        height: ((b.endMin - b.startMin) / 60) * hourPx,
                                         background: b.color || undefined
                                     }}
                                 />
@@ -126,8 +138,8 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                 if (preview && preview.eventId === ev.id) {
                                     return null; // hidden while dragging; the ghost is shown instead
                                 }
-                                const top = ((it.startMin - winStart) / 60) * SLOT_PX;
-                                const height = ((it.endMin - it.startMin) / 60) * SLOT_PX;
+                                const top = ((it.startMin - winStart) / 60) * hourPx;
+                                const height = ((it.endMin - it.startMin) / 60) * hourPx;
                                 const movable = editable && !it.continuesUp && !it.continuesDown;
                                 const cls = ['cal-tg-event'];
                                 if (movable) { cls.push('cal-tg-event--draggable'); }
@@ -163,7 +175,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                             })}
                             {renderPreview(c.iso)}
                             {c.isToday && nowMin >= winStart && nowMin <= winEnd && (
-                                <div className="cal-tg-now" style={{ top: ((nowMin - winStart) / 60) * SLOT_PX }} />
+                                <div className="cal-tg-now" style={{ top: ((nowMin - winStart) / 60) * hourPx }} />
                             )}
                         </div>
                     ))}

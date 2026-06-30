@@ -18,6 +18,7 @@
                 "showWeekends": true,
                 "dayStartHour": 0,
                 "dayEndHour": 24,
+                "slotMinutes": 60,
                 "scrollToHour": 7,
                 "scrollToNow": false,
                 "refreshSeconds": 0,
@@ -90,6 +91,11 @@
                     "type": "number",
                     "default": 24,
                     "description": "Week/Day views: last hour shown on the time axis (0-24, > dayStartHour)."
+                },
+                "slotMinutes": {
+                    "type": "number",
+                    "default": 60,
+                    "description": "Week/Day grid resolution + drag/resize snapping, in minutes. A divisor of 60 (60/30/15/10/5); finer values draw sub-hour gridlines and make the grid taller/scrollable. Invalid values fall back to 60."
                 },
                 "scrollToHour": {
                     "type": "number",

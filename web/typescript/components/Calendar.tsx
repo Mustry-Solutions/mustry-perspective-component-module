@@ -38,7 +38,7 @@ import {
 import {
     WeekStart, CalView, Gesture, Editor, MiniNav, DayPop,
     Category, CalendarProps, CalendarState,
-    SLOT_PX, DEFAULT_DUR_MIN, SNAP_MIN, ENTER_MS
+    DEFAULT_DUR_MIN, ENTER_MS, hourHeightPx
 } from './calendar/types';
 import { resolveColor as styleResolveColor } from './calendar/eventStyle';
 import { mapCalendarProps } from './calendarProps';
@@ -502,17 +502,22 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const winStart = dayStartHour * 60;
         const todayVisible = this.days().some((c) => c.iso === fmtDate(todayInZone(timezone)));
         if (scrollToNow && todayVisible) {
-            const y = ((nowMinutesInZone(timezone) - winStart) / 60) * SLOT_PX;
+            const y = ((nowMinutesInZone(timezone) - winStart) / 60) * this.hourPx();
             const max = el.scrollHeight - el.clientHeight;
             el.scrollTop = Math.max(0, Math.min(y - el.clientHeight / 2, max));   // centre "now"
         } else {
-            el.scrollTop = Math.max(0, (scrollToHour - dayStartHour) * SLOT_PX);
+            el.scrollTop = Math.max(0, (scrollToHour - dayStartHour) * this.hourPx());
         }
     }
 
     // --- editing gestures (week/day) --------------------------------------
+    /** Pixels-per-hour for the current grid resolution (must match TimeGrid's). */
+    private hourPx(): number {
+        return hourHeightPx(this.props.props.slotMinutes);
+    }
+
     private snap(min: number): number {
-        return snapMinutes(min, SNAP_MIN);
+        return snapMinutes(min, this.props.props.slotMinutes);
     }
 
     private iso(dayIso: string, min: number): string {
@@ -604,8 +609,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private minuteAtY(rect: DOMRect, clientY: number): number {
-        const { dayStartHour, dayEndHour } = this.props.props;
-        return minuteFromOffset(clientY - rect.top, SLOT_PX, dayStartHour * 60, dayEndHour * 60, SNAP_MIN);
+        const { dayStartHour, dayEndHour, slotMinutes } = this.props.props;
+        return minuteFromOffset(clientY - rect.top, this.hourPx(), dayStartHour * 60, dayEndHour * 60, slotMinutes);
     }
 
     private addDocListeners(): void {
@@ -677,10 +682,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!g.moved && hasMoved(e.clientX - g.startClientX, e.clientY - g.startClientY)) {
             g.moved = true;
         }
-        const { dayStartHour, dayEndHour } = this.props.props;
+        const { dayStartHour, dayEndHour, slotMinutes } = this.props.props;
         const winStart = dayStartHour * 60;
         const winEnd = dayEndHour * 60;
-        const deltaMin = this.snap(((e.clientY - g.startClientY) / SLOT_PX) * 60);
+        const deltaMin = this.snap(((e.clientY - g.startClientY) / this.hourPx()) * 60);
         if (g.mode === 'move') {
             if (!this.props.props.editable) {
                 return;
@@ -689,12 +694,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd);
             this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: col.day, startMin, endMin } });
         } else if (g.mode === 'resize') {
-            const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, SNAP_MIN);
+            const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, slotMinutes);
             this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin, endMin } });
         } else if (this.props.props.selectable) {
             const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const cur = this.minuteAtY(col.rect, e.clientY);
-            const { startMin, endMin } = createPreview(g.origStartMin, cur, SNAP_MIN);
+            const { startMin, endMin } = createPreview(g.origStartMin, cur, slotMinutes);
             this.setState({ preview: { mode: 'create', dayIso: g.origDayIso, startMin, endMin } });
         }
     };
@@ -1077,6 +1082,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editable={this.props.props.editable}
                 dayStartHour={this.props.props.dayStartHour}
                 dayEndHour={this.props.props.dayEndHour}
+                slotMinutes={this.props.props.slotMinutes}
                 nowMinutes={nowMinutesInZone(this.props.props.timezone)}
                 preview={this.state.preview}
                 categories={this.props.props.categories}
