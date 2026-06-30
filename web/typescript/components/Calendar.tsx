@@ -964,6 +964,18 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** A short "how it works / how to add events" hint for the empty-state badge tooltip,
+     *  tailored to whether this calendar actually lets the user create events. */
+    private emptyHint(): string {
+        const p = this.props.props;
+        const canCreate = (p.editable && p.builtInEditor) || p.selectable;
+        const lines = ['This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.'];
+        lines.push(canCreate
+            ? 'Add an event: in Week or Day view, drag over an empty time slot.'
+            : 'Events come from the data binding — enable "selectable" + "builtInEditor" to add them here.');
+        return lines.join('\n');
+    }
+
     private renderToolbar(): React.ReactNode {
         return (
             <Toolbar
@@ -973,6 +985,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 miniOpen={!!this.state.mini}
                 showExport={this.props.props.showExport}
                 emptyLabel={(this.props.props.events || []).length === 0 ? this.props.props.emptyMessage : ''}
+                emptyHint={this.emptyHint()}
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
                 onExport={this.exportCsv}

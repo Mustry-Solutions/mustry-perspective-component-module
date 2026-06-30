@@ -246,6 +246,7 @@ self.props.data.events = events
 
 - [ ] Resize the component small/large → month grid fills; week/day grid scrolls.
 - [ ] Empty `events` (nothing configured) → a subtle **`emptyMessage`** badge appears next to the title in every view (and as the list-view message); the grid stays clean and usable (you can still drag to create). A populated calendar shows no badge — even when paging to an empty week. `emptyMessage = ""` hides it. (Fixture: the `/empty` verify view.)
+- [ ] Hovering the empty-state badge shows a tooltip explaining the component in a nutshell — and, when the calendar is editable/selectable, how to add an event (drag empty time in Week/Day); a read-only calendar's tooltip instead points to the data binding.
 - [ ] Toggle `showToolbar = false` → header hidden, grid still works.
 - [ ] Bind `config.data.events` to a Named Query keyed on `output.visibleStart`/`visibleEnd` → navigating refetches only the visible window (no request storm).
 
