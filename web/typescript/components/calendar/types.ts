@@ -30,6 +30,7 @@ export interface CalendarProps {
     builtInEditor: boolean;
     weekStart: WeekStart;
     locale: string;
+    timezone: string;   // IANA zone for display (empty = browser/session local)
     showWeekends: boolean;
     dayStartHour: number;
     dayEndHour: number;

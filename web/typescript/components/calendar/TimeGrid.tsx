@@ -17,6 +17,7 @@ interface TimeGridProps {
     editable: boolean;
     dayStartHour: number;
     dayEndHour: number;
+    nowMinutes: number;   // minutes-from-midnight of "now" in the display zone
     preview: Preview | null;
     categories: Category[];
     scrollRef: React.RefObject<HTMLDivElement>;
@@ -31,7 +32,7 @@ interface TimeGridProps {
 
 export function TimeGrid(props: TimeGridProps): React.ReactElement {
     const {
-        cols, events, locale, view, editable, dayStartHour, dayEndHour, preview, categories,
+        cols, events, locale, view, editable, dayStartHour, dayEndHour, nowMinutes, preview, categories,
         scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
     } = props;
 
@@ -42,8 +43,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
     for (let h = dayStartHour; h < dayEndHour; h++) { hours.push(h); }
     const headFmt = intlFormat(locale, { weekday: 'short', day: 'numeric' });
     const hourFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const nowMin = nowMinutes;
     const colStyle = { ['--cal-cols' as keyof React.CSSProperties]: cols.length } as React.CSSProperties;
     // Background bands read colour off the event, so resolve category colours up front.
     const bgEvents = events.map((e) => ({ ...e, color: resolveColor(categories, e) }));

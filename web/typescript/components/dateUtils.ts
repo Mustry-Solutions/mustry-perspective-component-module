@@ -230,3 +230,54 @@ export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
     const iso = `${fmtDate(wall)}T${pad2(h)}:${pad2(mi)}:${pad2(s)}${offsetToStr(offMin)}`;
     return { epochMs, iso };
 }
+
+/** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
+export function zoneWallClock(instant: Date, timeZone: string): { y: number; mo: number; d: number; h: number; mi: number; s: number } {
+    if (!timeZone) {
+        return {
+            y: instant.getFullYear(), mo: instant.getMonth() + 1, d: instant.getDate(),
+            h: instant.getHours(), mi: instant.getMinutes(), s: instant.getSeconds()
+        };
+    }
+    const shifted = new Date(instant.getTime() + tzOffsetMinutes(instant, timeZone) * 60000);
+    return {
+        y: shifted.getUTCFullYear(), mo: shifted.getUTCMonth() + 1, d: shifted.getUTCDate(),
+        h: shifted.getUTCHours(), mi: shifted.getUTCMinutes(), s: shifted.getUTCSeconds()
+    };
+}
+
+/**
+ * Normalise an event time to a naive wall-clock string in `timeZone`. Absolute
+ * instants — ISO with offset/`Z`, or epoch-ms — are converted to that zone's wall
+ * clock ("YYYY-MM-DDTHH:mm:ss"); date-only ("YYYY-MM-DD") and already-naive
+ * datetimes are returned unchanged (treated as floating / already in the zone).
+ */
+export function instantToZonedIso(raw: string, timeZone: string): string {
+    if (!raw) {
+        return raw;
+    }
+    const s = String(raw);
+    let instant: Date | null = null;
+    if (/^\d{12,}$/.test(s)) {
+        instant = new Date(Number(s));                       // epoch ms
+    } else if (s.indexOf('T') >= 0 && /(Z|[+\-]\d\d:?\d\d)$/.test(s)) {
+        instant = new Date(s);                               // ISO with offset / Z
+    }
+    if (!instant || isNaN(instant.getTime())) {
+        return s;                                            // date-only or naive
+    }
+    const w = zoneWallClock(instant, timeZone);
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}`;
+}
+
+/** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
+export function todayInZone(timeZone: string): Date {
+    const w = zoneWallClock(new Date(), timeZone);
+    return new Date(w.y, w.mo - 1, w.d);
+}
+
+/** Minutes-from-midnight of "now" in `timeZone`. */
+export function nowMinutesInZone(timeZone: string): number {
+    const w = zoneWallClock(new Date(), timeZone);
+    return w.h * 60 + w.mi;
+}

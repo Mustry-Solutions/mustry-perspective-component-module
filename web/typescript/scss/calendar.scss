@@ -1027,6 +1027,14 @@
         .cal-editor-field { flex: 1 1 auto; }
     }
 
+    // Timezone hint under the date fields (datetime-local is browser-local; this names
+    // the zone the values are actually interpreted in).
+    .cal-editor-tz {
+        margin-top: -2px;
+        font-size: 11px;
+        opacity: 0.6;
+    }
+
     // Category picker: a colour dot (the category's colour) next to a native select.
     .cal-editor-catrow {
         display: flex;

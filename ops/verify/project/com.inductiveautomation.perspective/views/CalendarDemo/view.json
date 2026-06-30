@@ -24,6 +24,7 @@
           "config": {
             "view": "week", "editable": true, "selectable": true, "builtInEditor": true, "scrollToHour": 8,
             "scrollToNow": true, "refreshSeconds": 60, "showLegend": true, "showExport": true,
+            "timezone": "America/Chicago",
             "categories": [
               { "id": "ops", "label": "Operations", "color": "#0c7bb3", "icon": "material/settings" },
               { "id": "maint", "label": "Maintenance", "color": "#e67e22", "icon": "material/build" },
@@ -41,7 +42,9 @@
               { "id": "seed-7", "title": "Safety walk", "start": "2026-06-24T14:30:00", "end": "2026-06-24T15:00:00", "category": "ops" },
               { "id": "seed-8", "title": "Shift handover", "start": "2026-06-24T15:30:00", "end": "2026-06-24T16:00:00", "category": "meeting" },
               { "id": "seed-9", "title": "Night shift", "start": "2026-06-30T22:00:00", "end": "2026-07-01T06:00:00", "category": "ops", "description": "Overnight run — crosses midnight into the next day." },
-              { "id": "seed-10", "title": "Outage window", "start": "2026-06-30", "end": "2026-07-03", "allDay": true, "category": "maint", "description": "Planned multi-day maintenance outage." }
+              { "id": "seed-10", "title": "Outage window", "start": "2026-06-30", "end": "2026-07-03", "allDay": true, "category": "maint", "description": "Planned multi-day maintenance outage." },
+              { "id": "tz-utc", "title": "UTC 14:00Z (→09:00 CDT)", "start": "2026-07-01T14:00:00Z", "end": "2026-07-01T15:30:00Z", "category": "ops", "description": "Stored as a UTC instant; renders at 09:00 America/Chicago." },
+              { "id": "tz-off", "title": "Offset 13:00-05 (→13:00 CDT)", "start": "2026-07-01T13:00:00-05:00", "end": "2026-07-01T14:00:00-05:00", "category": "meeting", "description": "Stored with a -05:00 offset (already CDT)." }
             ]
           }
         },

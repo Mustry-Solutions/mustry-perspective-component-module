@@ -7,6 +7,7 @@ import { categoryColor, UNCATEGORIZED_COLOR } from './eventStyle';
 interface EventEditorProps {
     editor: Editor;
     categories: Category[];
+    timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
     onUpdate: (patch: Partial<Editor>) => void;
     onToggleAllDay: (allDay: boolean) => void;
     onCancel: () => void;
@@ -15,7 +16,7 @@ interface EventEditorProps {
 }
 
 export function EventEditor(props: EventEditorProps): React.ReactElement {
-    const { editor: ed, categories, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
+    const { editor: ed, categories, timezone, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
     return ReactDOM.createPortal(
@@ -47,6 +48,9 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                         <input type={dtType} value={ed.end} onChange={(e) => onUpdate({ end: e.target.value })} />
                     </label>
                 </div>
+                {!ed.allDay && timezone && (
+                    <div className="cal-editor-tz">Times in {timezone}</div>
+                )}
                 {(categories || []).length > 0 && (
                     <label className="cal-editor-field">
                         <span>Category</span>

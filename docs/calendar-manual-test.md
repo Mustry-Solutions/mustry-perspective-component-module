@@ -200,6 +200,16 @@ self.props.data.events = events
 - [ ] Toggle `showToolbar = false` → header hidden, grid still works.
 - [ ] Bind `config.data.events` to a Named Query keyed on `output.visibleStart`/`visibleEnd` → navigating refetches only the visible window (no request storm).
 
+## Timezone (set `config.timezone`, e.g. `America/Chicago`)
+
+- [ ] Event times given as **absolute instants** — ISO with offset (`...-05:00`), UTC (`...Z`), or epoch ms — render at their wall clock **in `config.timezone`**, regardless of the browser's own zone (e.g. a `14:00Z` event shows at 09:00 in `America/Chicago`).
+- [ ] DST is handled: the same UTC hour lands an hour apart in summer vs winter.
+- [ ] **today**, the **now-indicator**, and `scrollToNow` use `config.timezone` (a remote operator sees plant-local, not their browser clock).
+- [ ] **All-day** / date-only events are floating — shown on their date, not shifted by the zone.
+- [ ] The built-in editor prefills and edits in plant-local wall clock and shows a **"Times in <zone>"** hint (the native picker itself is browser-local).
+- [ ] Create / edit / move / resize emit **offset-bearing ISO instants** (e.g. `2026-07-01T11:30:00-05:00`); the change round-trips and the event stays put.
+- [ ] Empty `timezone` = browser/session-local (unchanged legacy behavior).
+
 ## Known limitations (by design / future)
 
 - Multi-day **all-day** events render as continuous **spanning bars** (month grid + week/day all-day strip); multi-day **timed** events render a clamped segment on each day they cross (week/day grid).

@@ -15,7 +15,10 @@ import {
     monthLabel,
     parseDate,
     startOfMonth,
-    today
+    instantToZonedIso,
+    todayInZone,
+    nowMinutesInZone,
+    resolveZoned
 } from './dateUtils';
 import {
     buildMonthGrid,
@@ -74,7 +77,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
         this.state = {
-            cursor: today(), preview: null, hover: null, editor: null,
+            cursor: todayInZone(props.props.timezone), preview: null, hover: null, editor: null,
             mini: null, dayPop: null, hiddenCats: new Set(), monthCap: 3
         };
     }
@@ -311,8 +314,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const event = {
             id: isEdit ? ed.id : `evt-${new Date().getTime()}`,
             title: ed.title || 'New event',
-            start: norm(ed.start),
-            end: norm(ed.end),
+            start: this.emitTime(norm(ed.start), ed.allDay),
+            end: this.emitTime(norm(ed.end), ed.allDay),
             allDay: ed.allDay,
             category: ed.category,   // colour is derived from the category, not set here
             description: ed.description
@@ -330,8 +333,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const event = {
             id: ed.id,
             title: ed.title || '',
-            start: norm(ed.start),
-            end: norm(ed.end),
+            start: this.emitTime(norm(ed.start), ed.allDay),
+            end: this.emitTime(norm(ed.end), ed.allDay),
             allDay: ed.allDay,
             category: ed.category,
             description: ed.description
@@ -347,16 +350,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private days(): DayCol[] {
         const { showWeekends } = this.props.props;
+        const zToday = todayInZone(this.props.props.timezone);
         if (this.props.props.view === 'day') {
             const d = this.state.cursor;
             const dow = d.getDay();
-            return [{ iso: fmtDate(d), date: d, isToday: fmtDate(d) === fmtDate(today()), isWeekend: dow === 0 || dow === 6 }];
+            return [{ iso: fmtDate(d), date: d, isToday: fmtDate(d) === fmtDate(zToday), isWeekend: dow === 0 || dow === 6 }];
         }
-        return weekDays(this.state.cursor, this.mondayFirst(), showWeekends);
+        return weekDays(this.state.cursor, this.mondayFirst(), showWeekends, zToday);
     }
 
     private monthGrid(): MonthGrid {
-        return buildMonthGrid(startOfMonth(this.state.cursor), this.mondayFirst(), this.props.props.showWeekends);
+        return buildMonthGrid(startOfMonth(this.state.cursor), this.mondayFirst(), this.props.props.showWeekends, todayInZone(this.props.props.timezone));
     }
 
     private visibleRange(): { start: string; end: string } {
@@ -387,13 +391,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!el) {
             return;   // not the week/day time-grid (no scroll container)
         }
-        const { scrollToNow, scrollToHour, dayStartHour } = this.props.props;
+        const { scrollToNow, scrollToHour, dayStartHour, timezone } = this.props.props;
         const winStart = dayStartHour * 60;
-        const todayVisible = this.days().some((c) => c.iso === fmtDate(today()));
+        const todayVisible = this.days().some((c) => c.iso === fmtDate(todayInZone(timezone)));
         if (scrollToNow && todayVisible) {
-            const now = new Date();
-            const nowMin = now.getHours() * 60 + now.getMinutes();
-            const y = ((nowMin - winStart) / 60) * SLOT_PX;
+            const y = ((nowMinutesInZone(timezone) - winStart) / 60) * SLOT_PX;
             const max = el.scrollHeight - el.clientHeight;
             el.scrollTop = Math.max(0, Math.min(y - el.clientHeight / 2, max));   // centre "now"
         } else {
@@ -410,6 +412,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return isoDateTime(dayIso, min);
     }
 
+    /** Convert an internal zone-local wall-clock string to the emitted form: an
+     *  offset-bearing instant for timed events, or a date-only string for all-day. */
+    private emitTime(wall: string, allDay: boolean): string {
+        if (!wall) {
+            return wall;
+        }
+        if (allDay) {
+            return wall.slice(0, 10);
+        }
+        const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(wall);
+        if (!m) {
+            return wall;
+        }
+        const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+        return resolveZoned(d, this.props.props.timezone).iso;
+    }
+
     /** Minutes-from-midnight -> "HH:mm". */
 
     /** A timed event's [start, end] minutes (end falls back to the default duration). */
@@ -424,17 +443,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private eventPayload(ev: CalEvent): object {
-        return { id: ev.id || '', title: ev.title || '', start: ev.start || '', end: ev.end || '', allDay: !!ev.allDay, category: ev.category || '' };
+        return {
+            id: ev.id || '', title: ev.title || '',
+            start: this.emitTime(ev.start || '', !!ev.allDay),
+            end: ev.end ? this.emitTime(ev.end, !!ev.allDay) : '',
+            allDay: !!ev.allDay, category: ev.category || ''
+        };
     }
 
     /** A complete event object (incl. category/notes, raw colour) with start/end overrides applied — for onChange. */
     private changedEvent(ev: CalEvent, over: { start?: string; end?: string }): object {
+        const allDay = !!ev.allDay;
         return {
             id: ev.id || '',
             title: ev.title || '',
-            start: over.start ?? ev.start ?? '',
-            end: over.end ?? ev.end ?? '',
-            allDay: !!ev.allDay,
+            start: this.emitTime(over.start ?? ev.start ?? '', allDay),
+            end: this.emitTime(over.end ?? ev.end ?? '', allDay),
+            allDay,
             color: ev.color || '',         // raw override only (empty when category-coloured)
             category: ev.category || '',
             description: ev.description || ''
@@ -590,9 +615,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const start = this.iso(preview.dayIso, preview.startMin);
             const end = this.iso(preview.dayIso, preview.endMin);
             if (this.useEditor()) {
-                this.openEditor(start, end, false);
+                this.openEditor(start, end, false);   // editor works in zone-local wall clock
             } else {
-                this.fireEvent('onSelect', { start, end, allDay: false });
+                this.fireEvent('onSelect', { start: this.emitTime(start, false), end: this.emitTime(end, false), allDay: false });
             }
         } else if (this.useEditor()) {
             // a plain click on empty time -> editor with a default one-hour slot
@@ -614,7 +639,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private prev = (): void => this.step(-1);
     private next = (): void => this.step(1);
-    private goToday = (): void => this.setState({ cursor: today() }, () => this.scrollTimeGrid());
+    private goToday = (): void => this.setState({ cursor: todayInZone(this.props.props.timezone) }, () => this.scrollTimeGrid());
 
     // `config.view` is the single source of truth and is two-way: switching the view
     // writes it back so a binding / script can read (and set) the current view.
@@ -868,6 +893,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             <EventEditor
                 editor={ed}
                 categories={this.props.props.categories || []}
+                timezone={this.props.props.timezone}
                 onUpdate={(patch) => this.updateEditor(patch)}
                 onToggleAllDay={(allDay) => this.toggleEditorAllDay(allDay)}
                 onCancel={this.editorCancel}
@@ -879,13 +905,21 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     /** The events to render for the current window, with recurring series expanded. */
     private visibleEvents(): CalEvent[] {
+        const tz = this.props.props.timezone;
         const r = this.visibleRange();
-        const s = parseDate(r.start) || today();
-        const e = parseDate(r.end) || today();
+        const s = parseDate(r.start) || todayInZone(tz);
+        const e = parseDate(r.end) || todayInZone(tz);
         const hidden = this.state.hiddenCats;
-        // Keep events raw (category + any explicit colour) — colour is resolved at render
-        // time via resolveColor, so editing/moving never bakes a category colour onto the event.
-        return expandEvents(this.props.props.events || [], s, e)
+        // Normalise absolute instants (offset / Z / epoch) to naive wall-clock in the
+        // display zone, so all downstream grid/layout logic runs in plant-local terms.
+        // (All-day / date-only values pass through unchanged.) Colour stays raw and is
+        // resolved at render time, so editing/moving never bakes a category colour on.
+        const zoned = (this.props.props.events || []).map((ev) => ({
+            ...ev,
+            start: instantToZonedIso(ev.start, tz),
+            end: ev.end != null ? instantToZonedIso(ev.end, tz) : undefined
+        }));
+        return expandEvents(zoned, s, e)
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
@@ -904,6 +938,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editable={this.props.props.editable}
                 dayStartHour={this.props.props.dayStartHour}
                 dayEndHour={this.props.props.dayEndHour}
+                nowMinutes={nowMinutesInZone(this.props.props.timezone)}
                 preview={this.state.preview}
                 categories={this.props.props.categories}
                 scrollRef={this.scrollRef}
@@ -1020,6 +1055,7 @@ export class CalendarMeta implements ComponentMeta {
             builtInEditor: tree.readBoolean('config.builtInEditor', false),
             weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
             locale: tree.readString('config.locale', ''),
+            timezone: tree.readString('config.timezone', ''),
             showWeekends: tree.readBoolean('config.showWeekends', true),
             dayStartHour: tree.readNumber('config.dayStartHour', 0),
             dayEndHour: tree.readNumber('config.dayEndHour', 24),

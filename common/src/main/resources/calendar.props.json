@@ -14,6 +14,7 @@
                 "selectable": false,
                 "weekStart": "monday",
                 "locale": "",
+                "timezone": "",
                 "showWeekends": true,
                 "dayStartHour": 0,
                 "dayEndHour": 24,
@@ -68,6 +69,11 @@
                     "type": "string",
                     "default": "",
                     "description": "BCP-47 locale for month/weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default."
+                },
+                "timezone": {
+                    "type": "string",
+                    "default": "",
+                    "description": "IANA zone the calendar renders in (e.g. 'America/Chicago'). Event instants (ISO offset/Z or epoch ms) are converted to this zone; today/now use it. Writes emit offset-bearing ISO. Empty = browser/session-local."
                 },
                 "showWeekends": {
                     "type": "boolean",
