@@ -961,9 +961,9 @@
 .cal-editor {
     @include cal-theme;
     box-sizing: border-box;
-    width: 320px;
+    width: 340px;
     max-width: calc(100vw - 24px);
-    padding: 16px;
+    padding: 20px;
     font-family: inherit;
     color: var(--cal-text);
     background: var(--cal-bg);
@@ -977,16 +977,22 @@
     .cal-editor-head {
         font-size: 15px;
         font-weight: 600;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
     .cal-editor-field {
         display: flex;
         flex-direction: column;
-        gap: 3px;
-        margin-bottom: 10px;
+        gap: 5px;
+        margin-bottom: 14px;
         font-size: 11px;
         color: var(--cal-muted);
+
+        // Field label — a touch of weight + tracking for a clearer scan order.
+        > span {
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
 
         input[type="text"],
         input[type="date"],
@@ -1013,7 +1019,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-bottom: 10px;
+        margin-bottom: 14px;
         font-size: 13px;
         color: var(--cal-text);
         cursor: pointer;
@@ -1030,9 +1036,10 @@
     // Timezone hint under the date fields (datetime-local is browser-local; this names
     // the zone the values are actually interpreted in).
     .cal-editor-tz {
-        margin-top: -2px;
+        margin-top: -8px;      // tuck up under End so it reads as a caption of the date row
+        margin-bottom: 14px;   // ...then a normal gap before the next field
         font-size: 11px;
-        opacity: 0.6;
+        opacity: 0.65;
     }
 
     // Category picker: a colour dot (the category's colour) next to a native select.
@@ -1046,7 +1053,7 @@
         flex: 0 0 auto;
         width: 12px;
         height: 12px;
-        border-radius: 3px;
+        border-radius: 50%;
         transition: background 0.15s ease;
     }
 
@@ -1072,7 +1079,9 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-top: 6px;
+        margin-top: 4px;       // Notes already adds ~14px below; keep the gap above the line even
+        padding-top: 16px;
+        border-top: 1px solid var(--cal-border);   // hairline framing the actions
     }
 
     // Pushes Cancel/Save to the right while Delete (when editing) stays on the left.
@@ -1103,11 +1112,13 @@
         &:hover { filter: brightness(1.06); }
     }
 
+    // Quieter ghost so Save stays the clear primary; Delete stays discoverable.
     .cal-editor-btn--danger {
         color: #e11d48;
-        border-color: var(--cal-border);
+        border-color: transparent;
+        background: transparent;
 
-        &:hover { border-color: #e11d48; background: rgba(225, 29, 72, 0.08); }
+        &:hover { border-color: transparent; background: rgba(225, 29, 72, 0.10); }
     }
 }
 
