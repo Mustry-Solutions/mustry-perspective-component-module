@@ -77,6 +77,19 @@ export interface Editor {
     allDay: boolean;
     category: string;   // category id ('' = none); the category supplies the colour
     description: string;
+
+    // --- recurrence (built-in editor) ---
+    repeatFreq: '' | 'daily' | 'weekly' | 'monthly' | 'yearly';   // '' = does not repeat
+    repeatInterval: number;        // every N units (>=1)
+    repeatByweekday: number[];     // weekly only: 0=Sun..6=Sat
+    repeatEndMode: 'never' | 'until' | 'count';
+    repeatUntil: string;           // 'YYYY-MM-DD' (when repeatEndMode='until')
+    repeatCount: number;           // (when repeatEndMode='count')
+
+    // --- edit context for an occurrence of an existing series ---
+    seriesId: string | null;       // base event id when editing a recurring occurrence (else null)
+    occurrenceDate: string | null; // 'YYYY-MM-DD' of the opened occurrence
+    scope: 'series' | 'occurrence';// apply-to choice (only meaningful when seriesId != null)
 }
 
 export interface MiniNav {

@@ -31,6 +31,7 @@ import {
     minuteFromOffset,
     isoDateTime,
     CalEvent,
+    RRule,
     DayCol,
     MonthGrid
 } from './calendarLogic';
@@ -203,8 +204,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
      * produced it. This is the one "the data should change" event; onEventClick /
      * onDateClick / onSelect are the "the user did something" intent events.
      */
-    private fireChange(action: 'create' | 'edit' | 'delete' | 'move' | 'resize', event: object): void {
-        this.fireEvent('onChange', { action, event });
+    private fireChange(
+        action: 'create' | 'edit' | 'delete' | 'move' | 'resize',
+        event: object,
+        extra?: { scope?: 'series' | 'occurrence'; seriesId?: string; occurrenceDate?: string | null }
+    ): void {
+        this.fireEvent('onChange', { action, event, ...(extra || {}) });
     }
 
     // --- hover detail popover ---------------------------------------------
@@ -250,11 +255,21 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return cats.length ? cats[0].id : '';
     }
 
+    /** Default recurrence + edit-context fields for a fresh editor (no repeat, no series). */
+    private editorDefaults(): Pick<Editor,
+        'repeatFreq' | 'repeatInterval' | 'repeatByweekday' | 'repeatEndMode' | 'repeatUntil' | 'repeatCount' |
+        'seriesId' | 'occurrenceDate' | 'scope'> {
+        return {
+            repeatFreq: '', repeatInterval: 1, repeatByweekday: [], repeatEndMode: 'never', repeatUntil: '', repeatCount: 10,
+            seriesId: null, occurrenceDate: null, scope: 'series'
+        };
+    }
+
     private openEditor(startIso: string, endIso: string, allDay: boolean): void {
         this.hideHover();
         const start = allDay ? startIso.slice(0, 10) : startIso.slice(0, 16);
         const end = allDay ? (endIso || startIso).slice(0, 10) : endIso.slice(0, 16);
-        this.setState({ editor: { id: null, title: '', start, end, allDay, category: this.defaultCategory(), description: '' } });
+        this.setState({ editor: { id: null, title: '', start, end, allDay, category: this.defaultCategory(), description: '', ...this.editorDefaults() } });
     }
 
     /** Whether clicking an existing event opens the built-in editor (vs firing onEventClick). */
@@ -262,20 +277,41 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return this.props.props.builtInEditor && this.props.props.editable;
     }
 
-    /** Open the built-in editor pre-filled from an existing event, to edit it in place. */
+    /** The raw (unexpanded) base event for a series id, looked up in the bound data. */
+    private baseEventById(id: string): CalEvent | undefined {
+        return (this.props.props.events || []).find((e) => e.id === id);
+    }
+
+    /** Open the built-in editor pre-filled from an existing event, to edit it in place.
+     *  For a recurring occurrence (id "base::date") it recovers the series' rule and
+     *  defaults the apply-to scope to "this event". */
     private openEditorForEvent(ev: CalEvent): void {
         this.hideHover();
         const allDay = !!ev.allDay;
         const cut = (v: string | undefined) => (v || '').slice(0, allDay ? 10 : 16);
+        const rawId = ev.id || '';
+        const isOcc = rawId.indexOf('::') >= 0;
+        const seriesId = isOcc ? rawId.split('::')[0] : null;
+        const occurrenceDate = isOcc ? rawId.split('::')[1] : null;
+        const rr = seriesId ? (this.baseEventById(seriesId) || {} as CalEvent).rrule : undefined;
         this.setState({
             editor: {
-                id: ev.id || '',
+                id: rawId,
                 title: ev.title || '',
                 start: cut(ev.start),
                 end: cut(ev.end || ev.start),
                 allDay,
                 category: ev.category || '',
-                description: ev.description || ''
+                description: ev.description || '',
+                repeatFreq: rr ? rr.freq : '',
+                repeatInterval: rr && rr.interval ? rr.interval : 1,
+                repeatByweekday: rr && rr.byweekday ? rr.byweekday.slice() : [],
+                repeatEndMode: rr ? (rr.until ? 'until' : (rr.count ? 'count' : 'never')) : 'never',
+                repeatUntil: rr && rr.until ? rr.until : '',
+                repeatCount: rr && rr.count ? rr.count : 10,
+                seriesId,
+                occurrenceDate,
+                scope: isOcc ? 'occurrence' : 'series'
             }
         });
     }
@@ -304,21 +340,86 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.setState({ editor: null });
     };
 
+    /** Build an RRule from the editor's repeat fields (undefined = does not repeat).
+     *  Preserves an existing series' exdate list when re-saving the whole series. */
+    private buildRRule(ed: Editor): RRule | undefined {
+        if (!ed.repeatFreq) {
+            return undefined;
+        }
+        const rr: RRule = { freq: ed.repeatFreq };
+        if (ed.repeatInterval > 1) {
+            rr.interval = ed.repeatInterval;
+        }
+        if (ed.repeatFreq === 'weekly' && ed.repeatByweekday.length) {
+            rr.byweekday = ed.repeatByweekday.slice().sort((a, b) => a - b);
+        }
+        if (ed.repeatEndMode === 'until' && ed.repeatUntil) {
+            rr.until = ed.repeatUntil;
+        } else if (ed.repeatEndMode === 'count' && ed.repeatCount > 0) {
+            rr.count = ed.repeatCount;
+        }
+        const base = ed.seriesId ? this.baseEventById(ed.seriesId) : undefined;
+        if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
+            rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
+        }
+        return rr;
+    }
+
+    /** Keep a series anchored on the base's (zone-local) date while applying an edited time. */
+    private reanchorSeries(baseRaw: string | undefined, editedWall: string, allDay: boolean): string {
+        const baseDate = instantToZonedIso(baseRaw || '', this.props.props.timezone).slice(0, 10);
+        if (allDay) {
+            return baseDate;
+        }
+        return baseDate + (editedWall.length >= 11 ? editedWall.slice(10) : 'T00:00:00');
+    }
+
     private editorSave = (): void => {
         const ed = this.state.editor;
         if (!ed) {
             return;
         }
         const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
+        const common = { title: ed.title || 'New event', allDay: ed.allDay, category: ed.category, description: ed.description };
+
+        // (1) One occurrence of a series -> detached standalone override (the series gets an EXDATE).
+        if (ed.seriesId && ed.scope === 'occurrence') {
+            const event = {
+                id: `${ed.seriesId}-x-${ed.occurrenceDate}`,
+                ...common,
+                start: this.emitTime(norm(ed.start), ed.allDay),
+                end: this.emitTime(norm(ed.end), ed.allDay)
+            };
+            this.fireChange('edit', event, { scope: 'occurrence', seriesId: ed.seriesId, occurrenceDate: ed.occurrenceDate });
+            this.setState({ editor: null });
+            return;
+        }
+
+        const rr = this.buildRRule(ed);
+
+        // (2) Whole series -> emit the base, preserving its anchor date(s), updating time/fields/rule.
+        if (ed.seriesId && ed.scope === 'series') {
+            const base = this.baseEventById(ed.seriesId);
+            const event: Record<string, unknown> = {
+                id: ed.seriesId,
+                ...common,
+                start: this.emitTime(this.reanchorSeries(base && base.start, norm(ed.start), ed.allDay), ed.allDay),
+                end: this.emitTime(this.reanchorSeries(base && (base.end || base.start), norm(ed.end), ed.allDay), ed.allDay),
+                rrule: rr || null   // null = recurrence removed from the series
+            };
+            this.fireChange('edit', event, { scope: 'series', seriesId: ed.seriesId });
+            this.setState({ editor: null });
+            return;
+        }
+
+        // (3) Plain create / edit of a standalone event (the repeat control may add recurrence).
         const isEdit = ed.id !== null;
-        const event = {
+        const event: Record<string, unknown> = {
             id: isEdit ? ed.id : `evt-${new Date().getTime()}`,
-            title: ed.title || 'New event',
+            ...common,
             start: this.emitTime(norm(ed.start), ed.allDay),
             end: this.emitTime(norm(ed.end), ed.allDay),
-            allDay: ed.allDay,
-            category: ed.category,   // colour is derived from the category, not set here
-            description: ed.description
+            rrule: rr || null
         };
         this.fireChange(isEdit ? 'edit' : 'create', event);
         this.setState({ editor: null });
@@ -329,17 +430,21 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!ed || ed.id === null) {
             return;
         }
-        const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
-        const event = {
-            id: ed.id,
-            title: ed.title || '',
-            start: this.emitTime(norm(ed.start), ed.allDay),
-            end: this.emitTime(norm(ed.end), ed.allDay),
-            allDay: ed.allDay,
-            category: ed.category,
-            description: ed.description
-        };
-        this.fireChange('delete', event);
+        // One occurrence of a series -> EXDATE (and drop any override for that date).
+        if (ed.seriesId && ed.scope === 'occurrence') {
+            this.fireChange('delete', { id: `${ed.seriesId}-x-${ed.occurrenceDate}` },
+                { scope: 'occurrence', seriesId: ed.seriesId, occurrenceDate: ed.occurrenceDate });
+            this.setState({ editor: null });
+            return;
+        }
+        // Whole series.
+        if (ed.seriesId && ed.scope === 'series') {
+            this.fireChange('delete', { id: ed.seriesId }, { scope: 'series', seriesId: ed.seriesId });
+            this.setState({ editor: null });
+            return;
+        }
+        // Plain standalone delete.
+        this.fireChange('delete', { id: ed.id, title: ed.title || '' });
         this.setState({ editor: null });
     };
 
@@ -464,6 +569,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             category: ev.category || '',
             description: ev.description || ''
         };
+    }
+
+    /** Fire a move/resize. Dragging a single recurring occurrence (id "base::date")
+     *  detaches it into a standalone override + an EXDATE on the series. */
+    private fireMoveResize(action: 'move' | 'resize', ev: CalEvent, over: { start?: string; end?: string }): void {
+        const rawId = ev.id || '';
+        if (rawId.indexOf('::') >= 0) {
+            const seriesId = rawId.split('::')[0];
+            const occurrenceDate = rawId.split('::')[1];
+            const event = this.changedEvent({ ...ev, id: `${seriesId}-x-${occurrenceDate}` }, over);
+            this.fireChange(action, event, { scope: 'occurrence', seriesId, occurrenceDate });
+        } else {
+            this.fireChange(action, this.changedEvent(ev, over));
+        }
     }
 
     private captureCols(): void {
@@ -605,11 +724,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             }
             const newStart = this.iso(preview.dayIso, preview.startMin);
             const newEnd = this.iso(preview.dayIso, preview.endMin);
-            this.fireChange('move', this.changedEvent(g.ev!, { start: newStart, end: newEnd }));
+            this.fireMoveResize('move', g.ev!, { start: newStart, end: newEnd });
         } else if (g.mode === 'resize') {
             if (g.moved && preview) {
                 const newEnd = this.iso(preview.dayIso, preview.endMin);
-                this.fireChange('resize', this.changedEvent(g.ev!, { end: newEnd }));
+                this.fireMoveResize('resize', g.ev!, { end: newEnd });
             }
         } else if (g.moved && preview && this.props.props.selectable) {
             const start = this.iso(preview.dayIso, preview.startMin);

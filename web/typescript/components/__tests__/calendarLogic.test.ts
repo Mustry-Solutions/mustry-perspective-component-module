@@ -328,6 +328,29 @@ describe('expandEvents (recurrence)', () => {
         const [s, en] = win('2026-06-10', '2026-06-13');
         expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-10', '2026-06-11', '2026-06-12']);
     });
+
+    it('yearly keeps the month/day and respects interval', () => {
+        const e: CalEvent = { id: 'y', title: 'Y', start: '2026-03-04', allDay: true, rrule: { freq: 'yearly', count: 3 } };
+        const [s, en] = win('2026-01-01', '2031-01-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-03-04', '2027-03-04', '2028-03-04']);
+    });
+
+    it('yearly on Feb 29 skips common years', () => {
+        const e: CalEvent = { id: 'leap', title: 'Leap', start: '2024-02-29', allDay: true, rrule: { freq: 'yearly', count: 2 } };
+        const [s, en] = win('2024-01-01', '2033-01-01');
+        // next Feb-29 after 2024 is 2028 (2025-2027 are skipped)
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2024-02-29', '2028-02-29']);
+    });
+
+    it('exdate removes the listed occurrences (and does not extend a count series)', () => {
+        const e: CalEvent = {
+            id: 'd', title: 'D', start: '2026-06-01', allDay: true,
+            rrule: { freq: 'daily', count: 4, exdate: ['2026-06-02', '2026-06-03'] }
+        };
+        const [s, en] = win('2026-06-01', '2026-06-30');
+        // count=4 generates Jun 1..4; exdate removes 2 and 3 -> only 1 and 4 remain
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-01', '2026-06-04']);
+    });
 });
 
 describe('eventsToCsv', () => {

@@ -85,24 +85,61 @@ These mutate `data.events` directly (simplest for testing; in production you'd
 persist to a DB and re-query instead). Requires `config.editable` / `config.selectable`.
 
 **`onChange`** — the single handler for every mutation (create / edit / delete / move /
-resize). Upsert-or-delete by id. This is all you need:
+resize), including recurring-event **scope**. The payload is
+`{ action, event, scope?, seriesId?, occurrenceDate? }`:
+
+- no `scope` → a plain event: upsert / delete by `event.id`.
+- `scope = "series"` → the whole series: upsert / delete by `seriesId` (the event carries the rule).
+- `scope = "occurrence"` → one instance: add `occurrenceDate` to the series' `rrule.exdate`, then upsert (edit) or drop (delete) a standalone **override** event.
 
 ```python
 ev = event.event
-row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
-       "allDay": ev.allDay, "category": ev.category, "color": ev.color,
-       "description": ev.description}
-events, found = [], False
-for e in self.props.data.events:
-    cur = dict(e)
-    if cur.get("id") == ev.id:
-        found = True
-        if event.action == "delete":
-            continue
-        cur = row
-    events.append(cur)
-if event.action != "delete" and not found:
-    events.append(row)
+action = event.action
+scope = getattr(event, "scope", None)
+seriesId = getattr(event, "seriesId", None)
+occDate = getattr(event, "occurrenceDate", None)
+events = [dict(e) for e in self.props.data.events]
+
+def idx_of(eid):
+    for i in range(len(events)):
+        if events[i].get("id") == eid:
+            return i
+    return -1
+
+def row_from(e):
+    return {"id": e.id, "title": e.title, "start": e.start, "end": e.end,
+            "allDay": e.allDay, "category": e.category,
+            "description": e.description, "rrule": getattr(e, "rrule", None)}
+
+def upsert(row):
+    i = idx_of(row.get("id"))
+    if i >= 0: events[i] = row
+    else: events.append(row)
+
+def add_exdate(sid, d):
+    i = idx_of(sid)
+    if i < 0: return
+    base = dict(events[i]); rr = dict(base.get("rrule") or {})
+    ex = list(rr.get("exdate") or [])
+    if d not in ex: ex.append(d)
+    rr["exdate"] = ex; base["rrule"] = rr; events[i] = base
+
+if scope == "occurrence":
+    add_exdate(seriesId, occDate)
+    if action == "delete":
+        events = [e for e in events if e.get("id") != ev.id]
+    else:
+        upsert(row_from(ev))
+elif scope == "series":
+    if action == "delete":
+        events = [e for e in events if e.get("id") != seriesId]
+    else:
+        upsert(row_from(ev))
+else:
+    if action == "delete":
+        events = [e for e in events if e.get("id") != ev.id]
+    else:
+        upsert(row_from(ev))
 self.props.data.events = events
 ```
 
@@ -138,7 +175,19 @@ self.props.data.events = events
 - [ ] Weekly "Standup" appears on **Mon/Wed/Fri** through June, then stops (after `until`).
 - [ ] Monthly "Safety review" lands on the 15th; navigate months → it follows.
 - [ ] Switch a rule to `daily` with `interval` / `count` and confirm spacing & cap.
+- [ ] `yearly` keeps the month/day (Feb 29 only lands in leap years).
 - [ ] Recurrence shows consistently in **month, week, and list** views.
+
+### Creating & editing recurring events (built-in editor)
+
+- [ ] **Create:** the editor's **Repeat** control offers Daily/Weekly/Monthly/Yearly + "every N" + (weekly) a weekday picker + Ends Never/On-date/After-N. Saving produces an event with an `rrule`; the occurrences appear.
+- [ ] **Open an occurrence:** the editor shows an **apply-to** choice (*This event* / *All events*) and recovers the series' rule (visible under *All events*).
+- [ ] **This event** (edit): only the opened day changes; it detaches into a standalone override and the series skips that date (via `rrule.exdate`). Others are unchanged.
+- [ ] **All events** (edit): every occurrence updates (title/time/category/rule); the series keeps its anchor date; previously-detached overrides are left alone.
+- [ ] **Delete → This event:** only that occurrence disappears (exdate); the rest remain.
+- [ ] **Delete → All events:** the whole series goes.
+- [ ] **Drag/resize one occurrence:** detaches it (override + exdate), like "This event".
+- [ ] These rely on the write-back honouring `event.scope` / `seriesId` / `occurrenceDate` — see the recipe below and the working demo view.
 
 ## Week / Day views
 
@@ -213,5 +262,6 @@ self.props.data.events = events
 ## Known limitations (by design / future)
 
 - Multi-day **all-day** events render as continuous **spanning bars** (month grid + week/day all-day strip); multi-day **timed** events render a clamped segment on each day they cross (week/day grid).
-- Editing recurring events fires the event for the **occurrence** (id `base::date`) — handle it as an exception in your own data.
+- Recurring edits use a **series + single-occurrence** model (no "this and following"): a per-occurrence change detaches into a standalone override (id `seriesId-x-date`) plus an `rrule.exdate` on the series. Deleting the **whole series** does not auto-remove previously-detached overrides — sweep `seriesId-x-*` in your write-back if you want that.
+- Recurrence expansion runs in the display timezone (occurrences are placed by their zone-local date); a single rule spanning a DST change is fine for display.
 - The component **does not persist** — all writes are your responsibility via the events.

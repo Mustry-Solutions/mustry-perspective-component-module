@@ -8,11 +8,12 @@ import {
 } from './dateUtils';
 
 export interface RRule {
-    freq: 'daily' | 'weekly' | 'monthly';
+    freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
     interval?: number;     // every N units (default 1)
     count?: number;        // max occurrences in the series
     until?: string;        // ISO 'YYYY-MM-DD', inclusive
     byweekday?: number[];  // weekly only: 0=Sun .. 6=Sat
+    exdate?: string[];     // 'YYYY-MM-DD' occurrence dates to skip (deleted / overridden)
 }
 
 export interface CalEvent {
@@ -477,6 +478,11 @@ function occurrenceStartDates(base: Date, r: RRule, winEnd: Date): Date[] {
             d = addDays(base, n * interval);
         } else if (r.freq === 'weekly') {
             d = addDays(base, n * interval * 7);
+        } else if (r.freq === 'yearly') {
+            d = new Date(base.getFullYear() + n * interval, base.getMonth(), base.getDate());
+            if (d.getDate() !== base.getDate()) {
+                continue; // skipped a non-existent date (e.g. Feb 29 in a common year)
+            }
         } else {
             d = new Date(base.getFullYear(), base.getMonth() + n * interval, base.getDate());
             if (d.getDate() !== base.getDate()) {
@@ -500,10 +506,14 @@ function expandOne(ev: CalEvent, winStart: Date, winEnd: Date): CalEvent[] {
     const baseEnd = ev.end ? parseDate(ev.end) : null;
     const endOffsetDays = baseEnd ? daysBetween(base, baseEnd) : 0;
     const endTime = ev.end && ev.end.length > 10 ? ev.end.slice(10) : '';
+    const exdate = new Set(ev.rrule.exdate || []);   // dates removed/overridden (EXDATE)
     const out: CalEvent[] = [];
     for (const d of occurrenceStartDates(base, ev.rrule, winEnd)) {
         if (d.getTime() < winStart.getTime()) {
             continue; // before the visible window
+        }
+        if (exdate.has(fmtDate(d))) {
+            continue; // excluded occurrence (deleted, or replaced by a standalone override)
         }
         out.push({
             ...ev,

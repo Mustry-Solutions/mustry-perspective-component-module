@@ -86,7 +86,7 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **Event status** — an optional `event.status` (`tentative` / `cancelled` / `done`) restyles the event (striped/faded, struck-through); unset renders as a normal solid event.
 - **Mini-month navigator** — the toolbar title opens a compact month picker to jump anywhere (`config.showMiniNav`).
 - **CSV export** — `config.showExport` adds a toolbar button that downloads the loaded events as a CSV (`calendar-events.csv`).
-- **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly), expanded per visible window.
+- **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly / yearly), expanded per visible window. The built-in editor **creates and edits** recurring events: a Repeat control (frequency · every-N · weekly weekday picker · ends never/on-date/after-N), and when editing an occurrence an **apply-to** choice — *This event* (a per-occurrence exception via `rrule.exdate` + a standalone override) or *All events* (the whole series). Dragging a single occurrence detaches it the same way. `onChange` carries `scope` (`series`/`occurrence`) + `seriesId`/`occurrenceDate` so your write-back can persist the right thing.
 - **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
 - **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
 
@@ -144,7 +144,7 @@ self.props.data.events = events
 | `status` | optional `tentative` / `cancelled` / `done` — restyles the chip (striped/faded, struck-through) |
 | `description` | optional text shown in the hover popover |
 | `display` | `"background"` for a downtime/availability band |
-| `rrule` | `{ freq: daily\|weekly\|monthly, interval?, count?, until?, byweekday?[] }` (byweekday: 0=Sun..6=Sat) |
+| `rrule` | `{ freq: daily\|weekly\|monthly\|yearly, interval?, count?, until?, byweekday?[], exdate?[] }` (byweekday: 0=Sun..6=Sat; exdate: `YYYY-MM-DD` occurrences to skip) |
 
 **`output`** (read-only) | `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`) · `hiddenCategories` (ids currently filtered out via the legend — put a change script here to react). The active view is **`config.view`**, which is two-way (the toolbar writes the user's choice back to it).
 
