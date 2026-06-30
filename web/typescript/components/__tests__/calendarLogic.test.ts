@@ -342,6 +342,28 @@ describe('expandEvents (recurrence)', () => {
         expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2024-02-29', '2028-02-29']);
     });
 
+    it('an unbounded daily series still renders far past the MAX_OCC horizon', () => {
+        // ~9 years out — well over MAX_OCC (1000) days from the base; the old from-base
+        // generator would cap out before reaching the window and the event would vanish.
+        const e: CalEvent = { id: 'd', title: 'D', start: '2026-01-01', allDay: true, rrule: { freq: 'daily' } };
+        const [s, en] = win('2035-06-01', '2035-06-04');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2035-06-01', '2035-06-02', '2035-06-03']);
+    });
+
+    it('an unbounded weekly series stays on its weekday far in the future', () => {
+        const e: CalEvent = { id: 'w', title: 'W', start: '2026-01-05', allDay: true, rrule: { freq: 'weekly' } }; // Mon
+        const [s, en] = win('2033-01-01', '2033-02-01');
+        const days = expandEvents([e], s, en).map((o) => o.start);
+        expect(days.length).toBeGreaterThan(0);
+        days.forEach((ds) => expect(new Date(ds + 'T00:00:00').getDay()).toBe(1)); // all Mondays
+    });
+
+    it('an unbounded monthly series renders far in the future on the same day-of-month', () => {
+        const e: CalEvent = { id: 'm', title: 'M', start: '2026-01-15', allDay: true, rrule: { freq: 'monthly' } };
+        const [s, en] = win('2040-03-01', '2040-04-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2040-03-15']);
+    });
+
     it('exdate removes the listed occurrences (and does not extend a count series)', () => {
         const e: CalEvent = {
             id: 'd', title: 'D', start: '2026-06-01', allDay: true,

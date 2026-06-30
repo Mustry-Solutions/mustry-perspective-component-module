@@ -264,4 +264,5 @@ self.props.data.events = events
 - Multi-day **all-day** events render as continuous **spanning bars** (month grid + week/day all-day strip); multi-day **timed** events render a clamped segment on each day they cross (week/day grid).
 - Recurring edits use a **series + single-occurrence** model (no "this and following"): a per-occurrence change detaches into a standalone override (id `seriesId-x-date`) plus an `rrule.exdate` on the series. Deleting the **whole series** does not auto-remove previously-detached overrides — sweep `seriesId-x-*` in your write-back if you want that.
 - Recurrence expansion runs in the display timezone (occurrences are placed by their zone-local date); a single rule spanning a DST change is fine for display.
+- Recurrence is expanded per visible window (never the whole infinite series), so a never-ending rule is safe — it renders only the occurrences in view, at any distance from the start. A single window is still capped at `MAX_OCC` (1000) occurrences as a backstop.
 - The component **does not persist** — all writes are your responsibility via the events.

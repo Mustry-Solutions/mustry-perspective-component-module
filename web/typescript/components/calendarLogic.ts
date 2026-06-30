@@ -443,18 +443,29 @@ export function backgroundBandsForDay(events: CalEvent[], dayIso: string, winSta
 
 const MAX_OCC = 1000;
 
-/** Occurrence start dates of a recurring series, from its base up to `winEnd`. */
-function occurrenceStartDates(base: Date, r: RRule, winEnd: Date): Date[] {
+/** Occurrence start dates of a recurring series within [winStart, winEnd).
+ *
+ *  An UNBOUNDED series (no `count`) is fast-forwarded past whole intervals that fall
+ *  before `winStart`, so cost — and the MAX_OCC safety cap — scale with the window size,
+ *  not with how far the window is from the base. Without this, a never-ending daily event
+ *  would vanish once viewed more than MAX_OCC days (~2.7y) after its start. Count-bounded
+ *  series must be enumerated from the base (their `count` is the real bound), so they are
+ *  left as-is. The starting index is biased low; the `< base` / `< winStart` guards drop
+ *  any extras. */
+function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date): Date[] {
     const interval = Math.max(1, r.interval || 1);
     const until = r.until ? parseDate(r.until) : null;
-    const limit = r.count && r.count > 0 ? r.count : MAX_OCC;
+    const hasCount = !!(r.count && r.count > 0);
+    const limit = hasCount ? (r.count as number) : MAX_OCC;
     const dates: Date[] = [];
     const pastUntil = (d: Date) => until !== null && d.getTime() > until.getTime();
+    const skipDays = Math.max(0, daysBetween(base, winStart));
 
     if (r.freq === 'weekly' && r.byweekday && r.byweekday.length) {
         const wds = r.byweekday.slice().sort((a, b) => a - b);
         const weekRef = addDays(base, -base.getDay()); // Sunday of the base's week
-        for (let k = 0; dates.length < limit && k < MAX_OCC; k++) {
+        const k0 = hasCount ? 0 : Math.max(0, Math.floor(skipDays / (7 * interval)) - 1);
+        for (let k = k0; dates.length < limit && k < k0 + MAX_OCC; k++) {
             const weekBase = addDays(weekRef, k * interval * 7);
             if (weekBase.getTime() >= winEnd.getTime() || (until && weekBase.getTime() > until.getTime())) {
                 break;
@@ -472,7 +483,22 @@ function occurrenceStartDates(base: Date, r: RRule, winEnd: Date): Date[] {
         return dates;
     }
 
-    for (let n = 0; dates.length < limit && n < MAX_OCC; n++) {
+    let n0 = 0;
+    if (!hasCount) {
+        if (r.freq === 'daily') {
+            n0 = Math.floor(skipDays / interval) - 1;
+        } else if (r.freq === 'weekly') {
+            n0 = Math.floor(skipDays / (7 * interval)) - 1;
+        } else if (r.freq === 'monthly') {
+            const md = (winStart.getFullYear() - base.getFullYear()) * 12 + (winStart.getMonth() - base.getMonth());
+            n0 = Math.floor(md / interval) - 1;
+        } else { // yearly
+            n0 = Math.floor((winStart.getFullYear() - base.getFullYear()) / interval) - 1;
+        }
+        n0 = Math.max(0, n0);
+    }
+
+    for (let n = n0; dates.length < limit && n < n0 + MAX_OCC; n++) {
         let d: Date;
         if (r.freq === 'daily') {
             d = addDays(base, n * interval);
@@ -508,7 +534,7 @@ function expandOne(ev: CalEvent, winStart: Date, winEnd: Date): CalEvent[] {
     const endTime = ev.end && ev.end.length > 10 ? ev.end.slice(10) : '';
     const exdate = new Set(ev.rrule.exdate || []);   // dates removed/overridden (EXDATE)
     const out: CalEvent[] = [];
-    for (const d of occurrenceStartDates(base, ev.rrule, winEnd)) {
+    for (const d of occurrenceStartDates(base, ev.rrule, winStart, winEnd)) {
         if (d.getTime() < winStart.getTime()) {
             continue; // before the visible window
         }
