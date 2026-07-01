@@ -614,16 +614,27 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private addDocListeners(): void {
-        document.addEventListener('mousemove', this.onDocMove, true);
-        document.addEventListener('mouseup', this.onDocUp, true);
+        // Pointer events unify mouse / touch / pen. pointercancel fires when the browser
+        // takes over for a touch scroll (empty-column drag) — we abort the gesture then.
+        document.addEventListener('pointermove', this.onDocMove, true);
+        document.addEventListener('pointerup', this.onDocUp, true);
+        document.addEventListener('pointercancel', this.onDocCancel, true);
     }
 
     private removeDocListeners(): void {
-        document.removeEventListener('mousemove', this.onDocMove, true);
-        document.removeEventListener('mouseup', this.onDocUp, true);
+        document.removeEventListener('pointermove', this.onDocMove, true);
+        document.removeEventListener('pointerup', this.onDocUp, true);
+        document.removeEventListener('pointercancel', this.onDocCancel, true);
     }
 
-    private startMove = (ev: CalEvent, e: React.MouseEvent): void => {
+    /** A touch scroll (or system interruption) cancels the gesture without committing. */
+    private onDocCancel = (): void => {
+        this.removeDocListeners();
+        this.gesture = null;
+        this.setState({ preview: null });
+    };
+
+    private startMove = (ev: CalEvent, e: React.PointerEvent): void => {
         // Always start a gesture so a plain click resolves to onEventClick; only the
         // drag/preview behaviour is gated on `editable`.
         e.stopPropagation();
@@ -642,7 +653,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     };
 
-    private startResize = (ev: CalEvent, e: React.MouseEvent): void => {
+    private startResize = (ev: CalEvent, e: React.PointerEvent): void => {
         if (!this.props.props.editable) {
             return;
         }
@@ -659,7 +670,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.setState({ preview: { mode: 'resize', eventId: ev.id, title: ev.title, color: this.resolveColor(ev), dayIso: day, startMin: s, endMin: end } });
     };
 
-    private startCreate = (dayIso: string, e: React.MouseEvent): void => {
+    private startCreate = (dayIso: string, e: React.PointerEvent): void => {
         this.hideHover();
         this.captureCols();
         const col = this.colRects.filter((c) => c.day === dayIso)[0];
@@ -674,12 +685,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.addDocListeners();
     };
 
-    private onDocMove = (e: MouseEvent): void => {
+    private onDocMove = (e: PointerEvent): void => {
         const g = this.gesture;
         if (!g) {
             return;
         }
-        if (!g.moved && hasMoved(e.clientX - g.startClientX, e.clientY - g.startClientY)) {
+        // A slightly larger threshold on touch avoids a jittery finger turning a tap into a drag.
+        const threshold = e.pointerType === 'touch' ? 10 : 4;
+        if (!g.moved && hasMoved(e.clientX - g.startClientX, e.clientY - g.startClientY, threshold)) {
             g.moved = true;
         }
         const { dayStartHour, dayEndHour, slotMinutes } = this.props.props;
@@ -696,7 +709,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         } else if (g.mode === 'resize') {
             const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, slotMinutes);
             this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin, endMin } });
-        } else if (this.props.props.selectable) {
+        } else if (this.props.props.selectable && e.pointerType !== 'touch') {
+            // Drag-to-create is disabled on touch: a vertical drag on empty time scrolls the
+            // grid (a tap creates instead). On mouse/pen it draws the selection as before.
             const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
             const cur = this.minuteAtY(col.rect, e.clientY);
             const { startMin, endMin } = createPreview(g.origStartMin, cur, slotMinutes);
@@ -830,16 +845,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private openMiniListeners(): void {
-        document.addEventListener('mousedown', this.onDocMini, true);
+        document.addEventListener('pointerdown', this.onDocMini, true);
         document.addEventListener('keydown', this.onMiniKey, true);
     }
 
     private closeMiniListeners(): void {
-        document.removeEventListener('mousedown', this.onDocMini, true);
+        document.removeEventListener('pointerdown', this.onDocMini, true);
         document.removeEventListener('keydown', this.onMiniKey, true);
     }
 
-    private onDocMini = (e: MouseEvent): void => {
+    private onDocMini = (e: PointerEvent): void => {
         const t = e.target as HTMLElement | null;
         // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
         if (t && (t.closest('.cal-mini') || t.closest('.cal-title--btn'))) {
@@ -872,16 +887,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private openDayPopListeners(): void {
-        document.addEventListener('mousedown', this.onDocDayPop, true);
+        document.addEventListener('pointerdown', this.onDocDayPop, true);
         document.addEventListener('keydown', this.onDayPopKey, true);
     }
 
     private closeDayPopListeners(): void {
-        document.removeEventListener('mousedown', this.onDocDayPop, true);
+        document.removeEventListener('pointerdown', this.onDocDayPop, true);
         document.removeEventListener('keydown', this.onDayPopKey, true);
     }
 
-    private onDocDayPop = (e: MouseEvent): void => {
+    private onDocDayPop = (e: PointerEvent): void => {
         const t = e.target as HTMLElement | null;
         // Clicks inside the popover, or on a trigger (date number / "+N more"), manage themselves.
         if (t && (t.closest('.cal-daypop') || t.closest('.cal-daynum') || t.closest('.cal-more'))) {

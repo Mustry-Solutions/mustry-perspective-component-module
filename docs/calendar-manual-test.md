@@ -212,6 +212,17 @@ self.props.data.events = events
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
 - [ ] A plain **click** (no drag) fires `onEventClick` — **unless** `builtInEditor` is on, where it opens the editor (see below).
 
+## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)
+
+Gestures use Pointer Events + `touch-action`, so mouse and touch share one path. On a tablet:
+- [ ] **Drag an event** with a finger → it moves (doesn't scroll the grid).
+- [ ] **Drag the bottom edge** (enlarged to ~18px on coarse pointers) → it resizes.
+- [ ] **Tap an event** → opens the editor / fires `onEventClick`.
+- [ ] **Tap empty time** → opens the create editor (or fires `onDateClick`/`onSelect`).
+- [ ] **Vertical drag on empty time → the grid SCROLLS** (drag-to-create is disabled on touch; a `pointercancel` aborts the gesture). No create rectangle should appear or stick.
+- [ ] Mini-nav / day-popover / editor **close on an outside tap**.
+- [ ] No stuck gesture, no "scroll steals the drag," no accidental create while scrolling.
+
 ## Built-in editor: edit & delete (set `config.editable = true` + `config.builtInEditor = true`)
 
 - [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/category/notes populated, the event's category pre-selected). The **Category** field appears only when `config.categories` are defined; the colour follows the category.

@@ -461,6 +461,7 @@
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
+        touch-action: pan-y;   // vertical scroll on touch; events opt out with touch-action: none
     }
 
     .cal-tg-body {
@@ -484,6 +485,7 @@
         background-image: linear-gradient(to bottom, var(--cal-line) 1px, transparent 1px);
         background-repeat: repeat-y;
         cursor: pointer;
+        touch-action: pan-y;   // dragging empty time scrolls on touch (a tap creates instead)
     }
 
     .cal-tg-col--today {
@@ -494,6 +496,8 @@
         --ev: var(--cal-accent);
         position: absolute;
         box-sizing: border-box;
+        touch-action: none;    // a touch drag on an event moves/resizes it (doesn't scroll)
+        user-select: none;
         font-family: inherit;
         font-size: 11px;
         line-height: 1.3;
@@ -573,6 +577,12 @@
         bottom: 0;
         height: 6px;
         cursor: ns-resize;
+        touch-action: none;   // resize the event instead of scrolling
+    }
+
+    // Bigger resize hit target on touch/coarse-pointer devices (a 6px edge is unusable).
+    @media (pointer: coarse) {
+        .cal-tg-resize { height: 18px; }
     }
 
     // The drag/resize ghost and the create selection rectangle.

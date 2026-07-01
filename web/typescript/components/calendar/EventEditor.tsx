@@ -36,10 +36,10 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
         onUpdate({ repeatByweekday: set });
     };
     return ReactDOM.createPortal(
-        <div className="cal-editor-backdrop" onMouseDown={onCancel}>
+        <div className="cal-editor-backdrop" onPointerDown={onCancel}>
             <div
                 className="cal-editor"
-                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >
                 <div className="cal-editor-head">{isEdit ? 'Edit event' : 'New event'}</div>

@@ -25,9 +25,9 @@ interface TimeGridProps {
     enterClass: (id: string) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
-    onStartCreate: (iso: string, e: React.MouseEvent) => void;
-    onStartMove: (ev: CalEvent, e: React.MouseEvent) => void;
-    onStartResize: (ev: CalEvent, e: React.MouseEvent) => void;
+    onStartCreate: (iso: string, e: React.PointerEvent) => void;
+    onStartMove: (ev: CalEvent, e: React.PointerEvent) => void;
+    onStartResize: (ev: CalEvent, e: React.PointerEvent) => void;
     onScroll: () => void;
 }
 
@@ -120,7 +120,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                             key={c.iso}
                             data-day={c.iso}
                             style={colBg}
-                            onMouseDown={(e) => onStartCreate(c.iso, e)}
+                            onPointerDown={(e) => onStartCreate(c.iso, e)}
                         >
                             {backgroundBandsForDay(bgEvents, c.iso, winStart, winEnd).map((b, i) => (
                                 <div
@@ -157,7 +157,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                             width: `calc(${100 / it.lanes}% - 3px)`,
                                             ...(color ? { ['--ev' as string]: color } : {})
                                         } as React.CSSProperties}
-                                        onMouseDown={(e) => (movable ? onStartMove(ev, e) : onEventClick(ev, e))}
+                                        onPointerDown={(e) => (movable ? onStartMove(ev, e) : onEventClick(ev, e))}
                                         {...hoverProps(ev)}
                                     >
                                         <EventIcon ev={ev} categories={categories} />
@@ -168,7 +168,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                             </span>
                                         )}
                                         {movable && (
-                                            <div className="cal-tg-resize" onMouseDown={(e) => onStartResize(ev, e)} />
+                                            <div className="cal-tg-resize" onPointerDown={(e) => onStartResize(ev, e)} />
                                         )}
                                     </button>
                                 );
