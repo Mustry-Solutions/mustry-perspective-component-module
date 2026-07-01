@@ -33,6 +33,8 @@ export interface CalendarProps {
     categories: Category[];
     showLegend: boolean;
     emptyMessage: string;   // shown in the header (and list) when no events are configured; '' = hidden
+    loading: boolean;       // author binds this to their query state -> thin bar + stale-while-revalidate
+    refetchDebounceMs: number;   // coalesce rapid navigation into one visibleStart/End write (0 = immediate)
     editable: boolean;
     selectable: boolean;
     builtInEditor: boolean;
@@ -47,6 +49,10 @@ export interface CalendarProps {
     scrollToNow: boolean;
     refreshSeconds: number;
     events: CalEvent[];
+    // Recurring event definitions, kept separate so they can be bound to a small,
+    // ALWAYS-loaded query (WHERE rrule IS NOT NULL) while `events` is windowed — the
+    // component merges + expands both, so a windowed query never silently drops a series.
+    recurringEvents: CalEvent[];
 }
 
 /** An in-flight drag/resize/create gesture. */

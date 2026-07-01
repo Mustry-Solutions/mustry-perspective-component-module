@@ -24,6 +24,8 @@
                 "refreshSeconds": 0,
                 "showLegend": true,
                 "emptyMessage": "No events",
+                "loading": false,
+                "refetchDebounceMs": 150,
                 "categories": []
             },
             "properties": {
@@ -122,6 +124,16 @@
                     "default": "No events",
                     "description": "Shown as a subtle header badge (and in the list view) when no events are configured (data.events is empty). Empty string = no message."
                 },
+                "loading": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Bind to your query's loading state. Shows a thin indeterminate bar under the toolbar and keeps the current events visible but dimmed (stale-while-revalidate); suppresses the empty-state badge while true."
+                },
+                "refetchDebounceMs": {
+                    "type": "number",
+                    "default": 150,
+                    "description": "Debounce (ms) for the visibleStart/visibleEnd writes, so a flurry of prev/next navigation coalesces into a single window write (one bound query). 0 = write immediately."
+                },
                 "categories": {
                     "type": "array",
                     "default": [],
@@ -143,7 +155,8 @@
             "additionalProperties": false,
             "description": "The events to display. Bind 'events' to a query/dataset returning the events for the visible window (see output.visibleStart/visibleEnd).",
             "default": {
-                "events": []
+                "events": [],
+                "recurringEvents": []
             },
             "properties": {
                 "events": {
@@ -198,7 +211,7 @@
                                 "description": "Optional recurrence. When set, the event repeats and is expanded per visible window.",
                                 "properties": {
                                     "freq": {
-                                        "enum": ["daily", "weekly", "monthly"],
+                                        "enum": ["daily", "weekly", "monthly", "yearly"],
                                         "description": "Recurrence frequency."
                                     },
                                     "interval": {
@@ -217,11 +230,22 @@
                                         "type": "array",
                                         "description": "Weekly only: weekdays to repeat on (0=Sun .. 6=Sat).",
                                         "items": { "type": "number" }
+                                    },
+                                    "exdate": {
+                                        "type": "array",
+                                        "description": "Occurrence dates (ISO 'YYYY-MM-DD') to skip — deleted or overridden instances.",
+                                        "items": { "type": "string" }
                                     }
                                 }
                             }
                         }
                     }
+                },
+                "recurringEvents": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Recurring event definitions (same shape as 'events', each with an 'rrule'). Bind this to a small, ALWAYS-loaded query (e.g. WHERE rrule IS NOT NULL) so a windowed 'events' query never drops a series. Merged with 'events' and expanded per visible window.",
+                    "items": { "type": "object" }
                 }
             }
         },

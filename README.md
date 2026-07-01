@@ -98,7 +98,7 @@ There are two kinds of events. **Intent** events (`onEventClick`, `onDateClick`,
 
 | To… | Do this |
 |---|---|
-| **Show** events | Set / bind `config.data.events` (bind it to `output.visibleStart`/`visibleEnd` so you only fetch the visible window). |
+| **Show** events | Set / bind `config.data.events`. For DB-backed calendars, fetch **only the visible window**: bind it to a query scoped by `output.visibleStart`/`visibleEnd` (use an *overlap* predicate: `start < :end AND end >= :start`), and bind `config.data.recurringEvents` to a small **always-loaded** query (`WHERE rrule IS NOT NULL`) so a windowed query never silently drops a series. Bind `config.loading` to the query state for a stale-while-revalidate bar. See the recipe + `/dbdemo` fixture. |
 | **Persist any change** | Handle **`onChange`** — it fires for create / edit / delete / move / resize with `{ action, event }`, where `event` always carries the final start/end. Upsert on every action except `delete`, where you remove by id. This is the one handler you need. |
 | **Edit / delete in-place** | Set `config.editable = true` **and** `config.builtInEditor = true`; clicking an event opens the editor pre-filled (Save / Delete → `onChange`). |
 | **Use your own editor** | Leave `builtInEditor` off; handle `onSelect` (create) and `onEventClick` (open your form). Moves/resizes still fire `onChange`. |

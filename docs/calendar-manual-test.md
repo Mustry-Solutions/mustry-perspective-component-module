@@ -65,6 +65,39 @@ the loop is identical.
 > `onSelect` (drag empty range) and `onEventClick` (click an event) — which you use
 > when you build your own editing UI instead of the built-in editor.
 
+## Reading: fetch only the visible window (performant DB binding)
+
+The calendar publishes the visible range as **`output.visibleStart`** / **`output.visibleEnd`**
+(half-open `[start, end)`). Bind your data to those so you fetch **only what's shown** —
+one query per navigation, not everything, not a request storm. Use **two bindings** so
+each stays trivially correct:
+
+**1. `config.data.events`** → a Named Query of your **one-off** events, scoped to the window.
+Use an **overlap** predicate (not `BETWEEN`) so multi-day events straddling the edge aren't dropped:
+
+```sql
+-- params: :start = visibleStart, :end = visibleEnd
+SELECT id, title, start_ts AS start, end_ts AS end, all_day AS allDay, category
+FROM cal_events
+WHERE rrule IS NULL
+  AND start_ts < :end AND COALESCE(end_ts, start_ts) >= :start   -- overlaps the window
+```
+
+**2. `config.data.recurringEvents`** → a **small, ALWAYS-loaded** query of just the recurrence
+rules (there are few). The component merges + expands them per window, so a series is **never
+silently dropped** just because its base predates the window:
+
+```sql
+SELECT id, title, start_ts AS start, end_ts AS end, category, rrule
+FROM cal_events
+WHERE rrule IS NOT NULL
+```
+
+- Map the query result rows → the event object shape (a `script` transform on the binding).
+- Bind **`config.loading`** to the query's loading state → a thin bar + stale-while-revalidate (current events stay, dimmed; no "No events" flash).
+- **`config.refetchDebounceMs`** (default 150) coalesces rapid prev/next into a single window write = one query. `0` = immediate.
+- **Live proof (no DB needed):** the `/dbdemo` verify view does exactly this with a script transform over a 114-event source — navigate months and only in-window one-offs load, yet the April "Weekly standup" (recurring) and the multi-day audit still appear.
+
 ## Why "nothing happens" when I drag / create (read this first)
 
 The gestures **do** fire — verified in a live session: dragging or resizing an event

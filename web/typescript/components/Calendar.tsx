@@ -69,6 +69,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private hoverTimer = 0;
     private refreshTimer = 0;   // periodic re-render so the now-indicator ticks live
+    private outputTimer = 0;    // debounces visibleStart/End writes so rapid nav = one query
 
     // Enter-animation bookkeeping: animate an event chip only when a brand-new id
     // first appears (create / new data), not on initial load or navigation.
@@ -121,6 +122,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.enterTimers.forEach((t) => window.clearTimeout(t));
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
+        }
+        if (this.outputTimer) {
+            window.clearTimeout(this.outputTimer);
         }
         if (this.resizeObs) {
             this.resizeObs.disconnect();
@@ -486,9 +490,23 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             return;
         }
         this.lastOutputSig = sig;
-        const w = this.props.store.props;
-        w.write('output.visibleStart', r.start);
-        w.write('output.visibleEnd', r.end);
+        const write = (): void => {
+            this.outputTimer = 0;
+            const w = this.props.store.props;
+            w.write('output.visibleStart', r.start);
+            w.write('output.visibleEnd', r.end);
+        };
+        // Debounce so a flurry of prev/next taps coalesces into a single window write
+        // (and therefore one bound query), keeping the last range.
+        if (this.outputTimer) {
+            window.clearTimeout(this.outputTimer);
+        }
+        const ms = this.props.props.refetchDebounceMs;
+        if (ms > 0) {
+            this.outputTimer = window.setTimeout(write, ms);
+        } else {
+            write();
+        }
     }
 
     /** Position the time-grid scroll: centre on "now" when scrollToNow is on and today is
@@ -984,6 +1002,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
+    /** No events configured at all (neither source) and not mid-fetch — drives the empty badge. */
+    private isConfiguredEmpty(): boolean {
+        const p = this.props.props;
+        return !p.loading && (p.events || []).length === 0 && (p.recurringEvents || []).length === 0;
+    }
+
     /** A short "how it works / how to add events" hint for the empty-state badge tooltip,
      *  tailored to whether this calendar actually lets the user create events. */
     private emptyHint(): string {
@@ -1004,7 +1028,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 showMiniNav={this.props.props.showMiniNav}
                 miniOpen={!!this.state.mini}
                 showExport={this.props.props.showExport}
-                emptyLabel={(this.props.props.events || []).length === 0 ? this.props.props.emptyMessage : ''}
+                emptyLabel={this.isConfiguredEmpty() ? this.props.props.emptyMessage : ''}
                 emptyHint={this.emptyHint()}
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
@@ -1069,11 +1093,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const s = parseDate(r.start) || todayInZone(tz);
         const e = parseDate(r.end) || todayInZone(tz);
         const hidden = this.state.hiddenCats;
+        // Merge the windowed `events` with the always-loaded `recurringEvents` so a windowed
+        // query never drops a series (each binding stays trivially correct).
+        const merged = [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
         // Normalise absolute instants (offset / Z / epoch) to naive wall-clock in the
         // display zone, so all downstream grid/layout logic runs in plant-local terms.
         // (All-day / date-only values pass through unchanged.) Colour stays raw and is
         // resolved at render time, so editing/moving never bakes a category colour on.
-        const zoned = (this.props.props.events || []).map((ev) => ({
+        const zoned = merged.map((ev) => ({
             ...ev,
             start: instantToZonedIso(ev.start, tz),
             end: ev.end != null ? instantToZonedIso(ev.end, tz) : undefined
@@ -1164,10 +1191,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     render(): React.ReactNode {
-        const { showToolbar } = this.props.props;
+        const { showToolbar, loading } = this.props.props;
         return (
-            <div {...this.props.emit({ classes: ['mustry-calendar'] })} ref={this.rootRef}>
+            <div {...this.props.emit({ classes: loading ? ['mustry-calendar', 'cal-loading'] : ['mustry-calendar'] })} ref={this.rootRef}>
                 {showToolbar && this.renderToolbar()}
+                {loading && <div className="cal-loading-bar" aria-hidden="true" />}
                 {this.props.props.view === 'month' ? this.renderMonth()
                     : this.props.props.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}

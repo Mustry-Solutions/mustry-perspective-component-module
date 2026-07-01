@@ -15,6 +15,10 @@
     "/empty": {
       "viewPath": "CalendarEmpty",
       "viewParams": {}
+    },
+    "/dbdemo": {
+      "viewPath": "CalendarDbDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

@@ -22,8 +22,22 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.scrollToNow).toBe(false);
         expect(p.refreshSeconds).toBe(0);
         expect(p.emptyMessage).toBe('No events');
+        expect(p.loading).toBe(false);
+        expect(p.refetchDebounceMs).toBe(150);
         expect(p.categories).toEqual([]);
         expect(p.events).toEqual([]);
+        expect(p.recurringEvents).toEqual([]);
+    });
+
+    it('reads loading + refetchDebounceMs (clamped to >= 0) and the separate recurringEvents source', () => {
+        const p = mapCalendarProps(stubReader({
+            config: { loading: true, refetchDebounceMs: -50 },
+            data: { recurringEvents: [{ id: 'r1', title: 'Standup', start: '2026-06-01T09:00:00', rrule: { freq: 'weekly' } }] }
+        }));
+        expect(p.loading).toBe(true);
+        expect(p.refetchDebounceMs).toBe(0);   // negative clamped
+        expect(p.recurringEvents).toHaveLength(1);
+        expect(p.recurringEvents[0].rrule).toEqual({ freq: 'weekly' });
     });
 
     it('accepts valid slotMinutes (divisors of 60) and rejects the rest', () => {

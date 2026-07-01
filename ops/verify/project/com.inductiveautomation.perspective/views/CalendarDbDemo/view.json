@@ -1,0 +1,922 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1000,
+      "height": 720
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "DB-binding demo (no DB): data.events is fetched PER VISIBLE WINDOW via a script transform over a 114-event source; data.recurringEvents is a separate, always-loaded query (rrule only). Navigate months \u2014 only in-window one-offs load, yet the April 'Weekly standup' and the multi-day audit still appear.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 968,
+          "height": 56
+        }
+      },
+      {
+        "type": "mustrysolutions.display.calendar",
+        "version": 0,
+        "props": {
+          "config": {
+            "view": "month",
+            "showLegend": true,
+            "refetchDebounceMs": 150,
+            "categories": [
+              {
+                "id": "ops",
+                "label": "Operations",
+                "color": "#0c7bb3",
+                "icon": "material/settings"
+              },
+              {
+                "id": "maint",
+                "label": "Maintenance",
+                "color": "#e67e22",
+                "icon": "material/build"
+              },
+              {
+                "id": "meeting",
+                "label": "Meetings",
+                "color": "#8e44ad",
+                "icon": "material/groups"
+              }
+            ]
+          },
+          "data": {
+            "events": [],
+            "recurringEvents": []
+          }
+        },
+        "custom": {
+          "source": [
+            {
+              "id": "ev-1",
+              "title": "Handover 1",
+              "start": "2026-05-11T08:00:00",
+              "end": "2026-05-11T09:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-2",
+              "title": "Sampling 2",
+              "start": "2026-05-02T07:00:00",
+              "end": "2026-05-02T08:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-3",
+              "title": "Line check 3",
+              "start": "2026-05-12T15:00:00",
+              "end": "2026-05-12T16:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-4",
+              "title": "PM task 4",
+              "start": "2026-05-07T06:00:00",
+              "end": "2026-05-07T07:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-5",
+              "title": "Batch run 5",
+              "start": "2026-05-14T07:00:00",
+              "end": "2026-05-14T08:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-6",
+              "title": "Line check 6",
+              "start": "2026-05-18T12:00:00",
+              "end": "2026-05-18T13:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-7",
+              "title": "Cleanup 7",
+              "start": "2026-05-04T09:00:00",
+              "end": "2026-05-04T10:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-8",
+              "title": "Handover 8",
+              "start": "2026-05-19T15:00:00",
+              "end": "2026-05-19T16:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-9",
+              "title": "Sampling 9",
+              "start": "2026-05-08T06:00:00",
+              "end": "2026-05-08T07:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-10",
+              "title": "Vendor sync 10",
+              "start": "2026-05-10T12:00:00",
+              "end": "2026-05-10T13:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-11",
+              "title": "Inspection 11",
+              "start": "2026-05-04T15:00:00",
+              "end": "2026-05-04T16:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-12",
+              "title": "Vendor sync 12",
+              "start": "2026-05-27T16:00:00",
+              "end": "2026-05-27T17:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-13",
+              "title": "Batch run 13",
+              "start": "2026-05-19T15:00:00",
+              "end": "2026-05-19T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-14",
+              "title": "PM task 14",
+              "start": "2026-05-04T14:00:00",
+              "end": "2026-05-04T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-15",
+              "title": "Batch run 15",
+              "start": "2026-05-02T15:00:00",
+              "end": "2026-05-02T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-16",
+              "title": "Handover 16",
+              "start": "2026-05-22T14:00:00",
+              "end": "2026-05-22T15:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-17",
+              "title": "Safety brief 17",
+              "start": "2026-05-15T15:00:00",
+              "end": "2026-05-15T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-18",
+              "title": "Vendor sync 18",
+              "start": "2026-05-10T09:00:00",
+              "end": "2026-05-10T10:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-19",
+              "title": "PM task 19",
+              "start": "2026-05-25T09:00:00",
+              "end": "2026-05-25T10:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-20",
+              "title": "Safety brief 20",
+              "start": "2026-05-10T14:00:00",
+              "end": "2026-05-10T15:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-21",
+              "title": "Inspection 21",
+              "start": "2026-05-24T13:00:00",
+              "end": "2026-05-24T14:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-22",
+              "title": "Sampling 22",
+              "start": "2026-05-03T07:00:00",
+              "end": "2026-05-03T08:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-23",
+              "title": "Calibration 23",
+              "start": "2026-05-06T18:00:00",
+              "end": "2026-05-06T19:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-24",
+              "title": "Line check 24",
+              "start": "2026-05-16T12:00:00",
+              "end": "2026-05-16T13:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-25",
+              "title": "Sampling 25",
+              "start": "2026-05-03T18:00:00",
+              "end": "2026-05-03T19:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-26",
+              "title": "Calibration 26",
+              "start": "2026-05-26T11:00:00",
+              "end": "2026-05-26T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-27",
+              "title": "Safety brief 27",
+              "start": "2026-05-12T15:00:00",
+              "end": "2026-05-12T16:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-28",
+              "title": "PM task 28",
+              "start": "2026-05-26T13:00:00",
+              "end": "2026-05-26T14:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-29",
+              "title": "PM task 29",
+              "start": "2026-06-09T13:00:00",
+              "end": "2026-06-09T14:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-30",
+              "title": "Inspection 30",
+              "start": "2026-06-24T17:00:00",
+              "end": "2026-06-24T18:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-31",
+              "title": "Safety brief 31",
+              "start": "2026-06-19T16:00:00",
+              "end": "2026-06-19T17:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-32",
+              "title": "Calibration 32",
+              "start": "2026-06-23T12:00:00",
+              "end": "2026-06-23T13:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-33",
+              "title": "Vendor sync 33",
+              "start": "2026-06-15T11:00:00",
+              "end": "2026-06-15T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-34",
+              "title": "Line check 34",
+              "start": "2026-06-04T13:00:00",
+              "end": "2026-06-04T14:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-35",
+              "title": "Vendor sync 35",
+              "start": "2026-06-25T10:00:00",
+              "end": "2026-06-25T11:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-36",
+              "title": "Handover 36",
+              "start": "2026-06-08T12:00:00",
+              "end": "2026-06-08T13:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-37",
+              "title": "Safety brief 37",
+              "start": "2026-06-03T08:00:00",
+              "end": "2026-06-03T09:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-38",
+              "title": "Vendor sync 38",
+              "start": "2026-06-18T10:00:00",
+              "end": "2026-06-18T11:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-39",
+              "title": "Handover 39",
+              "start": "2026-06-18T10:00:00",
+              "end": "2026-06-18T11:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-40",
+              "title": "Batch run 40",
+              "start": "2026-06-22T12:00:00",
+              "end": "2026-06-22T13:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-41",
+              "title": "Vendor sync 41",
+              "start": "2026-06-03T08:00:00",
+              "end": "2026-06-03T09:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-42",
+              "title": "Line check 42",
+              "start": "2026-06-22T09:00:00",
+              "end": "2026-06-22T10:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-43",
+              "title": "Vendor sync 43",
+              "start": "2026-06-27T15:00:00",
+              "end": "2026-06-27T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-44",
+              "title": "Vendor sync 44",
+              "start": "2026-06-10T06:00:00",
+              "end": "2026-06-10T07:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-45",
+              "title": "Cleanup 45",
+              "start": "2026-06-18T11:00:00",
+              "end": "2026-06-18T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-46",
+              "title": "Sampling 46",
+              "start": "2026-06-11T08:00:00",
+              "end": "2026-06-11T09:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-47",
+              "title": "Line check 47",
+              "start": "2026-06-21T16:00:00",
+              "end": "2026-06-21T17:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-48",
+              "title": "Sampling 48",
+              "start": "2026-06-25T16:00:00",
+              "end": "2026-06-25T17:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-49",
+              "title": "Handover 49",
+              "start": "2026-06-13T12:00:00",
+              "end": "2026-06-13T13:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-50",
+              "title": "Handover 50",
+              "start": "2026-06-16T16:00:00",
+              "end": "2026-06-16T17:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-51",
+              "title": "Batch run 51",
+              "start": "2026-06-07T07:00:00",
+              "end": "2026-06-07T08:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-52",
+              "title": "Calibration 52",
+              "start": "2026-06-06T07:00:00",
+              "end": "2026-06-06T08:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-53",
+              "title": "Line check 53",
+              "start": "2026-06-02T07:00:00",
+              "end": "2026-06-02T08:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-54",
+              "title": "PM task 54",
+              "start": "2026-06-05T14:00:00",
+              "end": "2026-06-05T15:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-55",
+              "title": "PM task 55",
+              "start": "2026-06-20T06:00:00",
+              "end": "2026-06-20T07:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-56",
+              "title": "Vendor sync 56",
+              "start": "2026-06-20T12:00:00",
+              "end": "2026-06-20T13:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-57",
+              "title": "Cleanup 57",
+              "start": "2026-07-09T11:00:00",
+              "end": "2026-07-09T12:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-58",
+              "title": "PM task 58",
+              "start": "2026-07-16T07:00:00",
+              "end": "2026-07-16T08:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-59",
+              "title": "Safety brief 59",
+              "start": "2026-07-15T13:00:00",
+              "end": "2026-07-15T14:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-60",
+              "title": "PM task 60",
+              "start": "2026-07-03T08:00:00",
+              "end": "2026-07-03T09:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-61",
+              "title": "Inspection 61",
+              "start": "2026-07-11T17:00:00",
+              "end": "2026-07-11T18:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-62",
+              "title": "Vendor sync 62",
+              "start": "2026-07-27T17:00:00",
+              "end": "2026-07-27T18:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-63",
+              "title": "Sampling 63",
+              "start": "2026-07-01T09:00:00",
+              "end": "2026-07-01T10:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-64",
+              "title": "Sampling 64",
+              "start": "2026-07-05T17:00:00",
+              "end": "2026-07-05T18:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-65",
+              "title": "Inspection 65",
+              "start": "2026-07-25T14:00:00",
+              "end": "2026-07-25T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-66",
+              "title": "Inspection 66",
+              "start": "2026-07-03T17:00:00",
+              "end": "2026-07-03T18:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-67",
+              "title": "Calibration 67",
+              "start": "2026-07-12T08:00:00",
+              "end": "2026-07-12T09:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-68",
+              "title": "Sampling 68",
+              "start": "2026-07-18T14:00:00",
+              "end": "2026-07-18T15:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-69",
+              "title": "Cleanup 69",
+              "start": "2026-07-21T09:00:00",
+              "end": "2026-07-21T10:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-70",
+              "title": "Handover 70",
+              "start": "2026-07-26T09:00:00",
+              "end": "2026-07-26T10:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-71",
+              "title": "Batch run 71",
+              "start": "2026-07-26T09:00:00",
+              "end": "2026-07-26T10:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-72",
+              "title": "Line check 72",
+              "start": "2026-07-16T11:00:00",
+              "end": "2026-07-16T12:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-73",
+              "title": "Safety brief 73",
+              "start": "2026-07-26T10:00:00",
+              "end": "2026-07-26T11:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-74",
+              "title": "Cleanup 74",
+              "start": "2026-07-07T17:00:00",
+              "end": "2026-07-07T18:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-75",
+              "title": "Calibration 75",
+              "start": "2026-07-15T18:00:00",
+              "end": "2026-07-15T19:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-76",
+              "title": "PM task 76",
+              "start": "2026-07-03T09:00:00",
+              "end": "2026-07-03T10:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-77",
+              "title": "Calibration 77",
+              "start": "2026-07-16T09:00:00",
+              "end": "2026-07-16T10:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-78",
+              "title": "Cleanup 78",
+              "start": "2026-07-16T15:00:00",
+              "end": "2026-07-16T16:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-79",
+              "title": "Calibration 79",
+              "start": "2026-07-16T16:00:00",
+              "end": "2026-07-16T17:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-80",
+              "title": "PM task 80",
+              "start": "2026-07-03T16:00:00",
+              "end": "2026-07-03T17:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-81",
+              "title": "Batch run 81",
+              "start": "2026-07-26T17:00:00",
+              "end": "2026-07-26T18:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-82",
+              "title": "Calibration 82",
+              "start": "2026-07-06T12:00:00",
+              "end": "2026-07-06T13:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-83",
+              "title": "Handover 83",
+              "start": "2026-07-26T17:00:00",
+              "end": "2026-07-26T18:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-84",
+              "title": "PM task 84",
+              "start": "2026-07-13T17:00:00",
+              "end": "2026-07-13T18:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-85",
+              "title": "Vendor sync 85",
+              "start": "2026-08-06T08:00:00",
+              "end": "2026-08-06T09:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-86",
+              "title": "Safety brief 86",
+              "start": "2026-08-05T15:00:00",
+              "end": "2026-08-05T16:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-87",
+              "title": "Cleanup 87",
+              "start": "2026-08-05T15:00:00",
+              "end": "2026-08-05T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-88",
+              "title": "Vendor sync 88",
+              "start": "2026-08-22T11:00:00",
+              "end": "2026-08-22T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-89",
+              "title": "Line check 89",
+              "start": "2026-08-18T08:00:00",
+              "end": "2026-08-18T09:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-90",
+              "title": "PM task 90",
+              "start": "2026-08-26T17:00:00",
+              "end": "2026-08-26T18:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-91",
+              "title": "Handover 91",
+              "start": "2026-08-24T08:00:00",
+              "end": "2026-08-24T09:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-92",
+              "title": "Line check 92",
+              "start": "2026-08-27T09:00:00",
+              "end": "2026-08-27T10:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-93",
+              "title": "Sampling 93",
+              "start": "2026-08-07T10:00:00",
+              "end": "2026-08-07T11:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-94",
+              "title": "Calibration 94",
+              "start": "2026-08-25T15:00:00",
+              "end": "2026-08-25T16:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-95",
+              "title": "Vendor sync 95",
+              "start": "2026-08-18T12:00:00",
+              "end": "2026-08-18T13:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-96",
+              "title": "Safety brief 96",
+              "start": "2026-08-24T11:00:00",
+              "end": "2026-08-24T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-97",
+              "title": "Handover 97",
+              "start": "2026-08-19T14:00:00",
+              "end": "2026-08-19T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-98",
+              "title": "Vendor sync 98",
+              "start": "2026-08-05T14:00:00",
+              "end": "2026-08-05T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-99",
+              "title": "Safety brief 99",
+              "start": "2026-08-17T06:00:00",
+              "end": "2026-08-17T07:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-100",
+              "title": "Vendor sync 100",
+              "start": "2026-08-20T06:00:00",
+              "end": "2026-08-20T07:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-101",
+              "title": "Cleanup 101",
+              "start": "2026-08-05T13:00:00",
+              "end": "2026-08-05T14:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-102",
+              "title": "Line check 102",
+              "start": "2026-08-04T14:00:00",
+              "end": "2026-08-04T15:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-103",
+              "title": "Sampling 103",
+              "start": "2026-08-22T14:00:00",
+              "end": "2026-08-22T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-104",
+              "title": "PM task 104",
+              "start": "2026-08-16T18:00:00",
+              "end": "2026-08-16T19:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-105",
+              "title": "Batch run 105",
+              "start": "2026-08-02T09:00:00",
+              "end": "2026-08-02T10:00:00",
+              "category": "maint"
+            },
+            {
+              "id": "ev-106",
+              "title": "PM task 106",
+              "start": "2026-08-02T18:00:00",
+              "end": "2026-08-02T19:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-107",
+              "title": "Line check 107",
+              "start": "2026-08-15T14:00:00",
+              "end": "2026-08-15T15:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-108",
+              "title": "Cleanup 108",
+              "start": "2026-08-15T11:00:00",
+              "end": "2026-08-15T12:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-109",
+              "title": "Batch run 109",
+              "start": "2026-08-20T14:00:00",
+              "end": "2026-08-20T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-110",
+              "title": "Sampling 110",
+              "start": "2026-08-09T13:00:00",
+              "end": "2026-08-09T14:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "ev-111",
+              "title": "Sampling 111",
+              "start": "2026-08-26T13:00:00",
+              "end": "2026-08-26T14:00:00",
+              "category": "ops"
+            },
+            {
+              "id": "ev-112",
+              "title": "Inspection 112",
+              "start": "2026-08-23T14:00:00",
+              "end": "2026-08-23T15:00:00",
+              "category": "meeting"
+            },
+            {
+              "id": "span-audit",
+              "title": "Multi-day audit (spans Jun\u2192Jul)",
+              "start": "2026-06-28",
+              "end": "2026-07-03",
+              "allDay": true,
+              "category": "maint"
+            },
+            {
+              "id": "weekly-standup",
+              "title": "Weekly standup (recurring since April)",
+              "start": "2026-04-06T08:00:00",
+              "end": "2026-04-06T08:15:00",
+              "category": "meeting",
+              "rrule": {
+                "freq": "weekly",
+                "byweekday": [
+                  1
+                ]
+              }
+            }
+          ]
+        },
+        "meta": {
+          "name": "calendar"
+        },
+        "position": {
+          "x": 16,
+          "y": 74,
+          "width": 968,
+          "height": 620
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "this.props.output.visibleEnd"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\tstart = self.props.output.visibleStart\n\tend = self.props.output.visibleEnd\n\tsource = self.custom.source\n\tif not start or not end:\n\t\treturn []\n\tout = []\n\tfor e in source:\n\t\tif e.get('rrule'):\n\t\t\tcontinue\n\t\ts = str(e.get('start') or '')\n\t\ten = str(e.get('end') or s)\n\t\tif s < end and en >= start:\n\t\t\tout.append(e)\n\treturn out\n"
+                }
+              ]
+            }
+          },
+          "props.data.recurringEvents": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "this.custom.source"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\treturn [e for e in (value or []) if e.get('rrule')]\n"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

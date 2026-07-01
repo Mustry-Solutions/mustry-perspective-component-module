@@ -59,6 +59,34 @@
         cursor: help;   // signals the badge carries a "how it works / how to add" tooltip
     }
 
+    // Loading state (author binds config.loading to their query state): a thin indeterminate
+    // bar under the toolbar, and the current events stay visible but dimmed (stale-while-revalidate).
+    .cal-loading-bar {
+        position: relative;
+        flex: 0 0 auto;
+        height: 3px;
+        overflow: hidden;
+        background: color-mix(in srgb, var(--cal-accent) 16%, transparent);
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 35%;
+            background: var(--cal-accent);
+            border-radius: 3px;
+            animation: cal-loading-slide 1.1s ease-in-out infinite;
+        }
+    }
+
+    &.cal-loading .cal-anim-view {
+        // filter (not opacity) so it isn't overridden by the view-switch opacity animation.
+        filter: opacity(0.55);
+        pointer-events: none;
+        transition: filter 0.15s ease;
+    }
+
     // The title doubles as the mini-month trigger when showMiniNav is on.
     .cal-title--btn {
         display: inline-flex;
@@ -1318,6 +1346,11 @@
 @keyframes cal-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
+}
+
+@keyframes cal-loading-slide {
+    0%   { left: -35%; }
+    100% { left: 100%; }
 }
 
 // A freshly-created event fades + scales in (applied for one cycle, then removed).
