@@ -1,5 +1,5 @@
 import {
-    colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision, GestureFlags
+    cellAt, colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision, GestureFlags
 } from '../calendar/gestureLogic';
 import { hourHeightPx, SLOT_PX } from '../calendar/types';
 
@@ -28,6 +28,24 @@ describe('colAtX', () => {
         expect(colAtX(cols, -1)).toBeNull();
         expect(colAtX(cols, 300)).toBeNull();
         expect(colAtX([], 50)).toBeNull();
+    });
+});
+
+describe('cellAt (month-cell 2D hit-testing)', () => {
+    const cells = [
+        { day: '2026-07-06', left: 0, right: 100, top: 0, bottom: 80 },
+        { day: '2026-07-07', left: 100, right: 200, top: 0, bottom: 80 },
+        { day: '2026-07-13', left: 0, right: 100, top: 80, bottom: 160 }
+    ];
+    it('finds the cell containing the point (left/top-inclusive, right/bottom-exclusive)', () => {
+        expect(cellAt(cells, 50, 40)!.day).toBe('2026-07-06');
+        expect(cellAt(cells, 100, 0)!.day).toBe('2026-07-07');   // x boundary belongs to the next cell
+        expect(cellAt(cells, 50, 80)!.day).toBe('2026-07-13');   // y boundary belongs to the next row
+    });
+    it('returns null outside every cell', () => {
+        expect(cellAt(cells, 250, 40)).toBeNull();
+        expect(cellAt(cells, 150, 120)).toBeNull();   // second row only has one cell
+        expect(cellAt([], 50, 40)).toBeNull();
     });
 });
 

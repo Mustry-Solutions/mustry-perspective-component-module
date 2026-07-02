@@ -26,6 +26,25 @@ export function colAtX(cols: ColBound[], x: number): ColBound | null {
     return null;
 }
 
+/** Screen extent of a month day cell, used to hit-test the pointer in 2D. */
+export interface CellBound {
+    day: string;
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+}
+
+/** The month cell under (x, y), or null if the pointer is outside every cell. */
+export function cellAt(cells: CellBound[], x: number, y: number): CellBound | null {
+    for (const c of cells) {
+        if (x >= c.left && x < c.right && y >= c.top && y < c.bottom) {
+            return c;
+        }
+    }
+    return null;
+}
+
 /** A gesture counts as a drag once the pointer moves past a small threshold. */
 export function hasMoved(dx: number, dy: number, threshold = 4): boolean {
     return Math.abs(dx) + Math.abs(dy) > threshold;

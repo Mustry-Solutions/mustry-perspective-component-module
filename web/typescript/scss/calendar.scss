@@ -264,6 +264,11 @@
         // Continuation across week boundaries: square the carried edge + flush margin.
         &.cal-mbar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; margin-left: 0; }
         &.cal-mbar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: 0; }
+
+        // Month drag-to-move (config.editable): grab affordance; a touch drag moves
+        // the event instead of scrolling (matches the time-grid events).
+        &.cal-mbar--draggable { cursor: grab; touch-action: none; }
+        &.cal-mbar--dragging { opacity: 0.4; }
     }
 
     .cal-mbar-time {
@@ -305,6 +310,13 @@
 
     .cal-day--other {
         opacity: 0.45;
+    }
+
+    // Drop target of an in-flight month drag.
+    .cal-day--drop {
+        background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-bg));
+        box-shadow: inset 0 0 0 2px var(--cal-accent);
+        border-radius: 2px;
     }
 
     .cal-daynum {

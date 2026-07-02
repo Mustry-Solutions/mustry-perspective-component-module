@@ -245,7 +245,20 @@ self.props.data.events = events
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
 - [ ] A plain **click** (no drag) fires `onEventClick` — **unless** `builtInEditor` is on, where it opens the editor (see below).
 
+### Month view drag (`config.editable`)
+
+- [ ] **Drag a chip onto another day** — the target cell highlights, the source chip dims; release fires `onChange` (`action = "move"`) with start/end shifted by whole days, the **time of day kept**.
+- [ ] **Drag a multi-day spanning bar** — the whole span shifts by the dragged day delta.
+- [ ] **Drag a recurring occurrence** — it detaches (EXDATE + `…-x-…` override), other occurrences stay put.
+- [ ] **Drop on the same day** — nothing fires (no-op).
+- [ ] A plain **click** on a chip still opens the editor / fires `onEventClick`; a click on the empty cell area still creates / fires `onDateClick`.
+
 ## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)
+
+> **Status: PENDING — never run on real hardware.** Touch support (2026-07-01) and the
+> month-view drag (2026-07-02) are implemented with Pointer Events + `touch-action` and
+> verified with mouse + synthetic events only. Until someone works through this section
+> on a tablet (ideally the target HMI panel), touch is **not considered done**.
 
 Gestures use Pointer Events + `touch-action`, so mouse and touch share one path. On a tablet:
 - [ ] **Drag an event** with a finger → it moves (doesn't scroll the grid).
@@ -253,6 +266,7 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 - [ ] **Tap an event** → opens the editor / fires `onEventClick`.
 - [ ] **Tap empty time** → opens the create editor (or fires `onDateClick`/`onSelect`).
 - [ ] **Vertical drag on empty time → the grid SCROLLS** (drag-to-create is disabled on touch; a `pointercancel` aborts the gesture). No create rectangle should appear or stick.
+- [ ] **Month view: finger-drag a chip to another day** → it moves (`touch-action: none` on chips — the drag must not scroll the page); month cells still scroll normally when dragging empty space.
 - [ ] Mini-nav / day-popover / editor **close on an outside tap**.
 - [ ] No stuck gesture, no "scroll steals the drag," no accidental create while scrolling.
 

@@ -2,7 +2,8 @@ import {
     pad2, startOfDay, startOfMonth, addMonths, addDays, daysInMonth,
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
-    formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone
+    formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
+    shiftWallDays
 } from '../dateUtils';
 
 describe('pad2', () => {
@@ -215,6 +216,23 @@ describe('instantToZonedIso (timezone normalisation)', () => {
     });
     it('empty zone keeps a browser-local wall clock for an offset instant', () => {
         expect(instantToZonedIso('2026-06-24T14:00:00Z', '')).toMatch(/^2026-06-\d\dT\d\d:00:00$/);
+    });
+});
+
+describe('shiftWallDays (month-drag day move)', () => {
+    it('shifts the date part and keeps the time of day', () => {
+        expect(shiftWallDays('2026-07-03T09:30:00', 2)).toBe('2026-07-05T09:30:00');
+        expect(shiftWallDays('2026-07-03T09:30:00', -4)).toBe('2026-06-29T09:30:00');
+    });
+    it('date-only values stay date-only (all-day events)', () => {
+        expect(shiftWallDays('2026-07-03', 7)).toBe('2026-07-10');
+    });
+    it('crosses month and year boundaries', () => {
+        expect(shiftWallDays('2026-12-30T23:00:00', 3)).toBe('2027-01-02T23:00:00');
+    });
+    it('zero delta and unparseable input pass through unchanged', () => {
+        expect(shiftWallDays('2026-07-03T09:30:00', 0)).toBe('2026-07-03T09:30:00');
+        expect(shiftWallDays('garbage', 5)).toBe('garbage');
     });
 });
 
