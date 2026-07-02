@@ -1,284 +1,633 @@
 {
-    "type": "object",
-    "properties": {
-        "config": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Calendar behaviour and appearance.",
-            "default": {
-                "view": "month",
-                "showToolbar": true,
-                "showMiniNav": true,
-                "showExport": false,
-                "editable": false,
-                "selectable": false,
-                "weekStart": "monday",
-                "locale": "",
-                "timezone": "",
-                "showWeekends": true,
-                "dayStartHour": 0,
-                "dayEndHour": 24,
-                "slotMinutes": 60,
-                "scrollToHour": 7,
-                "scrollToNow": false,
-                "refreshSeconds": 0,
-                "showLegend": true,
-                "emptyMessage": "No events",
-                "loading": false,
-                "refetchDebounceMs": 150,
-                "categories": []
-            },
-            "properties": {
-                "view": {
-                    "enum": ["month", "week", "day", "list"],
-                    "default": "month",
-                    "description": "The active view (two-way): the toolbar writes the user's choice back here, and setting it switches the view."
-                },
-                "editable": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Week/Day: allow dragging events to move them and dragging their bottom edge to resize. The component does not persist changes — handle onChange (action 'move' / 'resize') and write back into data.events."
-                },
-                "selectable": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Week/Day: allow dragging over empty time to select a range, firing onSelect (use it to open your own 'new event' editor)."
-                },
-                "builtInEditor": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "When true: creating (with selectable) opens a built-in editor popover, and clicking an event (with editable) opens it pre-filled to edit or delete. Create/Save/Delete all fire onChange — you still persist the result into data.events."
-                },
-                "showToolbar": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the header toolbar (previous / next / today + the month title)."
-                },
-                "showMiniNav": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Make the toolbar title a button that opens a mini-month navigator; click a day to jump the calendar there."
-                },
-                "showExport": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Show a toolbar button that downloads the loaded events as a CSV file."
-                },
-                "weekStart": {
-                    "enum": ["monday", "sunday"],
-                    "default": "monday",
-                    "description": "First day of the week."
-                },
-                "locale": {
-                    "type": "string",
-                    "default": "",
-                    "description": "BCP-47 locale for month/weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default."
-                },
-                "timezone": {
-                    "type": "string",
-                    "default": "",
-                    "description": "IANA zone the calendar renders in (e.g. 'America/Chicago'). Event instants (ISO offset/Z or epoch ms) are converted to this zone; today/now use it. Writes emit offset-bearing ISO. Empty = browser/session-local."
-                },
-                "showWeekends": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "When false, Saturday and Sunday columns are hidden."
-                },
-                "dayStartHour": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "Week/Day views: first hour shown on the time axis (0-24)."
-                },
-                "dayEndHour": {
-                    "type": "number",
-                    "default": 24,
-                    "description": "Week/Day views: last hour shown on the time axis (0-24, > dayStartHour)."
-                },
-                "slotMinutes": {
-                    "type": "number",
-                    "default": 60,
-                    "description": "Week/Day grid resolution + drag/resize snapping, in minutes. A divisor of 60 (60/30/15/10/5); finer values draw sub-hour gridlines and make the grid taller/scrollable. Invalid values fall back to 60."
-                },
-                "scrollToHour": {
-                    "type": "number",
-                    "default": 7,
-                    "description": "Week/Day views: hour scrolled into view initially (used when scrollToNow is off or today isn't in view)."
-                },
-                "scrollToNow": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Week/Day views: on open / view-switch / Today, centre the grid on the current time when today is in view (else fall back to scrollToHour)."
-                },
-                "refreshSeconds": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "Re-render the calendar every N seconds so the now-indicator ticks live (and 'today' stays current). 0 = off; 60 is typical."
-                },
-                "showLegend": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the category legend (bottom). Only appears when categories are defined; click an item to filter that category."
-                },
-                "emptyMessage": {
-                    "type": "string",
-                    "default": "No events",
-                    "description": "Shown as a subtle header badge (and in the list view) when no events are configured (data.events is empty). Empty string = no message."
-                },
-                "loading": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Bind to your query's loading state. Shows a thin indeterminate bar under the toolbar and keeps the current events visible but dimmed (stale-while-revalidate); suppresses the empty-state badge while true."
-                },
-                "refetchDebounceMs": {
-                    "type": "number",
-                    "default": 150,
-                    "description": "Debounce (ms) for the visibleStart/visibleEnd writes, so a flurry of prev/next navigation coalesces into a single window write (one bound query). 0 = write immediately."
-                },
-                "categories": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Event categories shown in the legend. An event's colour comes from its category (matched by id) unless the event sets its own 'color'.",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": { "type": "string", "description": "Category id — set an event's 'category' to this to colour it and group it under this legend item." },
-                            "label": { "type": "string", "description": "Display name in the legend." },
-                            "color": { "type": "string", "description": "Category colour (any CSS colour)." },
-                            "icon": { "type": "string", "description": "Optional Ignition icon path (library/name, e.g. 'material/build') shown on this category's events and in the legend." }
-                        }
-                    }
-                }
-            }
+  "type": "object",
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Calendar behaviour and appearance.",
+      "default": {
+        "view": "month",
+        "showToolbar": true,
+        "showMiniNav": true,
+        "showExport": false,
+        "editable": false,
+        "selectable": false,
+        "weekStart": "monday",
+        "locale": "",
+        "timezone": "",
+        "showWeekends": true,
+        "dayStartHour": 0,
+        "dayEndHour": 24,
+        "slotMinutes": 60,
+        "scrollToHour": 7,
+        "scrollToNow": false,
+        "refreshSeconds": 0,
+        "showLegend": true,
+        "emptyMessage": "No events",
+        "loading": false,
+        "refetchDebounceMs": 150,
+        "categories": []
+      },
+      "properties": {
+        "view": {
+          "enum": [
+            "month",
+            "week",
+            "day",
+            "list"
+          ],
+          "default": "month",
+          "description": "The active view (two-way): the toolbar writes the user's choice back here, and setting it switches the view."
         },
-        "data": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "The events to display. Bind 'events' to a query/dataset returning the events for the visible window (see output.visibleStart/visibleEnd).",
-            "default": {
-                "events": [],
-                "recurringEvents": []
-            },
-            "properties": {
-                "events": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Array of event objects. Rendered in a single pass — feed the whole visible window at once rather than per-event.",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": "string",
-                                "description": "Stable identifier, echoed back in onEventClick (use it for write-back)."
-                            },
-                            "title": {
-                                "type": "string",
-                                "description": "Event label shown on the chip."
-                            },
-                            "start": {
-                                "type": "string",
-                                "description": "Start, ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'."
-                            },
-                            "end": {
-                                "type": "string",
-                                "description": "End (optional), same format as start. Exclusive for all-day multi-day events."
-                            },
-                            "allDay": {
-                                "type": "boolean",
-                                "description": "All-day event (no time-of-day)."
-                            },
-                            "color": {
-                                "type": "string",
-                                "description": "Chip colour (any CSS colour). Overrides the category colour; defaults to the theme accent."
-                            },
-                            "category": {
-                                "type": "string",
-                                "description": "Category id (see config.categories) — supplies the chip colour and the legend grouping unless 'color' is set."
-                            },
-                            "status": {
-                                "enum": ["tentative", "cancelled", "done"],
-                                "description": "Optional visual state: 'tentative' (striped/faded), 'cancelled' or 'done' (struck through). Unset renders as a normal solid event."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "Optional detail text shown in the hover popover."
-                            },
-                            "display": {
-                                "enum": ["default", "background"],
-                                "description": "'background' renders a translucent band behind events (week/day) — e.g. downtime or availability windows."
-                            },
-                            "rrule": {
-                                "type": "object",
-                                "description": "Optional recurrence. When set, the event repeats and is expanded per visible window.",
-                                "properties": {
-                                    "freq": {
-                                        "enum": ["daily", "weekly", "monthly", "yearly"],
-                                        "description": "Recurrence frequency."
-                                    },
-                                    "interval": {
-                                        "type": "number",
-                                        "description": "Repeat every N units (default 1)."
-                                    },
-                                    "count": {
-                                        "type": "number",
-                                        "description": "Max number of occurrences in the series."
-                                    },
-                                    "until": {
-                                        "type": "string",
-                                        "description": "Last date (ISO 'YYYY-MM-DD', inclusive)."
-                                    },
-                                    "byweekday": {
-                                        "type": "array",
-                                        "description": "Weekly only: weekdays to repeat on (0=Sun .. 6=Sat).",
-                                        "items": { "type": "number" }
-                                    },
-                                    "exdate": {
-                                        "type": "array",
-                                        "description": "Occurrence dates (ISO 'YYYY-MM-DD') to skip — deleted or overridden instances.",
-                                        "items": { "type": "string" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "recurringEvents": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Recurring event definitions (same shape as 'events', each with an 'rrule'). Bind this to a small, ALWAYS-loaded query (e.g. WHERE rrule IS NOT NULL) so a windowed 'events' query never drops a series. Merged with 'events' and expanded per visible window.",
-                    "items": { "type": "object" }
-                }
-            }
+        "editable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Week/Day: allow dragging events to move them and dragging their bottom edge to resize. The component does not persist changes — handle onChange (action 'move' / 'resize') and write back into data.events."
         },
-        "output": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Read-only. The visible date window, so bindings can fetch only what's shown. (The active view is config.view — it's two-way.)",
-            "default": {
-                "visibleStart": "",
-                "visibleEnd": "",
-                "hiddenCategories": []
-            },
-            "properties": {
-                "visibleStart": {
-                    "type": "string",
-                    "description": "First date shown in the grid (ISO 'YYYY-MM-DD'). Bind your query: date >= visibleStart."
-                },
-                "visibleEnd": {
-                    "type": "string",
-                    "description": "One day past the last date shown (ISO 'YYYY-MM-DD'), half-open. Bind your query: date < visibleEnd."
-                },
-                "hiddenCategories": {
-                    "type": "array",
-                    "description": "Category ids currently hidden via the legend filter. Put a change script here to react to filtering.",
-                    "items": { "type": "string" }
-                }
-            }
+        "selectable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Week/Day: allow dragging over empty time to select a range, firing onSelect (use it to open your own 'new event' editor)."
         },
-        "style": {
-            "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
-            "default": {
-                "classes": ""
+        "builtInEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true: creating (with selectable) opens a built-in editor popover, and clicking an event (with editable) opens it pre-filled to edit or delete. Create/Save/Delete all fire onChange — you still persist the result into data.events."
+        },
+        "showToolbar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the header toolbar (previous / next / today + the month title)."
+        },
+        "showMiniNav": {
+          "type": "boolean",
+          "default": true,
+          "description": "Make the toolbar title a button that opens a mini-month navigator; click a day to jump the calendar there."
+        },
+        "showExport": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a toolbar button that downloads the loaded events as a CSV file."
+        },
+        "weekStart": {
+          "enum": [
+            "monday",
+            "sunday"
+          ],
+          "default": "monday",
+          "description": "First day of the week."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "BCP-47 locale for month/weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default. Also selects the built-in UI-text language (see config.labels)."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA zone the calendar renders in (e.g. 'America/Chicago'). Event instants (ISO offset/Z or epoch ms) are converted to this zone; today/now use it. Writes emit offset-bearing ISO. Empty = browser/session-local."
+        },
+        "showWeekends": {
+          "type": "boolean",
+          "default": true,
+          "description": "When false, Saturday and Sunday columns are hidden."
+        },
+        "dayStartHour": {
+          "type": "number",
+          "default": 0,
+          "description": "Week/Day views: first hour shown on the time axis (0-24)."
+        },
+        "dayEndHour": {
+          "type": "number",
+          "default": 24,
+          "description": "Week/Day views: last hour shown on the time axis (0-24, > dayStartHour)."
+        },
+        "slotMinutes": {
+          "type": "number",
+          "default": 60,
+          "description": "Week/Day grid resolution + drag/resize snapping, in minutes. A divisor of 60 (60/30/15/10/5); finer values draw sub-hour gridlines and make the grid taller/scrollable. Invalid values fall back to 60."
+        },
+        "scrollToHour": {
+          "type": "number",
+          "default": 7,
+          "description": "Week/Day views: hour scrolled into view initially (used when scrollToNow is off or today isn't in view)."
+        },
+        "scrollToNow": {
+          "type": "boolean",
+          "default": false,
+          "description": "Week/Day views: on open / view-switch / Today, centre the grid on the current time when today is in view (else fall back to scrollToHour)."
+        },
+        "refreshSeconds": {
+          "type": "number",
+          "default": 0,
+          "description": "Re-render the calendar every N seconds so the now-indicator ticks live (and 'today' stays current). 0 = off; 60 is typical."
+        },
+        "showLegend": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the category legend (bottom). Only appears when categories are defined; click an item to filter that category."
+        },
+        "emptyMessage": {
+          "type": "string",
+          "default": "No events",
+          "description": "Shown as a subtle header badge (and in the list view) when no events are configured (data.events is empty). Empty string = no message."
+        },
+        "loading": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bind to your query's loading state. Shows a thin indeterminate bar under the toolbar and keeps the current events visible but dimmed (stale-while-revalidate); suppresses the empty-state badge while true."
+        },
+        "refetchDebounceMs": {
+          "type": "number",
+          "default": 150,
+          "description": "Debounce (ms) for the visibleStart/visibleEnd writes, so a flurry of prev/next navigation coalesces into a single window write (one bound query). 0 = write immediately."
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "description": "Event categories shown in the legend. An event's colour comes from its category (matched by id) unless the event sets its own 'color'.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Category id — set an event's 'category' to this to colour it and group it under this legend item."
+              },
+              "label": {
+                "type": "string",
+                "description": "Display name in the legend."
+              },
+              "color": {
+                "type": "string",
+                "description": "Category colour (any CSS colour)."
+              },
+              "icon": {
+                "type": "string",
+                "description": "Optional Ignition icon path (library/name, e.g. 'material/build') shown on this category's events and in the legend."
+              }
             }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English. Weekday and month names follow config.locale automatically. {n} / {tz} are substituted placeholders.",
+          "default": {
+            "month": "Month",
+            "week": "Week",
+            "day": "Day",
+            "list": "List",
+            "today": "Today",
+            "exportCsv": "Export events to CSV",
+            "previous": "Previous",
+            "next": "Next",
+            "allDayTime": "all-day",
+            "noEvents": "No events",
+            "more": "+{n} more",
+            "showDayEvents": "Show this day's events",
+            "previousMonth": "Previous month",
+            "nextMonth": "Next month",
+            "emptyHintIntro": "This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.",
+            "emptyHintCreate": "Add an event: in Week or Day view, drag over an empty time slot.",
+            "emptyHintBind": "Events come from the data binding — enable \"selectable\" + \"builtInEditor\" to add them here.",
+            "newEvent": "New event",
+            "editEvent": "Edit event",
+            "thisEvent": "This event",
+            "allEvents": "All events",
+            "title": "Title",
+            "eventTitle": "Event title",
+            "allDay": "All day",
+            "start": "Start",
+            "end": "End",
+            "timesIn": "Times in {tz}",
+            "repeat": "Repeat",
+            "doesNotRepeat": "Does not repeat",
+            "daily": "Daily",
+            "weekly": "Weekly",
+            "monthly": "Monthly",
+            "yearly": "Yearly",
+            "every": "Every",
+            "unitDays": "day(s)",
+            "unitWeeks": "week(s)",
+            "unitMonths": "month(s)",
+            "unitYears": "year(s)",
+            "ends": "Ends",
+            "never": "Never",
+            "on": "On",
+            "after": "After",
+            "times": "times",
+            "category": "Category",
+            "none": "None",
+            "notes": "Notes",
+            "save": "Save",
+            "create": "Create",
+            "cancel": "Cancel",
+            "delete": "Delete"
+          },
+          "properties": {
+            "month": {
+              "type": "string",
+              "default": "Month",
+              "description": "View-switcher button: month view."
+            },
+            "week": {
+              "type": "string",
+              "default": "Week",
+              "description": "View-switcher button: week view."
+            },
+            "day": {
+              "type": "string",
+              "default": "Day",
+              "description": "View-switcher button: day view."
+            },
+            "list": {
+              "type": "string",
+              "default": "List",
+              "description": "View-switcher button: list/agenda view."
+            },
+            "today": {
+              "type": "string",
+              "default": "Today",
+              "description": "Toolbar / mini-nav \"jump to today\" button."
+            },
+            "exportCsv": {
+              "type": "string",
+              "default": "Export events to CSV",
+              "description": "Tooltip + accessible label of the CSV export button."
+            },
+            "previous": {
+              "type": "string",
+              "default": "Previous",
+              "description": "Accessible label of the toolbar back arrow."
+            },
+            "next": {
+              "type": "string",
+              "default": "Next",
+              "description": "Accessible label of the toolbar forward arrow."
+            },
+            "allDayTime": {
+              "type": "string",
+              "default": "all-day",
+              "description": "Time-cell text for all-day events (list, day popover, week/day gutter)."
+            },
+            "noEvents": {
+              "type": "string",
+              "default": "No events",
+              "description": "Empty text in the list view (when emptyMessage is unset) and the day popover."
+            },
+            "more": {
+              "type": "string",
+              "default": "+{n} more",
+              "description": "Month-cell overflow button; {n} = number of hidden events."
+            },
+            "showDayEvents": {
+              "type": "string",
+              "default": "Show this day's events",
+              "description": "Tooltip on the month-view date number (opens the day popover)."
+            },
+            "previousMonth": {
+              "type": "string",
+              "default": "Previous month",
+              "description": "Accessible label of the mini-nav back arrow."
+            },
+            "nextMonth": {
+              "type": "string",
+              "default": "Next month",
+              "description": "Accessible label of the mini-nav forward arrow."
+            },
+            "emptyHintIntro": {
+              "type": "string",
+              "default": "This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.",
+              "description": "Empty-state badge tooltip: first line."
+            },
+            "emptyHintCreate": {
+              "type": "string",
+              "default": "Add an event: in Week or Day view, drag over an empty time slot.",
+              "description": "Empty-state badge tooltip: second line when in-place creation is enabled."
+            },
+            "emptyHintBind": {
+              "type": "string",
+              "default": "Events come from the data binding — enable \"selectable\" + \"builtInEditor\" to add them here.",
+              "description": "Empty-state badge tooltip: second line when creation is not enabled."
+            },
+            "newEvent": {
+              "type": "string",
+              "default": "New event",
+              "description": "Editor heading when creating."
+            },
+            "editEvent": {
+              "type": "string",
+              "default": "Edit event",
+              "description": "Editor heading when editing."
+            },
+            "thisEvent": {
+              "type": "string",
+              "default": "This event",
+              "description": "Apply-to choice: only the opened occurrence of a series."
+            },
+            "allEvents": {
+              "type": "string",
+              "default": "All events",
+              "description": "Apply-to choice: the whole recurring series."
+            },
+            "title": {
+              "type": "string",
+              "default": "Title",
+              "description": "Editor: title field label."
+            },
+            "eventTitle": {
+              "type": "string",
+              "default": "Event title",
+              "description": "Editor: title field placeholder."
+            },
+            "allDay": {
+              "type": "string",
+              "default": "All day",
+              "description": "Editor: all-day checkbox label."
+            },
+            "start": {
+              "type": "string",
+              "default": "Start",
+              "description": "Editor: start field label."
+            },
+            "end": {
+              "type": "string",
+              "default": "End",
+              "description": "Editor: end field label."
+            },
+            "timesIn": {
+              "type": "string",
+              "default": "Times in {tz}",
+              "description": "Editor timezone hint; {tz} = the configured timezone."
+            },
+            "repeat": {
+              "type": "string",
+              "default": "Repeat",
+              "description": "Editor: repeat field label."
+            },
+            "doesNotRepeat": {
+              "type": "string",
+              "default": "Does not repeat",
+              "description": "Repeat option: none."
+            },
+            "daily": {
+              "type": "string",
+              "default": "Daily",
+              "description": "Repeat option: daily."
+            },
+            "weekly": {
+              "type": "string",
+              "default": "Weekly",
+              "description": "Repeat option: weekly."
+            },
+            "monthly": {
+              "type": "string",
+              "default": "Monthly",
+              "description": "Repeat option: monthly."
+            },
+            "yearly": {
+              "type": "string",
+              "default": "Yearly",
+              "description": "Repeat option: yearly."
+            },
+            "every": {
+              "type": "string",
+              "default": "Every",
+              "description": "Repeat interval prefix (\"Every N day(s)\")."
+            },
+            "unitDays": {
+              "type": "string",
+              "default": "day(s)",
+              "description": "Repeat interval unit for daily."
+            },
+            "unitWeeks": {
+              "type": "string",
+              "default": "week(s)",
+              "description": "Repeat interval unit for weekly."
+            },
+            "unitMonths": {
+              "type": "string",
+              "default": "month(s)",
+              "description": "Repeat interval unit for monthly."
+            },
+            "unitYears": {
+              "type": "string",
+              "default": "year(s)",
+              "description": "Repeat interval unit for yearly."
+            },
+            "ends": {
+              "type": "string",
+              "default": "Ends",
+              "description": "Repeat end-mode row label."
+            },
+            "never": {
+              "type": "string",
+              "default": "Never",
+              "description": "Repeat end mode: never ends."
+            },
+            "on": {
+              "type": "string",
+              "default": "On",
+              "description": "Repeat end mode: until a date."
+            },
+            "after": {
+              "type": "string",
+              "default": "After",
+              "description": "Repeat end mode: after N occurrences."
+            },
+            "times": {
+              "type": "string",
+              "default": "times",
+              "description": "Suffix after the occurrence count (\"After N times\")."
+            },
+            "category": {
+              "type": "string",
+              "default": "Category",
+              "description": "Editor: category field label."
+            },
+            "none": {
+              "type": "string",
+              "default": "None",
+              "description": "Editor: the no-category option."
+            },
+            "notes": {
+              "type": "string",
+              "default": "Notes",
+              "description": "Editor: notes field label."
+            },
+            "save": {
+              "type": "string",
+              "default": "Save",
+              "description": "Editor: save button (editing)."
+            },
+            "create": {
+              "type": "string",
+              "default": "Create",
+              "description": "Editor: create button (new event)."
+            },
+            "cancel": {
+              "type": "string",
+              "default": "Cancel",
+              "description": "Editor: cancel button."
+            },
+            "delete": {
+              "type": "string",
+              "default": "Delete",
+              "description": "Editor: delete button."
+            }
+          }
         }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The events to display. Bind 'events' to a query/dataset returning the events for the visible window (see output.visibleStart/visibleEnd).",
+      "default": {
+        "events": [],
+        "recurringEvents": []
+      },
+      "properties": {
+        "events": {
+          "type": "array",
+          "default": [],
+          "description": "Array of event objects. Rendered in a single pass — feed the whole visible window at once rather than per-event.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable identifier, echoed back in onEventClick (use it for write-back)."
+              },
+              "title": {
+                "type": "string",
+                "description": "Event label shown on the chip."
+              },
+              "start": {
+                "type": "string",
+                "description": "Start, ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'."
+              },
+              "end": {
+                "type": "string",
+                "description": "End (optional), same format as start. Exclusive for all-day multi-day events."
+              },
+              "allDay": {
+                "type": "boolean",
+                "description": "All-day event (no time-of-day)."
+              },
+              "color": {
+                "type": "string",
+                "description": "Chip colour (any CSS colour). Overrides the category colour; defaults to the theme accent."
+              },
+              "category": {
+                "type": "string",
+                "description": "Category id (see config.categories) — supplies the chip colour and the legend grouping unless 'color' is set."
+              },
+              "status": {
+                "enum": [
+                  "tentative",
+                  "cancelled",
+                  "done"
+                ],
+                "description": "Optional visual state: 'tentative' (striped/faded), 'cancelled' or 'done' (struck through). Unset renders as a normal solid event."
+              },
+              "description": {
+                "type": "string",
+                "description": "Optional detail text shown in the hover popover."
+              },
+              "display": {
+                "enum": [
+                  "default",
+                  "background"
+                ],
+                "description": "'background' renders a translucent band behind events (week/day) — e.g. downtime or availability windows."
+              },
+              "rrule": {
+                "type": "object",
+                "description": "Optional recurrence. When set, the event repeats and is expanded per visible window.",
+                "properties": {
+                  "freq": {
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "yearly"
+                    ],
+                    "description": "Recurrence frequency."
+                  },
+                  "interval": {
+                    "type": "number",
+                    "description": "Repeat every N units (default 1)."
+                  },
+                  "count": {
+                    "type": "number",
+                    "description": "Max number of occurrences in the series."
+                  },
+                  "until": {
+                    "type": "string",
+                    "description": "Last date (ISO 'YYYY-MM-DD', inclusive)."
+                  },
+                  "byweekday": {
+                    "type": "array",
+                    "description": "Weekly only: weekdays to repeat on (0=Sun .. 6=Sat).",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "exdate": {
+                    "type": "array",
+                    "description": "Occurrence dates (ISO 'YYYY-MM-DD') to skip — deleted or overridden instances.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "recurringEvents": {
+          "type": "array",
+          "default": [],
+          "description": "Recurring event definitions (same shape as 'events', each with an 'rrule'). Bind this to a small, ALWAYS-loaded query (e.g. WHERE rrule IS NOT NULL) so a windowed 'events' query never drops a series. Merged with 'events' and expanded per visible window.",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only. The visible date window, so bindings can fetch only what's shown. (The active view is config.view — it's two-way.)",
+      "default": {
+        "visibleStart": "",
+        "visibleEnd": "",
+        "hiddenCategories": []
+      },
+      "properties": {
+        "visibleStart": {
+          "type": "string",
+          "description": "First date shown in the grid (ISO 'YYYY-MM-DD'). Bind your query: date >= visibleStart."
+        },
+        "visibleEnd": {
+          "type": "string",
+          "description": "One day past the last date shown (ISO 'YYYY-MM-DD'), half-open. Bind your query: date < visibleEnd."
+        },
+        "hiddenCategories": {
+          "type": "array",
+          "description": "Category ids currently hidden via the legend filter. Put a change script here to react to filtering.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
     }
+  }
 }

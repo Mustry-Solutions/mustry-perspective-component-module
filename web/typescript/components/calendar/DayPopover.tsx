@@ -3,7 +3,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { intlFormat, parseDate, today } from '../dateUtils';
 import { CalEvent, timeMinutes } from '../calendarLogic';
-import { Category, DayPop } from './types';
+import { CalLabels, Category, DayPop } from './types';
 import { EventIcon, resolveColor, statusClass } from './eventStyle';
 
 interface DayPopoverProps {
@@ -11,10 +11,11 @@ interface DayPopoverProps {
     events: CalEvent[];
     locale: string;
     categories: Category[];
+    labels: CalLabels;
     onActivate: (ev: CalEvent, e: React.MouseEvent) => void;
 }
 
-export function DayPopover({ dayPop, events, locale, categories, onActivate }: DayPopoverProps): React.ReactElement {
+export function DayPopover({ dayPop, events, locale, categories, labels, onActivate }: DayPopoverProps): React.ReactElement {
     const d = parseDate(dayPop.iso) || today();
     const headFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -26,7 +27,7 @@ export function DayPopover({ dayPop, events, locale, categories, onActivate }: D
             <div className="cal-daypop-head">{headFmt.format(d)}</div>
             <div className="cal-daypop-list">
                 {events.length === 0 ? (
-                    <div className="cal-daypop-empty">No events</div>
+                    <div className="cal-daypop-empty">{labels.noEvents}</div>
                 ) : events.map((ev, i) => {
                     const tm = timeMinutes(ev.start);
                     return (
@@ -37,7 +38,7 @@ export function DayPopover({ dayPop, events, locale, categories, onActivate }: D
                         >
                             <span className="cal-daypop-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
                             <span className="cal-daypop-time">
-                                {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
+                                {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                             </span>
                             <EventIcon ev={ev} categories={categories} />
                             <span className="cal-daypop-title">{ev.title}</span>

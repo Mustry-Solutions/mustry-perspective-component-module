@@ -1,4 +1,4 @@
-import { mapCalendarProps } from '../calendarProps';
+import { DEFAULT_LABELS, mapCalendarProps } from '../calendarProps';
 import { stubReader } from './_stubReader';
 
 describe('mapCalendarProps (calendar reducer)', () => {
@@ -27,6 +27,38 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.categories).toEqual([]);
         expect(p.events).toEqual([]);
         expect(p.recurringEvents).toEqual([]);
+        expect(p.labels).toEqual(DEFAULT_LABELS);   // full English label set by default
+    });
+
+    it('labels: individual keys override, the rest keep their English defaults', () => {
+        const p = mapCalendarProps(stubReader({
+            config: { labels: { today: "Aujourd'hui", allDayTime: 'journée', more: '+{n} autres' } }
+        }));
+        expect(p.labels.today).toBe("Aujourd'hui");
+        expect(p.labels.allDayTime).toBe('journée');
+        expect(p.labels.more).toBe('+{n} autres');
+        expect(p.labels.month).toBe('Month');       // untouched keys fall back
+        expect(p.labels.editEvent).toBe('Edit event');
+    });
+
+    it('labels: config.locale selects a built-in language pack', () => {
+        const fr = mapCalendarProps(stubReader({ config: { locale: 'fr' } }));
+        expect(fr.labels.today).toBe("Aujourd'hui");
+        expect(fr.labels.month).toBe('Mois');
+        expect(fr.labels.editEvent).toBe("Modifier l'événement");
+        const de = mapCalendarProps(stubReader({ config: { locale: 'de-AT' } }));   // region variants match the base language
+        expect(de.labels.today).toBe('Heute');
+        expect(de.labels.doesNotRepeat).toBe('Wiederholt sich nicht');
+        const xx = mapCalendarProps(stubReader({ config: { locale: 'xx-YY' } }));   // unknown -> English
+        expect(xx.labels.today).toBe('Today');
+    });
+
+    it('labels: an explicit config.labels key beats the locale pack', () => {
+        const p = mapCalendarProps(stubReader({
+            config: { locale: 'fr', labels: { today: 'NU!' } }
+        }));
+        expect(p.labels.today).toBe('NU!');       // override wins
+        expect(p.labels.month).toBe('Mois');      // the rest stay French
     });
 
     it('reads loading + refetchDebounceMs (clamped to >= 0) and the separate recurringEvents source', () => {

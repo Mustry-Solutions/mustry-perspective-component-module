@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { intlFormat } from '../dateUtils';
 import { CalEvent, DayCol, groupEventsByDay, timeMinutes } from '../calendarLogic';
-import { Category } from './types';
+import { CalLabels, Category } from './types';
 import { EventIcon, resolveColor, statusClass } from './eventStyle';
 
 interface ListViewProps {
@@ -11,12 +11,13 @@ interface ListViewProps {
     locale: string;
     categories: Category[];
     emptyMessage: string;
+    labels: CalLabels;
     enterClass: (id: string) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
 }
 
-export function ListView({ cols, events, locale, categories, emptyMessage, enterClass, hoverProps, onEventClick }: ListViewProps): React.ReactElement {
+export function ListView({ cols, events, locale, categories, emptyMessage, labels, enterClass, hoverProps, onEventClick }: ListViewProps): React.ReactElement {
     const byDay = groupEventsByDay(events);
     const dayFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const timeFmt = intlFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -25,7 +26,7 @@ export function ListView({ cols, events, locale, categories, emptyMessage, enter
         .filter((r) => r.evs.length > 0);
     return (
         <div className="cal-list cal-anim-view" key="list">
-            {rows.length === 0 && <div className="cal-list-empty">{emptyMessage || 'No events'}</div>}
+            {rows.length === 0 && <div className="cal-list-empty">{emptyMessage || labels.noEvents}</div>}
             {rows.map(({ c, evs }) => (
                 <div className="cal-list-day" key={c.iso}>
                     <div className={`cal-list-date${c.isToday ? ' cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>
@@ -39,7 +40,7 @@ export function ListView({ cols, events, locale, categories, emptyMessage, enter
                             >
                                 <span className="cal-list-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
                                 <span className="cal-list-time">
-                                    {tm === null ? 'all-day' : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
+                                    {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                 </span>
                                 <EventIcon ev={ev} categories={categories} />
                                 <span className="cal-list-title">{ev.title}</span>

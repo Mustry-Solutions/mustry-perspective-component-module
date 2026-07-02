@@ -2,13 +2,16 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { Category, Editor } from './types';
+import { intlFormat } from '../dateUtils';
+import { CalLabels, Category, Editor } from './types';
 import { UNCATEGORIZED_COLOR } from './eventStyle';
 
 interface EventEditorProps {
     editor: Editor;
     categories: Category[];
     timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
+    locale: string;     // for the weekly weekday initials
+    labels: CalLabels;
     onUpdate: (patch: Partial<Editor>) => void;
     onToggleAllDay: (allDay: boolean) => void;
     onCancel: () => void;
@@ -17,7 +20,7 @@ interface EventEditorProps {
 }
 
 export function EventEditor(props: EventEditorProps): React.ReactElement {
-    const { editor: ed, categories, timezone, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
+    const { editor: ed, categories, timezone, locale, labels, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
     const selCat = (categories || []).find((c) => c.id === ed.category);
@@ -27,8 +30,15 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
     // the repeat rule is only editable when acting on the whole series (or a non-series event).
     const editingOccurrence = ed.seriesId !== null;
     const showRepeat = !editingOccurrence || ed.scope === 'series';
-    const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const unitLabel: { [k: string]: string } = { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)', yearly: 'year(s)' };
+    // Localized weekday initials, Sunday-first to match rrule.byweekday (0=Sun..6=Sat).
+    const wdFmt = intlFormat(locale, { weekday: 'narrow' });
+    const WD: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        WD.push(wdFmt.format(new Date(2024, 0, 7 + i)));   // 2024-01-07 is a Sunday
+    }
+    const unitLabel: { [k: string]: string } = {
+        daily: labels.unitDays, weekly: labels.unitWeeks, monthly: labels.unitMonths, yearly: labels.unitYears
+    };
     const toggleWd = (i: number): void => {
         const set = ed.repeatByweekday.slice();
         const at = set.indexOf(i);
@@ -42,63 +52,63 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                 onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >
-                <div className="cal-editor-head">{isEdit ? 'Edit event' : 'New event'}</div>
+                <div className="cal-editor-head">{isEdit ? labels.editEvent : labels.newEvent}</div>
                 {editingOccurrence && (
                     <div className="cal-editor-scope">
                         <label>
                             <input type="radio" checked={ed.scope === 'occurrence'} onChange={() => onUpdate({ scope: 'occurrence' })} />
-                            <span>This event</span>
+                            <span>{labels.thisEvent}</span>
                         </label>
                         <label>
                             <input type="radio" checked={ed.scope === 'series'} onChange={() => onUpdate({ scope: 'series' })} />
-                            <span>All events</span>
+                            <span>{labels.allEvents}</span>
                         </label>
                     </div>
                 )}
                 <label className="cal-editor-field">
-                    <span>Title</span>
+                    <span>{labels.title}</span>
                     <input
-                        type="text" autoFocus value={ed.title} placeholder="Event title"
+                        type="text" autoFocus value={ed.title} placeholder={labels.eventTitle}
                         onChange={(e) => onUpdate({ title: e.target.value })}
                     />
                 </label>
                 <label className="cal-editor-check">
                     <input type="checkbox" checked={ed.allDay} onChange={(e) => onToggleAllDay(e.target.checked)} />
-                    <span>All day</span>
+                    <span>{labels.allDay}</span>
                 </label>
                 <div className="cal-editor-row">
                     <label className="cal-editor-field">
-                        <span>Start</span>
+                        <span>{labels.start}</span>
                         <input type={dtType} value={ed.start} onChange={(e) => onUpdate({ start: e.target.value })} />
                     </label>
                     <label className="cal-editor-field">
-                        <span>End</span>
+                        <span>{labels.end}</span>
                         <input type={dtType} value={ed.end} onChange={(e) => onUpdate({ end: e.target.value })} />
                     </label>
                 </div>
                 {!ed.allDay && timezone && (
-                    <div className="cal-editor-tz">Times in {timezone}</div>
+                    <div className="cal-editor-tz">{labels.timesIn.replace('{tz}', timezone)}</div>
                 )}
                 {showRepeat && (
                     <label className="cal-editor-field">
-                        <span>Repeat</span>
+                        <span>{labels.repeat}</span>
                         <select
                             className="cal-editor-select"
                             value={ed.repeatFreq}
                             onChange={(e) => onUpdate({ repeatFreq: e.target.value as Editor['repeatFreq'] })}
                         >
-                            <option value="">Does not repeat</option>
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="yearly">Yearly</option>
+                            <option value="">{labels.doesNotRepeat}</option>
+                            <option value="daily">{labels.daily}</option>
+                            <option value="weekly">{labels.weekly}</option>
+                            <option value="monthly">{labels.monthly}</option>
+                            <option value="yearly">{labels.yearly}</option>
                         </select>
                     </label>
                 )}
                 {showRepeat && ed.repeatFreq && (
                     <div className="cal-editor-repeat">
                         <div className="cal-editor-repeat-line">
-                            <span>Every</span>
+                            <span>{labels.every}</span>
                             <input
                                 type="number" min={1} className="cal-editor-num"
                                 value={ed.repeatInterval}
@@ -118,14 +128,14 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                             </div>
                         )}
                         <div className="cal-editor-ends">
-                            <span className="cal-editor-ends-label">Ends</span>
+                            <span className="cal-editor-ends-label">{labels.ends}</span>
                             <label>
                                 <input type="radio" checked={ed.repeatEndMode === 'never'} onChange={() => onUpdate({ repeatEndMode: 'never' })} />
-                                <span>Never</span>
+                                <span>{labels.never}</span>
                             </label>
                             <label>
                                 <input type="radio" checked={ed.repeatEndMode === 'until'} onChange={() => onUpdate({ repeatEndMode: 'until' })} />
-                                <span>On</span>
+                                <span>{labels.on}</span>
                                 <input
                                     type="date" className="cal-editor-ends-input" value={ed.repeatUntil}
                                     onChange={(e) => onUpdate({ repeatUntil: e.target.value, repeatEndMode: 'until' })}
@@ -133,20 +143,20 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                             </label>
                             <label>
                                 <input type="radio" checked={ed.repeatEndMode === 'count'} onChange={() => onUpdate({ repeatEndMode: 'count' })} />
-                                <span>After</span>
+                                <span>{labels.after}</span>
                                 <input
                                     type="number" min={1} className="cal-editor-num"
                                     value={ed.repeatCount}
                                     onChange={(e) => onUpdate({ repeatCount: Math.max(1, parseInt(e.target.value, 10) || 1), repeatEndMode: 'count' })}
                                 />
-                                <span>times</span>
+                                <span>{labels.times}</span>
                             </label>
                         </div>
                     </div>
                 )}
                 {(categories || []).length > 0 && (
                     <label className="cal-editor-field">
-                        <span>Category</span>
+                        <span>{labels.category}</span>
                         <div className="cal-editor-catrow">
                             {selCat && selCat.icon ? (
                                 <span className="cal-editor-cat-icon">
@@ -160,7 +170,7 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                                 value={ed.category}
                                 onChange={(e) => onUpdate({ category: e.target.value })}
                             >
-                                <option value="">None</option>
+                                <option value="">{labels.none}</option>
                                 {(categories || []).map((c) => (
                                     <option key={c.id} value={c.id}>{c.label}</option>
                                 ))}
@@ -169,16 +179,16 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                     </label>
                 )}
                 <label className="cal-editor-field">
-                    <span>Notes</span>
+                    <span>{labels.notes}</span>
                     <textarea rows={2} value={ed.description} onChange={(e) => onUpdate({ description: e.target.value })} />
                 </label>
                 <div className="cal-editor-actions">
                     {isEdit && (
-                        <button type="button" className="cal-editor-btn cal-editor-btn--danger" onClick={onDelete}>Delete</button>
+                        <button type="button" className="cal-editor-btn cal-editor-btn--danger" onClick={onDelete}>{labels.delete}</button>
                     )}
                     <span className="cal-editor-actions-spacer" />
-                    <button type="button" className="cal-editor-btn" onClick={onCancel}>Cancel</button>
-                    <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={onSave}>{isEdit ? 'Save' : 'Create'}</button>
+                    <button type="button" className="cal-editor-btn" onClick={onCancel}>{labels.cancel}</button>
+                    <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={onSave}>{isEdit ? labels.save : labels.create}</button>
                 </div>
             </div>
         </div>,

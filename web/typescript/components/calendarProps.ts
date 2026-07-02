@@ -1,8 +1,22 @@
 // Pure mapping from the component's PropertyTree to typed CalendarProps. Extracted from
 // CalendarMeta.getPropsReducer so it can be unit-tested without perspective-client.
 import { PropReader } from './propReader';
-import { CalendarProps, CalView, WeekStart, Category } from './calendar/types';
+import { CalendarProps, CalLabels, CalView, WeekStart, Category } from './calendar/types';
 import { CalEvent } from './calendarLogic';
+import { calendarLabelBase, EN_CALENDAR_LABELS } from './labelPacks';
+
+/** The built-in English UI text; config.locale swaps the base language (labelPacks)
+ *  and config.labels overrides individual keys. */
+export const DEFAULT_LABELS: CalLabels = EN_CALENDAR_LABELS;
+
+function mapLabels(tree: PropReader, locale: string): CalLabels {
+    const base = calendarLabelBase(locale);
+    const out = {} as Record<string, string>;
+    (Object.keys(base) as Array<keyof CalLabels>).forEach((k) => {
+        out[k] = tree.readString(`config.labels.${k}`, base[k]);
+    });
+    return out as unknown as CalLabels;
+}
 
 function mapEvent(e: any): CalEvent {
     return {
@@ -21,6 +35,7 @@ function mapEvent(e: any): CalEvent {
 }
 
 export function mapCalendarProps(tree: PropReader): CalendarProps {
+    const locale = tree.readString('config.locale', '');
     return {
         view: tree.readString('config.view', 'month') as CalView,
         showToolbar: tree.readBoolean('config.showToolbar', true),
@@ -42,7 +57,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
-        locale: tree.readString('config.locale', ''),
+        locale,
         timezone: tree.readString('config.timezone', ''),
         showWeekends: tree.readBoolean('config.showWeekends', true),
         dayStartHour: tree.readNumber('config.dayStartHour', 0),
@@ -51,6 +66,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         scrollToHour: tree.readNumber('config.scrollToHour', 7),
         scrollToNow: tree.readBoolean('config.scrollToNow', false),
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
+        labels: mapLabels(tree, locale),
         events: (tree.readArray('data.events', []) || []).map(mapEvent),
         recurringEvents: (tree.readArray('data.recurringEvents', []) || []).map(mapEvent)
     };

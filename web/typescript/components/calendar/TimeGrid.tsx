@@ -5,7 +5,7 @@ import { intlFormat } from '../dateUtils';
 import {
     CalEvent, DayCol, hhmm, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
 } from '../calendarLogic';
-import { Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
+import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
 import { EventIcon, resolveColor, statusClass } from './eventStyle';
 import { EventBar } from './EventBar';
 
@@ -21,6 +21,7 @@ interface TimeGridProps {
     nowMinutes: number;   // minutes-from-midnight of "now" in the display zone
     preview: Preview | null;
     categories: Category[];
+    labels: CalLabels;
     scrollRef: React.RefObject<HTMLDivElement>;
     enterClass: (id: string) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
@@ -34,7 +35,7 @@ interface TimeGridProps {
 export function TimeGrid(props: TimeGridProps): React.ReactElement {
     const {
         cols, events, locale, view, editable, dayStartHour, dayEndHour, slotMinutes, nowMinutes, preview, categories,
-        scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
+        labels, scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
     } = props;
 
     const hourPx = hourHeightPx(slotMinutes);
@@ -96,7 +97,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                 ))}
             </div>
             <div className="cal-tg-allday" style={colStyle}>
-                <div className="cal-tg-gutter-cell cal-tg-allday-label">all-day</div>
+                <div className="cal-tg-gutter-cell cal-tg-allday-label">{labels.allDayTime}</div>
                 {layoutWeekSegments(cols.map((c) => c.iso), events.filter((e) => e.allDay)).map((seg, i) => (
                     <EventBar
                         key={seg.event.id || `ad-${i}`}

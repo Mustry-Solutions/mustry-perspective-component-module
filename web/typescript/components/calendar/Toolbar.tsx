@@ -1,7 +1,7 @@
 // Calendar toolbar: title (optionally a mini-nav trigger), view switcher, export + nav.
 import * as React from 'react';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { CalView } from './types';
+import { CalLabels, CalView } from './types';
 
 const VIEWS: CalView[] = ['month', 'week', 'day', 'list'];
 
@@ -13,6 +13,7 @@ interface ToolbarProps {
     showExport: boolean;
     emptyLabel: string;   // shown as a muted badge by the title when no events are configured ('' = hidden)
     emptyHint: string;    // tooltip on that badge — a nutshell of how to use / add events
+    labels: CalLabels;
     onToggleMini: (e: React.MouseEvent) => void;
     onSetView: (v: CalView) => void;
     onExport: () => void;
@@ -22,7 +23,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
-    const { title, view, showMiniNav, miniOpen, showExport, emptyLabel, emptyHint, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
+    const { title, view, showMiniNav, miniOpen, showExport, emptyLabel, emptyHint, labels, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
     return (
         <div className="cal-toolbar">
             {showMiniNav ? (
@@ -48,19 +49,19 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
                         className={`cal-view-btn${view === v ? ' cal-view-btn--active' : ''}`}
                         onClick={() => onSetView(v)}
                     >
-                        {v.charAt(0).toUpperCase() + v.slice(1)}
+                        {labels[v]}
                     </button>
                 ))}
             </div>
             <div className="cal-nav">
                 {showExport && (
-                    <button type="button" className="cal-nav-btn cal-export-btn" onClick={onExport} title="Export events to CSV" aria-label="Export to CSV">
+                    <button type="button" className="cal-nav-btn cal-export-btn" onClick={onExport} title={labels.exportCsv} aria-label={labels.exportCsv}>
                         <IconRenderer path="material/get_app" color="var(--cal-accent)" />
                     </button>
                 )}
-                <button type="button" className="cal-nav-btn" onClick={onPrev} aria-label="Previous">‹</button>
-                <button type="button" className="cal-today" onClick={onToday}>Today</button>
-                <button type="button" className="cal-nav-btn" onClick={onNext} aria-label="Next">›</button>
+                <button type="button" className="cal-nav-btn" onClick={onPrev} aria-label={labels.previous}>‹</button>
+                <button type="button" className="cal-today" onClick={onToday}>{labels.today}</button>
+                <button type="button" className="cal-nav-btn" onClick={onNext} aria-label={labels.next}>›</button>
             </div>
         </div>
     );

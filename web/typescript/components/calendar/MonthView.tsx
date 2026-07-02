@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { intlFormat } from '../dateUtils';
 import { CalEvent, DayCell, MonthGrid, clampWeekLanes, layoutWeekSegments } from '../calendarLogic';
-import { Category } from './types';
+import { CalLabels, Category } from './types';
 import { EventBar } from './EventBar';
 
 interface MonthViewProps {
@@ -11,16 +11,24 @@ interface MonthViewProps {
     locale: string;
     monthCap: number;
     categories: Category[];
+    labels: CalLabels;
     weeksRef: React.RefObject<HTMLDivElement>;
+    editable: boolean;
+    dragEventId: string;   // event id of an in-flight month drag ('' = none) — dims its bars
+    dropDayIso: string;    // drop-target day cell of that drag ('' = none) — highlights the cell
     enterClass: (id: string) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onDayClick: (iso: string) => void;
     openDayPop: (iso: string, e: React.MouseEvent) => void;
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
+    onStartMove: (ev: CalEvent, e: React.PointerEvent) => void;
 }
 
 export function MonthView(props: MonthViewProps): React.ReactElement {
-    const { grid, events, locale, monthCap, categories, weeksRef, enterClass, hoverProps, onDayClick, openDayPop, onEventClick } = props;
+    const {
+        grid, events, locale, monthCap, categories, labels, weeksRef, editable, dragEventId, dropDayIso,
+        enterClass, hoverProps, onDayClick, openDayPop, onEventClick, onStartMove
+    } = props;
     const wdFmt = intlFormat(locale, { weekday: 'short' });
 
     const dayCell = (cell: DayCell): React.ReactElement => {
@@ -28,9 +36,10 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
         if (!cell.inMonth) { cls.push('cal-day--other'); }
         if (cell.isToday) { cls.push('cal-day--today'); }
         if (cell.isWeekend) { cls.push('cal-day--weekend'); }
+        if (cell.iso === dropDayIso) { cls.push('cal-day--drop'); }
         return (
-            <div className={cls.join(' ')} key={cell.iso} onClick={() => onDayClick(cell.iso)}>
-                <button type="button" className="cal-daynum" onClick={(e) => openDayPop(cell.iso, e)} title="Show this day's events">
+            <div className={cls.join(' ')} key={cell.iso} data-day={cell.iso} onClick={() => onDayClick(cell.iso)}>
+                <button type="button" className="cal-daynum" onClick={(e) => openDayPop(cell.iso, e)} title={labels.showDayEvents}>
                     {cell.date.getDate()}
                 </button>
             </div>
@@ -57,7 +66,9 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
                                     <EventBar
                                         key={seg.event.id || `${i}`}
                                         seg={seg} colOffset={1} categories={categories}
+                                        draggingId={dragEventId}
                                         enterClass={enterClass} hoverProps={hoverProps} onEventClick={onEventClick}
+                                        onStartMove={editable ? onStartMove : undefined}
                                     />
                                 ))}
                                 {overflow && more.map((n, col) => (n > 0 ? (
@@ -65,7 +76,7 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
                                         type="button" key={`more-${col}`} className="cal-more cal-more--bar"
                                         style={{ gridColumn: `${col + 1} / ${col + 2}`, gridRow: moreRow }}
                                         onClick={(e) => openDayPop(weekIsos[col], e)}
-                                    >+{n} more</button>
+                                    >{labels.more.replace('{n}', String(n))}</button>
                                 ) : null))}
                             </div>
                         </div>

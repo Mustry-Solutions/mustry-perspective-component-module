@@ -3,7 +3,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from '../dateUtils';
 import { buildMonthGrid } from '../calendarLogic';
-import { MiniNav } from './types';
+import { CalLabels, MiniNav } from './types';
 
 interface MiniMonthNavProps {
     mini: MiniNav;
@@ -12,12 +12,13 @@ interface MiniMonthNavProps {
     range: { start: string; end: string };
     cursorIso: string;
     showRange: boolean;   // highlight the visible range (week/day/list, not month)
+    labels: CalLabels;
     onStep: (dir: number) => void;
     onPick: (iso: string) => void;
 }
 
 export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
-    const { mini, locale, mondayFirst, range, cursorIso, showRange, onStep, onPick } = props;
+    const { mini, locale, mondayFirst, range, cursorIso, showRange, labels, onStep, onPick } = props;
     const grid = buildMonthGrid(startOfMonth(mini.month), mondayFirst, true);
     const wdFmt = intlFormat(locale, { weekday: 'narrow' });
     const MINI_W = 236;
@@ -25,9 +26,9 @@ export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
     return ReactDOM.createPortal(
         <div className="cal-mini" style={{ top: mini.rect.bottom + 6, left, width: MINI_W }} onMouseDown={(e) => e.stopPropagation()}>
             <div className="cal-mini-head">
-                <button type="button" className="cal-mini-nav" onClick={() => onStep(-1)} aria-label="Previous month">‹</button>
+                <button type="button" className="cal-mini-nav" onClick={() => onStep(-1)} aria-label={labels.previousMonth}>‹</button>
                 <span className="cal-mini-title">{monthLabel(mini.month, locale)}</span>
-                <button type="button" className="cal-mini-nav" onClick={() => onStep(1)} aria-label="Next month">›</button>
+                <button type="button" className="cal-mini-nav" onClick={() => onStep(1)} aria-label={labels.nextMonth}>›</button>
             </div>
             <div className="cal-mini-grid">
                 {grid.weeks[0].map((c) => <div className="cal-mini-wd" key={`wd-${c.iso}`}>{wdFmt.format(c.date)}</div>)}
@@ -45,7 +46,7 @@ export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
                 })}
             </div>
             <div className="cal-mini-foot">
-                <button type="button" className="cal-mini-today" onClick={() => onPick(fmtDate(today()))}>Today</button>
+                <button type="button" className="cal-mini-today" onClick={() => onPick(fmtDate(today()))}>{labels.today}</button>
             </div>
         </div>,
         document.body

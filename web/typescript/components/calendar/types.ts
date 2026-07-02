@@ -25,6 +25,41 @@ export interface Category {
     icon?: string;   // Ignition icon path (library/name), e.g. 'material/build'
 }
 
+/** Overridable UI text (config.labels) — every user-visible built-in string.
+ *  Defaults to English in mapCalendarProps; weekday/month names come from
+ *  config.locale via Intl and are NOT in here. */
+export interface CalLabels {
+    // toolbar
+    month: string; week: string; day: string; list: string;
+    today: string;
+    exportCsv: string;            // export button tooltip / accessible label
+    previous: string; next: string;   // nav arrows (accessible labels)
+    // grids, list, popovers
+    allDayTime: string;           // the 'all-day' time-cell/gutter label
+    noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
+    more: string;                 // month-cell overflow, '{n}' = hidden count
+    showDayEvents: string;        // date-number tooltip (opens the day popover)
+    previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
+    // empty-state badge tooltip (Calendar.emptyHint)
+    emptyHintIntro: string;
+    emptyHintCreate: string;
+    emptyHintBind: string;
+    // built-in editor
+    newEvent: string; editEvent: string;
+    thisEvent: string; allEvents: string;   // apply-to scope for a recurring occurrence
+    title: string; eventTitle: string;      // field label / placeholder
+    allDay: string;
+    start: string; end: string;
+    timesIn: string;              // timezone hint, '{tz}' = the configured zone
+    repeat: string; doesNotRepeat: string;
+    daily: string; weekly: string; monthly: string; yearly: string;
+    every: string;
+    unitDays: string; unitWeeks: string; unitMonths: string; unitYears: string;
+    ends: string; never: string; on: string; after: string; times: string;
+    category: string; none: string; notes: string;
+    save: string; create: string; cancel: string; delete: string;
+}
+
 export interface CalendarProps {
     view: CalView;
     showToolbar: boolean;
@@ -48,6 +83,7 @@ export interface CalendarProps {
     scrollToHour: number;
     scrollToNow: boolean;
     refreshSeconds: number;
+    labels: CalLabels;
     events: CalEvent[];
     // Recurring event definitions, kept separate so they can be bound to a small,
     // ALWAYS-loaded query (WHERE rrule IS NOT NULL) while `events` is windowed — the
@@ -58,19 +94,21 @@ export interface CalendarProps {
 /** An in-flight drag/resize/create gesture. */
 export interface Gesture {
     mode: GestureMode;
+    surface?: 'month';        // set for a month-view day-to-day move (default: the time grid)
     ev?: CalEvent;            // move / resize target
     startClientX: number;
     startClientY: number;
     origStartMin: number;
     origEndMin: number;
     durationMin: number;
-    origDayIso: string;
+    origDayIso: string;       // time grid: the event's day; month: the cell under the initial pointer
     moved: boolean;
 }
 
 /** The ghost / selection rectangle shown while a gesture is active. */
 export interface Preview {
     mode: GestureMode;
+    surface?: 'month';   // month move: dayIso = the drop-target cell; no minute geometry
     eventId?: string;
     title?: string;
     color?: string;
