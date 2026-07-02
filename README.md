@@ -19,7 +19,8 @@ A Booking.com-style start/end date-time range picker. Component id `mustrysoluti
 - **Time precision** via `config.granularity` (`day` / `hour` / `minute` / `second`).
 - **Selectable-range constraints** — `disableDates` (past/future/none), `dateBounds`, and `spanDays` min/max, with tooltips explaining why a day or preset is disabled.
 - **Presets** — `rolling` (amount × unit from now) and `calendar` (today, this/last week/month/year…); conflicting presets are auto-disabled.
-- **Localisation** — `config.timezone`, `config.locale`, `config.weekStart`, and overridable UI strings via `config.labels`.
+- **Realtime mode** (opt-in, `config.realtime`) — clicking a *rolling* preset arms a **live window** that re-derives from "now" every `refreshSeconds` (default **300**; the Alarm-Journal-style "last 8 hours, live"); the armed preset shows a pulsing dot, any manual selection stops it, and `output.isRealtime` reports the state. The armed window lives in `selection.rollingAmount`/`rollingUnit` (writable), so a dashboard can open already-live without a click. Each tick rewrites the selection, so bound queries re-run at that rate — lower `refreshSeconds` deliberately. **Designer note:** while a window is armed, the ticking selection writes will keep marking an open view as modified in the Designer; disarm (set `selection.rollingAmount` to 0) or leave `config.realtime.enabled` off while designing.
+- **Localisation** — `config.timezone`, `config.locale` (dates **and** the built-in UI-text language: en, fr, de, es, nl, it, pt), `config.weekStart`, and per-key UI-string overrides via `config.labels`.
 - **Theming** — every colour is a CSS variable defaulting to the active Perspective theme (see [Theming](#theming)).
 - **Component events** — `onRangeChanged`, `onPresetSelected`.
 
@@ -44,13 +45,14 @@ All public props are grouped under `config` / `selection` / `output` (+ standard
 | `breakpoints` | `{ compactBelowWidth, compactBelowHeight, twoMonthsAboveWidth }` (drive `auto`). |
 | `showClear`, `showPresets` | Toggle the Clear button / preset row. |
 | `presets` | `[{ label, type, rolling:{amount,unit}, calendar:{period} }]`. |
+| `realtime` | `{ enabled, refreshSeconds }` (default off / 300 s) — rolling presets arm a live window that re-derives from now (see Features; note the Designer caveat there). |
 | `labels` | Override UI text: `startTime, endTime, startDate, endDate, clear, selectRange, invalidRange, sameDay, previousMonth, nextMonth`. |
 
 **`selection`** — two-way; set to pre-select
-`startDate`, `endDate` (YYYY-MM-DD); `startTimeSec`, `endTimeSec` (seconds since midnight).
+`startDate`, `endDate` (YYYY-MM-DD); `startTimeSec`, `endTimeSec` (seconds since midnight); `rollingAmount`, `rollingUnit` (the armed live window when `config.realtime.enabled`; `rollingAmount: 0` = not armed — write these to open a view already-live).
 
 **`output`** — read-only, derived
-`startDateTime` / `endDateTime` (ISO 8601 + offset), `startEpochMs` / `endEpochMs` (UTC ms), `durationDays`, `durationHours`, `durationLabel`, `isValid`.
+`startDateTime` / `endDateTime` (ISO 8601 + offset), `startEpochMs` / `endEpochMs` (UTC ms), `durationDays`, `durationHours`, `durationLabel`, `isValid`, `isRealtime`.
 
 ### Events
 
@@ -79,7 +81,7 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **Busy days** — month cells **auto-fit** as many events as the cell height allows, then collapse to "+N more"; clicking it (or the date number) opens a popover listing **all** that day's events (each clickable to open/edit).
 - **Data-bound** — renders `config.data.events` (a JSON array) in a single pass; emits the visible window so bindings fetch only what's shown.
 - **Multi-day events** — multi-day **all-day** events render as continuous **spanning bars** (month grid + week/day all-day strip), lane-packed so they stack; multi-day **timed** events show a clamped segment on each day they cross (week/day grid).
-- **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize; **selectable** (`config.selectable`) — drag empty time to create.
+- **Editable** (`config.editable`) — drag an event to move it, drag its bottom edge to resize (week/day); in **month view, drag a chip or spanning bar onto another day** to move it by whole days (time of day kept, drop target highlighted); **selectable** (`config.selectable`) — drag empty time to create.
 - **Built-in editor** (`config.builtInEditor`) — create via a popup form (with `selectable`), and **click an event to edit or delete it** (with `editable`).
 - **One change event** — `onChange` fires for *every* data mutation (create / edit / delete / move / resize) with `{ action, event }`, so a single script persists the change and triggers any downstream logic.
 - **Categories, icons & legend** — define `config.categories` (`{id, label, color, icon}`); an event's `category` supplies its colour and an optional **icon** (any Ignition icon path, e.g. `material/build`), shown on every event and in the bottom **legend**. The legend is interactive — click an item to **filter** that category in/out (mirrored to `output.hiddenCategories`); hide the whole legend with `config.showLegend = false`.
@@ -88,7 +90,7 @@ A month / week / day / list calendar bound to a list of events. Component id `mu
 - **CSV export** — `config.showExport` adds a toolbar button that downloads the loaded events as a CSV (`calendar-events.csv`).
 - **Recurrence** — events can carry an `rrule` (daily / weekly-by-weekday / monthly / yearly), expanded per visible window. The built-in editor **creates and edits** recurring events: a Repeat control (frequency · every-N · weekly weekday picker · ends never/on-date/after-N), and when editing an occurrence an **apply-to** choice — *This event* (a per-occurrence exception via `rrule.exdate` + a standalone override) or *All events* (the whole series). Dragging a single occurrence detaches it the same way. `onChange` carries `scope` (`series`/`occurrence`) + `seriesId`/`occurrenceDate` so your write-back can persist the right thing.
 - **Background overlays** — events with `display: "background"` render as translucent bands (e.g. downtime / availability) behind the time grid.
-- **Localisation & theming** — `weekStart`, `locale`, business-hours window, and CSS-variable theming that follows the Perspective theme.
+- **Localisation & theming** — `weekStart`, `locale` (drives all date/weekday/month names **and** picks the built-in UI-text language: en, fr, de, es, nl, it, pt), and **`config.labels`** to override any individual UI string (toolbar views, Today, the editor, "+N more", "all-day"…) for translation or branding; CSS-variable theming that follows the Perspective theme. The bundled translations are pragmatic, not native-reviewed — override per key where wording matters.
 
 ### How events work — important
 
@@ -128,7 +130,7 @@ self.props.data.events = events
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path) · `labels` (override any built-in UI string — defaults follow `locale` for bundled languages, else English; `{n}`/`{tz}` are substituted).
 
 **`config.data.events`** — array of event objects:
 
