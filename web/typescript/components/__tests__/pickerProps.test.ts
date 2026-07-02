@@ -83,6 +83,20 @@ describe('mapPickerProps (datetime picker reducer)', () => {
         expect(p.endTimeSec).toBe(7200);
     });
 
+    it('labels: materialized English defaults do not shadow the locale pack', () => {
+        // Gateways that ran an older module can inject the old schema defaults
+        // (exact English strings) into the tree — these must resolve to the pack.
+        const p = mapPickerProps(stubReader({
+            config: {
+                locale: 'fr',
+                labels: { selectRange: 'Select a range', clear: 'Clear', startTime: 'Custom label' }
+            }
+        }));
+        expect(p.labels.selectRange).toBe('Sélectionnez une plage');   // English default -> pack
+        expect(p.labels.clear).toBe('Effacer');                        // English default -> pack
+        expect(p.labels.startTime).toBe('Custom label');               // real override wins
+    });
+
     it('labels: config.locale selects a built-in pack; explicit keys still win', () => {
         const nl = mapPickerProps(stubReader({ config: { locale: 'nl-BE' } }));
         expect(nl.labels.clear).toBe('Wissen');

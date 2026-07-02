@@ -4,15 +4,19 @@
 import { PropReader } from './propReader';
 import { DateTimeRangePickerProps, DisplayMode, LabelConfig, WeekStart } from './pickerTypes';
 import { DisableMode, Granularity, LayoutMode, PresetType, PresetUnit, PresetPeriod } from './pickerLogic';
-import { pickerLabelBase } from './labelPacks';
+import { EN_PICKER_LABELS, pickerLabelBase } from './labelPacks';
 
 export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
     const locale = tree.readString('config.locale', '');
-    // config.locale picks the built-in label language; config.labels.* overrides per key.
+    // config.locale picks the built-in label language; config.labels.* overrides per
+    // key. A value equal to the built-in English text counts as "unset": gateways
+    // that ran an older module version can have the then-current schema defaults
+    // materialized into the property tree, and those must not shadow the locale pack.
     const base = pickerLabelBase(locale);
     const labels = {} as Record<string, string>;
     (Object.keys(base) as Array<keyof LabelConfig>).forEach((k) => {
-        labels[k] = tree.readString(`config.labels.${k}`, base[k]);
+        const v = tree.readString(`config.labels.${k}`, '');
+        labels[k] = v === '' || v === EN_PICKER_LABELS[k] ? base[k] : v;
     });
     return {
         enabled: tree.readBoolean('config.enabled', true),

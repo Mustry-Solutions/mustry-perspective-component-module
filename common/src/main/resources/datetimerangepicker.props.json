@@ -250,33 +250,8 @@
         },
         "presets": {
           "type": "array",
-          "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled.",
-          "default": [
-            {
-              "label": "Last 24 hours",
-              "type": "rolling",
-              "rolling": {
-                "amount": 24,
-                "unit": "hours"
-              }
-            },
-            {
-              "label": "Last 7 days",
-              "type": "rolling",
-              "rolling": {
-                "amount": 7,
-                "unit": "days"
-              }
-            },
-            {
-              "label": "Last 30 days",
-              "type": "rolling",
-              "rolling": {
-                "amount": 30,
-                "unit": "days"
-              }
-            }
-          ],
+          "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled. Default is empty — a non-empty schema default would merge per-index under authored presets. Example: [{\"label\": \"Last 24 hours\", \"type\": \"rolling\", \"rolling\": {\"amount\": 24, \"unit\": \"hours\"}}].",
+          "default": [],
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -350,69 +325,103 @@
         "labels": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English.",
-          "default": {
-            "startTime": "Start time",
-            "endTime": "End time",
-            "startDate": "Start",
-            "endDate": "End",
-            "clear": "Clear",
-            "selectRange": "Select a range",
-            "invalidRange": "Invalid range",
-            "sameDay": "Same day",
-            "previousMonth": "Previous month",
-            "nextMonth": "Next month"
-          },
+          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English. Templated labels substitute {n}/{min}/{max}/{date}, and {days} becomes dayOne/dayMany by count. (No schema defaults on purpose: values are supplied by the locale packs at runtime; a set value overrides.)",
           "properties": {
             "startTime": {
               "type": "string",
-              "default": "Start time",
               "description": "Label above the start-time input."
             },
             "endTime": {
               "type": "string",
-              "default": "End time",
               "description": "Label above the end-time input."
             },
             "startDate": {
               "type": "string",
-              "default": "Start",
               "description": "Label for the start-date field (compact layout)."
             },
             "endDate": {
               "type": "string",
-              "default": "End",
               "description": "Label for the end-date field (compact layout)."
             },
             "clear": {
               "type": "string",
-              "default": "Clear",
               "description": "Text on the Clear button."
             },
             "selectRange": {
               "type": "string",
-              "default": "Select a range",
               "description": "Footer text shown when no range is selected."
             },
             "invalidRange": {
               "type": "string",
-              "default": "Invalid range",
               "description": "Footer text shown when the selected range is invalid."
             },
             "sameDay": {
               "type": "string",
-              "default": "Same day",
               "description": "Duration label for a single-day range (day granularity)."
             },
             "previousMonth": {
               "type": "string",
-              "default": "Previous month",
               "description": "Accessible label for the previous-month arrow."
             },
             "nextMonth": {
               "type": "string",
-              "default": "Next month",
               "description": "Accessible label for the next-month arrow."
+            },
+            "dayOne": {
+              "type": "string",
+              "description": "The word for a single day (fills {days} in templated labels)."
+            },
+            "dayMany": {
+              "type": "string",
+              "description": "The word for multiple days (fills {days} in templated labels)."
+            },
+            "durationDays": {
+              "type": "string",
+              "description": "Footer duration in whole days."
+            },
+            "hintRange": {
+              "type": "string",
+              "description": "Span hint when both spanDays.min and .max are set."
+            },
+            "hintMin": {
+              "type": "string",
+              "description": "Span hint when only spanDays.min is set."
+            },
+            "hintMax": {
+              "type": "string",
+              "description": "Span hint when only spanDays.max is set."
+            },
+            "beforeEarliest": {
+              "type": "string",
+              "description": "Disabled-day tooltip: before dateBounds.earliest."
+            },
+            "afterLatest": {
+              "type": "string",
+              "description": "Disabled-day tooltip: after dateBounds.latest."
+            },
+            "rangeAtLeast": {
+              "type": "string",
+              "description": "Disabled-day tooltip: violates spanDays.min."
+            },
+            "rangeAtMost": {
+              "type": "string",
+              "description": "Disabled-day tooltip: violates spanDays.max."
+            },
+            "presetBeforeEarliest": {
+              "type": "string",
+              "description": "Disabled-preset tooltip."
+            },
+            "presetAfterLatest": {
+              "type": "string",
+              "description": "Disabled-preset tooltip."
+            },
+            "presetTooShort": {
+              "type": "string",
+              "description": "Disabled-preset tooltip."
+            },
+            "presetTooLong": {
+              "type": "string",
+              "description": "Disabled-preset tooltip."
             }
           }
         },

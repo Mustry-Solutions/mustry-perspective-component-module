@@ -13,7 +13,13 @@ function mapLabels(tree: PropReader, locale: string): CalLabels {
     const base = calendarLabelBase(locale);
     const out = {} as Record<string, string>;
     (Object.keys(base) as Array<keyof CalLabels>).forEach((k) => {
-        out[k] = tree.readString(`config.labels.${k}`, base[k]);
+        // A value equal to the built-in English text counts as "unset": gateways
+        // that ran an older module version can have the then-current schema
+        // defaults materialized into the property tree, and those must not
+        // shadow the locale pack. (To force English under another locale, use
+        // any different wording or set config.locale = ''.)
+        const v = tree.readString(`config.labels.${k}`, '');
+        out[k] = v === '' || v === EN_CALENDAR_LABELS[k] ? base[k] : v;
     });
     return out as unknown as CalLabels;
 }

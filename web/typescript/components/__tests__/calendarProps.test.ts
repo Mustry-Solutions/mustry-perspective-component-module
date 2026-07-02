@@ -53,6 +53,14 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(xx.labels.today).toBe('Today');
     });
 
+    it('labels: materialized English defaults do not shadow the locale pack', () => {
+        const p = mapCalendarProps(stubReader({
+            config: { locale: 'fr', labels: { today: 'Today', month: 'Mes' } }
+        }));
+        expect(p.labels.today).toBe("Aujourd'hui");   // English default -> pack
+        expect(p.labels.month).toBe('Mes');           // real override wins
+    });
+
     it('labels: an explicit config.labels key beats the locale pack', () => {
         const p = mapCalendarProps(stubReader({
             config: { locale: 'fr', labels: { today: 'NU!' } }

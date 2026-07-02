@@ -171,308 +171,206 @@
         "labels": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English. Weekday and month names follow config.locale automatically. {n} / {tz} are substituted placeholders.",
-          "default": {
-            "month": "Month",
-            "week": "Week",
-            "day": "Day",
-            "list": "List",
-            "today": "Today",
-            "exportCsv": "Export events to CSV",
-            "previous": "Previous",
-            "next": "Next",
-            "allDayTime": "all-day",
-            "noEvents": "No events",
-            "more": "+{n} more",
-            "showDayEvents": "Show this day's events",
-            "previousMonth": "Previous month",
-            "nextMonth": "Next month",
-            "emptyHintIntro": "This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.",
-            "emptyHintCreate": "Add an event: in Week or Day view, drag over an empty time slot.",
-            "emptyHintBind": "Events come from the data binding — enable \"selectable\" + \"builtInEditor\" to add them here.",
-            "newEvent": "New event",
-            "editEvent": "Edit event",
-            "thisEvent": "This event",
-            "allEvents": "All events",
-            "title": "Title",
-            "eventTitle": "Event title",
-            "allDay": "All day",
-            "start": "Start",
-            "end": "End",
-            "timesIn": "Times in {tz}",
-            "repeat": "Repeat",
-            "doesNotRepeat": "Does not repeat",
-            "daily": "Daily",
-            "weekly": "Weekly",
-            "monthly": "Monthly",
-            "yearly": "Yearly",
-            "every": "Every",
-            "unitDays": "day(s)",
-            "unitWeeks": "week(s)",
-            "unitMonths": "month(s)",
-            "unitYears": "year(s)",
-            "ends": "Ends",
-            "never": "Never",
-            "on": "On",
-            "after": "After",
-            "times": "times",
-            "category": "Category",
-            "none": "None",
-            "notes": "Notes",
-            "save": "Save",
-            "create": "Create",
-            "cancel": "Cancel",
-            "delete": "Delete"
-          },
+          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English. Weekday and month names follow config.locale automatically. {n} / {tz} are substituted placeholders. (No schema defaults on purpose: values are supplied by the locale packs at runtime; a set value overrides.)",
           "properties": {
             "month": {
               "type": "string",
-              "default": "Month",
               "description": "View-switcher button: month view."
             },
             "week": {
               "type": "string",
-              "default": "Week",
               "description": "View-switcher button: week view."
             },
             "day": {
               "type": "string",
-              "default": "Day",
               "description": "View-switcher button: day view."
             },
             "list": {
               "type": "string",
-              "default": "List",
               "description": "View-switcher button: list/agenda view."
             },
             "today": {
               "type": "string",
-              "default": "Today",
               "description": "Toolbar / mini-nav \"jump to today\" button."
             },
             "exportCsv": {
               "type": "string",
-              "default": "Export events to CSV",
               "description": "Tooltip + accessible label of the CSV export button."
             },
             "previous": {
               "type": "string",
-              "default": "Previous",
               "description": "Accessible label of the toolbar back arrow."
             },
             "next": {
               "type": "string",
-              "default": "Next",
               "description": "Accessible label of the toolbar forward arrow."
             },
             "allDayTime": {
               "type": "string",
-              "default": "all-day",
               "description": "Time-cell text for all-day events (list, day popover, week/day gutter)."
             },
             "noEvents": {
               "type": "string",
-              "default": "No events",
               "description": "Empty text in the list view (when emptyMessage is unset) and the day popover."
             },
             "more": {
               "type": "string",
-              "default": "+{n} more",
               "description": "Month-cell overflow button; {n} = number of hidden events."
             },
             "showDayEvents": {
               "type": "string",
-              "default": "Show this day's events",
               "description": "Tooltip on the month-view date number (opens the day popover)."
             },
             "previousMonth": {
               "type": "string",
-              "default": "Previous month",
               "description": "Accessible label of the mini-nav back arrow."
             },
             "nextMonth": {
               "type": "string",
-              "default": "Next month",
               "description": "Accessible label of the mini-nav forward arrow."
             },
             "emptyHintIntro": {
               "type": "string",
-              "default": "This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.",
               "description": "Empty-state badge tooltip: first line."
             },
             "emptyHintCreate": {
               "type": "string",
-              "default": "Add an event: in Week or Day view, drag over an empty time slot.",
               "description": "Empty-state badge tooltip: second line when in-place creation is enabled."
             },
             "emptyHintBind": {
               "type": "string",
-              "default": "Events come from the data binding — enable \"selectable\" + \"builtInEditor\" to add them here.",
               "description": "Empty-state badge tooltip: second line when creation is not enabled."
             },
             "newEvent": {
               "type": "string",
-              "default": "New event",
               "description": "Editor heading when creating."
             },
             "editEvent": {
               "type": "string",
-              "default": "Edit event",
               "description": "Editor heading when editing."
             },
             "thisEvent": {
               "type": "string",
-              "default": "This event",
               "description": "Apply-to choice: only the opened occurrence of a series."
             },
             "allEvents": {
               "type": "string",
-              "default": "All events",
               "description": "Apply-to choice: the whole recurring series."
             },
             "title": {
               "type": "string",
-              "default": "Title",
               "description": "Editor: title field label."
             },
             "eventTitle": {
               "type": "string",
-              "default": "Event title",
               "description": "Editor: title field placeholder."
             },
             "allDay": {
               "type": "string",
-              "default": "All day",
               "description": "Editor: all-day checkbox label."
             },
             "start": {
               "type": "string",
-              "default": "Start",
               "description": "Editor: start field label."
             },
             "end": {
               "type": "string",
-              "default": "End",
               "description": "Editor: end field label."
             },
             "timesIn": {
               "type": "string",
-              "default": "Times in {tz}",
               "description": "Editor timezone hint; {tz} = the configured timezone."
             },
             "repeat": {
               "type": "string",
-              "default": "Repeat",
               "description": "Editor: repeat field label."
             },
             "doesNotRepeat": {
               "type": "string",
-              "default": "Does not repeat",
               "description": "Repeat option: none."
             },
             "daily": {
               "type": "string",
-              "default": "Daily",
               "description": "Repeat option: daily."
             },
             "weekly": {
               "type": "string",
-              "default": "Weekly",
               "description": "Repeat option: weekly."
             },
             "monthly": {
               "type": "string",
-              "default": "Monthly",
               "description": "Repeat option: monthly."
             },
             "yearly": {
               "type": "string",
-              "default": "Yearly",
               "description": "Repeat option: yearly."
             },
             "every": {
               "type": "string",
-              "default": "Every",
               "description": "Repeat interval prefix (\"Every N day(s)\")."
             },
             "unitDays": {
               "type": "string",
-              "default": "day(s)",
               "description": "Repeat interval unit for daily."
             },
             "unitWeeks": {
               "type": "string",
-              "default": "week(s)",
               "description": "Repeat interval unit for weekly."
             },
             "unitMonths": {
               "type": "string",
-              "default": "month(s)",
               "description": "Repeat interval unit for monthly."
             },
             "unitYears": {
               "type": "string",
-              "default": "year(s)",
               "description": "Repeat interval unit for yearly."
             },
             "ends": {
               "type": "string",
-              "default": "Ends",
               "description": "Repeat end-mode row label."
             },
             "never": {
               "type": "string",
-              "default": "Never",
               "description": "Repeat end mode: never ends."
             },
             "on": {
               "type": "string",
-              "default": "On",
               "description": "Repeat end mode: until a date."
             },
             "after": {
               "type": "string",
-              "default": "After",
               "description": "Repeat end mode: after N occurrences."
             },
             "times": {
               "type": "string",
-              "default": "times",
               "description": "Suffix after the occurrence count (\"After N times\")."
             },
             "category": {
               "type": "string",
-              "default": "Category",
               "description": "Editor: category field label."
             },
             "none": {
               "type": "string",
-              "default": "None",
               "description": "Editor: the no-category option."
             },
             "notes": {
               "type": "string",
-              "default": "Notes",
               "description": "Editor: notes field label."
             },
             "save": {
               "type": "string",
-              "default": "Save",
               "description": "Editor: save button (editing)."
             },
             "create": {
               "type": "string",
-              "default": "Create",
               "description": "Editor: create button (new event)."
             },
             "cancel": {
               "type": "string",
-              "default": "Cancel",
               "description": "Editor: cancel button."
             },
             "delete": {
               "type": "string",
-              "default": "Delete",
               "description": "Editor: delete button."
             }
           }
