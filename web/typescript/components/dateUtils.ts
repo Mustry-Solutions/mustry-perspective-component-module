@@ -270,6 +270,36 @@ export function instantToZonedIso(raw: string, timeZone: string): string {
     return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}`;
 }
 
+/** Shift a wall-clock date / datetime string by whole days, preserving any time part
+ *  (month-view drag: the day changes, the time of day does not). */
+export function shiftWallDays(wall: string, days: number): string {
+    const d = parseDate(wall);
+    if (!d || !days) {
+        return wall;
+    }
+    return fmtDate(addDays(d, days)) + wall.slice(10);
+}
+
+/**
+ * Convert an internal zone-local wall-clock string to the emitted form: an
+ * offset-bearing instant ("YYYY-MM-DDTHH:mm:ss±HH:mm") for timed values, or a
+ * date-only string for all-day. Unparseable input is returned unchanged.
+ */
+export function emitWall(wall: string, allDay: boolean, timeZone: string): string {
+    if (!wall) {
+        return wall;
+    }
+    if (allDay) {
+        return wall.slice(0, 10);
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(wall);
+    if (!m) {
+        return wall;
+    }
+    const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+    return resolveZoned(d, timeZone).iso;
+}
+
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
 export function todayInZone(timeZone: string): Date {
     const w = zoneWallClock(new Date(), timeZone);

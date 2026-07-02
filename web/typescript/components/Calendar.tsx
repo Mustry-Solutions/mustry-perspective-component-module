@@ -10,15 +10,17 @@ import {
 import {
     addDays,
     addMonths,
+    daysBetween,
+    emitWall,
     fmtDate,
     intlFormat,
     monthLabel,
     parseDate,
+    shiftWallDays,
     startOfMonth,
     instantToZonedIso,
     todayInZone,
-    nowMinutesInZone,
-    resolveZoned
+    nowMinutesInZone
 } from './dateUtils';
 import {
     buildMonthGrid,
@@ -26,23 +28,25 @@ import {
     eventsToCsv,
     weekDays,
     expandEvents,
-    timeMinutes,
-    snapMinutes,
-    minuteFromOffset,
     isoDateTime,
     CalEvent,
-    RRule,
     DayCol,
     MonthGrid
 } from './calendarLogic';
 import {
-    WeekStart, CalView, Gesture, Editor, MiniNav, DayPop,
-    Category, CalendarProps, CalendarState,
-    DEFAULT_DUR_MIN, ENTER_MS, hourHeightPx
+    CalView, Gesture, Editor, Preview,
+    CalendarProps, CalendarState, hourHeightPx
 } from './calendar/types';
 import { resolveColor as styleResolveColor } from './calendar/eventStyle';
 import { mapCalendarProps } from './calendarProps';
-import { colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision } from './calendar/gestureLogic';
+import { CommitKind } from './calendar/gestureLogic';
+import { GestureController } from './calendar/gestureController';
+import { DocDismiss } from './calendar/dismiss';
+import { EnterTracker } from './calendar/enterAnimation';
+import {
+    ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
+    editorSaveSpec, editorDeleteSpec, moveResizeSpec
+} from './calendar/editorLogic';
 import { Legend } from './calendar/Legend';
 import { HoverPopover } from './calendar/HoverPopover';
 import { DayPopover } from './calendar/DayPopover';
@@ -64,19 +68,41 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private rootRef = React.createRef<HTMLDivElement>();
     private weeksRef = React.createRef<HTMLDivElement>();
     private resizeObs: ResizeObserver | null = null;
-    private gesture: Gesture | null = null;
-    private colRects: Array<{ day: string; rect: DOMRect }> = [];
 
     private hoverTimer = 0;
     private refreshTimer = 0;   // periodic re-render so the now-indicator ticks live
     private outputTimer = 0;    // debounces visibleStart/End writes so rapid nav = one query
 
-    // Enter-animation bookkeeping: animate an event chip only when a brand-new id
-    // first appears (create / new data), not on initial load or navigation.
-    private seenIds = new Set<string>();
-    private pendingEnter = new Set<string>();
-    private mounted = false;
-    private enterTimers: number[] = [];
+    private enter = new EnterTracker();
+
+    private gestures = new GestureController({
+        env: () => {
+            const p = this.props.props;
+            return {
+                editable: p.editable, selectable: p.selectable,
+                dayStartHour: p.dayStartHour, dayEndHour: p.dayEndHour, slotMinutes: p.slotMinutes
+            };
+        },
+        flags: () => ({
+            editable: this.props.props.editable,
+            selectable: this.props.props.selectable,
+            useEditor: this.useEditor(),
+            useEditorForEdit: this.useEditorForEdit()
+        }),
+        scrollEl: () => this.scrollRef.current,
+        monthEl: () => this.weeksRef.current,
+        resolveColor: (ev) => styleResolveColor(this.props.props.categories, ev),
+        hideHover: () => this.hideHover(),
+        setPreview: (preview) => this.setState({ preview }),
+        commit: (kind, g, preview) => this.commitGesture(kind, g, preview)
+    });
+
+    private miniDismiss = new DocDismiss(
+        // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
+        ['.cal-mini', '.cal-title--btn'], () => this.closeMini());
+    private dayPopDismiss = new DocDismiss(
+        // Clicks inside the popover, or on a trigger (date number / "+N more"), manage themselves.
+        ['.cal-daypop', '.cal-daynum', '.cal-more'], () => this.closeDayPop());
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
@@ -87,10 +113,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentDidMount(): void {
-        // Seed the "already seen" set so the initial events don't fire the create
-        // animation (the container fades in instead).
-        (this.props.props.events || []).forEach((e) => { if (e.id) { this.seenIds.add(e.id); } });
-        this.mounted = true;
+        this.enter.seed(this.props.props.events || []);
         this.syncOutput();
         this.scrollTimeGrid();
         // Re-measure the month-cell capacity whenever the component is resized.
@@ -107,7 +130,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (prevProps.props.view !== this.props.props.view) {
             this.scrollTimeGrid();   // re-scroll the time grid after switching to week/day
         }
-        this.detectNewEvents();
+        this.enter.detect(this.props.props.events || [], () => this.forceUpdate());
         this.recomputeMonthCap();   // week-count (5/6) or view changes can change the fit
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
             this.setupRefreshTimer();
@@ -115,11 +138,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentWillUnmount(): void {
-        this.removeDocListeners();
-        this.closeMiniListeners();
-        this.closeDayPopListeners();
+        this.gestures.dispose();
+        this.miniDismiss.close();
+        this.dayPopDismiss.close();
         this.clearHoverTimer();
-        this.enterTimers.forEach((t) => window.clearTimeout(t));
+        this.enter.dispose();
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
         }
@@ -142,7 +165,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             this.refreshTimer = window.setInterval(() => {
                 // Don't re-render mid-interaction — it could dismiss an open native picker
                 // in the editor, and it's pointless while a drag is in progress.
-                if (this.state.editor || this.gesture) {
+                if (this.state.editor || this.gestures.active) {
                     return;
                 }
                 this.forceUpdate();
@@ -172,29 +195,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     }
 
-    /** After a render, mark freshly-appeared event ids so their chips finish the enter animation, then settle. */
-    private detectNewEvents(): void {
-        const fresh: string[] = [];
-        (this.props.props.events || []).forEach((e) => {
-            if (e.id && !this.seenIds.has(e.id) && !this.pendingEnter.has(e.id)) {
-                this.pendingEnter.add(e.id);
-                fresh.push(e.id);
-            }
-        });
-        if (!fresh.length) {
-            return;
-        }
-        const t = window.setTimeout(() => {
-            fresh.forEach((id) => { this.pendingEnter.delete(id); this.seenIds.add(id); });
-            this.forceUpdate();   // drop the enter class once the animation has played
-        }, ENTER_MS);
-        this.enterTimers.push(t);
-    }
-
-    /** Enter-animation class for an event chip: set once for a never-seen base id. */
+    /** Enter-animation class for an event chip. */
     private enterClass(occId: string): string {
-        const base = (occId || '').split('::')[0];
-        return this.mounted && !!base && !this.seenIds.has(base) ? ' cal-anim-enter' : '';
+        return this.enter.enterClass(occId);
     }
 
     private fireEvent(name: string, payload: object): void {
@@ -205,17 +208,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     /**
      * Fires `onChange` for ANY data mutation (create / edit / delete / move / resize).
-     * `event` is always the resulting event with its final start/end, so a single
-     * handler can persist or trigger downstream logic without caring which gesture
-     * produced it. This is the one "the data should change" event; onEventClick /
+     * The spec's `event` is always the resulting event with its final start/end, so a
+     * single handler can persist or trigger downstream logic without caring which
+     * gesture produced it. This is the one "the data should change" event; onEventClick /
      * onDateClick / onSelect are the "the user did something" intent events.
      */
-    private fireChange(
-        action: 'create' | 'edit' | 'delete' | 'move' | 'resize',
-        event: object,
-        extra?: { scope?: 'series' | 'occurrence'; seriesId?: string; occurrenceDate?: string | null }
-    ): void {
-        this.fireEvent('onChange', { action, event, ...(extra || {}) });
+    private fireSpec(spec: ChangeSpec): void {
+        this.fireEvent('onChange', { action: spec.action, event: spec.event, ...(spec.extra || {}) });
     }
 
     // --- hover detail popover ---------------------------------------------
@@ -261,21 +260,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return cats.length ? cats[0].id : '';
     }
 
-    /** Default recurrence + edit-context fields for a fresh editor (no repeat, no series). */
-    private editorDefaults(): Pick<Editor,
-        'repeatFreq' | 'repeatInterval' | 'repeatByweekday' | 'repeatEndMode' | 'repeatUntil' | 'repeatCount' |
-        'seriesId' | 'occurrenceDate' | 'scope'> {
-        return {
-            repeatFreq: '', repeatInterval: 1, repeatByweekday: [], repeatEndMode: 'never', repeatUntil: '', repeatCount: 10,
-            seriesId: null, occurrenceDate: null, scope: 'series'
-        };
-    }
-
     private openEditor(startIso: string, endIso: string, allDay: boolean): void {
         this.hideHover();
-        const start = allDay ? startIso.slice(0, 10) : startIso.slice(0, 16);
-        const end = allDay ? (endIso || startIso).slice(0, 10) : endIso.slice(0, 16);
-        this.setState({ editor: { id: null, title: '', start, end, allDay, category: this.defaultCategory(), description: '', ...this.editorDefaults() } });
+        this.setState({ editor: editorForCreate(startIso, endIso, allDay, this.defaultCategory()) });
     }
 
     /** Whether clicking an existing event opens the built-in editor (vs firing onEventClick). */
@@ -288,38 +275,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return (this.props.props.events || []).find((e) => e.id === id);
     }
 
-    /** Open the built-in editor pre-filled from an existing event, to edit it in place.
-     *  For a recurring occurrence (id "base::date") it recovers the series' rule and
-     *  defaults the apply-to scope to "this event". */
+    /** Open the built-in editor pre-filled from an existing event, to edit it in place. */
     private openEditorForEvent(ev: CalEvent): void {
         this.hideHover();
-        const allDay = !!ev.allDay;
-        const cut = (v: string | undefined) => (v || '').slice(0, allDay ? 10 : 16);
-        const rawId = ev.id || '';
-        const isOcc = rawId.indexOf('::') >= 0;
-        const seriesId = isOcc ? rawId.split('::')[0] : null;
-        const occurrenceDate = isOcc ? rawId.split('::')[1] : null;
-        const rr = seriesId ? (this.baseEventById(seriesId) || {} as CalEvent).rrule : undefined;
-        this.setState({
-            editor: {
-                id: rawId,
-                title: ev.title || '',
-                start: cut(ev.start),
-                end: cut(ev.end || ev.start),
-                allDay,
-                category: ev.category || '',
-                description: ev.description || '',
-                repeatFreq: rr ? rr.freq : '',
-                repeatInterval: rr && rr.interval ? rr.interval : 1,
-                repeatByweekday: rr && rr.byweekday ? rr.byweekday.slice() : [],
-                repeatEndMode: rr ? (rr.until ? 'until' : (rr.count ? 'count' : 'never')) : 'never',
-                repeatUntil: rr && rr.until ? rr.until : '',
-                repeatCount: rr && rr.count ? rr.count : 10,
-                seriesId,
-                occurrenceDate,
-                scope: isOcc ? 'occurrence' : 'series'
-            }
-        });
+        this.setState({ editor: editorForEvent(ev, (id) => this.baseEventById(id)) });
     }
 
     private updateEditor(patch: Partial<Editor>): void {
@@ -330,15 +289,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private toggleEditorAllDay(allDay: boolean): void {
         const ed = this.state.editor;
-        if (!ed) {
-            return;
-        }
-        if (allDay) {
-            this.updateEditor({ allDay: true, start: ed.start.slice(0, 10), end: ed.end.slice(0, 10) });
-        } else {
-            const s = ed.start.length >= 16 ? ed.start : `${ed.start.slice(0, 10)}T09:00`;
-            const e = ed.end.length >= 16 ? ed.end : `${ed.end.slice(0, 10)}T10:00`;
-            this.updateEditor({ allDay: false, start: s, end: e });
+        if (ed) {
+            this.updateEditor(toggleAllDayPatch(ed, allDay));
         }
     }
 
@@ -346,111 +298,22 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.setState({ editor: null });
     };
 
-    /** Build an RRule from the editor's repeat fields (undefined = does not repeat).
-     *  Preserves an existing series' exdate list when re-saving the whole series. */
-    private buildRRule(ed: Editor): RRule | undefined {
-        if (!ed.repeatFreq) {
-            return undefined;
-        }
-        const rr: RRule = { freq: ed.repeatFreq };
-        if (ed.repeatInterval > 1) {
-            rr.interval = ed.repeatInterval;
-        }
-        if (ed.repeatFreq === 'weekly' && ed.repeatByweekday.length) {
-            rr.byweekday = ed.repeatByweekday.slice().sort((a, b) => a - b);
-        }
-        if (ed.repeatEndMode === 'until' && ed.repeatUntil) {
-            rr.until = ed.repeatUntil;
-        } else if (ed.repeatEndMode === 'count' && ed.repeatCount > 0) {
-            rr.count = ed.repeatCount;
-        }
-        const base = ed.seriesId ? this.baseEventById(ed.seriesId) : undefined;
-        if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
-            rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
-        }
-        return rr;
-    }
-
-    /** Keep a series anchored on the base's (zone-local) date while applying an edited time. */
-    private reanchorSeries(baseRaw: string | undefined, editedWall: string, allDay: boolean): string {
-        const baseDate = instantToZonedIso(baseRaw || '', this.props.props.timezone).slice(0, 10);
-        if (allDay) {
-            return baseDate;
-        }
-        return baseDate + (editedWall.length >= 11 ? editedWall.slice(10) : 'T00:00:00');
-    }
-
     private editorSave = (): void => {
         const ed = this.state.editor;
         if (!ed) {
             return;
         }
-        const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
-        const common = { title: ed.title || 'New event', allDay: ed.allDay, category: ed.category, description: ed.description };
-
-        // (1) One occurrence of a series -> detached standalone override (the series gets an EXDATE).
-        if (ed.seriesId && ed.scope === 'occurrence') {
-            const event = {
-                id: `${ed.seriesId}-x-${ed.occurrenceDate}`,
-                ...common,
-                start: this.emitTime(norm(ed.start), ed.allDay),
-                end: this.emitTime(norm(ed.end), ed.allDay)
-            };
-            this.fireChange('edit', event, { scope: 'occurrence', seriesId: ed.seriesId, occurrenceDate: ed.occurrenceDate });
-            this.setState({ editor: null });
-            return;
-        }
-
-        const rr = this.buildRRule(ed);
-
-        // (2) Whole series -> emit the base, preserving its anchor date(s), updating time/fields/rule.
-        if (ed.seriesId && ed.scope === 'series') {
-            const base = this.baseEventById(ed.seriesId);
-            const event: Record<string, unknown> = {
-                id: ed.seriesId,
-                ...common,
-                start: this.emitTime(this.reanchorSeries(base && base.start, norm(ed.start), ed.allDay), ed.allDay),
-                end: this.emitTime(this.reanchorSeries(base && (base.end || base.start), norm(ed.end), ed.allDay), ed.allDay),
-                rrule: rr || null   // null = recurrence removed from the series
-            };
-            this.fireChange('edit', event, { scope: 'series', seriesId: ed.seriesId });
-            this.setState({ editor: null });
-            return;
-        }
-
-        // (3) Plain create / edit of a standalone event (the repeat control may add recurrence).
-        const isEdit = ed.id !== null;
-        const event: Record<string, unknown> = {
-            id: isEdit ? ed.id : `evt-${new Date().getTime()}`,
-            ...common,
-            start: this.emitTime(norm(ed.start), ed.allDay),
-            end: this.emitTime(norm(ed.end), ed.allDay),
-            rrule: rr || null
-        };
-        this.fireChange(isEdit ? 'edit' : 'create', event);
+        this.fireSpec(editorSaveSpec(ed, this.props.props.timezone, (id) => this.baseEventById(id)));
         this.setState({ editor: null });
     };
 
     private editorDelete = (): void => {
         const ed = this.state.editor;
-        if (!ed || ed.id === null) {
+        const spec = ed ? editorDeleteSpec(ed) : null;
+        if (!spec) {
             return;
         }
-        // One occurrence of a series -> EXDATE (and drop any override for that date).
-        if (ed.seriesId && ed.scope === 'occurrence') {
-            this.fireChange('delete', { id: `${ed.seriesId}-x-${ed.occurrenceDate}` },
-                { scope: 'occurrence', seriesId: ed.seriesId, occurrenceDate: ed.occurrenceDate });
-            this.setState({ editor: null });
-            return;
-        }
-        // Whole series.
-        if (ed.seriesId && ed.scope === 'series') {
-            this.fireChange('delete', { id: ed.seriesId }, { scope: 'series', seriesId: ed.seriesId });
-            this.setState({ editor: null });
-            return;
-        }
-        // Plain standalone delete.
-        this.fireChange('delete', { id: ed.id, title: ed.title || '' });
+        this.fireSpec(spec);
         this.setState({ editor: null });
     };
 
@@ -509,6 +372,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     }
 
+    /** Pixels-per-hour for the current grid resolution (must match TimeGrid's). */
+    private hourPx(): number {
+        return hourHeightPx(this.props.props.slotMinutes);
+    }
+
     /** Position the time-grid scroll: centre on "now" when scrollToNow is on and today is
      *  in view, otherwise scroll to the configured scrollToHour. */
     private scrollTimeGrid(): void {
@@ -529,229 +397,19 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     // --- editing gestures (week/day) --------------------------------------
-    /** Pixels-per-hour for the current grid resolution (must match TimeGrid's). */
-    private hourPx(): number {
-        return hourHeightPx(this.props.props.slotMinutes);
-    }
-
-    private snap(min: number): number {
-        return snapMinutes(min, this.props.props.slotMinutes);
-    }
-
-    private iso(dayIso: string, min: number): string {
-        return isoDateTime(dayIso, min);
-    }
-
-    /** Convert an internal zone-local wall-clock string to the emitted form: an
-     *  offset-bearing instant for timed events, or a date-only string for all-day. */
-    private emitTime(wall: string, allDay: boolean): string {
-        if (!wall) {
-            return wall;
-        }
-        if (allDay) {
-            return wall.slice(0, 10);
-        }
-        const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(wall);
-        if (!m) {
-            return wall;
-        }
-        const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
-        return resolveZoned(d, this.props.props.timezone).iso;
-    }
-
-    /** Minutes-from-midnight -> "HH:mm". */
-
-    /** A timed event's [start, end] minutes (end falls back to the default duration). */
-    private eventMinutes(ev: CalEvent): { s: number; e: number } {
-        const sm = timeMinutes(ev.start);
-        const s = sm === null ? 0 : sm;
-        let e: number | null = ev.end && ev.end.slice(0, 10) === ev.start.slice(0, 10) ? timeMinutes(ev.end) : null;
-        if (e === null || e <= s) {
-            e = s + DEFAULT_DUR_MIN;
-        }
-        return { s, e };
-    }
-
     private eventPayload(ev: CalEvent): object {
+        const tz = this.props.props.timezone;
         return {
             id: ev.id || '', title: ev.title || '',
-            start: this.emitTime(ev.start || '', !!ev.allDay),
-            end: ev.end ? this.emitTime(ev.end, !!ev.allDay) : '',
+            start: emitWall(ev.start || '', !!ev.allDay, tz),
+            end: ev.end ? emitWall(ev.end, !!ev.allDay, tz) : '',
             allDay: !!ev.allDay, category: ev.category || ''
         };
     }
 
-    /** A complete event object (incl. category/notes, raw colour) with start/end overrides applied — for onChange. */
-    private changedEvent(ev: CalEvent, over: { start?: string; end?: string }): object {
-        const allDay = !!ev.allDay;
-        return {
-            id: ev.id || '',
-            title: ev.title || '',
-            start: this.emitTime(over.start ?? ev.start ?? '', allDay),
-            end: this.emitTime(over.end ?? ev.end ?? '', allDay),
-            allDay,
-            color: ev.color || '',         // raw override only (empty when category-coloured)
-            category: ev.category || '',
-            description: ev.description || ''
-        };
-    }
-
-    /** Fire a move/resize. Dragging a single recurring occurrence (id "base::date")
-     *  detaches it into a standalone override + an EXDATE on the series. */
-    private fireMoveResize(action: 'move' | 'resize', ev: CalEvent, over: { start?: string; end?: string }): void {
-        const rawId = ev.id || '';
-        if (rawId.indexOf('::') >= 0) {
-            const seriesId = rawId.split('::')[0];
-            const occurrenceDate = rawId.split('::')[1];
-            const event = this.changedEvent({ ...ev, id: `${seriesId}-x-${occurrenceDate}` }, over);
-            this.fireChange(action, event, { scope: 'occurrence', seriesId, occurrenceDate });
-        } else {
-            this.fireChange(action, this.changedEvent(ev, over));
-        }
-    }
-
-    private captureCols(): void {
-        this.colRects = [];
-        const root = this.scrollRef.current;
-        if (!root) {
-            return;
-        }
-        root.querySelectorAll('.cal-tg-col').forEach((el) => {
-            this.colRects.push({ day: (el as HTMLElement).dataset.day || '', rect: el.getBoundingClientRect() });
-        });
-    }
-
-    private colAt(clientX: number): { day: string; rect: DOMRect } | null {
-        const hit = colAtX(this.colRects.map((c) => ({ day: c.day, left: c.rect.left, right: c.rect.right })), clientX);
-        return hit ? this.colRects.filter((c) => c.day === hit.day)[0] : null;
-    }
-
-    private minuteAtY(rect: DOMRect, clientY: number): number {
-        const { dayStartHour, dayEndHour, slotMinutes } = this.props.props;
-        return minuteFromOffset(clientY - rect.top, this.hourPx(), dayStartHour * 60, dayEndHour * 60, slotMinutes);
-    }
-
-    private addDocListeners(): void {
-        // Pointer events unify mouse / touch / pen. pointercancel fires when the browser
-        // takes over for a touch scroll (empty-column drag) — we abort the gesture then.
-        document.addEventListener('pointermove', this.onDocMove, true);
-        document.addEventListener('pointerup', this.onDocUp, true);
-        document.addEventListener('pointercancel', this.onDocCancel, true);
-    }
-
-    private removeDocListeners(): void {
-        document.removeEventListener('pointermove', this.onDocMove, true);
-        document.removeEventListener('pointerup', this.onDocUp, true);
-        document.removeEventListener('pointercancel', this.onDocCancel, true);
-    }
-
-    /** A touch scroll (or system interruption) cancels the gesture without committing. */
-    private onDocCancel = (): void => {
-        this.removeDocListeners();
-        this.gesture = null;
-        this.setState({ preview: null });
-    };
-
-    private startMove = (ev: CalEvent, e: React.PointerEvent): void => {
-        // Always start a gesture so a plain click resolves to onEventClick; only the
-        // drag/preview behaviour is gated on `editable`.
-        e.stopPropagation();
-        this.hideHover();
-        const { s, e: end } = this.eventMinutes(ev);
-        const day = ev.start.slice(0, 10);
-        this.captureCols();
-        this.gesture = {
-            mode: 'move', ev, startClientX: e.clientX, startClientY: e.clientY,
-            origStartMin: s, origEndMin: end, durationMin: end - s, origDayIso: day, moved: false
-        };
-        this.addDocListeners();
-        if (this.props.props.editable) {
-            e.preventDefault();
-            this.setState({ preview: { mode: 'move', eventId: ev.id, title: ev.title, color: this.resolveColor(ev), dayIso: day, startMin: s, endMin: end } });
-        }
-    };
-
-    private startResize = (ev: CalEvent, e: React.PointerEvent): void => {
-        if (!this.props.props.editable) {
-            return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-        const { s, e: end } = this.eventMinutes(ev);
-        const day = ev.start.slice(0, 10);
-        this.captureCols();
-        this.gesture = {
-            mode: 'resize', ev, startClientX: e.clientX, startClientY: e.clientY,
-            origStartMin: s, origEndMin: end, durationMin: end - s, origDayIso: day, moved: false
-        };
-        this.addDocListeners();
-        this.setState({ preview: { mode: 'resize', eventId: ev.id, title: ev.title, color: this.resolveColor(ev), dayIso: day, startMin: s, endMin: end } });
-    };
-
-    private startCreate = (dayIso: string, e: React.PointerEvent): void => {
-        this.hideHover();
-        this.captureCols();
-        const col = this.colRects.filter((c) => c.day === dayIso)[0];
-        if (!col) {
-            return;
-        }
-        const m = this.minuteAtY(col.rect, e.clientY);
-        this.gesture = {
-            mode: 'create', startClientX: e.clientX, startClientY: e.clientY,
-            origStartMin: m, origEndMin: m, durationMin: 0, origDayIso: dayIso, moved: false
-        };
-        this.addDocListeners();
-    };
-
-    private onDocMove = (e: PointerEvent): void => {
-        const g = this.gesture;
-        if (!g) {
-            return;
-        }
-        // A slightly larger threshold on touch avoids a jittery finger turning a tap into a drag.
-        const threshold = e.pointerType === 'touch' ? 10 : 4;
-        if (!g.moved && hasMoved(e.clientX - g.startClientX, e.clientY - g.startClientY, threshold)) {
-            g.moved = true;
-        }
-        const { dayStartHour, dayEndHour, slotMinutes } = this.props.props;
-        const winStart = dayStartHour * 60;
-        const winEnd = dayEndHour * 60;
-        const deltaMin = this.snap(((e.clientY - g.startClientY) / this.hourPx()) * 60);
-        if (g.mode === 'move') {
-            if (!this.props.props.editable) {
-                return;
-            }
-            const col = this.colAt(e.clientX) || this.colRects.filter((c) => c.day === g.origDayIso)[0];
-            const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd);
-            this.setState({ preview: { mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: col.day, startMin, endMin } });
-        } else if (g.mode === 'resize') {
-            const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, slotMinutes);
-            this.setState({ preview: { mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.resolveColor(g.ev!), dayIso: g.origDayIso, startMin, endMin } });
-        } else if (this.props.props.selectable && e.pointerType !== 'touch') {
-            // Drag-to-create is disabled on touch: a vertical drag on empty time scrolls the
-            // grid (a tap creates instead). On mouse/pen it draws the selection as before.
-            const col = this.colRects.filter((c) => c.day === g.origDayIso)[0];
-            const cur = this.minuteAtY(col.rect, e.clientY);
-            const { startMin, endMin } = createPreview(g.origStartMin, cur, slotMinutes);
-            this.setState({ preview: { mode: 'create', dayIso: g.origDayIso, startMin, endMin } });
-        }
-    };
-
-    private onDocUp = (): void => {
-        const g = this.gesture;
-        const preview = this.state.preview;
-        this.removeDocListeners();
-        this.gesture = null;
-        this.setState({ preview: null });
-        if (!g) {
-            return;
-        }
-        const kind = commitDecision(g.mode, g.moved, !!preview, {
-            editable: this.props.props.editable,
-            selectable: this.props.props.selectable,
-            useEditor: this.useEditor(),
-            useEditorForEdit: this.useEditorForEdit()
-        });
+    /** Apply a released gesture — the controller's commitDecision outcome — to the component. */
+    private commitGesture(kind: CommitKind, g: Gesture, preview: Preview | null): void {
+        const tz = this.props.props.timezone;
         switch (kind) {
             case 'editEvent':
                 this.openEditorForEvent(g.ev!);
@@ -759,27 +417,41 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             case 'eventClick':
                 this.fireEvent('onEventClick', this.eventPayload(g.ev!));
                 break;
-            case 'move':
-                this.fireMoveResize('move', g.ev!, {
-                    start: this.iso(preview!.dayIso, preview!.startMin),
-                    end: this.iso(preview!.dayIso, preview!.endMin)
-                });
+            case 'move': {
+                if (g.surface === 'month') {
+                    // Whole-day move: shift start/end by the dragged day delta, keep the time.
+                    const from = parseDate(g.origDayIso);
+                    const to = parseDate(preview!.dayIso);
+                    const delta = from && to ? daysBetween(from, to) : 0;
+                    if (delta !== 0) {
+                        this.fireSpec(moveResizeSpec('move', g.ev!, {
+                            start: shiftWallDays(g.ev!.start, delta),
+                            end: g.ev!.end ? shiftWallDays(g.ev!.end, delta) : undefined
+                        }, tz));
+                    }
+                    break;
+                }
+                this.fireSpec(moveResizeSpec('move', g.ev!, {
+                    start: isoDateTime(preview!.dayIso, preview!.startMin),
+                    end: isoDateTime(preview!.dayIso, preview!.endMin)
+                }, tz));
                 break;
+            }
             case 'resize':
-                this.fireMoveResize('resize', g.ev!, { end: this.iso(preview!.dayIso, preview!.endMin) });
+                this.fireSpec(moveResizeSpec('resize', g.ev!, { end: isoDateTime(preview!.dayIso, preview!.endMin) }, tz));
                 break;
             case 'selectEditor':
-                this.openEditor(this.iso(preview!.dayIso, preview!.startMin), this.iso(preview!.dayIso, preview!.endMin), false);
+                this.openEditor(isoDateTime(preview!.dayIso, preview!.startMin), isoDateTime(preview!.dayIso, preview!.endMin), false);
                 break;
             case 'select': {
-                const start = this.iso(preview!.dayIso, preview!.startMin);
-                const end = this.iso(preview!.dayIso, preview!.endMin);
-                this.fireEvent('onSelect', { start: this.emitTime(start, false), end: this.emitTime(end, false), allDay: false });
+                const start = isoDateTime(preview!.dayIso, preview!.startMin);
+                const end = isoDateTime(preview!.dayIso, preview!.endMin);
+                this.fireEvent('onSelect', { start: emitWall(start, false, tz), end: emitWall(end, false, tz), allDay: false });
                 break;
             }
             case 'createEditor':
                 // a plain click on empty time -> editor with a default one-hour slot
-                this.openEditor(this.iso(g.origDayIso, 9 * 60), this.iso(g.origDayIso, 10 * 60), false);
+                this.openEditor(isoDateTime(g.origDayIso, 9 * 60), isoDateTime(g.origDayIso, 10 * 60), false);
                 break;
             case 'dateClick':
                 this.fireEvent('onDateClick', { date: g.origDayIso });
@@ -787,7 +459,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             default:
                 break;
         }
-    };
+    }
 
     // --- navigation --------------------------------------------------------
     private step(dir: number): void {
@@ -836,7 +508,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 month: startOfMonth(this.state.cursor)
             }
         });
-        this.openMiniListeners();
+        this.miniDismiss.open();
     };
 
     private miniStep(dir: number): void {
@@ -856,36 +528,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private closeMini(): void {
-        this.closeMiniListeners();
+        this.miniDismiss.close();
         if (this.state.mini) {
             this.setState({ mini: null });
         }
     }
-
-    private openMiniListeners(): void {
-        document.addEventListener('pointerdown', this.onDocMini, true);
-        document.addEventListener('keydown', this.onMiniKey, true);
-    }
-
-    private closeMiniListeners(): void {
-        document.removeEventListener('pointerdown', this.onDocMini, true);
-        document.removeEventListener('keydown', this.onMiniKey, true);
-    }
-
-    private onDocMini = (e: PointerEvent): void => {
-        const t = e.target as HTMLElement | null;
-        // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
-        if (t && (t.closest('.cal-mini') || t.closest('.cal-title--btn'))) {
-            return;
-        }
-        this.closeMini();
-    };
-
-    private onMiniKey = (e: KeyboardEvent): void => {
-        if (e.key === 'Escape') {
-            this.closeMini();
-        }
-    };
 
     // --- month-view "all events for a day" popover ------------------------
     private openDayPop(iso: string, e: React.MouseEvent): void {
@@ -894,40 +541,15 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const r = (cell || (e.currentTarget as HTMLElement)).getBoundingClientRect();
         this.hideHover();
         this.setState({ dayPop: { iso, rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right } } });
-        this.openDayPopListeners();
+        this.dayPopDismiss.open();
     }
 
     private closeDayPop(): void {
-        this.closeDayPopListeners();
+        this.dayPopDismiss.close();
         if (this.state.dayPop) {
             this.setState({ dayPop: null });
         }
     }
-
-    private openDayPopListeners(): void {
-        document.addEventListener('pointerdown', this.onDocDayPop, true);
-        document.addEventListener('keydown', this.onDayPopKey, true);
-    }
-
-    private closeDayPopListeners(): void {
-        document.removeEventListener('pointerdown', this.onDocDayPop, true);
-        document.removeEventListener('keydown', this.onDayPopKey, true);
-    }
-
-    private onDocDayPop = (e: PointerEvent): void => {
-        const t = e.target as HTMLElement | null;
-        // Clicks inside the popover, or on a trigger (date number / "+N more"), manage themselves.
-        if (t && (t.closest('.cal-daypop') || t.closest('.cal-daynum') || t.closest('.cal-more'))) {
-            return;
-        }
-        this.closeDayPop();
-    };
-
-    private onDayPopKey = (e: KeyboardEvent): void => {
-        if (e.key === 'Escape') {
-            this.closeDayPop();
-        }
-    };
 
     /** Click an event inside the day popover: close it, then edit (built-in editor) or fire onEventClick. */
     private activateFromDayPop = (ev: CalEvent, e: React.MouseEvent): void => {
@@ -995,6 +617,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 locale={this.props.props.locale}
                 categories={this.props.props.categories}
                 emptyMessage={this.props.props.emptyMessage}
+                labels={this.props.props.labels}
                 enterClass={(id) => this.enterClass(id)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
@@ -1013,11 +636,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private emptyHint(): string {
         const p = this.props.props;
         const canCreate = (p.editable && p.builtInEditor) || p.selectable;
-        const lines = ['This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.'];
-        lines.push(canCreate
-            ? 'Add an event: in Week or Day view, drag over an empty time slot.'
-            : 'Events come from the data binding — enable "selectable" + "builtInEditor" to add them here.');
-        return lines.join('\n');
+        return [p.labels.emptyHintIntro, canCreate ? p.labels.emptyHintCreate : p.labels.emptyHintBind].join('\n');
     }
 
     private renderToolbar(): React.ReactNode {
@@ -1030,6 +649,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 showExport={this.props.props.showExport}
                 emptyLabel={this.isConfiguredEmpty() ? this.props.props.emptyMessage : ''}
                 emptyHint={this.emptyHint()}
+                labels={this.props.props.labels}
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
                 onExport={this.exportCsv}
@@ -1042,6 +662,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     // --- month view --------------------------------------------------------
     private renderMonth(): React.ReactNode {
+        const p = this.state.preview;
+        const monthDrag = p && p.surface === 'month' ? p : null;
         return (
             <MonthView
                 grid={this.monthGrid()}
@@ -1049,12 +671,17 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 locale={this.props.props.locale}
                 monthCap={this.state.monthCap}
                 categories={this.props.props.categories}
+                labels={this.props.props.labels}
                 weeksRef={this.weeksRef}
+                editable={this.props.props.editable}
+                dragEventId={monthDrag ? monthDrag.eventId || '' : ''}
+                dropDayIso={monthDrag ? monthDrag.dayIso : ''}
                 enterClass={(id) => this.enterClass(id)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onDayClick={(iso) => this.onDayClick(iso)}
                 openDayPop={(iso, e) => this.openDayPop(iso, e)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
+                onStartMove={(ev, e) => this.gestures.startMonthMove(ev, e)}
             />
         );
     }
@@ -1077,6 +704,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editor={ed}
                 categories={this.props.props.categories || []}
                 timezone={this.props.props.timezone}
+                locale={this.props.props.locale}
+                labels={this.props.props.labels}
                 onUpdate={(patch) => this.updateEditor(patch)}
                 onToggleAllDay={(allDay) => this.toggleEditorAllDay(allDay)}
                 onCancel={this.editorCancel}
@@ -1109,11 +738,6 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 
-    /** Resolve an event's display colour — used by the drag/resize preview ghost. */
-    private resolveColor(ev: CalEvent): string | undefined {
-        return styleResolveColor(this.props.props.categories, ev);
-    }
-
     private renderTimeGrid(): React.ReactNode {
         return (
             <TimeGrid
@@ -1128,13 +752,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 nowMinutes={nowMinutesInZone(this.props.props.timezone)}
                 preview={this.state.preview}
                 categories={this.props.props.categories}
+                labels={this.props.props.labels}
                 scrollRef={this.scrollRef}
                 enterClass={(id) => this.enterClass(id)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
-                onStartCreate={(iso, e) => this.startCreate(iso, e)}
-                onStartMove={(ev, e) => this.startMove(ev, e)}
-                onStartResize={(ev, e) => this.startResize(ev, e)}
+                onStartCreate={(iso, e) => this.gestures.startCreate(iso, e)}
+                onStartMove={(ev, e) => this.gestures.startMove(ev, e)}
+                onStartResize={(ev, e) => this.gestures.startResize(ev, e)}
                 onScroll={() => this.hideHover()}
             />
         );
@@ -1154,6 +779,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 range={this.visibleRange()}
                 cursorIso={fmtDate(this.state.cursor)}
                 showRange={this.props.props.view !== 'month'}
+                labels={this.props.props.labels}
                 onStep={(dir) => this.miniStep(dir)}
                 onPick={(iso) => this.miniPick(iso)}
             />
@@ -1185,6 +811,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 events={groupEventsByDay(this.visibleEvents())[dp.iso] || []}
                 locale={this.props.props.locale}
                 categories={this.props.props.categories}
+                labels={this.props.props.labels}
                 onActivate={(ev, e) => this.activateFromDayPop(ev, e)}
             />
         );
