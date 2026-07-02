@@ -66,6 +66,36 @@
             cursor: not-allowed;
             opacity: 0.6;
         }
+
+        // The armed realtime preset: filled + a pulsing "live" dot. The hover rule
+        // must restate the fill — the generic :hover (light background) otherwise
+        // outranks this class and washes out the accent-text label.
+        &.dtrp-preset--live,
+        &.dtrp-preset--live:hover:not(:disabled) {
+            background: var(--dtrp-accent);
+            border-color: var(--dtrp-accent);
+            color: var(--dtrp-accent-text);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        &.dtrp-preset--live:hover:not(:disabled) {
+            filter: brightness(1.08);
+        }
+    }
+
+    .dtrp-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+        animation: dtrp-live-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dtrp-live-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
     }
 
     .dtrp-hint {

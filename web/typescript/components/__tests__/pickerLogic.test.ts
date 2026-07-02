@@ -2,7 +2,7 @@ import { fmtDate, secondsOfDay } from '../dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
-    computeOutputs, PresetContext, PresetDef
+    computeOutputs, realtimeArmed, realtimeSelection, PresetContext, PresetDef
 } from '../pickerLogic';
 
 describe('resolveLayout', () => {
@@ -63,6 +63,33 @@ describe('rollingRange', () => {
         expect(fmtDate(rollingRange(24, 'hours', now, true).end)).toBe('2026-06-18');
         expect(fmtDate(rollingRange(2, 'weeks', now, false).start)).toBe('2026-06-03');
         expect(fmtDate(rollingRange(1, 'months', now, true).end)).toBe('2026-07-17');
+    });
+});
+
+describe('realtime (live rolling window)', () => {
+    const now = new Date(2026, 5, 17, 10, 30, 0); // Wed 2026-06-17 10:30
+
+    it('armed only when the opt-in flag AND a window are both set', () => {
+        expect(realtimeArmed(true, 8)).toBe(true);
+        expect(realtimeArmed(true, 0)).toBe(false);    // no window armed
+        expect(realtimeArmed(false, 8)).toBe(false);   // feature off -> presets stay one-shot
+    });
+
+    it('a tick derives the historian-style backward window from now', () => {
+        const s = realtimeSelection(8, 'hours', now, false);
+        expect(s).toEqual({
+            startDate: '2026-06-17', startTimeSec: secondsOfDay(new Date(2026, 5, 17, 2, 30, 0)),
+            endDate: '2026-06-17', endTimeSec: secondsOfDay(now)
+        });
+    });
+
+    it('windows cross midnight and roll forward in forward-booking mode', () => {
+        const back = realtimeSelection(24, 'hours', now, false);
+        expect(back.startDate).toBe('2026-06-16');   // yesterday, same wall time
+        expect(back.startTimeSec).toBe(secondsOfDay(now));
+        const fwd = realtimeSelection(7, 'days', now, true);
+        expect(fwd.startDate).toBe('2026-06-17');
+        expect(fwd.endDate).toBe('2026-06-24');
     });
 });
 

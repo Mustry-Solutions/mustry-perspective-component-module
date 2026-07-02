@@ -73,6 +73,9 @@ export class DateTimeRangePicker
     // Suppress the onRangeChanged event during the initial mount sync.
     private didMount = false;
 
+    // Realtime mode: re-derives the armed rolling window from "now" on an interval.
+    private realtimeTimer = 0;
+
     constructor(props: ComponentProps<DateTimeRangePickerProps>) {
         super(props);
         const start = parseDate(props.props.startDate);
@@ -108,6 +111,10 @@ export class DateTimeRangePicker
         this.syncOutputs();
         this.didMount = true;
         this.observeSize();
+        this.setupRealtimeTimer();
+        if (this.realtimeArmed()) {
+            this.tickRealtime();   // a pre-armed view opens already-live
+        }
     }
 
     /** Fire a component event for authors' event scripts (suppressed at design time). */
@@ -117,8 +124,18 @@ export class DateTimeRangePicker
         }
     }
 
-    componentDidUpdate(): void {
+    componentDidUpdate(prevProps: ComponentProps<DateTimeRangePickerProps>): void {
         this.syncOutputs();
+        const was = logic.realtimeArmed(prevProps.props.realtimeEnabled, prevProps.props.rollingAmount);
+        const armedChanged = was !== this.realtimeArmed()
+            || prevProps.props.rollingAmount !== this.props.props.rollingAmount
+            || prevProps.props.rollingUnit !== this.props.props.rollingUnit;
+        if (armedChanged || prevProps.props.realtimeRefreshSeconds !== this.props.props.realtimeRefreshSeconds) {
+            this.setupRealtimeTimer();
+            if (this.realtimeArmed() && armedChanged) {
+                this.tickRealtime();   // snap to the new window immediately (e.g. armed via a binding)
+            }
+        }
     }
 
     componentWillUnmount(): void {
@@ -126,7 +143,51 @@ export class DateTimeRangePicker
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
         }
+        if (this.realtimeTimer) {
+            window.clearInterval(this.realtimeTimer);
+        }
         this.removeWindowListeners();
+    }
+
+    // --- realtime (live rolling window) ------------------------------------
+    /** Armed = config.realtime.enabled AND a rolling window is set (selection.rollingAmount > 0). */
+    private realtimeArmed(): boolean {
+        return logic.realtimeArmed(this.props.props.realtimeEnabled, this.props.props.rollingAmount);
+    }
+
+    private setupRealtimeTimer(): void {
+        if (this.realtimeTimer) {
+            window.clearInterval(this.realtimeTimer);
+            this.realtimeTimer = 0;
+        }
+        if (this.realtimeArmed()) {
+            this.realtimeTimer = window.setInterval(
+                () => this.tickRealtime(),
+                Math.max(1, this.props.props.realtimeRefreshSeconds) * 1000
+            );
+        }
+    }
+
+    /** Re-derive the armed rolling window from "now" and write it into the selection.
+     *  Unchanged values are no-op writes, so outputs/onRangeChanged only fire on real change. */
+    private tickRealtime(): void {
+        if (!this.realtimeArmed() || this.state.anchor) {
+            return;   // don't fight an in-progress manual pick
+        }
+        const p = this.props.props;
+        const sel = logic.realtimeSelection(p.rollingAmount, p.rollingUnit, new Date(), p.disableDates === 'past');
+        const w = this.props.store.props;
+        w.write('selection.startDate', sel.startDate);
+        w.write('selection.startTimeSec', sel.startTimeSec);
+        w.write('selection.endDate', sel.endDate);
+        w.write('selection.endTimeSec', sel.endTimeSec);
+    }
+
+    /** A manual selection takes over: stop the live window (keeps the current range). */
+    private disarmRealtime(): void {
+        if (this.props.props.rollingAmount > 0) {
+            this.props.store.props.write('selection.rollingAmount', 0);
+        }
     }
 
     // --- popover ----------------------------------------------------------
@@ -330,6 +391,7 @@ export class DateTimeRangePicker
         if (this.dayBlocked(day)) {
             return;
         }
+        this.disarmRealtime();
         const start = parseDate(this.props.props.startDate);
         const end = parseDate(this.props.props.endDate);
         const write = this.props.store.props;
@@ -370,6 +432,7 @@ export class DateTimeRangePicker
     };
 
     private clear = (): void => {
+        this.disarmRealtime();
         const write = this.props.store.props;
         write.write('selection.startDate', '');
         write.write('selection.endDate', '');
@@ -406,6 +469,8 @@ export class DateTimeRangePicker
     }
 
     // Apply a preset: set the selection to its range (no-op if it would conflict).
+    // With config.realtime.enabled, a rolling preset also ARMS the live window
+    // (selection.rollingAmount/rollingUnit); a calendar preset is one-shot and disarms.
     private applyPreset = (p: PresetDef): void => {
         if (this.presetConflict(p)) {
             return;
@@ -416,6 +481,12 @@ export class DateTimeRangePicker
         w.write('selection.startTimeSec', secondsOfDay(start));
         w.write('selection.endDate', fmtDate(startOfDay(end)));
         w.write('selection.endTimeSec', secondsOfDay(end));
+        if (this.props.props.realtimeEnabled && p.type === 'rolling' && p.amount > 0) {
+            w.write('selection.rollingAmount', p.amount);
+            w.write('selection.rollingUnit', p.unit);
+        } else {
+            this.disarmRealtime();
+        }
         this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(start) });
         this.fireEvent('onPresetSelected', {
             label: p.label, type: p.type, amount: p.amount, unit: p.unit, period: p.period
@@ -504,19 +575,23 @@ export class DateTimeRangePicker
     }
 
     private onStartTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.disarmRealtime();
         this.props.store.props.write('selection.startTimeSec', this.snapSec(hmsToSec(e.target.value)));
     };
 
     private onEndTime = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.disarmRealtime();
         this.props.store.props.write('selection.endTimeSec', this.snapSec(hmsToSec(e.target.value)));
     };
 
     // Compact-mode date fields: write the date directly (already "YYYY-MM-DD").
     private onStartDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.disarmRealtime();
         this.props.store.props.write('selection.startDate', e.target.value);
     };
 
     private onEndDateInput = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        this.disarmRealtime();
         this.props.store.props.write('selection.endDate', e.target.value);
     };
 
@@ -541,7 +616,8 @@ export class DateTimeRangePicker
     /** Write any outputs that changed (de-duplicated to avoid render/write loops). */
     private syncOutputs(): void {
         const out = this.computeOutputs();
-        const sig = JSON.stringify(out);
+        const isRealtime = this.realtimeArmed();
+        const sig = `${JSON.stringify(out)}|${isRealtime}`;
         if (sig === this.lastOutputSig) {
             return;
         }
@@ -555,8 +631,9 @@ export class DateTimeRangePicker
         write.write('output.durationHours', out.durationHours);
         write.write('output.durationLabel', out.durationLabel);
         write.write('output.isValid', out.isValid);
+        write.write('output.isRealtime', isRealtime);
         if (this.didMount) {
-            this.fireEvent('onRangeChanged', out);
+            this.fireEvent('onRangeChanged', { ...out, isRealtime });
         }
     }
 
@@ -656,20 +733,26 @@ export class DateTimeRangePicker
         if (!showPresets || items.length === 0) {
             return null;
         }
+        const props = this.props.props;
+        const armed = this.realtimeArmed();
         return (
             <div className="dtrp-presets">
                 {items.map((p, i) => {
                     const conflict = this.presetConflict(p);
+                    // The armed rolling preset stays highlighted while its window ticks live.
+                    const live = armed && p.type === 'rolling'
+                        && p.amount === props.rollingAmount && p.unit === props.rollingUnit;
                     return (
                         <button
                             key={`${p.label}-${i}`}
                             type="button"
-                            className="dtrp-preset"
+                            className={live ? 'dtrp-preset dtrp-preset--live' : 'dtrp-preset'}
                             disabled={!enabled || !!conflict}
                             aria-disabled={!enabled || !!conflict}
                             title={conflict || undefined}
                             onClick={() => this.applyPreset(p)}
                         >
+                            {live && <span className="dtrp-live-dot" aria-hidden="true" />}
                             {this.presetLabel(p)}
                         </button>
                     );

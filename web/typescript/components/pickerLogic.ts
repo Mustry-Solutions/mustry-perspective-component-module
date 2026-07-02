@@ -6,7 +6,7 @@
 
 import {
     addDays, clampSec, combine, daysBetween, fmtDate, maxDate, minDate,
-    parseDate, resolveZoned, startOfDay, startOfMonth, startOfWeek, today
+    parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek, today
 } from './dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
@@ -153,6 +153,33 @@ export function presetRange(p: PresetDef, ctx: PresetContext): DateRange {
         return calendarRange(p.period, ctx.now, ctx.mondayFirst);
     }
     return rollingRange(p.amount, p.unit, ctx.now, ctx.forward);
+}
+
+// --- realtime (live rolling window) ------------------------------------------
+
+/** Whether the picker keeps the selection live: the opt-in flag is on AND a
+ *  rolling window is armed (selection.rollingAmount > 0). */
+export function realtimeArmed(realtimeEnabled: boolean, rollingAmount: number): boolean {
+    return realtimeEnabled && rollingAmount > 0;
+}
+
+export interface RealtimeSelection {
+    startDate: string;
+    startTimeSec: number;
+    endDate: string;
+    endTimeSec: number;
+}
+
+/** One realtime tick: the selection writes for the armed rolling window re-derived
+ *  from `now` (the alarm-journal-style "last N hours, live" behaviour). */
+export function realtimeSelection(amount: number, unit: PresetUnit, now: Date, forward: boolean): RealtimeSelection {
+    const { start, end } = rollingRange(amount, unit, now, forward);
+    return {
+        startDate: fmtDate(startOfDay(start)),
+        startTimeSec: secondsOfDay(start),
+        endDate: fmtDate(startOfDay(end)),
+        endTimeSec: secondsOfDay(end)
+    };
 }
 
 // --- preset conflict --------------------------------------------------------

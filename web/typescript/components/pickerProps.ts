@@ -2,10 +2,18 @@
 // Extracted from the picker's getPropsReducer so it can be unit-tested without
 // perspective-client.
 import { PropReader } from './propReader';
-import { DateTimeRangePickerProps, DisplayMode, WeekStart } from './pickerTypes';
+import { DateTimeRangePickerProps, DisplayMode, LabelConfig, WeekStart } from './pickerTypes';
 import { DisableMode, Granularity, LayoutMode, PresetType, PresetUnit, PresetPeriod } from './pickerLogic';
+import { pickerLabelBase } from './labelPacks';
 
 export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
+    const locale = tree.readString('config.locale', '');
+    // config.locale picks the built-in label language; config.labels.* overrides per key.
+    const base = pickerLabelBase(locale);
+    const labels = {} as Record<string, string>;
+    (Object.keys(base) as Array<keyof LabelConfig>).forEach((k) => {
+        labels[k] = tree.readString(`config.labels.${k}`, base[k]);
+    });
     return {
         enabled: tree.readBoolean('config.enabled', true),
         display: tree.readString('config.display', 'inline') as DisplayMode,
@@ -13,18 +21,7 @@ export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
         popoverCloseOnSelect: tree.readBoolean('config.popover.closeOnSelect', true),
         popoverDateFormat: tree.readString('config.popover.dateFormat', 'DD/MM/YYYY'),
         showClear: tree.readBoolean('config.showClear', true),
-        labels: {
-            startTime: tree.readString('config.labels.startTime', 'Start time'),
-            endTime: tree.readString('config.labels.endTime', 'End time'),
-            startDate: tree.readString('config.labels.startDate', 'Start'),
-            endDate: tree.readString('config.labels.endDate', 'End'),
-            clear: tree.readString('config.labels.clear', 'Clear'),
-            selectRange: tree.readString('config.labels.selectRange', 'Select a range'),
-            invalidRange: tree.readString('config.labels.invalidRange', 'Invalid range'),
-            sameDay: tree.readString('config.labels.sameDay', 'Same day'),
-            previousMonth: tree.readString('config.labels.previousMonth', 'Previous month'),
-            nextMonth: tree.readString('config.labels.nextMonth', 'Next month')
-        },
+        labels: labels as unknown as LabelConfig,
         disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
         earliestDate: tree.readString('config.dateBounds.earliest', ''),
         latestDate: tree.readString('config.dateBounds.latest', ''),
@@ -34,7 +31,7 @@ export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
         granularity: tree.readString('config.granularity', 'second') as Granularity,
         weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
         timezone: tree.readString('config.timezone', ''),
-        locale: tree.readString('config.locale', ''),
+        locale,
         layout: tree.readString('config.layout', 'auto') as LayoutMode,
         compactBelowHeight: tree.readNumber('config.breakpoints.compactBelowHeight', 260),
         compactBelowWidth: tree.readNumber('config.breakpoints.compactBelowWidth', 240),
@@ -47,9 +44,13 @@ export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
             unit: ((p && p.rolling && p.rolling.unit) || 'days') as PresetUnit,
             period: ((p && p.calendar && p.calendar.period) || 'thisMonth') as PresetPeriod
         })),
+        realtimeEnabled: tree.readBoolean('config.realtime.enabled', false),
+        realtimeRefreshSeconds: Math.max(1, tree.readNumber('config.realtime.refreshSeconds', 300)),
         startDate: tree.readString('selection.startDate', ''),
         endDate: tree.readString('selection.endDate', ''),
         startTimeSec: tree.readNumber('selection.startTimeSec', 0),
-        endTimeSec: tree.readNumber('selection.endTimeSec', 86399)
+        endTimeSec: tree.readNumber('selection.endTimeSec', 86399),
+        rollingAmount: Math.max(0, tree.readNumber('selection.rollingAmount', 0)),
+        rollingUnit: ((u) => (u === 'days' || u === 'weeks' || u === 'months' ? u : 'hours'))(tree.readString('selection.rollingUnit', 'hours')) as PresetUnit
     };
 }

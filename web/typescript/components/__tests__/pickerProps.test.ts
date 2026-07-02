@@ -82,4 +82,32 @@ describe('mapPickerProps (datetime picker reducer)', () => {
         expect(p.startTimeSec).toBe(3600);
         expect(p.endTimeSec).toBe(7200);
     });
+
+    it('labels: config.locale selects a built-in pack; explicit keys still win', () => {
+        const nl = mapPickerProps(stubReader({ config: { locale: 'nl-BE' } }));
+        expect(nl.labels.clear).toBe('Wissen');
+        expect(nl.labels.selectRange).toBe('Selecteer een periode');
+        const mixed = mapPickerProps(stubReader({ config: { locale: 'de', labels: { clear: 'Reset' } } }));
+        expect(mixed.labels.clear).toBe('Reset');            // override wins
+        expect(mixed.labels.invalidRange).toBe('Ungültiger Zeitraum');
+        const xx = mapPickerProps(stubReader({ config: { locale: 'xx' } }));
+        expect(xx.labels.clear).toBe('Clear');               // unknown -> English
+    });
+
+    it('realtime: off by default, refresh clamped to >= 1s, rolling window sanitised', () => {
+        const d = mapPickerProps(stubReader({}));
+        expect(d.realtimeEnabled).toBe(false);
+        expect(d.realtimeRefreshSeconds).toBe(300);
+        expect(d.rollingAmount).toBe(0);
+        expect(d.rollingUnit).toBe('hours');
+
+        const p = mapPickerProps(stubReader({
+            config: { realtime: { enabled: true, refreshSeconds: 0 } },
+            selection: { rollingAmount: -3, rollingUnit: 'fortnights' }
+        }));
+        expect(p.realtimeEnabled).toBe(true);
+        expect(p.realtimeRefreshSeconds).toBe(1);   // clamped
+        expect(p.rollingAmount).toBe(0);            // negative clamped to off
+        expect(p.rollingUnit).toBe('hours');        // unknown unit falls back
+    });
 });

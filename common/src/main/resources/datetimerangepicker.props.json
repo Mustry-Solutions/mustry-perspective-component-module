@@ -1,366 +1,562 @@
 {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [],
-    "properties": {
-        "config": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Configuration: behaviour, constraints, and layout.",
-            "default": {
-                "enabled": true,
-                "display": "inline",
-                "popover": { "placeholder": "Select dates", "closeOnSelect": true, "dateFormat": "DD/MM/YYYY" },
-                "disableDates": "past",
-                "dateBounds": { "earliest": "", "latest": "" },
-                "spanDays": { "min": 0, "max": 0 },
-                "granularity": "second",
-                "durationLabelThresholdHours": 24,
-                "weekStart": "monday",
-                "timezone": "",
-                "locale": "",
-                "layout": "auto",
-                "breakpoints": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
-                "showClear": true,
-                "showPresets": true,
-                "presets": [
-                    { "label": "Last 24 hours", "type": "rolling", "rolling": { "amount": 24, "unit": "hours" } },
-                    { "label": "Last 7 days", "type": "rolling", "rolling": { "amount": 7, "unit": "days" } },
-                    { "label": "Last 30 days", "type": "rolling", "rolling": { "amount": 30, "unit": "days" } }
-                ],
-                "labels": {
-                    "startTime": "Start time",
-                    "endTime": "End time",
-                    "startDate": "Start",
-                    "endDate": "End",
-                    "clear": "Clear",
-                    "selectRange": "Select a range",
-                    "invalidRange": "Invalid range",
-                    "sameDay": "Same day",
-                    "previousMonth": "Previous month",
-                    "nextMonth": "Next month"
-                }
-            },
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "When false, the picker is display-only: all interaction (day clicks, month nav, time/date inputs, presets, clear) is disabled and the component is dimmed. The current selection is still shown."
-                },
-                "display": {
-                    "enum": ["inline", "popover"],
-                    "default": "inline",
-                    "description": "'inline' = the calendar is always visible. 'popover' = a small trigger field shows the selected range and opens the calendar in a floating panel when clicked."
-                },
-                "popover": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "Options for display = 'popover'.",
-                    "default": { "placeholder": "Select dates", "closeOnSelect": true, "dateFormat": "DD/MM/YYYY" },
-                    "properties": {
-                        "placeholder": {
-                            "type": "string",
-                            "default": "Select dates",
-                            "description": "Trigger text shown when no range is selected."
-                        },
-                        "closeOnSelect": {
-                            "type": "boolean",
-                            "default": true,
-                            "description": "Close the popover automatically once a complete range (or a preset) is chosen."
-                        },
-                        "dateFormat": {
-                            "type": "string",
-                            "default": "DD/MM/YYYY",
-                            "description": "Date pattern for the trigger text (tokens: YYYY, YY, MM, M, DD, D). The 24h time is appended automatically and trimmed to the granularity: none for 'day', HH:mm for 'hour'/'minute', HH:mm:ss for 'second'."
-                        }
-                    }
-                },
-                "disableDates": {
-                    "enum": ["past", "future", "none"],
-                    "default": "past",
-                    "description": "Which dates are muted/non-clickable. 'past': dates before today are muted (forward-only booking). 'future': dates after today are muted (historical selection). 'none': nothing muted."
-                },
-                "dateBounds": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "Absolute calendar limits — the earliest/latest dates that can be selected.",
-                    "default": { "earliest": "", "latest": "" },
-                    "properties": {
-                        "earliest": {
-                            "type": "string",
-                            "default": "",
-                            "description": "Earliest selectable date 'YYYY-MM-DD' (blank = no lower limit; defaults to today in 'past' mode)."
-                        },
-                        "latest": {
-                            "type": "string",
-                            "default": "",
-                            "description": "Latest selectable date 'YYYY-MM-DD' (blank = no upper limit; defaults to today in 'future' mode)."
-                        }
-                    }
-                },
-                "spanDays": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "How long the selected range may be, in whole days (distinct from dateBounds, which limits WHICH dates).",
-                    "default": { "min": 0, "max": 0 },
-                    "properties": {
-                        "min": {
-                            "type": "number",
-                            "default": 0,
-                            "description": "Minimum range length in days (0 = no minimum; same-day allowed). Closer end days are disabled while selecting."
-                        },
-                        "max": {
-                            "type": "number",
-                            "default": 0,
-                            "description": "Maximum range length in days (0 = no maximum). Farther end days are disabled while selecting."
-                        }
-                    }
-                },
-                "granularity": {
-                    "enum": ["day", "hour", "minute", "second"],
-                    "default": "second",
-                    "description": "Time precision. 'day' hides the time pickers and uses whole days (start of start-day to end of end-day). 'hour'/'minute'/'second' show start/end time pickers at that precision."
-                },
-                "durationLabelThresholdHours": {
-                    "type": "number",
-                    "default": 24,
-                    "description": "Controls output.durationLabel only: spans at/above this many hours show as whole days ('3 days'); shorter spans show as elapsed time ('6h 30m')."
-                },
-                "weekStart": {
-                    "enum": ["monday", "sunday"],
-                    "default": "monday",
-                    "description": "Day the week starts on (affects the calendar's weekday columns)."
-                },
-                "timezone": {
-                    "type": "string",
-                    "default": "",
-                    "description": "IANA timezone (e.g. 'Europe/Brussels', 'UTC') a picked time is interpreted in. Blank = the browser/session-local zone. Drives the offset in output.startDateTime/endDateTime and the absolute output.*EpochMs."
-                },
-                "locale": {
-                    "type": "string",
-                    "default": "",
-                    "description": "BCP-47 locale (e.g. 'nl-BE', 'fr-FR') for the month label and weekday headers. Blank = the browser default. Week start is still controlled by weekStart."
-                },
-                "layout": {
-                    "enum": ["auto", "compact", "oneMonth", "twoMonths"],
-                    "default": "auto",
-                    "description": "Which layout to show. 'auto' picks responsively from the rendered size using 'breakpoints'. Force one with: 'compact' (date fields only), 'oneMonth' (single calendar), 'twoMonths' (two calendars side by side)."
-                },
-                "breakpoints": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "Size thresholds used only when layout = 'auto'.",
-                    "default": { "compactBelowWidth": 240, "compactBelowHeight": 260, "twoMonthsAboveWidth": 560 },
-                    "properties": {
-                        "compactBelowWidth": {
-                            "type": "number",
-                            "default": 240,
-                            "description": "Use the compact layout when the rendered width (px) is below this."
-                        },
-                        "compactBelowHeight": {
-                            "type": "number",
-                            "default": 260,
-                            "description": "Use the compact layout when the rendered height (px) is below this."
-                        },
-                        "twoMonthsAboveWidth": {
-                            "type": "number",
-                            "default": 560,
-                            "description": "Use the two-month layout when the rendered width (px) is at or above this."
-                        }
-                    }
-                },
-                "showClear": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the 'Clear' button that resets the selection."
-                },
-                "showPresets": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the quick-range preset buttons (configured by 'presets')."
-                },
-                "presets": {
-                    "type": "array",
-                    "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled.",
-                    "default": [
-                        { "label": "Last 24 hours", "type": "rolling", "rolling": { "amount": 24, "unit": "hours" } },
-                        { "label": "Last 7 days", "type": "rolling", "rolling": { "amount": 7, "unit": "days" } },
-                        { "label": "Last 30 days", "type": "rolling", "rolling": { "amount": 30, "unit": "days" } }
-                    ],
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "label": {
-                                "type": "string",
-                                "default": "",
-                                "description": "Button text. For a rolling preset, a leading 'Last' is shown as 'Next' when it rolls forward."
-                            },
-                            "type": {
-                                "enum": ["rolling", "calendar"],
-                                "default": "rolling",
-                                "description": "Which group below applies: 'rolling' (a window from now) or 'calendar' (a period snapped to boundaries). The other group is ignored."
-                            },
-                            "rolling": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "description": "Used when type = 'rolling': a window of amount*unit from now (direction follows disableDates).",
-                                "default": { "amount": 1, "unit": "days" },
-                                "properties": {
-                                    "amount": {
-                                        "type": "number",
-                                        "default": 1,
-                                        "description": "How many units the window spans from now."
-                                    },
-                                    "unit": {
-                                        "enum": ["hours", "days", "weeks", "months"],
-                                        "default": "days",
-                                        "description": "Unit for 'amount'."
-                                    }
-                                }
-                            },
-                            "calendar": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "description": "Used when type = 'calendar': a period snapped to calendar boundaries.",
-                                "default": { "period": "thisMonth" },
-                                "properties": {
-                                    "period": {
-                                        "enum": ["today", "yesterday", "thisWeek", "lastWeek", "thisMonth", "lastMonth", "thisYear", "lastYear"],
-                                        "default": "thisMonth",
-                                        "description": "'this*' = period-to-date (start to end of today); 'last*' = the full previous period. Week periods honour weekStart."
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "labels": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "Override the UI text (for translation or branding). Each value defaults to the built-in English text.",
-                    "default": {
-                        "startTime": "Start time",
-                        "endTime": "End time",
-                        "startDate": "Start",
-                        "endDate": "End",
-                        "clear": "Clear",
-                        "selectRange": "Select a range",
-                        "invalidRange": "Invalid range",
-                        "sameDay": "Same day",
-                        "previousMonth": "Previous month",
-                        "nextMonth": "Next month"
-                    },
-                    "properties": {
-                        "startTime": { "type": "string", "default": "Start time", "description": "Label above the start-time input." },
-                        "endTime": { "type": "string", "default": "End time", "description": "Label above the end-time input." },
-                        "startDate": { "type": "string", "default": "Start", "description": "Label for the start-date field (compact layout)." },
-                        "endDate": { "type": "string", "default": "End", "description": "Label for the end-date field (compact layout)." },
-                        "clear": { "type": "string", "default": "Clear", "description": "Text on the Clear button." },
-                        "selectRange": { "type": "string", "default": "Select a range", "description": "Footer text shown when no range is selected." },
-                        "invalidRange": { "type": "string", "default": "Invalid range", "description": "Footer text shown when the selected range is invalid." },
-                        "sameDay": { "type": "string", "default": "Same day", "description": "Duration label for a single-day range (day granularity)." },
-                        "previousMonth": { "type": "string", "default": "Previous month", "description": "Accessible label for the previous-month arrow." },
-                        "nextMonth": { "type": "string", "default": "Next month", "description": "Accessible label for the next-month arrow." }
-                    }
-                }
-            }
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configuration: behaviour, constraints, and layout.",
+      "default": {
+        "enabled": true,
+        "display": "inline",
+        "popover": {
+          "placeholder": "Select dates",
+          "closeOnSelect": true,
+          "dateFormat": "DD/MM/YYYY"
         },
-        "selection": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "The current selection (date + time-of-day parts). Two-way: set these to pre-select a range.",
-            "default": {
-                "startDate": "",
-                "endDate": "",
-                "startTimeSec": 0,
-                "endTimeSec": 86399
-            },
-            "properties": {
-                "startDate": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Selected start date (date only, 'YYYY-MM-DD')."
-                },
-                "endDate": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Selected end date (date only, 'YYYY-MM-DD')."
-                },
-                "startTimeSec": {
-                    "type": "integer",
-                    "default": 0,
-                    "description": "Start time-of-day as seconds since midnight (0 = 00:00:00)."
-                },
-                "endTimeSec": {
-                    "type": "integer",
-                    "default": 86399,
-                    "description": "End time-of-day as seconds since midnight (86399 = 23:59:59)."
-                }
-            }
+        "disableDates": "past",
+        "dateBounds": {
+          "earliest": "",
+          "latest": ""
         },
-        "output": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Derived results written by the component (bind to these).",
-            "default": {
-                "startDateTime": "",
-                "endDateTime": "",
-                "startEpochMs": 0,
-                "endEpochMs": 0,
-                "durationDays": 0,
-                "durationHours": 0,
-                "durationLabel": "",
-                "isValid": false
-            },
-            "properties": {
-                "startDateTime": {
-                    "type": "string",
-                    "default": "",
-                    "description": "OUTPUT: start instant as ISO 8601 with offset, e.g. '2026-06-25T09:00:00+02:00' (offset per config.timezone)."
-                },
-                "endDateTime": {
-                    "type": "string",
-                    "default": "",
-                    "description": "OUTPUT: end instant as ISO 8601 with offset, e.g. '2026-06-25T17:00:00+02:00' (offset per config.timezone)."
-                },
-                "startEpochMs": {
-                    "type": "integer",
-                    "default": 0,
-                    "description": "OUTPUT: start instant as epoch milliseconds (absolute UTC). Ideal for historian/tag queries."
-                },
-                "endEpochMs": {
-                    "type": "integer",
-                    "default": 0,
-                    "description": "OUTPUT: end instant as epoch milliseconds (absolute UTC)."
-                },
-                "durationDays": {
-                    "type": "integer",
-                    "default": 0,
-                    "description": "OUTPUT: whole calendar days between start and end (0 = same day)."
-                },
-                "durationHours": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "OUTPUT: full span in hours (endDateTime - startDateTime)."
-                },
-                "durationLabel": {
-                    "type": "string",
-                    "default": "",
-                    "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m' (see config.durationLabelThresholdHours)."
-                },
-                "isValid": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "OUTPUT: true when both endpoints are set, end is after start, and the span is within spanDays."
-                }
-            }
+        "spanDays": {
+          "min": 0,
+          "max": 0
         },
-        "style": {
-            "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
-            "default": {
-                "classes": ""
+        "granularity": "second",
+        "durationLabelThresholdHours": 24,
+        "weekStart": "monday",
+        "timezone": "",
+        "locale": "",
+        "layout": "auto",
+        "breakpoints": {
+          "compactBelowWidth": 240,
+          "compactBelowHeight": 260,
+          "twoMonthsAboveWidth": 560
+        },
+        "showClear": true,
+        "showPresets": true,
+        "presets": [
+          {
+            "label": "Last 24 hours",
+            "type": "rolling",
+            "rolling": {
+              "amount": 24,
+              "unit": "hours"
             }
+          },
+          {
+            "label": "Last 7 days",
+            "type": "rolling",
+            "rolling": {
+              "amount": 7,
+              "unit": "days"
+            }
+          },
+          {
+            "label": "Last 30 days",
+            "type": "rolling",
+            "rolling": {
+              "amount": 30,
+              "unit": "days"
+            }
+          }
+        ],
+        "labels": {
+          "startTime": "Start time",
+          "endTime": "End time",
+          "startDate": "Start",
+          "endDate": "End",
+          "clear": "Clear",
+          "selectRange": "Select a range",
+          "invalidRange": "Invalid range",
+          "sameDay": "Same day",
+          "previousMonth": "Previous month",
+          "nextMonth": "Next month"
         }
+      },
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "When false, the picker is display-only: all interaction (day clicks, month nav, time/date inputs, presets, clear) is disabled and the component is dimmed. The current selection is still shown."
+        },
+        "display": {
+          "enum": [
+            "inline",
+            "popover"
+          ],
+          "default": "inline",
+          "description": "'inline' = the calendar is always visible. 'popover' = a small trigger field shows the selected range and opens the calendar in a floating panel when clicked."
+        },
+        "popover": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Options for display = 'popover'.",
+          "default": {
+            "placeholder": "Select dates",
+            "closeOnSelect": true,
+            "dateFormat": "DD/MM/YYYY"
+          },
+          "properties": {
+            "placeholder": {
+              "type": "string",
+              "default": "Select dates",
+              "description": "Trigger text shown when no range is selected."
+            },
+            "closeOnSelect": {
+              "type": "boolean",
+              "default": true,
+              "description": "Close the popover automatically once a complete range (or a preset) is chosen."
+            },
+            "dateFormat": {
+              "type": "string",
+              "default": "DD/MM/YYYY",
+              "description": "Date pattern for the trigger text (tokens: YYYY, YY, MM, M, DD, D). The 24h time is appended automatically and trimmed to the granularity: none for 'day', HH:mm for 'hour'/'minute', HH:mm:ss for 'second'."
+            }
+          }
+        },
+        "disableDates": {
+          "enum": [
+            "past",
+            "future",
+            "none"
+          ],
+          "default": "past",
+          "description": "Which dates are muted/non-clickable. 'past': dates before today are muted (forward-only booking). 'future': dates after today are muted (historical selection). 'none': nothing muted."
+        },
+        "dateBounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Absolute calendar limits — the earliest/latest dates that can be selected.",
+          "default": {
+            "earliest": "",
+            "latest": ""
+          },
+          "properties": {
+            "earliest": {
+              "type": "string",
+              "default": "",
+              "description": "Earliest selectable date 'YYYY-MM-DD' (blank = no lower limit; defaults to today in 'past' mode)."
+            },
+            "latest": {
+              "type": "string",
+              "default": "",
+              "description": "Latest selectable date 'YYYY-MM-DD' (blank = no upper limit; defaults to today in 'future' mode)."
+            }
+          }
+        },
+        "spanDays": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "How long the selected range may be, in whole days (distinct from dateBounds, which limits WHICH dates).",
+          "default": {
+            "min": 0,
+            "max": 0
+          },
+          "properties": {
+            "min": {
+              "type": "number",
+              "default": 0,
+              "description": "Minimum range length in days (0 = no minimum; same-day allowed). Closer end days are disabled while selecting."
+            },
+            "max": {
+              "type": "number",
+              "default": 0,
+              "description": "Maximum range length in days (0 = no maximum). Farther end days are disabled while selecting."
+            }
+          }
+        },
+        "granularity": {
+          "enum": [
+            "day",
+            "hour",
+            "minute",
+            "second"
+          ],
+          "default": "second",
+          "description": "Time precision. 'day' hides the time pickers and uses whole days (start of start-day to end of end-day). 'hour'/'minute'/'second' show start/end time pickers at that precision."
+        },
+        "durationLabelThresholdHours": {
+          "type": "number",
+          "default": 24,
+          "description": "Controls output.durationLabel only: spans at/above this many hours show as whole days ('3 days'); shorter spans show as elapsed time ('6h 30m')."
+        },
+        "weekStart": {
+          "enum": [
+            "monday",
+            "sunday"
+          ],
+          "default": "monday",
+          "description": "Day the week starts on (affects the calendar's weekday columns)."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA timezone (e.g. 'Europe/Brussels', 'UTC') a picked time is interpreted in. Blank = the browser/session-local zone. Drives the offset in output.startDateTime/endDateTime and the absolute output.*EpochMs."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "BCP-47 locale (e.g. 'nl-BE', 'fr-FR') for the month label and weekday headers. Blank = the browser default. Week start is still controlled by weekStart. Also selects the built-in UI-text language (see config.labels)."
+        },
+        "layout": {
+          "enum": [
+            "auto",
+            "compact",
+            "oneMonth",
+            "twoMonths"
+          ],
+          "default": "auto",
+          "description": "Which layout to show. 'auto' picks responsively from the rendered size using 'breakpoints'. Force one with: 'compact' (date fields only), 'oneMonth' (single calendar), 'twoMonths' (two calendars side by side)."
+        },
+        "breakpoints": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Size thresholds used only when layout = 'auto'.",
+          "default": {
+            "compactBelowWidth": 240,
+            "compactBelowHeight": 260,
+            "twoMonthsAboveWidth": 560
+          },
+          "properties": {
+            "compactBelowWidth": {
+              "type": "number",
+              "default": 240,
+              "description": "Use the compact layout when the rendered width (px) is below this."
+            },
+            "compactBelowHeight": {
+              "type": "number",
+              "default": 260,
+              "description": "Use the compact layout when the rendered height (px) is below this."
+            },
+            "twoMonthsAboveWidth": {
+              "type": "number",
+              "default": 560,
+              "description": "Use the two-month layout when the rendered width (px) is at or above this."
+            }
+          }
+        },
+        "showClear": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the 'Clear' button that resets the selection."
+        },
+        "showPresets": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the quick-range preset buttons (configured by 'presets')."
+        },
+        "presets": {
+          "type": "array",
+          "description": "Quick-range buttons. Each item is a 'rolling' window (amount*unit from now; direction follows disableDates) or a 'calendar' period ('this*'/'last*', snapped to boundaries). Presets whose range breaks dateBounds or spanDays are disabled.",
+          "default": [
+            {
+              "label": "Last 24 hours",
+              "type": "rolling",
+              "rolling": {
+                "amount": 24,
+                "unit": "hours"
+              }
+            },
+            {
+              "label": "Last 7 days",
+              "type": "rolling",
+              "rolling": {
+                "amount": 7,
+                "unit": "days"
+              }
+            },
+            {
+              "label": "Last 30 days",
+              "type": "rolling",
+              "rolling": {
+                "amount": 30,
+                "unit": "days"
+              }
+            }
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "default": "",
+                "description": "Button text. For a rolling preset, a leading 'Last' is shown as 'Next' when it rolls forward."
+              },
+              "type": {
+                "enum": [
+                  "rolling",
+                  "calendar"
+                ],
+                "default": "rolling",
+                "description": "Which group below applies: 'rolling' (a window from now) or 'calendar' (a period snapped to boundaries). The other group is ignored."
+              },
+              "rolling": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Used when type = 'rolling': a window of amount*unit from now (direction follows disableDates).",
+                "default": {
+                  "amount": 1,
+                  "unit": "days"
+                },
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "How many units the window spans from now."
+                  },
+                  "unit": {
+                    "enum": [
+                      "hours",
+                      "days",
+                      "weeks",
+                      "months"
+                    ],
+                    "default": "days",
+                    "description": "Unit for 'amount'."
+                  }
+                }
+              },
+              "calendar": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Used when type = 'calendar': a period snapped to calendar boundaries.",
+                "default": {
+                  "period": "thisMonth"
+                },
+                "properties": {
+                  "period": {
+                    "enum": [
+                      "today",
+                      "yesterday",
+                      "thisWeek",
+                      "lastWeek",
+                      "thisMonth",
+                      "lastMonth",
+                      "thisYear",
+                      "lastYear"
+                    ],
+                    "default": "thisMonth",
+                    "description": "'this*' = period-to-date (start to end of today); 'last*' = the full previous period. Week periods honour weekStart."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages; each set value replaces that key. Built-in languages: en, fr, de, es, nl, it, pt — selected by config.locale (primary subtag, e.g. \"fr-BE\" -> fr); unknown locales fall back to English.",
+          "default": {
+            "startTime": "Start time",
+            "endTime": "End time",
+            "startDate": "Start",
+            "endDate": "End",
+            "clear": "Clear",
+            "selectRange": "Select a range",
+            "invalidRange": "Invalid range",
+            "sameDay": "Same day",
+            "previousMonth": "Previous month",
+            "nextMonth": "Next month"
+          },
+          "properties": {
+            "startTime": {
+              "type": "string",
+              "default": "Start time",
+              "description": "Label above the start-time input."
+            },
+            "endTime": {
+              "type": "string",
+              "default": "End time",
+              "description": "Label above the end-time input."
+            },
+            "startDate": {
+              "type": "string",
+              "default": "Start",
+              "description": "Label for the start-date field (compact layout)."
+            },
+            "endDate": {
+              "type": "string",
+              "default": "End",
+              "description": "Label for the end-date field (compact layout)."
+            },
+            "clear": {
+              "type": "string",
+              "default": "Clear",
+              "description": "Text on the Clear button."
+            },
+            "selectRange": {
+              "type": "string",
+              "default": "Select a range",
+              "description": "Footer text shown when no range is selected."
+            },
+            "invalidRange": {
+              "type": "string",
+              "default": "Invalid range",
+              "description": "Footer text shown when the selected range is invalid."
+            },
+            "sameDay": {
+              "type": "string",
+              "default": "Same day",
+              "description": "Duration label for a single-day range (day granularity)."
+            },
+            "previousMonth": {
+              "type": "string",
+              "default": "Previous month",
+              "description": "Accessible label for the previous-month arrow."
+            },
+            "nextMonth": {
+              "type": "string",
+              "default": "Next month",
+              "description": "Accessible label for the next-month arrow."
+            }
+          }
+        },
+        "realtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Opt-in live mode: clicking a ROLLING preset arms a window that re-derives from \"now\" every refreshSeconds (like the Alarm Journal realtime range). Any manual selection stops it. The armed window itself is selection.rollingAmount/rollingUnit (writable, so a view can open already-live); output.isRealtime reports the state. Note: while armed, the ticking selection writes will mark an open view dirty in the Designer.",
+          "default": {
+            "enabled": false,
+            "refreshSeconds": 300
+          },
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable realtime mode (off = presets stay one-shot snapshots)."
+            },
+            "refreshSeconds": {
+              "type": "number",
+              "default": 300,
+              "minimum": 1,
+              "description": "How often the armed window re-derives from \"now\" (seconds). Each tick rewrites the selection, so bound queries re-run at this rate — lower it for tighter dashboards."
+            }
+          }
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The current selection (date + time-of-day parts). Two-way: set these to pre-select a range.",
+      "default": {
+        "startDate": "",
+        "endDate": "",
+        "startTimeSec": 0,
+        "endTimeSec": 86399
+      },
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "default": "",
+          "description": "Selected start date (date only, 'YYYY-MM-DD')."
+        },
+        "endDate": {
+          "type": "string",
+          "default": "",
+          "description": "Selected end date (date only, 'YYYY-MM-DD')."
+        },
+        "startTimeSec": {
+          "type": "integer",
+          "default": 0,
+          "description": "Start time-of-day as seconds since midnight (0 = 00:00:00)."
+        },
+        "endTimeSec": {
+          "type": "integer",
+          "default": 86399,
+          "description": "End time-of-day as seconds since midnight (86399 = 23:59:59)."
+        },
+        "rollingAmount": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "The armed live rolling window: amount of rollingUnit back from \"now\" (0 = not armed). Set by a rolling preset click when config.realtime.enabled; writable so a dashboard opens already-live. Cleared by any manual selection."
+        },
+        "rollingUnit": {
+          "type": "string",
+          "enum": [
+            "hours",
+            "days",
+            "weeks",
+            "months"
+          ],
+          "default": "hours",
+          "description": "Unit of the armed live rolling window (with selection.rollingAmount)."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Derived results written by the component (bind to these).",
+      "default": {
+        "startDateTime": "",
+        "endDateTime": "",
+        "startEpochMs": 0,
+        "endEpochMs": 0,
+        "durationDays": 0,
+        "durationHours": 0,
+        "durationLabel": "",
+        "isValid": false
+      },
+      "properties": {
+        "startDateTime": {
+          "type": "string",
+          "default": "",
+          "description": "OUTPUT: start instant as ISO 8601 with offset, e.g. '2026-06-25T09:00:00+02:00' (offset per config.timezone)."
+        },
+        "endDateTime": {
+          "type": "string",
+          "default": "",
+          "description": "OUTPUT: end instant as ISO 8601 with offset, e.g. '2026-06-25T17:00:00+02:00' (offset per config.timezone)."
+        },
+        "startEpochMs": {
+          "type": "integer",
+          "default": 0,
+          "description": "OUTPUT: start instant as epoch milliseconds (absolute UTC). Ideal for historian/tag queries."
+        },
+        "endEpochMs": {
+          "type": "integer",
+          "default": 0,
+          "description": "OUTPUT: end instant as epoch milliseconds (absolute UTC)."
+        },
+        "durationDays": {
+          "type": "integer",
+          "default": 0,
+          "description": "OUTPUT: whole calendar days between start and end (0 = same day)."
+        },
+        "durationHours": {
+          "type": "number",
+          "default": 0,
+          "description": "OUTPUT: full span in hours (endDateTime - startDateTime)."
+        },
+        "durationLabel": {
+          "type": "string",
+          "default": "",
+          "description": "OUTPUT: pre-formatted span for display, e.g. '3 days' or '6h 30m' (see config.durationLabelThresholdHours)."
+        },
+        "isValid": {
+          "type": "boolean",
+          "default": false,
+          "description": "OUTPUT: true when both endpoints are set, end is after start, and the span is within spanDays."
+        },
+        "isRealtime": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while a live rolling window is armed and ticking (read-only)."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
     }
+  }
 }
