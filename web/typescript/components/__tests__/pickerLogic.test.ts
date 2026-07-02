@@ -2,7 +2,7 @@ import { fmtDate, secondsOfDay } from '../dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
-    computeOutputs, realtimeArmed, realtimeSelection, PresetContext, PresetDef
+    computeOutputs, realtimeArmed, realtimeSelection, fillLabel, dayWord, PresetContext, PresetDef
 } from '../pickerLogic';
 
 describe('resolveLayout', () => {
@@ -135,24 +135,48 @@ describe('presetRange dispatch', () => {
 describe('presetConflict', () => {
     const now = new Date(2026, 5, 17, 10, 30, 0);
     const last7: PresetDef = { label: 'Last 7 days', type: 'rolling', amount: 7, unit: 'days', period: 'today' };
+    const labels = {
+        presetBeforeEarliest: 'Starts before the earliest selectable date ({date})',
+        presetAfterLatest: 'Ends after the latest selectable date ({date})',
+        presetTooShort: 'Shorter than the {n}-day minimum',
+        presetTooLong: 'Exceeds the {n}-day maximum'
+    };
     const mk = (over: any) => presetConflict(last7, {
-        now, forward: false, mondayFirst: true, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, ...over
+        now, forward: false, mondayFirst: true, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, labels, ...over
     });
 
     it('passes when within bounds and span', () => {
         expect(mk({})).toBe('');
     });
 
-    it('flags starting before the earliest selectable date', () => {
-        expect(mk({ min: new Date(2026, 5, 12) })).toMatch(/before the earliest/i);
+    it('flags starting before the earliest selectable date (with the date filled in)', () => {
+        expect(mk({ min: new Date(2026, 5, 12) })).toBe('Starts before the earliest selectable date (2026-06-12)');
     });
 
     it('flags exceeding the max span', () => {
-        expect(mk({ maxSpanDays: 3 })).toMatch(/at most|maximum|exceeds/i);
+        expect(mk({ maxSpanDays: 3 })).toBe('Exceeds the 3-day maximum');
     });
 
     it('flags shorter than the min span', () => {
-        expect(mk({ minSpanDays: 30 })).toMatch(/minimum|at least|shorter/i);
+        expect(mk({ minSpanDays: 30 })).toBe('Shorter than the 30-day minimum');
+    });
+
+    it('reasons are localizable templates', () => {
+        expect(mk({ maxSpanDays: 3, labels: { ...labels, presetTooLong: 'Dépasse le maximum de {n} jour(s)' } }))
+            .toBe('Dépasse le maximum de 3 jour(s)');
+    });
+});
+
+describe('fillLabel / dayWord', () => {
+    it('substitutes {placeholders} and leaves unknown ones alone', () => {
+        expect(fillLabel('{n} {days} left', { n: 2, days: 'days' })).toBe('2 days left');
+        expect(fillLabel('{n} {unknown}', { n: 1 })).toBe('1 {unknown}');
+    });
+    it('picks the singular/plural day word', () => {
+        const w = { dayOne: 'day', dayMany: 'days' };
+        expect(dayWord(1, w)).toBe('day');
+        expect(dayWord(2, w)).toBe('days');
+        expect(dayWord(0, w)).toBe('days');
     });
 });
 
@@ -177,22 +201,29 @@ describe('granularity helpers', () => {
     });
 });
 
+const DUR_LABELS = { sameDay: 'Same day', durationDays: '{n} {days}', dayOne: 'day', dayMany: 'days' };
+
 describe('durationLabel', () => {
     it('is empty when invalid', () => {
-        expect(durationLabel(3, 72, false, 'day', 48, 'Same day')).toBe('');
+        expect(durationLabel(3, 72, false, 'day', 48, DUR_LABELS)).toBe('');
     });
 
     it('day mode: same-day, singular, plural', () => {
-        expect(durationLabel(0, 24, true, 'day', 48, 'Same day')).toBe('Same day');
-        expect(durationLabel(1, 24, true, 'day', 48, 'Same day')).toBe('1 day');
-        expect(durationLabel(3, 72, true, 'day', 48, 'Same day')).toBe('3 days');
+        expect(durationLabel(0, 24, true, 'day', 48, DUR_LABELS)).toBe('Same day');
+        expect(durationLabel(1, 24, true, 'day', 48, DUR_LABELS)).toBe('1 day');
+        expect(durationLabel(3, 72, true, 'day', 48, DUR_LABELS)).toBe('3 days');
     });
 
     it('non-day: days above threshold, else H/M/S', () => {
-        expect(durationLabel(3, 72, true, 'second', 48, 'Same day')).toBe('3 days');
-        expect(durationLabel(0, 2.5, true, 'second', 48, 'Same day')).toBe('2h 30m');
-        expect(durationLabel(0, 0.5, true, 'second', 48, 'Same day')).toBe('30m 0s');
-        expect(durationLabel(0, 0.01, true, 'second', 48, 'Same day')).toBe('36s');
+        expect(durationLabel(3, 72, true, 'second', 48, DUR_LABELS)).toBe('3 days');
+        expect(durationLabel(0, 2.5, true, 'second', 48, DUR_LABELS)).toBe('2h 30m');
+        expect(durationLabel(0, 0.5, true, 'second', 48, DUR_LABELS)).toBe('30m 0s');
+        expect(durationLabel(0, 0.01, true, 'second', 48, DUR_LABELS)).toBe('36s');
+    });
+
+    it('formats through the localized template', () => {
+        expect(durationLabel(3, 72, true, 'day', 48, { ...DUR_LABELS, durationDays: '{n} {days}', dayMany: 'jours' }))
+            .toBe('3 jours');
     });
 });
 
@@ -200,7 +231,7 @@ describe('computeOutputs', () => {
     const baseInput = {
         startTimeSec: 0, endTimeSec: 86399, granularity: 'second' as const,
         timezone: 'UTC', minSpanDays: 0, maxSpanDays: 0,
-        durationLabelThresholdHours: 48, sameDayLabel: 'Same day'
+        durationLabelThresholdHours: 48, labels: DUR_LABELS
     };
 
     it('returns the empty contract with no selection', () => {

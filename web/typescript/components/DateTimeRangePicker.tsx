@@ -364,23 +364,24 @@ export class DateTimeRangePicker
 
     /** Human-readable reason a day is disabled (used as the cell tooltip). '' if selectable. */
     private disabledReason(day: Date): string {
+        const { labels } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
         if (min && day.getTime() < min.getTime()) {
-            return `Before the earliest selectable date (${fmtDate(min)})`;
+            return logic.fillLabel(labels.beforeEarliest, { date: fmtDate(min) });
         }
         if (max && day.getTime() > max.getTime()) {
-            return `After the latest selectable date (${fmtDate(max)})`;
+            return logic.fillLabel(labels.afterLatest, { date: fmtDate(max) });
         }
         const anchor = this.state.anchor;
         if (anchor) {
             const { minSpanDays, maxSpanDays } = this.props.props;
             const span = Math.abs(daysBetween(anchor, day));
             if (minSpanDays > 0 && span < minSpanDays) {
-                return `Range must be at least ${minSpanDays} day${minSpanDays === 1 ? '' : 's'}`;
+                return logic.fillLabel(labels.rangeAtLeast, { n: minSpanDays, days: logic.dayWord(minSpanDays, labels) });
             }
             if (maxSpanDays > 0 && span > maxSpanDays) {
-                return `Range can be at most ${maxSpanDays} day${maxSpanDays === 1 ? '' : 's'}`;
+                return logic.fillLabel(labels.rangeAtMost, { n: maxSpanDays, days: logic.dayWord(maxSpanDays, labels) });
             }
         }
         return '';
@@ -464,7 +465,8 @@ export class DateTimeRangePicker
             min: this.effMin(),
             max: this.effMax(),
             minSpanDays: props.minSpanDays,
-            maxSpanDays: props.maxSpanDays
+            maxSpanDays: props.maxSpanDays,
+            labels: props.labels
         });
     }
 
@@ -609,7 +611,7 @@ export class DateTimeRangePicker
             minSpanDays: p.minSpanDays,
             maxSpanDays: p.maxSpanDays,
             durationLabelThresholdHours: p.durationLabelThresholdHours,
-            sameDayLabel: p.labels.sameDay
+            labels: p.labels
         });
     }
 
@@ -763,17 +765,17 @@ export class DateTimeRangePicker
 
     /** Upfront note about the active span constraint, so users know why days disable. */
     private renderHint(): React.ReactNode {
-        const { minSpanDays, maxSpanDays } = this.props.props;
+        const { minSpanDays, maxSpanDays, labels } = this.props.props;
         if (minSpanDays <= 0 && maxSpanDays <= 0) {
             return null;
         }
         let text: string;
         if (minSpanDays > 0 && maxSpanDays > 0) {
-            text = `Pick a range of ${minSpanDays}–${maxSpanDays} days`;
+            text = logic.fillLabel(labels.hintRange, { min: minSpanDays, max: maxSpanDays });
         } else if (minSpanDays > 0) {
-            text = `Pick a range of at least ${minSpanDays} day${minSpanDays === 1 ? '' : 's'}`;
+            text = logic.fillLabel(labels.hintMin, { n: minSpanDays, days: logic.dayWord(minSpanDays, labels) });
         } else {
-            text = `Pick a range of up to ${maxSpanDays} day${maxSpanDays === 1 ? '' : 's'}`;
+            text = logic.fillLabel(labels.hintMax, { n: maxSpanDays, days: logic.dayWord(maxSpanDays, labels) });
         }
         return <div className="dtrp-hint">{text}</div>;
     }

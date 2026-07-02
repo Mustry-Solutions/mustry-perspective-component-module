@@ -16,6 +16,22 @@ export interface LabelConfig {
     sameDay: string;
     previousMonth: string;
     nextMonth: string;
+    // templated strings — {n}/{min}/{max}/{date} are numbers/dates filled in at
+    // render time; {days} becomes dayOne/dayMany by count
+    dayOne: string;                // 'day'
+    dayMany: string;               // 'days'
+    durationDays: string;          // '{n} {days}' (footer duration)
+    hintRange: string;             // span hint when both min and max are set
+    hintMin: string;               // span hint, minimum only
+    hintMax: string;               // span hint, maximum only
+    beforeEarliest: string;        // day tooltip: before the earliest selectable date
+    afterLatest: string;           // day tooltip: after the latest selectable date
+    rangeAtLeast: string;          // day tooltip: violates the minimum span
+    rangeAtMost: string;           // day tooltip: violates the maximum span
+    presetBeforeEarliest: string;  // disabled-preset tooltip
+    presetAfterLatest: string;     // disabled-preset tooltip
+    presetTooShort: string;        // disabled-preset tooltip
+    presetTooLong: string;         // disabled-preset tooltip
 }
 
 export interface DateTimeRangePickerProps {

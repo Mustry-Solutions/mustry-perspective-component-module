@@ -182,13 +182,40 @@ export function realtimeSelection(amount: number, unit: PresetUnit, now: Date, f
     };
 }
 
+// --- label templates ----------------------------------------------------------
+
+/** Fill a label template: '{n} {days}' + {n: 3, days: 'days'} -> '3 days'.
+ *  Unknown placeholders are left untouched. */
+export function fillLabel(tpl: string, vars: { [k: string]: string | number }): string {
+    return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
+/** The strings a day count formats with ('1 day' / '3 days', localized). */
+export interface DayWordLabels {
+    dayOne: string;    // 'day'
+    dayMany: string;   // 'days'
+}
+
+/** The localized word for a day count. */
+export function dayWord(n: number, labels: DayWordLabels): string {
+    return n === 1 ? labels.dayOne : labels.dayMany;
+}
+
 // --- preset conflict --------------------------------------------------------
+
+export interface ConflictLabels {
+    presetBeforeEarliest: string;  // 'Starts before the earliest selectable date ({date})'
+    presetAfterLatest: string;     // 'Ends after the latest selectable date ({date})'
+    presetTooShort: string;        // 'Shorter than the {n}-day minimum'
+    presetTooLong: string;         // 'Exceeds the {n}-day maximum'
+}
 
 export interface ConflictContext extends PresetContext {
     min: Date | null;     // effMin
     max: Date | null;     // effMax
     minSpanDays: number;
     maxSpanDays: number;
+    labels: ConflictLabels;
 }
 
 /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
@@ -197,17 +224,17 @@ export function presetConflict(p: PresetDef, ctx: ConflictContext): string {
     const lo = startOfDay(minDate(range.start, range.end));
     const hi = startOfDay(maxDate(range.start, range.end));
     if (ctx.min && lo.getTime() < ctx.min.getTime()) {
-        return `Starts before the earliest selectable date (${fmtDate(ctx.min)})`;
+        return fillLabel(ctx.labels.presetBeforeEarliest, { date: fmtDate(ctx.min) });
     }
     if (ctx.max && hi.getTime() > ctx.max.getTime()) {
-        return `Ends after the latest selectable date (${fmtDate(ctx.max)})`;
+        return fillLabel(ctx.labels.presetAfterLatest, { date: fmtDate(ctx.max) });
     }
     const span = daysBetween(lo, hi);
     if (ctx.minSpanDays > 0 && span < ctx.minSpanDays) {
-        return `Shorter than the ${ctx.minSpanDays}-day minimum`;
+        return fillLabel(ctx.labels.presetTooShort, { n: ctx.minSpanDays });
     }
     if (ctx.maxSpanDays > 0 && span > ctx.maxSpanDays) {
-        return `Exceeds the ${ctx.maxSpanDays}-day maximum`;
+        return fillLabel(ctx.labels.presetTooLong, { n: ctx.maxSpanDays });
     }
     return '';
 }
@@ -240,6 +267,12 @@ export function effEndSec(endTimeSec: number, g: Granularity): number {
 
 // --- outputs ----------------------------------------------------------------
 
+/** The strings the duration text formats with (all localized). */
+export interface DurationLabels extends DayWordLabels {
+    sameDay: string;        // 'Same day'
+    durationDays: string;   // '{n} {days}'
+}
+
 export interface OutputsInput {
     startDate: string;
     endDate: string;
@@ -250,7 +283,7 @@ export interface OutputsInput {
     minSpanDays: number;
     maxSpanDays: number;
     durationLabelThresholdHours: number;
-    sameDayLabel: string;
+    labels: DurationLabels;
 }
 
 export interface Outputs {
@@ -267,19 +300,17 @@ export interface Outputs {
 /** Adaptive duration text: days, or 'Hh Mm' / 'Mm Ss' / 'Ss' below the threshold. */
 export function durationLabel(
     days: number, durationHours: number, valid: boolean,
-    g: Granularity, thresholdHours: number, sameDayLabel: string
+    g: Granularity, thresholdHours: number, labels: DurationLabels
 ): string {
     if (!valid) {
         return '';
     }
+    const inDays = fillLabel(labels.durationDays, { n: days, days: dayWord(days, labels) });
     if (g === 'day') {
-        if (days === 0) {
-            return sameDayLabel;
-        }
-        return days === 1 ? '1 day' : `${days} days`;
+        return days === 0 ? labels.sameDay : inDays;
     }
     if (durationHours >= thresholdHours) {
-        return days === 1 ? '1 day' : `${days} days`;
+        return inDays;
     }
     const total = Math.max(0, Math.round(durationHours * 3600));
     const h = Math.floor(total / 3600);
@@ -327,7 +358,7 @@ export function computeOutputs(i: OutputsInput): Outputs {
         durationDays,
         durationHours,
         durationLabel: durationLabel(
-            durationDays, durationHours, valid, i.granularity, i.durationLabelThresholdHours, i.sameDayLabel
+            durationDays, durationHours, valid, i.granularity, i.durationLabelThresholdHours, i.labels
         ),
         isValid: valid
     };
