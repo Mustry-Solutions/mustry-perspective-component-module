@@ -108,6 +108,9 @@ export interface Editor {
     seriesId: string | null;       // base event id when editing a recurring occurrence (else null)
     occurrenceDate: string | null; // 'YYYY-MM-DD' of the opened occurrence
     scope: 'series' | 'occurrence';// apply-to choice (only meaningful when seriesId != null)
+
+    /** Fields the editor doesn't edit but the save payload must not drop. */
+    carry?: { color?: string; status?: string; display?: string };
 }
 
 export type { MiniNav } from '../../shared/MiniMonthNav';

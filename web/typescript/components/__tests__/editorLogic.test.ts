@@ -1,5 +1,5 @@
 import {
-    buildRRule, editorDefaults, editorForCreate, editorForEvent,
+    buildRRule, editorDefaults, editorForCreate, editorForEvent, editorProblem,
     editorDeleteSpec, editorSaveSpec, moveResizeSpec, reanchorSeries, toggleAllDayPatch
 } from '../calendar/editorLogic';
 import { Editor } from '../calendar/types';
@@ -170,6 +170,47 @@ describe('editorSaveSpec', () => {
             ed({ id: 'a', seriesId: 'a', scope: 'series', repeatFreq: '' }),
             TZ, () => base);
         expect((spec.event as { rrule: unknown }).rrule).toBeNull();
+    });
+});
+
+describe('editorProblem', () => {
+    it('timed: end must be strictly after start', () => {
+        expect(editorProblem(ed())).toBeNull();
+        expect(editorProblem(ed({ end: '2026-06-15T09:00' }))).toBe('range');
+        expect(editorProblem(ed({ end: '2026-06-15T08:00' }))).toBe('range');
+        expect(editorProblem(ed({ end: '' }))).toBe('parse');
+    });
+    it('all-day: the end date is inclusive, so same-day is valid', () => {
+        const ad = (o: Partial<Editor> = {}) => ed({ allDay: true, start: '2026-06-15', end: '2026-06-15', ...o });
+        expect(editorProblem(ad())).toBeNull();
+        expect(editorProblem(ad({ end: '2026-06-14' }))).toBe('range');
+        expect(editorProblem(ad({ end: '' }))).toBe('parse');
+    });
+});
+
+describe('carry-through of fields the editor does not edit', () => {
+    const rich: CalEvent = {
+        id: 'a', title: 'T', start: '2026-06-15T09:00:00', end: '2026-06-15T10:00:00',
+        color: '#00ff00', status: 'tentative', display: 'background'
+    };
+
+    it('editorForEvent captures color/status/display and save re-emits them', () => {
+        const e = editorForEvent(rich, none);
+        expect(e.carry).toEqual({ color: '#00ff00', status: 'tentative', display: 'background' });
+        const spec = editorSaveSpec(e, TZ, none);
+        expect(spec.event).toMatchObject({ color: '#00ff00', status: 'tentative', display: 'background' });
+    });
+
+    it('the series branch carries them too, without disturbing the explicit rrule', () => {
+        const base: CalEvent = { ...rich, rrule: { freq: 'daily' } };
+        const e = editorForEvent({ ...rich, id: 'a::2026-06-17', start: '2026-06-17T09:00:00' }, () => base);
+        const spec = editorSaveSpec({ ...e, scope: 'series' }, TZ, () => base);
+        expect(spec.event).toMatchObject({ status: 'tentative', rrule: { freq: 'daily' } });
+    });
+
+    it('move/resize specs carry status and display', () => {
+        const spec = moveResizeSpec('move', rich, { start: '2026-06-16T09:00:00', end: '2026-06-16T10:00:00' }, TZ);
+        expect(spec.event).toMatchObject({ status: 'tentative', display: 'background' });
     });
 });
 

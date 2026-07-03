@@ -32,6 +32,7 @@ export interface CalLabels {
     allDay: string;
     start: string; end: string;
     timesIn: string;              // timezone hint, '{tz}' = the configured zone
+    invalidRange: string;         // save-blocking hint when the end is not after the start
     repeat: string; doesNotRepeat: string;
     daily: string; weekly: string; monthly: string; yearly: string;
     every: string;
@@ -84,6 +85,7 @@ export interface TimelineLabels {
     resource: string;
     start: string; end: string;
     timesIn: string;                     // timezone hint, '{tz}' = the configured zone
+    invalidRange: string;                // save-blocking hint when the end is not after the start
     category: string; none: string; notes: string;
     save: string; create: string; cancel: string; delete: string;
 }
@@ -100,6 +102,7 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     resource: 'Resource',
     start: 'Start', end: 'End',
     timesIn: 'Times in {tz}',
+    invalidRange: 'End must be after start',
     category: 'Category', none: 'None', notes: 'Notes',
     save: 'Save', create: 'Create', cancel: 'Cancel', delete: 'Delete'
 };
@@ -117,6 +120,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Ressource',
         start: 'Début', end: 'Fin',
         timesIn: 'Heures en {tz}',
+        invalidRange: 'La fin doit être après le début',
         category: 'Catégorie', none: 'Aucune', notes: 'Notes',
         save: 'Enregistrer', create: 'Créer', cancel: 'Annuler', delete: 'Supprimer'
     },
@@ -132,6 +136,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Ressource',
         start: 'Beginn', end: 'Ende',
         timesIn: 'Zeiten in {tz}',
+        invalidRange: 'Das Ende muss nach dem Beginn liegen',
         category: 'Kategorie', none: 'Keine', notes: 'Notizen',
         save: 'Speichern', create: 'Erstellen', cancel: 'Abbrechen', delete: 'Löschen'
     },
@@ -147,6 +152,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Recurso',
         start: 'Inicio', end: 'Fin',
         timesIn: 'Horas en {tz}',
+        invalidRange: 'El fin debe ser posterior al inicio',
         category: 'Categoría', none: 'Ninguna', notes: 'Notas',
         save: 'Guardar', create: 'Crear', cancel: 'Cancelar', delete: 'Eliminar'
     },
@@ -162,6 +168,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Resource',
         start: 'Begin', end: 'Einde',
         timesIn: 'Tijden in {tz}',
+        invalidRange: 'Het einde moet na het begin liggen',
         category: 'Categorie', none: 'Geen', notes: 'Notities',
         save: 'Opslaan', create: 'Aanmaken', cancel: 'Annuleren', delete: 'Verwijderen'
     },
@@ -177,6 +184,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Risorsa',
         start: 'Inizio', end: 'Fine',
         timesIn: 'Orari in {tz}',
+        invalidRange: "La fine deve essere successiva all'inizio",
         category: 'Categoria', none: 'Nessuna', notes: 'Note',
         save: 'Salva', create: 'Crea', cancel: 'Annulla', delete: 'Elimina'
     },
@@ -192,6 +200,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         resource: 'Recurso',
         start: 'Início', end: 'Fim',
         timesIn: 'Horas em {tz}',
+        invalidRange: 'O fim deve ser posterior ao início',
         category: 'Categoria', none: 'Nenhuma', notes: 'Notas',
         save: 'Salvar', create: 'Criar', cancel: 'Cancelar', delete: 'Excluir'
     }
@@ -226,6 +235,7 @@ export const EN_CALENDAR_LABELS: CalLabels = {
     allDay: 'All day',
     start: 'Start', end: 'End',
     timesIn: 'Times in {tz}',
+    invalidRange: 'End must be after start',
     repeat: 'Repeat', doesNotRepeat: 'Does not repeat',
     daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly',
     every: 'Every',
@@ -255,6 +265,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Toute la journée',
         start: 'Début', end: 'Fin',
         timesIn: 'Heures en {tz}',
+        invalidRange: 'La fin doit être après le début',
         repeat: 'Répéter', doesNotRepeat: 'Ne se répète pas',
         daily: 'Quotidien', weekly: 'Hebdomadaire', monthly: 'Mensuel', yearly: 'Annuel',
         every: 'Tous les',
@@ -282,6 +293,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Ganztägig',
         start: 'Beginn', end: 'Ende',
         timesIn: 'Zeiten in {tz}',
+        invalidRange: 'Das Ende muss nach dem Beginn liegen',
         repeat: 'Wiederholen', doesNotRepeat: 'Wiederholt sich nicht',
         daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich', yearly: 'Jährlich',
         every: 'Alle',
@@ -309,6 +321,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Todo el día',
         start: 'Inicio', end: 'Fin',
         timesIn: 'Horas en {tz}',
+        invalidRange: 'El fin debe ser posterior al inicio',
         repeat: 'Repetir', doesNotRepeat: 'No se repite',
         daily: 'Diario', weekly: 'Semanal', monthly: 'Mensual', yearly: 'Anual',
         every: 'Cada',
@@ -336,6 +349,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Hele dag',
         start: 'Begin', end: 'Einde',
         timesIn: 'Tijden in {tz}',
+        invalidRange: 'Het einde moet na het begin liggen',
         repeat: 'Herhalen', doesNotRepeat: 'Wordt niet herhaald',
         daily: 'Dagelijks', weekly: 'Wekelijks', monthly: 'Maandelijks', yearly: 'Jaarlijks',
         every: 'Elke',
@@ -363,6 +377,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Tutto il giorno',
         start: 'Inizio', end: 'Fine',
         timesIn: 'Orari in {tz}',
+        invalidRange: "La fine deve essere successiva all'inizio",
         repeat: 'Ripeti', doesNotRepeat: 'Non si ripete',
         daily: 'Giornaliero', weekly: 'Settimanale', monthly: 'Mensile', yearly: 'Annuale',
         every: 'Ogni',
@@ -390,6 +405,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         allDay: 'Dia inteiro',
         start: 'Início', end: 'Fim',
         timesIn: 'Horas em {tz}',
+        invalidRange: 'O fim deve ser posterior ao início',
         repeat: 'Repetir', doesNotRepeat: 'Não se repete',
         daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual',
         every: 'A cada',

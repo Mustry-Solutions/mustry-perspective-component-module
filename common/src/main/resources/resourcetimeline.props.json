@@ -115,6 +115,10 @@
               "type": "string",
               "description": "Editor timezone hint; {tz} = the configured timezone."
             },
+            "invalidRange": {
+              "type": "string",
+              "description": "Editor validation hint shown (and Save disabled) when the end is not after the start."
+            },
             "category": {
               "type": "string",
               "description": "Editor: category field label."

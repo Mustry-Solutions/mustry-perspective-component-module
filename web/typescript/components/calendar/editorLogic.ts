@@ -53,6 +53,11 @@ export function editorForEvent(ev: CalEvent, baseEventById: BaseEventLookup): Ed
         allDay,
         category: ev.category || '',
         description: ev.description || '',
+        carry: {
+            ...(ev.color ? { color: ev.color } : {}),
+            ...(ev.status ? { status: ev.status } : {}),
+            ...(ev.display ? { display: ev.display } : {})
+        },
         repeatFreq: rr ? rr.freq : '',
         repeatInterval: rr && rr.interval ? rr.interval : 1,
         repeatByweekday: rr && rr.byweekday ? rr.byweekday.slice() : [],
@@ -63,6 +68,23 @@ export function editorForEvent(ev: CalEvent, baseEventById: BaseEventLookup): Ed
         occurrenceDate,
         scope: isOcc ? 'occurrence' : 'series'
     };
+}
+
+/** Why the editor can't save, or null when it can: 'parse' = a time field is
+ *  empty/incomplete; 'range' = the end is not after the start (all-day events
+ *  may end on their start date — the end is inclusive in the editor). */
+export function editorProblem(ed: Editor): 'parse' | 'range' | null {
+    if (ed.allDay) {
+        if (ed.start.length < 10 || ed.end.length < 10) {
+            return 'parse';
+        }
+        return ed.end.slice(0, 10) >= ed.start.slice(0, 10) ? null : 'range';
+    }
+    if (ed.start.length < 16 || ed.end.length < 16) {
+        return 'parse';
+    }
+    // Same 'YYYY-MM-DDTHH:mm' format on both sides -> lexical compare is chronological.
+    return ed.end > ed.start ? null : 'range';
 }
 
 /** The editor patch for flipping the all-day toggle: trim to dates, or restore
@@ -125,7 +147,12 @@ export function editorSaveSpec(
     newId: () => string = () => `evt-${new Date().getTime()}`
 ): ChangeSpec {
     const norm = (v: string) => (ed.allDay ? v.slice(0, 10) : (v.length === 16 ? `${v}:00` : v));
-    const common = { title: ed.title || 'New event', allDay: ed.allDay, category: ed.category, description: ed.description };
+    // carry = fields the editor doesn't edit (colour/status/display), so a verbatim
+    // write-back never strips them from the row.
+    const common = {
+        title: ed.title || 'New event', allDay: ed.allDay, category: ed.category,
+        description: ed.description, ...(ed.carry || {})
+    };
 
     if (ed.seriesId && ed.scope === 'occurrence') {
         return {
@@ -202,7 +229,10 @@ function changedEvent(ev: CalEvent, over: { start?: string; end?: string }, time
         allDay,
         color: ev.color || '',         // raw override only (empty when category-coloured)
         category: ev.category || '',
-        description: ev.description || ''
+        description: ev.description || '',
+        // Untouched-by-gestures fields ride along so verbatim write-backs keep them.
+        ...(ev.status ? { status: ev.status } : {}),
+        ...(ev.display ? { display: ev.display } : {})
     };
 }
 

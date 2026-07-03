@@ -8,7 +8,7 @@ import { Category } from '../../shared/types';
 import { TimelineLabels } from '../../shared/labelPacks';
 import { UNCATEGORIZED_COLOR, categoryColor } from '../../shared/eventStyle';
 import { TimelineResource } from './timelineLogic';
-import { TlEditor } from './timelineEditorLogic';
+import { TlEditor, tlEditorProblem } from './timelineEditorLogic';
 
 interface TimelineEditorProps {
     editor: TlEditor;
@@ -25,6 +25,7 @@ interface TimelineEditorProps {
 export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
     const { editor: ed, resources, categories, timezone, labels, onUpdate, onCancel, onSave, onDelete } = props;
     const isEdit = ed.id !== null;
+    const problem = tlEditorProblem(ed, timezone);   // non-null blocks Save
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
     return ReactDOM.createPortal(
@@ -67,6 +68,9 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                 {timezone && (
                     <div className="cal-editor-tz">{labels.timesIn.replace('{tz}', timezone)}</div>
                 )}
+                {problem === 'range' && (
+                    <div className="cal-editor-problem">{labels.invalidRange}</div>
+                )}
                 {(categories || []).length > 0 && (
                     <label className="cal-editor-field">
                         <span>{labels.category}</span>
@@ -101,7 +105,10 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                     )}
                     <span className="cal-editor-actions-spacer" />
                     <button type="button" className="cal-editor-btn" onClick={onCancel}>{labels.cancel}</button>
-                    <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={onSave}>{isEdit ? labels.save : labels.create}</button>
+                    <button
+                        type="button" className="cal-editor-btn cal-editor-btn--primary"
+                        disabled={problem !== null} onClick={onSave}
+                    >{isEdit ? labels.save : labels.create}</button>
                 </div>
             </div>
         </div>,

@@ -4,6 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { intlFormat } from '../../shared/dateUtils';
 import { CalLabels, Category, Editor } from './types';
+import { editorProblem } from './editorLogic';
 import { UNCATEGORIZED_COLOR } from '../../shared/eventStyle';
 
 interface EventEditorProps {
@@ -23,6 +24,7 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
     const { editor: ed, categories, timezone, locale, labels, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
+    const problem = editorProblem(ed);   // non-null blocks Save
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
 
@@ -88,6 +90,9 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                 </div>
                 {!ed.allDay && timezone && (
                     <div className="cal-editor-tz">{labels.timesIn.replace('{tz}', timezone)}</div>
+                )}
+                {problem === 'range' && (
+                    <div className="cal-editor-problem">{labels.invalidRange}</div>
                 )}
                 {showRepeat && (
                     <label className="cal-editor-field">
@@ -188,7 +193,10 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                     )}
                     <span className="cal-editor-actions-spacer" />
                     <button type="button" className="cal-editor-btn" onClick={onCancel}>{labels.cancel}</button>
-                    <button type="button" className="cal-editor-btn cal-editor-btn--primary" onClick={onSave}>{isEdit ? labels.save : labels.create}</button>
+                    <button
+                        type="button" className="cal-editor-btn cal-editor-btn--primary"
+                        disabled={problem !== null} onClick={onSave}
+                    >{isEdit ? labels.save : labels.create}</button>
                 </div>
             </div>
         </div>,

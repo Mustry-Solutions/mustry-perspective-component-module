@@ -23,6 +23,9 @@ export interface TlEditor {
     end: string;
     category: string;
     description: string;
+    /** Fields the editor doesn't edit but the save payload must not drop
+     *  (a verbatim write-back would otherwise strip them from the row). */
+    carry: { color?: string; status?: string; display?: string; rrule?: object };
 }
 
 /** A fresh editor for a new bar on the given row/range. */
@@ -31,7 +34,7 @@ export function tlEditorForCreate(resourceId: string, startMs: number, endMs: nu
         id: null, resourceId, title: '',
         start: msToWallInput(startMs, timezone),
         end: msToWallInput(endMs, timezone),
-        category: defaultCategory, description: ''
+        category: defaultCategory, description: '', carry: {}
     };
 }
 
@@ -46,8 +49,25 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string): TlEditor 
         id: ev.id || '', resourceId: ev.resourceId, title: ev.title || '',
         start: msToWallInput(startMs, timezone),
         end: msToWallInput(endMs, timezone),
-        category: ev.category || '', description: ev.description || ''
+        category: ev.category || '', description: ev.description || '',
+        carry: {
+            ...(ev.color ? { color: ev.color } : {}),
+            ...(ev.status ? { status: ev.status } : {}),
+            ...(ev.display ? { display: ev.display } : {}),
+            ...(ev.rrule ? { rrule: ev.rrule } : {})
+        }
     };
+}
+
+/** Why the editor can't save, or null when it can: 'parse' = a time field doesn't
+ *  parse; 'range' = end is not after start. */
+export function tlEditorProblem(ed: TlEditor, timezone: string): 'parse' | 'range' | null {
+    const s = toEpochMs(ed.start, timezone);
+    const e = toEpochMs(ed.end, timezone);
+    if (s === null || e === null) {
+        return 'parse';
+    }
+    return e > s ? null : 'range';
 }
 
 /** The emitted form of an editor time field: offset-bearing ISO in the display zone. */
@@ -56,7 +76,9 @@ function emitWallInput(v: string, timezone: string): string {
     return ms === null ? v : msToZonedIso(ms, timezone);
 }
 
-/** Decide what saving the editor should fire (create or edit of a standalone bar). */
+/** Decide what saving the editor should fire (create or edit of a standalone bar).
+ *  Carries the fields the editor doesn't edit (color/status/display/rrule) so a
+ *  verbatim write-back never strips them. */
 export function tlSaveSpec(ed: TlEditor, timezone: string, newId: () => string = () => `evt-${new Date().getTime()}`): TlChangeSpec {
     const isEdit = ed.id !== null;
     return {
@@ -68,7 +90,8 @@ export function tlSaveSpec(ed: TlEditor, timezone: string, newId: () => string =
             start: emitWallInput(ed.start, timezone),
             end: emitWallInput(ed.end, timezone),
             category: ed.category,
-            description: ed.description
+            description: ed.description,
+            ...ed.carry
         }
     };
 }
@@ -102,7 +125,10 @@ export function tlMoveResizeSpec(
             end: endMs !== null ? msToZonedIso(endMs, timezone) : '',
             color: ev.color || '',
             category: ev.category || '',
-            description: ev.description || ''
+            description: ev.description || '',
+            // Untouched-by-gestures fields ride along so verbatim write-backs keep them.
+            ...(ev.status ? { status: ev.status } : {}),
+            ...(ev.display ? { display: ev.display } : {})
         }
     };
     if (resourceId !== ev.resourceId) {

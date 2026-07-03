@@ -1105,6 +1105,20 @@
         opacity: 0.65;
     }
 
+    // Save-blocking validation hint (end not after start) under the date row.
+    .cal-editor-problem {
+        margin-top: -8px;
+        margin-bottom: 14px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #e11d48;
+    }
+
+    // Keep normal flow when the hint directly follows the timezone caption.
+    .cal-editor-tz + .cal-editor-problem {
+        margin-top: -10px;
+    }
+
     // Category picker: a colour dot (the category's colour) next to a native select.
     .cal-editor-catrow {
         display: flex;
@@ -1259,6 +1273,12 @@
 
         &:hover { border-color: var(--cal-accent); }
         &:active { transform: scale(0.97); }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;   // also kills hover/active feedback
+        }
     }
 
     .cal-editor-btn--primary {

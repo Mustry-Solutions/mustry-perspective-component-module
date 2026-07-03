@@ -1,9 +1,9 @@
 import { msToWallInput, msToZonedIso } from '../../shared/dateUtils';
 import {
-    createPreviewMs, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision, TlGestureFlags
+    createPreviewMs, isNoopMove, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision, TlGestureFlags
 } from '../timeline/timelineGestureLogic';
 import {
-    tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlMoveResizeSpec, tlSaveSpec
+    tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlEditorProblem, tlMoveResizeSpec, tlSaveSpec
 } from '../timeline/timelineEditorLogic';
 import { TimelineEvent } from '../timeline/timelineLogic';
 
@@ -32,6 +32,18 @@ describe('gesture preview math', () => {
         const r = movePreviewMs(T0, T0 + 90 * MIN, 22 * MIN, 15);
         expect(r.startMs).toBe(T0 + 15 * MIN);
         expect(r.endMs - r.startMs).toBe(90 * MIN);
+    });
+    it('move snaps the DELTA, so an off-grid start keeps its offset', () => {
+        const orig = T0 + 7 * MIN;   // 08:07, off the 15-min grid
+        expect(movePreviewMs(orig, orig + 60 * MIN, 0, 15).startMs).toBe(orig);            // untouched
+        expect(movePreviewMs(orig, orig + 60 * MIN, 5 * MIN, 15).startMs).toBe(orig);      // sub-step wobble -> no shift
+        expect(movePreviewMs(orig, orig + 60 * MIN, 20 * MIN, 15).startMs).toBe(orig + 15 * MIN);   // one step, :07 preserved
+        expect(movePreviewMs(orig, orig + 60 * MIN, -8 * MIN, 15).startMs).toBe(orig - 15 * MIN);
+    });
+    it('isNoopMove: same start + same row only', () => {
+        expect(isNoopMove(T0, 'm1', T0, 'm1')).toBe(true);
+        expect(isNoopMove(T0, 'm1', T0 + 15 * MIN, 'm1')).toBe(false);
+        expect(isNoopMove(T0, 'm1', T0, 'm2')).toBe(false);
     });
     it('resize keeps at least one snap step of duration on either edge', () => {
         expect(resizePreviewMs('end', T0, T0 + 60 * MIN, -120 * MIN, 15))
@@ -118,5 +130,39 @@ describe('editor logic', () => {
         expect(spec.event).toMatchObject({
             resourceId: 'm1', start: '2026-07-03T08:00:00+00:00', end: '2026-07-03T12:00:00+00:00'
         });
+    });
+
+    it('moving an open-ended bar keeps it open-ended (no invented end)', () => {
+        const open: TimelineEvent = { id: 'e2', resourceId: 'm1', title: 'Run', start: '2026-07-03T08:00:00Z' };
+        const spec = tlMoveResizeSpec('move', open, { startMs: T0 + 60 * MIN }, TZ);
+        expect(spec.event).toMatchObject({ start: '2026-07-03T09:00:00+00:00', end: '' });
+    });
+
+    it('move/resize specs carry status and display through unchanged', () => {
+        const styled: TimelineEvent = { ...ev, status: 'tentative', display: 'bar' };
+        const spec = tlMoveResizeSpec('move', styled, { startMs: T0 + 60 * MIN, endMs: T0 + 180 * MIN }, TZ);
+        expect(spec.event).toMatchObject({ status: 'tentative', display: 'bar' });
+        // absent fields stay absent rather than materializing as '' keys
+        expect('status' in (tlMoveResizeSpec('move', ev, { startMs: T0 }, TZ).event as object)).toBe(false);
+    });
+
+    it('save spec carries color/status/display/rrule the editor does not edit', () => {
+        const rich: TimelineEvent = {
+            ...ev, color: '#ff0000', status: 'confirmed', display: 'bar', rrule: { freq: 'daily' }
+        };
+        const spec = tlSaveSpec(tlEditorForEvent(rich, TZ), TZ);
+        expect(spec.event).toMatchObject({
+            color: '#ff0000', status: 'confirmed', display: 'bar', rrule: { freq: 'daily' }
+        });
+        // a plain event carries nothing extra
+        expect('rrule' in (tlSaveSpec(tlEditorForEvent(ev, TZ), TZ).event as object)).toBe(false);
+    });
+
+    it('tlEditorProblem blocks a reversed or unparseable range', () => {
+        const ok = tlEditorForCreate('m1', T0, T0 + 60 * MIN, TZ, '');
+        expect(tlEditorProblem(ok, TZ)).toBeNull();
+        expect(tlEditorProblem({ ...ok, end: ok.start }, TZ)).toBe('range');
+        expect(tlEditorProblem({ ...ok, end: '2026-07-03T07:00' }, TZ)).toBe('range');
+        expect(tlEditorProblem({ ...ok, end: '' }, TZ)).toBe('parse');
     });
 });
