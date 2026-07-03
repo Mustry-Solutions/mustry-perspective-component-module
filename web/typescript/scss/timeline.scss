@@ -1,0 +1,211 @@
+// Resource Timeline styles. Every colour is a CSS variable defaulting to the
+// active Perspective theme (--tml-* — override via a style class / stylesheet).
+.mustry-timeline {
+    --tml-accent: var(--callToAction, #0c7bb3);
+    --tml-accent-text: #ffffff;
+    --tml-text: var(--neutral-90, #1f2937);
+    --tml-muted: var(--neutral-60, #6b7280);
+    --tml-border: var(--neutral-30, #d1d5db);
+    --tml-line: var(--neutral-20, #e5e7eb);
+    --tml-bg: var(--neutral-10, #ffffff);
+    --tml-group-bg: var(--neutral-20, #eef1f4);
+    --tml-now: #e11d48;
+
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    font-size: 13px;
+    color: var(--tml-text);
+    background: var(--tml-bg);
+    border: 1px solid var(--tml-border);
+    border-radius: 6px;
+    overflow: hidden;
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+.tml-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--tml-border);
+}
+
+.tml-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tml-zooms {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.tml-zoom-btn,
+.tml-nav-btn,
+.tml-today {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 10px;
+    border: 1px solid var(--tml-border);
+    background: var(--tml-bg);
+    color: var(--tml-text);
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--tml-accent);
+        color: var(--tml-accent);
+    }
+}
+
+.tml-zoom-btn--active {
+    background: var(--tml-accent);
+    border-color: var(--tml-accent);
+    color: var(--tml-accent-text);
+
+    &:hover { color: var(--tml-accent-text); }
+}
+
+.tml-nav {
+    display: flex;
+    gap: 4px;
+}
+
+// Indeterminate loading bar under the toolbar (config.loading), calendar-style.
+.tml-loading-bar {
+    flex: 0 0 auto;
+    height: 2px;
+    background:
+        linear-gradient(90deg, transparent, var(--tml-accent), transparent) 0 0 / 40% 100% no-repeat,
+        var(--tml-line);
+    animation: tml-loading-slide 1.1s linear infinite;
+}
+
+@keyframes tml-loading-slide {
+    0% { background-position: -40% 0, 0 0; }
+    100% { background-position: 140% 0, 0 0; }
+}
+
+.tml-body {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+}
+
+// Sticky left column: group headers + resource labels.
+.tml-resources {
+    flex: 0 0 160px;
+    border-right: 1px solid var(--tml-border);
+    overflow: hidden;
+}
+
+.tml-corner {
+    height: 42px;   // matches the two axis rows
+    border-bottom: 1px solid var(--tml-border);
+}
+
+.tml-group-label,
+.tml-group-row {
+    height: 22px;
+    line-height: 22px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tml-muted);
+    background: var(--tml-group-bg);
+    border-bottom: 1px solid var(--tml-line);
+}
+
+.tml-group-label {
+    padding: 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tml-resource-label {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--tml-line);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tml-empty {
+    padding: 12px 8px;
+    color: var(--tml-muted);
+    font-style: italic;
+}
+
+.tml-scroll {
+    flex: 1 1 auto;
+    overflow: auto;
+}
+
+.tml-canvas {
+    position: relative;
+    min-height: 100%;
+}
+
+.tml-axis {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--tml-bg);
+    border-bottom: 1px solid var(--tml-border);
+}
+
+.tml-axis-row {
+    position: relative;
+    height: 21px;
+    overflow: hidden;
+}
+
+.tml-axis-upper .tml-tick {
+    font-weight: 600;
+}
+
+.tml-tick {
+    position: absolute;
+    top: 2px;
+    padding-left: 4px;
+    font-size: 11px;
+    color: var(--tml-muted);
+    border-left: 1px solid var(--tml-line);
+    white-space: nowrap;
+}
+
+.tml-row {
+    position: relative;
+    border-bottom: 1px solid var(--tml-line);
+}
+
+.tml-gridline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--tml-line);
+    opacity: 0.6;
+}
+
+.tml-now {
+    position: absolute;
+    top: 42px;   // below the axis
+    bottom: 0;
+    width: 0;
+    border-left: 2px solid var(--tml-now);
+    z-index: 1;
+    pointer-events: none;
+}

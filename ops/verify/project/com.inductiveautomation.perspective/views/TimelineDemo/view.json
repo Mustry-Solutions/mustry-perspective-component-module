@@ -1,0 +1,94 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "height": 600,
+      "width": 1100
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed"
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Header"
+        },
+        "position": {
+          "x": 10,
+          "y": 6,
+          "width": 1000,
+          "height": 28
+        },
+        "props": {
+          "text": "Resource Timeline demo \u2014 M0 scaffold: rows + grouped headers + zoomable time axis + now-line. Events render in M1."
+        }
+      },
+      {
+        "type": "mustrysolutions.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "Timeline"
+        },
+        "position": {
+          "x": 10,
+          "y": 40,
+          "width": 1060,
+          "height": 460
+        },
+        "props": {
+          "config": {
+            "timezone": "America/Chicago",
+            "refreshSeconds": 60,
+            "resources": [
+              {
+                "id": "mixer1",
+                "label": "Mixer 1",
+                "group": "Line 1"
+              },
+              {
+                "id": "mixer2",
+                "label": "Mixer 2",
+                "group": "Line 1"
+              },
+              {
+                "id": "filler1",
+                "label": "Filler 1",
+                "group": "Line 1"
+              },
+              {
+                "id": "packer1",
+                "label": "Packer 1",
+                "group": "Line 2"
+              },
+              {
+                "id": "packer2",
+                "label": "Packer 2",
+                "group": "Line 2"
+              },
+              {
+                "id": "crew-a",
+                "label": "Crew A",
+                "group": "Crews"
+              },
+              {
+                "id": "crew-b",
+                "label": "Crew B",
+                "group": "Crews"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

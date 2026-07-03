@@ -9,6 +9,7 @@ import com.inductiveautomation.perspective.designer.api.PerspectiveDesignerInter
 
 import com.mustrysolutions.perspective.components.common.comp.Calendar;
 import com.mustrysolutions.perspective.components.common.comp.DateTimeRangePicker;
+import com.mustrysolutions.perspective.components.common.comp.ResourceTimeline;
 
 /**
  * Designer-scope hook. Registers this module's components so they appear in the
@@ -28,6 +29,7 @@ public class MustrySolutionsPerspectiveComponentsDesignerHook extends AbstractDe
         log.info("Registering Mustry Solutions Perspective components in the Designer.");
         this.registry.registerComponent(DateTimeRangePicker.DESCRIPTOR);
         this.registry.registerComponent(Calendar.DESCRIPTOR);
+        this.registry.registerComponent(ResourceTimeline.DESCRIPTOR);
     }
 
     @Override
@@ -35,6 +37,7 @@ public class MustrySolutionsPerspectiveComponentsDesignerHook extends AbstractDe
         if (this.registry != null) {
             this.registry.removeComponent(DateTimeRangePicker.COMPONENT_ID);
             this.registry.removeComponent(Calendar.COMPONENT_ID);
+            this.registry.removeComponent(ResourceTimeline.COMPONENT_ID);
         }
     }
 }

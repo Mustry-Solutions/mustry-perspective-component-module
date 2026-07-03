@@ -1,0 +1,8 @@
+{
+    "type": "object",
+    "properties": {
+        "resourceId": { "type": "string", "description": "The row the empty span was dragged on." },
+        "start": { "type": "string", "description": "Selection start, ISO-8601 instant." },
+        "end": { "type": "string", "description": "Selection end, ISO-8601 instant." }
+    }
+}

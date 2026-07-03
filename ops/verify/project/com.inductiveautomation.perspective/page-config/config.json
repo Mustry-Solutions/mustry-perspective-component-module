@@ -19,6 +19,10 @@
     "/dbdemo": {
       "viewPath": "CalendarDbDemo",
       "viewParams": {}
+    },
+    "/timeline": {
+      "viewPath": "TimelineDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

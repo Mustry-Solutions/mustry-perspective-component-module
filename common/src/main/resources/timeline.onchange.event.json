@@ -1,0 +1,8 @@
+{
+    "type": "object",
+    "properties": {
+        "action": { "type": "string", "description": "What happened: 'create' | 'edit' | 'delete' | 'move' | 'resize'." },
+        "event": { "type": "object", "description": "The resulting event with its final start/end and resourceId — a single handler can persist any mutation." },
+        "fromResourceId": { "type": "string", "description": "Set when a drag crossed rows: the row the event came from (reassign)." }
+    }
+}

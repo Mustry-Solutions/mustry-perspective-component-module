@@ -1,0 +1,11 @@
+{
+    "type": "object",
+    "properties": {
+        "id": { "type": "string", "description": "Event id." },
+        "resourceId": { "type": "string", "description": "The row the event is on." },
+        "title": { "type": "string", "description": "Event title." },
+        "start": { "type": "string", "description": "Event start (as bound)." },
+        "end": { "type": "string", "description": "Event end (as bound, may be empty)." },
+        "category": { "type": "string", "description": "Category id ('' = none)." }
+    }
+}

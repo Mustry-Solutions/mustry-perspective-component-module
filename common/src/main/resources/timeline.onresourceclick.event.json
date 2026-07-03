@@ -1,0 +1,6 @@
+{
+    "type": "object",
+    "properties": {
+        "resourceId": { "type": "string", "description": "The clicked resource row's id." }
+    }
+}

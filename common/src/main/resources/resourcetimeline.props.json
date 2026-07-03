@@ -1,0 +1,129 @@
+{
+  "type": "object",
+  "properties": {
+    "config": {
+      "type": "object",
+      "description": "Behaviour & appearance.",
+      "properties": {
+        "zoom": {
+          "type": "string",
+          "enum": ["hour", "day", "week"],
+          "default": "day",
+          "description": "Zoom preset (two-way: the toolbar writes the user's choice back). Each preset sets the horizontal density, the paging span and the snap granularity."
+        },
+        "showToolbar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the toolbar (title, zoom presets, navigation)."
+        },
+        "rowHeight": {
+          "type": "number",
+          "default": 36,
+          "description": "Resource row height in pixels (20–120)."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA zone for display (e.g. America/Chicago). Converts event instants and today/now to that zone; empty = browser-local. The time scale itself is epoch-linear, so DST days render as 23/25 hours."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "Locale for the axis labels (empty = browser/session default). Also selects the built-in UI-text language (see config.labels)."
+        },
+        "refreshSeconds": {
+          "type": "number",
+          "default": 0,
+          "description": "Re-render every N seconds so the now-line ticks live (0 = off)."
+        },
+        "loading": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bind to your query state for a stale-while-revalidate loading bar."
+        },
+        "refetchDebounceMs": {
+          "type": "number",
+          "default": 150,
+          "description": "Coalesce rapid navigation into one visibleStart/End write (0 = immediate)."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Override the UI text (for translation or branding). Defaults follow config.locale for supported languages (en, fr, de, es, nl, it, pt); each set value replaces that key. (No schema defaults on purpose: values are supplied by the locale packs at runtime; a set value overrides.)",
+          "properties": {
+            "today": { "type": "string", "description": "Toolbar 'jump to today' button." },
+            "previous": { "type": "string", "description": "Accessible label of the back arrow." },
+            "next": { "type": "string", "description": "Accessible label of the forward arrow." },
+            "zoomHour": { "type": "string", "description": "Hour zoom-preset button." },
+            "zoomDay": { "type": "string", "description": "Day zoom-preset button." },
+            "zoomWeek": { "type": "string", "description": "Week zoom-preset button." },
+            "noResources": { "type": "string", "description": "Empty text when config.resources is empty." }
+          }
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "description": "Category definitions: [{id, label, color, icon}]. An event's `category` supplies its colour and optional icon (Ignition icon path, e.g. material/build).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "description": "Category id, referenced by event.category." },
+              "label": { "type": "string", "description": "Display label (defaults to the id)." },
+              "color": { "type": "string", "description": "Any CSS colour." },
+              "icon": { "type": "string", "description": "Ignition icon path (library/name)." }
+            }
+          }
+        },
+        "resources": {
+          "type": "array",
+          "default": [],
+          "description": "The rows: [{id, label, group?, color?, icon?}], rendered in array order. Consecutive equal `group` values share one sticky section header.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "description": "Resource id, referenced by event.resourceId." },
+              "label": { "type": "string", "description": "Row label (defaults to the id)." },
+              "group": { "type": "string", "description": "Optional section header (e.g. a line or area)." },
+              "color": { "type": "string", "description": "Optional row accent colour." },
+              "icon": { "type": "string", "description": "Ignition icon path (library/name)." }
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "description": "The controlled event data. The timeline never mutates it — editing gestures fire onChange and your handler writes back.",
+      "properties": {
+        "events": {
+          "type": "array",
+          "default": [],
+          "description": "Events/bars: [{id, resourceId, title, start, end, category?, color?, status?, description?, display?, rrule?}]. `display`: 'bar' (default), 'state' (full-height contiguous band) or 'background' (shaded span). For DB-backed timelines, bind a query scoped by output.visibleStart/visibleEnd.",
+          "items": { "type": "object" }
+        },
+        "recurringEvents": {
+          "type": "array",
+          "default": [],
+          "description": "Always-loaded recurring definitions (WHERE rrule IS NOT NULL), merged with `events` so a windowed query never drops a series.",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Read-only, derived.",
+      "properties": {
+        "visibleStart": {
+          "type": "string",
+          "default": "",
+          "description": "Start of the visible window as an ISO-8601 UTC instant (half-open [start, end)) — bind your query: ts >= visibleStart AND ts < visibleEnd."
+        },
+        "visibleEnd": {
+          "type": "string",
+          "default": "",
+          "description": "End of the visible window as an ISO-8601 UTC instant (exclusive)."
+        }
+      }
+    }
+  }
+}
