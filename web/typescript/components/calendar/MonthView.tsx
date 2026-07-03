@@ -1,6 +1,6 @@
 // Month grid: day-cell background grid + an event-bar overlay per week row.
 import * as React from 'react';
-import { intlFormat } from '../dateUtils';
+import { intlFormat } from '../../shared/dateUtils';
 import { CalEvent, DayCell, MonthGrid, clampWeekLanes, layoutWeekSegments } from '../calendarLogic';
 import { CalLabels, Category } from './types';
 import { EventBar } from './EventBar';

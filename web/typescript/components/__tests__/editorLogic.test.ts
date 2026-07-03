@@ -4,7 +4,7 @@ import {
 } from '../calendar/editorLogic';
 import { Editor } from '../calendar/types';
 import { CalEvent } from '../calendarLogic';
-import { emitWall } from '../dateUtils';
+import { emitWall } from '../../shared/dateUtils';
 
 // All specs are computed in UTC so the emitted offsets are machine-independent.
 const TZ = 'UTC';

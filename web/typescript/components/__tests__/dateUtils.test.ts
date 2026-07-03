@@ -4,7 +4,7 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays
-} from '../dateUtils';
+} from '../../shared/dateUtils';
 
 describe('pad2', () => {
     it('pads to two digits', () => {

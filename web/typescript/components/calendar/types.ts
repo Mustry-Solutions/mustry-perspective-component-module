@@ -1,5 +1,12 @@
 // Shared types + layout constants for the Calendar component and its sub-views.
+// Category / CalLabels / ENTER_MS moved to the shared layer; re-exported here so
+// the calendar's files keep one type hub.
 import { CalEvent } from '../calendarLogic';
+import { Category } from '../../shared/types';
+import { CalLabels } from '../../shared/labelPacks';
+
+export { ENTER_MS } from '../../shared/enterAnimation';
+export type { Category, CalLabels };
 
 export type WeekStart = 'monday' | 'sunday';
 export type CalView = 'month' | 'week' | 'day' | 'list';
@@ -10,7 +17,6 @@ export const SLOT_PX = 42;         // base pixels per hour (slotMinutes = 60)
 export const MIN_SLOT_PX = 14;     // keep each sub-slot tall enough to see/grab
 export const DEFAULT_DUR_MIN = 60; // assumed duration for a timed event with no end
 export const SNAP_MIN = 15;        // default drag/resize snapping granularity (fallback)
-export const ENTER_MS = 380;       // create/enter animation duration (keep ≥ the CSS animation)
 
 /** Pixels per hour for a given slot resolution. Coarse grids keep the base height;
  *  finer grids grow (taller, scrollable) so each sub-slot stays grabbable. */
@@ -18,47 +24,6 @@ export function hourHeightPx(slotMinutes: number): number {
     return Math.max(SLOT_PX, (MIN_SLOT_PX * 60) / Math.max(1, slotMinutes));
 }
 
-export interface Category {
-    id: string;
-    label: string;
-    color: string;
-    icon?: string;   // Ignition icon path (library/name), e.g. 'material/build'
-}
-
-/** Overridable UI text (config.labels) — every user-visible built-in string.
- *  Defaults to English in mapCalendarProps; weekday/month names come from
- *  config.locale via Intl and are NOT in here. */
-export interface CalLabels {
-    // toolbar
-    month: string; week: string; day: string; list: string;
-    today: string;
-    exportCsv: string;            // export button tooltip / accessible label
-    previous: string; next: string;   // nav arrows (accessible labels)
-    // grids, list, popovers
-    allDayTime: string;           // the 'all-day' time-cell/gutter label
-    noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
-    more: string;                 // month-cell overflow, '{n}' = hidden count
-    showDayEvents: string;        // date-number tooltip (opens the day popover)
-    previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
-    // empty-state badge tooltip (Calendar.emptyHint)
-    emptyHintIntro: string;
-    emptyHintCreate: string;
-    emptyHintBind: string;
-    // built-in editor
-    newEvent: string; editEvent: string;
-    thisEvent: string; allEvents: string;   // apply-to scope for a recurring occurrence
-    title: string; eventTitle: string;      // field label / placeholder
-    allDay: string;
-    start: string; end: string;
-    timesIn: string;              // timezone hint, '{tz}' = the configured zone
-    repeat: string; doesNotRepeat: string;
-    daily: string; weekly: string; monthly: string; yearly: string;
-    every: string;
-    unitDays: string; unitWeeks: string; unitMonths: string; unitYears: string;
-    ends: string; never: string; on: string; after: string; times: string;
-    category: string; none: string; notes: string;
-    save: string; create: string; cancel: string; delete: string;
-}
 
 export interface CalendarProps {
     view: CalView;

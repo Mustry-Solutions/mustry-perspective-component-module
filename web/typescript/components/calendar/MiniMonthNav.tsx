@@ -1,7 +1,7 @@
 // Mini-month navigator — a compact month grid in a popover anchored under the title.
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from '../dateUtils';
+import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from '../../shared/dateUtils';
 import { buildMonthGrid } from '../calendarLogic';
 import { CalLabels, MiniNav } from './types';
 

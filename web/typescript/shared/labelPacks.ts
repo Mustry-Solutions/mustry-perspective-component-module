@@ -1,12 +1,133 @@
-// Built-in UI-text packs for both components. `config.locale` picks the default
-// language (matched on the primary subtag: 'fr-BE' -> 'fr'; unknown -> English),
-// and `config.labels.*` still overrides any individual key on top. Date, weekday
-// and month names are NOT here — they come from Intl via the same locale.
+// Built-in UI-text packs for the module's components. `config.locale` picks the
+// default language (matched on the primary subtag: 'fr-BE' -> 'fr'; unknown ->
+// English), and `config.labels.*` still overrides any individual key on top.
+// Date, weekday and month names are NOT here — they come from Intl via the same
+// locale. The label-set interfaces live here too so the shared layer has no
+// dependency on any component.
 //
 // Translations are pragmatic industrial-UI register, not native-reviewed; per-key
 // overrides exist precisely so deployments can correct or rebrand them.
-import { CalLabels } from './calendar/types';
-import { LabelConfig } from './pickerTypes';
+
+/** The calendar's overridable UI text — every user-visible built-in string. */
+export interface CalLabels {
+    // toolbar
+    month: string; week: string; day: string; list: string;
+    today: string;
+    exportCsv: string;            // export button tooltip / accessible label
+    previous: string; next: string;   // nav arrows (accessible labels)
+    // grids, list, popovers
+    allDayTime: string;           // the 'all-day' time-cell/gutter label
+    noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
+    more: string;                 // month-cell overflow, '{n}' = hidden count
+    showDayEvents: string;        // date-number tooltip (opens the day popover)
+    previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
+    // empty-state badge tooltip (Calendar.emptyHint)
+    emptyHintIntro: string;
+    emptyHintCreate: string;
+    emptyHintBind: string;
+    // built-in editor
+    newEvent: string; editEvent: string;
+    thisEvent: string; allEvents: string;   // apply-to scope for a recurring occurrence
+    title: string; eventTitle: string;      // field label / placeholder
+    allDay: string;
+    start: string; end: string;
+    timesIn: string;              // timezone hint, '{tz}' = the configured zone
+    repeat: string; doesNotRepeat: string;
+    daily: string; weekly: string; monthly: string; yearly: string;
+    every: string;
+    unitDays: string; unitWeeks: string; unitMonths: string; unitYears: string;
+    ends: string; never: string; on: string; after: string; times: string;
+    category: string; none: string; notes: string;
+    save: string; create: string; cancel: string; delete: string;
+}
+
+/** The picker's overridable UI text. Templated keys substitute {n}/{min}/{max}/
+ *  {date}; {days} becomes dayOne/dayMany by count. */
+export interface LabelConfig {
+    startTime: string;
+    endTime: string;
+    startDate: string;
+    endDate: string;
+    clear: string;
+    selectRange: string;
+    invalidRange: string;
+    sameDay: string;
+    previousMonth: string;
+    nextMonth: string;
+    dayOne: string;                // 'day'
+    dayMany: string;               // 'days'
+    durationDays: string;          // '{n} {days}' (footer duration)
+    hintRange: string;             // span hint when both min and max are set
+    hintMin: string;               // span hint, minimum only
+    hintMax: string;               // span hint, maximum only
+    beforeEarliest: string;        // day tooltip: before the earliest selectable date
+    afterLatest: string;           // day tooltip: after the latest selectable date
+    rangeAtLeast: string;          // day tooltip: violates the minimum span
+    rangeAtMost: string;           // day tooltip: violates the maximum span
+    presetBeforeEarliest: string;  // disabled-preset tooltip
+    presetAfterLatest: string;     // disabled-preset tooltip
+    presetTooShort: string;        // disabled-preset tooltip
+    presetTooLong: string;         // disabled-preset tooltip
+}
+
+/** The resource timeline's overridable UI text. */
+export interface TimelineLabels {
+    today: string;
+    previous: string; next: string;   // nav arrows (accessible labels)
+    zoomHour: string; zoomDay: string; zoomWeek: string;   // zoom-preset buttons
+    noResources: string;              // empty text when config.resources is empty
+}
+
+export const EN_TIMELINE_LABELS: TimelineLabels = {
+    today: 'Today',
+    previous: 'Previous', next: 'Next',
+    zoomHour: 'Hour', zoomDay: 'Day', zoomWeek: 'Week',
+    noResources: 'No resources'
+};
+
+const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
+    fr: {
+        today: "Aujourd'hui",
+        previous: 'Précédent', next: 'Suivant',
+        zoomHour: 'Heure', zoomDay: 'Jour', zoomWeek: 'Semaine',
+        noResources: 'Aucune ressource'
+    },
+    de: {
+        today: 'Heute',
+        previous: 'Zurück', next: 'Weiter',
+        zoomHour: 'Stunde', zoomDay: 'Tag', zoomWeek: 'Woche',
+        noResources: 'Keine Ressourcen'
+    },
+    es: {
+        today: 'Hoy',
+        previous: 'Anterior', next: 'Siguiente',
+        zoomHour: 'Hora', zoomDay: 'Día', zoomWeek: 'Semana',
+        noResources: 'Sin recursos'
+    },
+    nl: {
+        today: 'Vandaag',
+        previous: 'Vorige', next: 'Volgende',
+        zoomHour: 'Uur', zoomDay: 'Dag', zoomWeek: 'Week',
+        noResources: 'Geen resources'
+    },
+    it: {
+        today: 'Oggi',
+        previous: 'Precedente', next: 'Successivo',
+        zoomHour: 'Ora', zoomDay: 'Giorno', zoomWeek: 'Settimana',
+        noResources: 'Nessuna risorsa'
+    },
+    pt: {
+        today: 'Hoje',
+        previous: 'Anterior', next: 'Seguinte',
+        zoomHour: 'Hora', zoomDay: 'Dia', zoomWeek: 'Semana',
+        noResources: 'Sem recursos'
+    }
+};
+
+/** The timeline's default label set for a locale (English when not bundled). */
+export function timelineLabelBase(locale: string): TimelineLabels {
+    return TIMELINE_PACKS[primaryLang(locale)] || EN_TIMELINE_LABELS;
+}
 
 /** Primary language subtag of a BCP-47/underscore locale ('fr-BE' / 'fr_BE' -> 'fr'). */
 export function primaryLang(locale: string): string {

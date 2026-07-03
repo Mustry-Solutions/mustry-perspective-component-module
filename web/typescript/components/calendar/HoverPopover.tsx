@@ -2,10 +2,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { addDays, intlFormat, parseDate } from '../dateUtils';
+import { addDays, intlFormat, parseDate } from '../../shared/dateUtils';
 import { isTimed, hhmm, timeMinutes } from '../calendarLogic';
 import { Category, HoverInfo, DEFAULT_DUR_MIN } from './types';
-import { resolveColor, eventIcon } from './eventStyle';
+import { resolveColor, eventIcon } from '../../shared/eventStyle';
 
 interface HoverPopoverProps {
     hover: HoverInfo;

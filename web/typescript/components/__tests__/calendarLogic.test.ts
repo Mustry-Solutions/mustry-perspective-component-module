@@ -2,8 +2,9 @@ import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents,
     snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv,
-    expandEvents, backgroundBandsForDay, CalEvent
+    backgroundBandsForDay, CalEvent
 } from '../calendarLogic';
+import { expandEvents } from '../../shared/recurrence';
 
 const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 is a Monday)
 

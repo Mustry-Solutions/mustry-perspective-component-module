@@ -4,7 +4,7 @@
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from '../calendarLogic';
-import { emitWall, instantToZonedIso } from '../dateUtils';
+import { emitWall, instantToZonedIso } from '../../shared/dateUtils';
 import { Editor } from './types';
 
 /** What a mutation should fire: the onChange action, payload, and recurrence context. */

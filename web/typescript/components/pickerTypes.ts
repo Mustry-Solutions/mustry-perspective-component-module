@@ -1,38 +1,13 @@
 // Type definitions for the DateTimeRangePicker, kept perspective-client-free so the
 // prop mapper (pickerProps.ts) and its tests can run under plain node jest.
+// LabelConfig moved to the shared layer; re-exported here as the picker's type hub.
 import { DisableMode, Granularity, LayoutMode, PresetDef, PresetUnit } from './pickerLogic';
+import { LabelConfig } from '../shared/labelPacks';
+
+export type { LabelConfig };
 
 export type WeekStart = 'monday' | 'sunday';
 export type DisplayMode = 'inline' | 'popover';
-
-export interface LabelConfig {
-    startTime: string;
-    endTime: string;
-    startDate: string;
-    endDate: string;
-    clear: string;
-    selectRange: string;
-    invalidRange: string;
-    sameDay: string;
-    previousMonth: string;
-    nextMonth: string;
-    // templated strings — {n}/{min}/{max}/{date} are numbers/dates filled in at
-    // render time; {days} becomes dayOne/dayMany by count
-    dayOne: string;                // 'day'
-    dayMany: string;               // 'days'
-    durationDays: string;          // '{n} {days}' (footer duration)
-    hintRange: string;             // span hint when both min and max are set
-    hintMin: string;               // span hint, minimum only
-    hintMax: string;               // span hint, maximum only
-    beforeEarliest: string;        // day tooltip: before the earliest selectable date
-    afterLatest: string;           // day tooltip: after the latest selectable date
-    rangeAtLeast: string;          // day tooltip: violates the minimum span
-    rangeAtMost: string;           // day tooltip: violates the maximum span
-    presetBeforeEarliest: string;  // disabled-preset tooltip
-    presetAfterLatest: string;     // disabled-preset tooltip
-    presetTooShort: string;        // disabled-preset tooltip
-    presetTooLong: string;         // disabled-preset tooltip
-}
 
 export interface DateTimeRangePickerProps {
     // configuration

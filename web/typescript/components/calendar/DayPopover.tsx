@@ -1,10 +1,10 @@
 // Month-view popover listing every event for one day (from "+N more" / the date number).
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { intlFormat, parseDate, today } from '../dateUtils';
+import { intlFormat, parseDate, today } from '../../shared/dateUtils';
 import { CalEvent, timeMinutes } from '../calendarLogic';
 import { CalLabels, Category, DayPop } from './types';
-import { EventIcon, resolveColor, statusClass } from './eventStyle';
+import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
 interface DayPopoverProps {
     dayPop: DayPop;

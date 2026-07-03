@@ -1,12 +1,12 @@
 // Week / Day time-grid view: day-head row, all-day strip (spanning bars), and the
 // scrollable hour grid with overlap-packed timed events + the active drag/resize ghost.
 import * as React from 'react';
-import { intlFormat } from '../dateUtils';
+import { intlFormat } from '../../shared/dateUtils';
 import {
     CalEvent, DayCol, hhmm, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
 } from '../calendarLogic';
 import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
-import { EventIcon, resolveColor, statusClass } from './eventStyle';
+import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 import { EventBar } from './EventBar';
 
 interface TimeGridProps {

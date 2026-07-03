@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { CalEvent, WeekSeg, hhmm, timeMinutes } from '../calendarLogic';
 import { Category } from './types';
-import { EventIcon, resolveColor, statusClass } from './eventStyle';
+import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
 interface EventBarProps {
     seg: WeekSeg;

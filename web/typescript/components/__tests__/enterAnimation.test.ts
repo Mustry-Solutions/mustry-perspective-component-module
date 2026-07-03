@@ -1,4 +1,4 @@
-import { EnterTracker } from '../calendar/enterAnimation';
+import { EnterTracker } from '../../shared/enterAnimation';
 import { ENTER_MS } from '../calendar/types';
 import { CalEvent } from '../calendarLogic';
 

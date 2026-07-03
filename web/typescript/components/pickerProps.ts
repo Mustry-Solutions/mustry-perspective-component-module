@@ -1,10 +1,10 @@
 // Pure mapping from the component's PropertyTree to typed DateTimeRangePickerProps.
 // Extracted from the picker's getPropsReducer so it can be unit-tested without
 // perspective-client.
-import { PropReader } from './propReader';
+import { PropReader } from '../shared/propReader';
 import { DateTimeRangePickerProps, DisplayMode, LabelConfig, WeekStart } from './pickerTypes';
 import { DisableMode, Granularity, LayoutMode, PresetType, PresetUnit, PresetPeriod } from './pickerLogic';
-import { EN_PICKER_LABELS, pickerLabelBase } from './labelPacks';
+import { EN_PICKER_LABELS, pickerLabelBase } from '../shared/labelPacks';
 
 export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
     const locale = tree.readString('config.locale', '');

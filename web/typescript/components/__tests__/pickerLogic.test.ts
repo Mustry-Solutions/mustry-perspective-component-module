@@ -1,4 +1,4 @@
-import { fmtDate, secondsOfDay } from '../dateUtils';
+import { fmtDate, secondsOfDay } from '../../shared/dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,

@@ -1,9 +1,9 @@
 // Pure mapping from the component's PropertyTree to typed CalendarProps. Extracted from
 // CalendarMeta.getPropsReducer so it can be unit-tested without perspective-client.
-import { PropReader } from './propReader';
+import { PropReader } from '../shared/propReader';
 import { CalendarProps, CalLabels, CalView, WeekStart, Category } from './calendar/types';
 import { CalEvent } from './calendarLogic';
-import { calendarLabelBase, EN_CALENDAR_LABELS } from './labelPacks';
+import { calendarLabelBase, EN_CALENDAR_LABELS } from '../shared/labelPacks';
 
 /** The built-in English UI text; config.locale swaps the base language (labelPacks)
  *  and config.labels overrides individual keys. */

@@ -21,13 +21,12 @@ import {
     instantToZonedIso,
     todayInZone,
     nowMinutesInZone
-} from './dateUtils';
+} from '../shared/dateUtils';
 import {
     buildMonthGrid,
     groupEventsByDay,
     eventsToCsv,
     weekDays,
-    expandEvents,
     isoDateTime,
     CalEvent,
     DayCol,
@@ -37,12 +36,13 @@ import {
     CalView, Gesture, Editor, Preview,
     CalendarProps, CalendarState, hourHeightPx
 } from './calendar/types';
-import { resolveColor as styleResolveColor } from './calendar/eventStyle';
+import { resolveColor as styleResolveColor } from '../shared/eventStyle';
+import { expandEvents } from '../shared/recurrence';
 import { mapCalendarProps } from './calendarProps';
 import { CommitKind } from './calendar/gestureLogic';
 import { GestureController } from './calendar/gestureController';
-import { DocDismiss } from './calendar/dismiss';
-import { EnterTracker } from './calendar/enterAnimation';
+import { DocDismiss } from '../shared/dismiss';
+import { EnterTracker } from '../shared/enterAnimation';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
     editorSaveSpec, editorDeleteSpec, moveResizeSpec

@@ -1,6 +1,6 @@
 // Test helper: a PropReader backed by a plain nested object, mimicking PropertyTree's
 // dot-path lookups + light coercion. (Filename has no `.test.` so jest won't run it as a suite.)
-import { PropReader } from '../propReader';
+import { PropReader } from '../../shared/propReader';
 
 export function stubReader(data: any): PropReader {
     const at = (path: string): any =>

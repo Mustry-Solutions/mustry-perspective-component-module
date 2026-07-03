@@ -1,9 +1,9 @@
-// Pure event-styling helpers (colour, icon, status) shared by every view. They take
-// the category list explicitly so they have no component-state dependency.
+// Pure item-styling helpers (colour, icon, status) shared by every component and
+// view. They take the category list explicitly so they have no component-state
+// dependency, and only require the minimal Styleable shape from the item.
 import * as React from 'react';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { CalEvent } from '../calendarLogic';
-import { Category } from './types';
+import { Category, Styleable } from './types';
 
 /** Colour for uncategorised events when categories are in use — a neutral grey so
  *  "None" events are clearly distinct from any defined category. */
@@ -17,7 +17,7 @@ export function categoryColor(categories: Category[], id?: string): string | und
 
 /** Effective colour: explicit `color` > category colour > neutral grey (if categories
  *  are in use) > undefined (no categories at all → CSS falls back to the theme accent). */
-export function resolveColor(categories: Category[], ev: CalEvent): string | undefined {
+export function resolveColor(categories: Category[], ev: Styleable): string | undefined {
     if (ev.color) {
         return ev.color;
     }
@@ -29,13 +29,13 @@ export function resolveColor(categories: Category[], ev: CalEvent): string | und
 }
 
 /** The icon path for an event, taken from its category (undefined = no icon). */
-export function eventIcon(categories: Category[], ev: CalEvent): string | undefined {
+export function eventIcon(categories: Category[], ev: Styleable): string | undefined {
     const cat = (categories || []).find((c) => c.id === ev.category);
     return cat ? cat.icon : undefined;
 }
 
 /** Status modifier class for an event chip ('' for normal/unset). */
-export function statusClass(ev: CalEvent): string {
+export function statusClass(ev: Styleable): string {
     switch (ev.status) {
         case 'tentative': return ' cal-ev--tentative';
         case 'cancelled': return ' cal-ev--cancelled';
@@ -45,7 +45,7 @@ export function statusClass(ev: CalEvent): string {
 }
 
 /** An event's category icon as a small inline element (renders nothing if there's no icon). */
-export function EventIcon({ ev, categories }: { ev: CalEvent; categories: Category[] }): React.ReactElement | null {
+export function EventIcon({ ev, categories }: { ev: Styleable; categories: Category[] }): React.ReactElement | null {
     const icon = eventIcon(categories, ev);
     if (!icon) {
         return null;
