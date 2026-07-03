@@ -326,6 +326,20 @@ export function toEpochMs(raw: string, timeZone: string): number | null {
     return resolveZoned(wall, timeZone).epochMs;
 }
 
+/** An epoch instant as an offset-bearing ISO string in `timeZone`
+ *  ("2026-07-03T09:00:00-05:00") — the emitted form for timeline write-backs. */
+export function msToZonedIso(ms: number, timeZone: string): string {
+    const w = zoneWallClock(new Date(ms), timeZone);
+    return resolveZoned(new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s), timeZone).iso;
+}
+
+/** An epoch instant as a zone-local 'YYYY-MM-DDTHH:mm' — the value format of a
+ *  native <input type="datetime-local"> showing times in `timeZone`. */
+export function msToWallInput(ms: number, timeZone: string): string {
+    const w = zoneWallClock(new Date(ms), timeZone);
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}`;
+}
+
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
 export function todayInZone(timeZone: string): Date {
     const w = zoneWallClock(new Date(), timeZone);

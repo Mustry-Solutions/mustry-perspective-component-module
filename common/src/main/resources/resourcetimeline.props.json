@@ -82,6 +82,66 @@
             "noResources": {
               "type": "string",
               "description": "Empty text when config.resources is empty."
+            },
+            "newEvent": {
+              "type": "string",
+              "description": "Editor heading when creating."
+            },
+            "editEvent": {
+              "type": "string",
+              "description": "Editor heading when editing."
+            },
+            "title": {
+              "type": "string",
+              "description": "Editor: title field label."
+            },
+            "eventTitle": {
+              "type": "string",
+              "description": "Editor: title field placeholder."
+            },
+            "resource": {
+              "type": "string",
+              "description": "Editor: resource dropdown label."
+            },
+            "start": {
+              "type": "string",
+              "description": "Editor: start field label."
+            },
+            "end": {
+              "type": "string",
+              "description": "Editor: end field label."
+            },
+            "timesIn": {
+              "type": "string",
+              "description": "Editor timezone hint; {tz} = the configured timezone."
+            },
+            "category": {
+              "type": "string",
+              "description": "Editor: category field label."
+            },
+            "none": {
+              "type": "string",
+              "description": "Editor: the no-category option."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Editor: notes field label."
+            },
+            "save": {
+              "type": "string",
+              "description": "Editor: save button (editing)."
+            },
+            "create": {
+              "type": "string",
+              "description": "Editor: create button (new event)."
+            },
+            "cancel": {
+              "type": "string",
+              "description": "Editor: cancel button."
+            },
+            "delete": {
+              "type": "string",
+              "description": "Editor: delete button."
             }
           }
         },
@@ -145,6 +205,21 @@
           "type": "boolean",
           "default": true,
           "description": "Show the category legend (bottom). Only appears when categories are defined; click an item to filter that category."
+        },
+        "editable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow editing gestures: drag a bar to retime it, drag it onto another row to reassign, drag an edge to resize. Every gesture only FIRES onChange — your handler writes back to the data source."
+        },
+        "selectable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow dragging an empty span on a row to create (fires onSelect, or opens the built-in editor with builtInEditor)."
+        },
+        "builtInEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Built-in editor popover — for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
         }
       }
     },

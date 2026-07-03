@@ -76,13 +76,28 @@ export interface TimelineLabels {
     previous: string; next: string;   // nav arrows (accessible labels)
     zoomHour: string; zoomDay: string; zoomWeek: string;   // zoom-preset buttons
     noResources: string;              // empty text when config.resources is empty
+    // built-in editor
+    newEvent: string; editEvent: string;
+    title: string; eventTitle: string;   // field label / placeholder
+    resource: string;
+    start: string; end: string;
+    timesIn: string;                     // timezone hint, '{tz}' = the configured zone
+    category: string; none: string; notes: string;
+    save: string; create: string; cancel: string; delete: string;
 }
 
 export const EN_TIMELINE_LABELS: TimelineLabels = {
     today: 'Today',
     previous: 'Previous', next: 'Next',
     zoomHour: 'Hour', zoomDay: 'Day', zoomWeek: 'Week',
-    noResources: 'No resources'
+    noResources: 'No resources',
+    newEvent: 'New event', editEvent: 'Edit event',
+    title: 'Title', eventTitle: 'Event title',
+    resource: 'Resource',
+    start: 'Start', end: 'End',
+    timesIn: 'Times in {tz}',
+    category: 'Category', none: 'None', notes: 'Notes',
+    save: 'Save', create: 'Create', cancel: 'Cancel', delete: 'Delete'
 };
 
 const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
@@ -90,37 +105,79 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: "Aujourd'hui",
         previous: 'Précédent', next: 'Suivant',
         zoomHour: 'Heure', zoomDay: 'Jour', zoomWeek: 'Semaine',
-        noResources: 'Aucune ressource'
+        noResources: 'Aucune ressource',
+        newEvent: 'Nouvel événement', editEvent: "Modifier l'événement",
+        title: 'Titre', eventTitle: "Titre de l'événement",
+        resource: 'Ressource',
+        start: 'Début', end: 'Fin',
+        timesIn: 'Heures en {tz}',
+        category: 'Catégorie', none: 'Aucune', notes: 'Notes',
+        save: 'Enregistrer', create: 'Créer', cancel: 'Annuler', delete: 'Supprimer'
     },
     de: {
         today: 'Heute',
         previous: 'Zurück', next: 'Weiter',
         zoomHour: 'Stunde', zoomDay: 'Tag', zoomWeek: 'Woche',
-        noResources: 'Keine Ressourcen'
+        noResources: 'Keine Ressourcen',
+        newEvent: 'Neues Ereignis', editEvent: 'Ereignis bearbeiten',
+        title: 'Titel', eventTitle: 'Ereignistitel',
+        resource: 'Ressource',
+        start: 'Beginn', end: 'Ende',
+        timesIn: 'Zeiten in {tz}',
+        category: 'Kategorie', none: 'Keine', notes: 'Notizen',
+        save: 'Speichern', create: 'Erstellen', cancel: 'Abbrechen', delete: 'Löschen'
     },
     es: {
         today: 'Hoy',
         previous: 'Anterior', next: 'Siguiente',
         zoomHour: 'Hora', zoomDay: 'Día', zoomWeek: 'Semana',
-        noResources: 'Sin recursos'
+        noResources: 'Sin recursos',
+        newEvent: 'Nuevo evento', editEvent: 'Editar evento',
+        title: 'Título', eventTitle: 'Título del evento',
+        resource: 'Recurso',
+        start: 'Inicio', end: 'Fin',
+        timesIn: 'Horas en {tz}',
+        category: 'Categoría', none: 'Ninguna', notes: 'Notas',
+        save: 'Guardar', create: 'Crear', cancel: 'Cancelar', delete: 'Eliminar'
     },
     nl: {
         today: 'Vandaag',
         previous: 'Vorige', next: 'Volgende',
         zoomHour: 'Uur', zoomDay: 'Dag', zoomWeek: 'Week',
-        noResources: 'Geen resources'
+        noResources: 'Geen resources',
+        newEvent: 'Nieuw evenement', editEvent: 'Evenement bewerken',
+        title: 'Titel', eventTitle: 'Titel van het evenement',
+        resource: 'Resource',
+        start: 'Begin', end: 'Einde',
+        timesIn: 'Tijden in {tz}',
+        category: 'Categorie', none: 'Geen', notes: 'Notities',
+        save: 'Opslaan', create: 'Aanmaken', cancel: 'Annuleren', delete: 'Verwijderen'
     },
     it: {
         today: 'Oggi',
         previous: 'Precedente', next: 'Successivo',
         zoomHour: 'Ora', zoomDay: 'Giorno', zoomWeek: 'Settimana',
-        noResources: 'Nessuna risorsa'
+        noResources: 'Nessuna risorsa',
+        newEvent: 'Nuovo evento', editEvent: 'Modifica evento',
+        title: 'Titolo', eventTitle: "Titolo dell'evento",
+        resource: 'Risorsa',
+        start: 'Inizio', end: 'Fine',
+        timesIn: 'Orari in {tz}',
+        category: 'Categoria', none: 'Nessuna', notes: 'Note',
+        save: 'Salva', create: 'Crea', cancel: 'Annulla', delete: 'Elimina'
     },
     pt: {
         today: 'Hoje',
         previous: 'Anterior', next: 'Seguinte',
         zoomHour: 'Hora', zoomDay: 'Dia', zoomWeek: 'Semana',
-        noResources: 'Sem recursos'
+        noResources: 'Sem recursos',
+        newEvent: 'Novo evento', editEvent: 'Editar evento',
+        title: 'Título', eventTitle: 'Título do evento',
+        resource: 'Recurso',
+        start: 'Início', end: 'Fim',
+        timesIn: 'Horas em {tz}',
+        category: 'Categoria', none: 'Nenhuma', notes: 'Notas',
+        save: 'Salvar', create: 'Criar', cancel: 'Cancelar', delete: 'Excluir'
     }
 };
 

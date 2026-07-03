@@ -11,6 +11,9 @@ export interface TimelineProps {
     zoom: TimelineZoom;      // two-way: the toolbar writes the choice back
     showToolbar: boolean;
     showLegend: boolean;
+    editable: boolean;       // drag to move/reassign, edge-resize, click-to-edit (with builtInEditor)
+    selectable: boolean;     // drag empty track to create
+    builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     rowHeight: number;
     timezone: string;        // IANA zone for display (empty = browser-local)
     locale: string;
@@ -55,6 +58,9 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         zoom: ((z) => (z === 'hour' || z === 'week' ? z : 'day'))(tree.readString('config.zoom', 'day')) as TimelineZoom,
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showLegend: tree.readBoolean('config.showLegend', true),
+        editable: tree.readBoolean('config.editable', false),
+        selectable: tree.readBoolean('config.selectable', false),
+        builtInEditor: tree.readBoolean('config.builtInEditor', false),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
         timezone: tree.readString('config.timezone', ''),
         locale,

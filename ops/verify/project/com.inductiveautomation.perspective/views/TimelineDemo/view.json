@@ -30,7 +30,7 @@
           "height": 28
         },
         "props": {
-          "text": "Resource Timeline demo — M1 read-only board: bars (lane-packed), state bands, background spans, recurring events, hover, legend filter. Editing comes in M2."
+          "text": "Resource Timeline demo — M2 editing: drag a bar to retime, drag it onto another row to reassign, drag an edge to resize, drag empty track to create (editor pops open), click a bar to edit/delete. Every change persists via one onChange script."
         }
       },
       {
@@ -109,7 +109,10 @@
                 "label": "Meetings",
                 "color": "#8e44ad"
               }
-            ]
+            ],
+            "editable": true,
+            "selectable": true,
+            "builtInEditor": true
           },
           "data": {
             "events": [
@@ -253,6 +256,19 @@
                 "category": "meeting",
                 "rrule": {
                   "freq": "daily"
+                }
+              }
+            ]
+          }
+        },
+        "events": {
+          "component": {
+            "onChange": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# One handler for every mutation: create / edit / delete / move / resize\n\t# (a reassign is a move whose event.resourceId changed; fromResourceId says from where).\n\tev = event.event\n\taction = event.action\n\tevents = [dict(e) for e in self.props.data.events]\n\tout = []\n\tfound = False\n\tif action != \"delete\":\n\t\trow = {\"id\": ev.id, \"resourceId\": getattr(ev, \"resourceId\", \"\"),\n\t\t\t\"title\": getattr(ev, \"title\", \"\"), \"start\": getattr(ev, \"start\", \"\"),\n\t\t\t\"end\": getattr(ev, \"end\", \"\"), \"category\": getattr(ev, \"category\", \"\"),\n\t\t\t\"description\": getattr(ev, \"description\", \"\")}\n\t\tif getattr(ev, \"color\", \"\"):\n\t\t\trow[\"color\"] = ev.color\n\tfor e in events:\n\t\tif e.get(\"id\") == ev.id:\n\t\t\tfound = True\n\t\t\tif action == \"delete\":\n\t\t\t\tcontinue\n\t\t\t# keep fields the payload doesn't carry (display/status)\n\t\t\tkept = dict(e)\n\t\t\tkept.update(row)\n\t\t\tout.append(kept)\n\t\telse:\n\t\t\tout.append(e)\n\tif action != \"delete\" and not found:\n\t\tout.append(row)\n\tself.props.data.events = out\n"
                 }
               }
             ]

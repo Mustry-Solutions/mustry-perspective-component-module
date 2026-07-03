@@ -234,6 +234,45 @@
     // Clamped at a window edge: square that edge to signal continuation.
     &.tml-bar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; }
     &.tml-bar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+    // Editable: grab affordance; a touch drag moves the bar instead of panning.
+    &.tml-bar--movable { cursor: grab; touch-action: none; }
+
+    // The in-flight gesture's ghost.
+    &.tml-bar--ghost {
+        opacity: 0.75;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+        z-index: 2;
+    }
+}
+
+// Edge-resize handles (shown on movable bars; enlarged on coarse pointers).
+.tml-resize {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 7px;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+.tml-resize--start { left: 0; }
+.tml-resize--end { right: 0; }
+
+@media (pointer: coarse) {
+    .tml-resize { width: 16px; }
+}
+
+// Drag-to-create selection rectangle.
+.tml-select {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    border: 1px dashed var(--tml-accent);
+    background: color-mix(in srgb, var(--tml-accent) 12%, transparent);
+    border-radius: 4px;
+    pointer-events: none;
 }
 
 .tml-bar-title {

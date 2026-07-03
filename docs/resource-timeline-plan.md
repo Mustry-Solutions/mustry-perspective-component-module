@@ -96,9 +96,12 @@ Perspective theme.
   categories/legend (+ output.hiddenCategories), windowed outputs, recurrence
   display, localization, TimelineStress at /timeline-stress (virtualization
   deferred — see deviations).
-- **M2 editing** — drag-retime with snapping, cross-row reassign, both-edge
-  resize, drag-empty-to-create, reused editor (+ resource dropdown), full
-  onChange contract.
+- **M2 editing — DONE (2026-07-03)** — drag-retime with snapping, cross-row
+  reassign (`fromResourceId` on onChange), both-edge resize, drag-empty-to-create,
+  built-in editor with a grouped resource dropdown (reuses the shared .cal-editor
+  styles), full onChange contract; recurring occurrences stay display-only
+  (click falls through to onEventClick). Manual checklist:
+  docs/timeline-manual-test.md (touch still PENDING on real hardware).
 - **M3 polish** — perf pass, CSV export, manual-test checklist, README recipes
   (windowed query + one-handler write-back), TimelineDemo/TimelineDbDemo views.
 
