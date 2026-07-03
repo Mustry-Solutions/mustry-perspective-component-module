@@ -2,28 +2,15 @@
 // perspective-client-free (PropReader) so it can be unit-tested under node jest.
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
-import { RRule } from '../../shared/recurrence';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
-import { TimelineResource, TimelineZoom } from './timelineLogic';
+import { TimelineEvent, TimelineResource, TimelineZoom } from './timelineLogic';
 
-/** One timeline event/bar (controlled data — the component never mutates these). */
-export interface TimelineEvent {
-    id: string;
-    resourceId: string;
-    title: string;
-    start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss' (naive = zone-local) or offset/epoch instant
-    end?: string;
-    color?: string;
-    category?: string;
-    status?: string;       // 'tentative' | 'cancelled' | 'done'
-    description?: string;
-    display?: string;      // 'bar' (default) | 'state' (full-height band) | 'background'
-    rrule?: RRule;         // expanded per visible window (display-only in v1)
-}
+export type { TimelineEvent };
 
 export interface TimelineProps {
     zoom: TimelineZoom;      // two-way: the toolbar writes the choice back
     showToolbar: boolean;
+    showLegend: boolean;
     rowHeight: number;
     timezone: string;        // IANA zone for display (empty = browser-local)
     locale: string;
@@ -67,6 +54,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
     return {
         zoom: ((z) => (z === 'hour' || z === 'week' ? z : 'day'))(tree.readString('config.zoom', 'day')) as TimelineZoom,
         showToolbar: tree.readBoolean('config.showToolbar', true),
+        showLegend: tree.readBoolean('config.showLegend', true),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
         timezone: tree.readString('config.timezone', ''),
         locale,

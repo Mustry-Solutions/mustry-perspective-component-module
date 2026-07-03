@@ -1,5 +1,10 @@
 // Resource Timeline styles. Every colour is a CSS variable defaulting to the
 // active Perspective theme (--tml-* — override via a style class / stylesheet).
+//
+// Layout: ONE scroll container (.tml-scroll) holds a flex-wrapped grid whose
+// line width is label-column + canvas, so each [label | track] pair forms a row.
+// The axis is sticky-top, the label column sticky-left, the corner sticky-both —
+// vertical and horizontal scrolling stay aligned by construction.
 .mustry-timeline {
     --tml-accent: var(--callToAction, #0c7bb3);
     --tml-accent-text: #ffffff;
@@ -80,7 +85,7 @@
     gap: 4px;
 }
 
-// Indeterminate loading bar under the toolbar (config.loading), calendar-style.
+// Indeterminate loading bar under the toolbar (config.loading).
 .tml-loading-bar {
     flex: 0 0 auto;
     height: 2px;
@@ -95,74 +100,35 @@
     100% { background-position: 140% 0, 0 0; }
 }
 
-.tml-body {
-    flex: 1 1 auto;
-    display: flex;
-    min-height: 0;
-}
-
-// Sticky left column: group headers + resource labels.
-.tml-resources {
-    flex: 0 0 160px;
-    border-right: 1px solid var(--tml-border);
-    overflow: hidden;
-}
-
-.tml-corner {
-    height: 42px;   // matches the two axis rows
-    border-bottom: 1px solid var(--tml-border);
-}
-
-.tml-group-label,
-.tml-group-row {
-    height: 22px;
-    line-height: 22px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--tml-muted);
-    background: var(--tml-group-bg);
-    border-bottom: 1px solid var(--tml-line);
-}
-
-.tml-group-label {
-    padding: 0 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.tml-resource-label {
-    display: flex;
-    align-items: center;
-    padding: 0 8px;
-    border-bottom: 1px solid var(--tml-line);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.tml-empty {
-    padding: 12px 8px;
-    color: var(--tml-muted);
-    font-style: italic;
-}
+// --- the scrolling grid -----------------------------------------------------
 
 .tml-scroll {
     flex: 1 1 auto;
     overflow: auto;
+    min-height: 0;
 }
 
-.tml-canvas {
+.tml-grid {
     position: relative;
-    min-height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+.tml-corner {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    background: var(--tml-bg);
+    border-bottom: 1px solid var(--tml-border);
+    border-right: 1px solid var(--tml-border);
 }
 
 .tml-axis {
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 3;
     background: var(--tml-bg);
     border-bottom: 1px solid var(--tml-border);
 }
@@ -187,25 +153,216 @@
     white-space: nowrap;
 }
 
-.tml-row {
-    position: relative;
+.tml-label {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    background: var(--tml-bg);
+    border-right: 1px solid var(--tml-border);
     border-bottom: 1px solid var(--tml-line);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.tml-gridline {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-left: 1px solid var(--tml-line);
-    opacity: 0.6;
+.tml-label--group,
+.tml-track--group {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tml-muted);
+    background: var(--tml-group-bg);
+}
+
+.tml-track {
+    position: relative;
+    border-bottom: 1px solid var(--tml-line);
+    overflow: hidden;
+    // Hourly/sub-step gridlines without per-tick DOM (background-size set inline).
+    background-image: linear-gradient(to right, var(--tml-line) 1px, transparent 1px);
+    background-repeat: repeat-x;
+}
+
+.tml-track--group {
+    background-image: none;
+}
+
+.tml-empty {
+    padding: 12px 8px;
+    color: var(--tml-muted);
+    font-style: italic;
 }
 
 .tml-now {
     position: absolute;
-    top: 42px;   // below the axis
     bottom: 0;
     width: 0;
     border-left: 2px solid var(--tml-now);
     z-index: 1;
     pointer-events: none;
+}
+
+// --- bars & bands -------------------------------------------------------------
+
+.tml-bar {
+    --ev: var(--tml-accent);
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    border-radius: 4px;
+    border-left: 3px solid var(--ev);
+    background: color-mix(in srgb, var(--ev) 18%, var(--tml-bg));
+    color: color-mix(in srgb, var(--ev) 72%, var(--tml-text));
+    overflow: hidden;
+    cursor: default;
+    transition: filter 0.12s ease, box-shadow 0.12s ease;
+
+    &:hover {
+        filter: brightness(0.96);
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.14);
+        z-index: 1;
+    }
+
+    // Clamped at a window edge: square that edge to signal continuation.
+    &.tml-bar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; }
+    &.tml-bar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+}
+
+.tml-bar-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tml-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.tml-band--bg {
+    opacity: 0.18;
+    pointer-events: none;
+}
+
+.tml-band--state {
+    --ev: var(--tml-accent);
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    background: color-mix(in srgb, var(--ev) 30%, var(--tml-bg));
+    border-left: 2px solid var(--ev);
+    color: color-mix(in srgb, var(--ev) 75%, var(--tml-text));
+    font-size: 11px;
+    overflow: hidden;
+}
+
+.tml-band-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Status restyles (shared status class names, timeline visuals).
+.tml-bar.cal-ev--tentative,
+.tml-band--state.cal-ev--tentative {
+    background: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--ev) 22%, var(--tml-bg)),
+        color-mix(in srgb, var(--ev) 22%, var(--tml-bg)) 6px,
+        color-mix(in srgb, var(--ev) 8%, var(--tml-bg)) 6px,
+        color-mix(in srgb, var(--ev) 8%, var(--tml-bg)) 12px
+    );
+}
+
+.tml-bar.cal-ev--cancelled,
+.tml-band--state.cal-ev--cancelled {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.tml-bar.cal-ev--done {
+    opacity: 0.65;
+}
+
+// --- legend & hover -----------------------------------------------------------
+
+.tml-legend {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    padding: 4px 10px;
+    border-top: 1px solid var(--tml-border);
+}
+
+.tml-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 4px;
+    border: none;
+    background: none;
+    color: var(--tml-text);
+    cursor: pointer;
+    border-radius: 4px;
+
+    &:hover { background: var(--tml-line); }
+}
+
+.tml-legend-item--off {
+    opacity: 0.4;
+    text-decoration: line-through;
+}
+
+.tml-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+}
+
+.tml-hover {
+    position: fixed;
+    z-index: 1000;
+    padding: 8px 10px;
+    background: var(--neutral-10, #ffffff);
+    color: var(--neutral-90, #1f2937);
+    border: 1px solid var(--neutral-30, #d1d5db);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.tml-hover-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.tml-hover-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+}
+
+.tml-hover-line {
+    color: var(--neutral-60, #6b7280);
+}
+
+.tml-hover-desc {
+    margin-top: 4px;
 }

@@ -1,7 +1,9 @@
 import {
-    MS_PER_HOUR, TimeScale, ZOOM_PRESETS, buildRows, buildTicks, msToPx, pxToMs, scaleWidth
+    MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
+    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth
 } from '../timeline/timelineLogic';
 import { mapTimelineProps } from '../timeline/timelineProps';
+import { toEpochMs } from '../../shared/dateUtils';
 import { stubReader } from './_stubReader';
 
 // A fixed UTC window: 2026-06-17T00:00Z .. +24h at the day preset's density.
@@ -51,6 +53,87 @@ describe('buildTicks', () => {
     it('labels follow the timezone', () => {
         const t = buildTicks(scale, 'day', 'America/Chicago', 'en-US');
         expect(t.lower[0].label).toBe('19:00');   // 00:00Z = 19:00 CDT the previous evening
+    });
+});
+
+describe('toEpochMs', () => {
+    it('absolute instants: epoch digits and offset/Z ISO strings', () => {
+        expect(toEpochMs(String(Date.UTC(2026, 5, 17, 14)), 'UTC')).toBe(Date.UTC(2026, 5, 17, 14));
+        expect(toEpochMs('2026-06-17T14:00:00Z', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 14));
+        expect(toEpochMs('2026-06-17T14:00:00+02:00', 'UTC')).toBe(Date.UTC(2026, 5, 17, 12));
+    });
+    it('naive datetimes and date-only strings are wall clock in the zone', () => {
+        expect(toEpochMs('2026-06-17T09:00:00', 'UTC')).toBe(Date.UTC(2026, 5, 17, 9));
+        expect(toEpochMs('2026-06-17T09:00:00', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 14));  // CDT = UTC-5
+        expect(toEpochMs('2026-06-17', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+    });
+    it('empty / unparseable -> null', () => {
+        expect(toEpochMs('', 'UTC')).toBeNull();
+        expect(toEpochMs('not-a-date', 'UTC')).toBeNull();
+    });
+});
+
+// Helpers for layout tests: a 24h UTC window on 2026-06-17.
+const win: TimeScale = { startMs: Date.UTC(2026, 5, 17), endMs: Date.UTC(2026, 5, 18), pxPerHour: 60 };
+const ev = (o: Partial<TimelineEvent>): TimelineEvent =>
+    ({ id: 'e', resourceId: 'm1', title: 'T', start: '2026-06-17T08:00:00Z', ...o });
+
+describe('layoutRowBars', () => {
+    it('filters to the row, clamps to the window and flags continuation', () => {
+        const bars = layoutRowBars([
+            ev({ id: 'a', start: '2026-06-17T08:00:00Z', end: '2026-06-17T10:00:00Z' }),
+            ev({ id: 'other-row', resourceId: 'm2' }),
+            ev({ id: 'outside', start: '2026-06-18T08:00:00Z', end: '2026-06-18T09:00:00Z' }),
+            ev({ id: 'spans-in', start: '2026-06-16T20:00:00Z', end: '2026-06-17T04:00:00Z' })
+        ], 'm1', win, 'UTC');
+        expect(bars.map((b) => b.event.id)).toEqual(['spans-in', 'a']);
+        expect(bars[0].startMs).toBe(win.startMs);        // clamped
+        expect(bars[0].continuesLeft).toBe(true);
+        expect(bars[1].continuesLeft).toBe(false);
+    });
+
+    it('a bar without an end runs the default duration', () => {
+        const bars = layoutRowBars([ev({ end: undefined })], 'm1', win, 'UTC');
+        expect(bars[0].endMs - bars[0].startMs).toBe(60 * 60000);
+    });
+
+    it('packs transitively-overlapping bars into lanes', () => {
+        const bars = layoutRowBars([
+            ev({ id: 'a', start: '2026-06-17T08:00:00Z', end: '2026-06-17T11:00:00Z' }),
+            ev({ id: 'b', start: '2026-06-17T09:00:00Z', end: '2026-06-17T10:00:00Z' }),
+            ev({ id: 'c', start: '2026-06-17T10:30:00Z', end: '2026-06-17T12:00:00Z' }),
+            ev({ id: 'solo', start: '2026-06-17T14:00:00Z', end: '2026-06-17T15:00:00Z' })
+        ], 'm1', win, 'UTC');
+        const byId = Object.fromEntries(bars.map((b) => [b.event.id, b]));
+        expect(byId.a.lane).toBe(0);
+        expect(byId.b.lane).toBe(1);          // overlaps a
+        expect(byId.c.lane).toBe(1);          // overlaps a only; reuses b's freed lane
+        expect(byId.a.lanes).toBe(2);         // cluster width
+        expect(byId.solo.lanes).toBe(1);      // separate cluster
+    });
+
+    it('excludes state/background displays', () => {
+        const bars = layoutRowBars([
+            ev({ id: 's', display: 'state' }), ev({ id: 'g', display: 'background' }), ev({ id: 'b' })
+        ], 'm1', win, 'UTC');
+        expect(bars.map((b) => b.event.id)).toEqual(['b']);
+    });
+});
+
+describe('layoutRowBands', () => {
+    it('selects one display kind, in start order', () => {
+        const states = layoutRowBands([
+            ev({ id: 's2', display: 'state', start: '2026-06-17T10:00:00Z', end: '2026-06-17T12:00:00Z' }),
+            ev({ id: 's1', display: 'state', start: '2026-06-17T06:00:00Z', end: '2026-06-17T10:00:00Z' }),
+            ev({ id: 'bar' })
+        ], 'm1', 'state', win, 'UTC');
+        expect(states.map((b) => b.event.id)).toEqual(['s1', 's2']);
+    });
+
+    it('an ongoing state (no end) runs to the window edge', () => {
+        const states = layoutRowBands([ev({ display: 'state', end: undefined })], 'm1', 'state', win, 'UTC');
+        expect(states[0].endMs).toBe(win.endMs);
+        expect(states[0].continuesRight).toBe(false);   // no known end -> not flagged
     });
 });
 

@@ -1,9 +1,27 @@
 // Pure, framework-free logic for the Resource Timeline: the epoch-linear time
-// scale, tick generation and row assembly. Unit-tested without rendering.
+// scale, tick generation, row assembly and per-row bar/band layout. Unit-tested
+// without rendering.
 //
 // The scale is EPOCH-linear (ms -> px), not wall-clock-linear: DST days are
 // 23/25 hours long and must render that way instead of tearing the axis. Tick
 // LABELS are zone-aware via Intl.
+import { toEpochMs } from '../../shared/dateUtils';
+import { RRule } from '../../shared/recurrence';
+
+/** One timeline event/bar (controlled data — the component never mutates these). */
+export interface TimelineEvent {
+    id: string;
+    resourceId: string;
+    title: string;
+    start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss' (naive = zone-local) or offset/epoch instant
+    end?: string;
+    color?: string;
+    category?: string;
+    status?: string;       // 'tentative' | 'cancelled' | 'done'
+    description?: string;
+    display?: string;      // 'bar' (default) | 'state' (full-height band) | 'background'
+    rrule?: RRule;         // expanded per visible window (display-only in v1)
+}
 
 export type TimelineZoom = 'hour' | 'day' | 'week';
 
@@ -103,6 +121,121 @@ export interface RowItem {
     key: string;                  // unique render key
     label: string;
     resource?: TimelineResource;  // set when type === 'resource'
+}
+
+// --- per-row bar/band layout --------------------------------------------------
+
+export const DEFAULT_BAR_MIN = 60;   // assumed duration (minutes) for a bar with no end
+
+/** A window-clamped item ready to render on one row. */
+export interface BarLayout {
+    event: TimelineEvent;
+    startMs: number;           // clamped to the visible window
+    endMs: number;
+    lane: number;              // 0-based lane within the row (bars only)
+    lanes: number;             // total lanes in the bar's overlap cluster
+    continuesLeft: boolean;    // starts before the window / clamp edge
+    continuesRight: boolean;   // ends after it
+}
+
+/** Parse + clamp one event to the window; null = not on this row / not visible.
+ *  A missing end means: bars run DEFAULT_BAR_MIN; states/backgrounds run until
+ *  the window end (an ongoing state). */
+function clampToWindow(ev: TimelineEvent, resourceId: string, scale: TimeScale, timezone: string): BarLayout | null {
+    if (!ev || ev.resourceId !== resourceId || !ev.start) {
+        return null;
+    }
+    const startMs = toEpochMs(ev.start, timezone);
+    if (startMs === null) {
+        return null;
+    }
+    let endMs = ev.end ? toEpochMs(ev.end, timezone) : null;
+    if (endMs === null || endMs <= startMs) {
+        endMs = ev.display === 'state' || ev.display === 'background'
+            ? scale.endMs                          // ongoing band -> to the window edge
+            : startMs + DEFAULT_BAR_MIN * 60000;   // bar -> default duration
+    }
+    if (endMs <= scale.startMs || startMs >= scale.endMs) {
+        return null;   // entirely outside the window
+    }
+    const s = Math.max(startMs, scale.startMs);
+    const e = Math.min(endMs, scale.endMs);
+    return {
+        event: ev, startMs: s, endMs: e, lane: 0, lanes: 1,
+        continuesLeft: startMs < scale.startMs,
+        continuesRight: endMs > scale.endMs
+    };
+}
+
+/**
+ * Lay out one row's BARS (display 'bar'/unset): window-clamp, then pack
+ * transitively-overlapping bars into stacked lanes (the calendar's cluster
+ * algorithm in epoch space). The renderer derives top/height from lane/lanes.
+ */
+export function layoutRowBars(events: TimelineEvent[], resourceId: string, scale: TimeScale, timezone: string): BarLayout[] {
+    const items: BarLayout[] = [];
+    for (const ev of events) {
+        if (ev && (ev.display === 'state' || ev.display === 'background')) {
+            continue;
+        }
+        const it = clampToWindow(ev, resourceId, scale, timezone);
+        if (it) {
+            items.push(it);
+        }
+    }
+    items.sort((a, b) => a.startMs - b.startMs || a.endMs - b.endMs);
+
+    let i = 0;
+    while (i < items.length) {
+        // Grow a cluster of transitively-overlapping bars.
+        let j = i;
+        let clusterEnd = items[i].endMs;
+        while (j + 1 < items.length && items[j + 1].startMs < clusterEnd) {
+            j++;
+            clusterEnd = Math.max(clusterEnd, items[j].endMs);
+        }
+        // Greedy lane assignment within the cluster.
+        const laneEnds: number[] = [];
+        for (let k = i; k <= j; k++) {
+            let placed = false;
+            for (let l = 0; l < laneEnds.length; l++) {
+                if (laneEnds[l] <= items[k].startMs) {
+                    items[k].lane = l;
+                    laneEnds[l] = items[k].endMs;
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                items[k].lane = laneEnds.length;
+                laneEnds.push(items[k].endMs);
+            }
+        }
+        for (let k = i; k <= j; k++) {
+            items[k].lanes = laneEnds.length;
+        }
+        i = j + 1;
+    }
+    return items;
+}
+
+/** One row's full-height bands for a display kind ('state' or 'background'):
+ *  window-clamped, in start order, no packing (contiguous by nature). */
+export function layoutRowBands(
+    events: TimelineEvent[], resourceId: string, kind: 'state' | 'background', scale: TimeScale, timezone: string
+): BarLayout[] {
+    const out: BarLayout[] = [];
+    for (const ev of events) {
+        if (!ev || ev.display !== kind) {
+            continue;
+        }
+        const it = clampToWindow(ev, resourceId, scale, timezone);
+        if (it) {
+            out.push(it);
+        }
+    }
+    out.sort((a, b) => a.startMs - b.startMs);
+    return out;
 }
 
 /** Rows to render: resources in array order, with a group header row inserted

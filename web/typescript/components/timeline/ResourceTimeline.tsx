@@ -7,18 +7,27 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { resolveZoned, todayInZone } from '../../shared/dateUtils';
+import { resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
+import { expandEvents } from '../../shared/recurrence';
+import { EventIcon, categoryColor, resolveColor, statusClass } from '../../shared/eventStyle';
 import {
-    RowItem, TimeScale, TimelineZoom, ZOOM_PRESETS, MS_PER_HOUR,
-    buildRows, buildTicks, msToPx, scaleWidth
+    BarLayout, RowItem, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS, MS_PER_HOUR,
+    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, scaleWidth
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
+import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
 
 // Must match ResourceTimeline.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
 
+const LABEL_COL_PX = 160;
+const AXIS_PX = 42;        // two 21px tick rows (matches .tml-axis-row)
+const GROUP_ROW_PX = 22;
+
 interface ResourceTimelineState {
-    anchorMs: number;   // epoch ms of the window start (zone-local midnight anchored)
+    anchorMs: number;                    // epoch ms of the window start
+    hover: TimelineHoverInfo | null;     // bar under the cursor -> detail popover
+    hiddenCats: Set<string>;             // category ids hidden via the legend
 }
 
 /** Epoch ms of today's zone-local midnight. */
@@ -31,10 +40,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private lastOutputSig = '';
     private outputTimer = 0;    // debounces visibleStart/End writes so rapid nav = one query
     private refreshTimer = 0;   // periodic re-render so the now-line ticks
+    private hoverTimer = 0;
 
     constructor(props: ComponentProps<TimelineProps>) {
         super(props);
-        this.state = { anchorMs: todayAnchorMs(props.props.timezone) };
+        this.state = { anchorMs: todayAnchorMs(props.props.timezone), hover: null, hiddenCats: new Set() };
     }
 
     componentDidMount(): void {
@@ -56,6 +66,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
         }
+        this.clearHoverTimer();
     }
 
     /** The visible window: [anchor, anchor + zoom span), epoch-linear. */
@@ -104,6 +115,21 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
     }
 
+    /** Windowed events with recurring series expanded and legend-hidden categories dropped. */
+    private visibleEvents(): TimelineEvent[] {
+        const p = this.props.props;
+        const s = this.scale();
+        // Recurrence expands on zone-local DATES; cover the window generously.
+        const ws = zoneWallClock(new Date(s.startMs), p.timezone);
+        const we = zoneWallClock(new Date(s.endMs), p.timezone);
+        const winStart = new Date(ws.y, ws.mo - 1, ws.d - 1);
+        const winEnd = new Date(we.y, we.mo - 1, we.d + 2);
+        const merged = [...(p.events || []), ...(p.recurringEvents || [])];
+        const hidden = this.state.hiddenCats;
+        return expandEvents(merged, winStart, winEnd)
+            .filter((ev) => !(ev.category && hidden.has(ev.category)));
+    }
+
     // --- navigation ---------------------------------------------------------
     private step(dir: number): void {
         const preset = ZOOM_PRESETS[this.props.props.zoom];
@@ -117,6 +143,67 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     // `config.zoom` is two-way: the toolbar writes the user's choice back.
     private setZoom(zoom: TimelineZoom): void {
         this.props.store.props.write('config.zoom', zoom);
+    }
+
+    // --- hover detail popover ----------------------------------------------
+    private clearHoverTimer(): void {
+        if (this.hoverTimer) {
+            window.clearTimeout(this.hoverTimer);
+            this.hoverTimer = 0;
+        }
+    }
+
+    private hideHover = (): void => {
+        this.clearHoverTimer();
+        if (this.state.hover) {
+            this.setState({ hover: null });
+        }
+    };
+
+    private onBarHover(it: BarLayout, resourceLabel: string, e: React.MouseEvent): void {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+        const tz = this.props.props.timezone;
+        // Prefer the event's real (unclamped) extent for the popover text.
+        const startMs = toEpochMs(it.event.start, tz) ?? it.startMs;
+        const endMs = (it.event.end ? toEpochMs(it.event.end, tz) : null) ?? it.endMs;
+        this.clearHoverTimer();
+        this.hoverTimer = window.setTimeout(
+            () => this.setState({ hover: { event: it.event, resourceLabel, startMs, endMs, rect } }), 350);
+    }
+
+    // --- category legend ----------------------------------------------------
+    private toggleCategory(id: string): void {
+        const hiddenCats = new Set(this.state.hiddenCats);
+        if (hiddenCats.has(id)) {
+            hiddenCats.delete(id);
+        } else {
+            hiddenCats.add(id);
+        }
+        this.setState({ hiddenCats }, () => {
+            this.props.store.props.write('output.hiddenCategories', Array.from(this.state.hiddenCats));
+        });
+    }
+
+    private renderLegend(): React.ReactNode {
+        const p = this.props.props;
+        if (!p.showLegend || !(p.categories || []).length) {
+            return null;
+        }
+        return (
+            <div className="tml-legend">
+                {p.categories.map((c) => (
+                    <button
+                        type="button" key={c.id}
+                        className={`tml-legend-item${this.state.hiddenCats.has(c.id) ? ' tml-legend-item--off' : ''}`}
+                        onClick={() => this.toggleCategory(c.id)}
+                    >
+                        <span className="tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />
+                        {c.label}
+                    </button>
+                ))}
+            </div>
+        );
     }
 
     // --- rendering ----------------------------------------------------------
@@ -152,62 +239,139 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         );
     }
 
+    /** One resource row's track: background bands, state bands, then lane-packed bars. */
+    private renderTrack(row: RowItem, events: TimelineEvent[], scale: TimeScale): React.ReactNode {
+        const p = this.props.props;
+        const r = row.resource!;
+        const rowH = p.rowHeight;
+        const px = (ms: number) => msToPx(scale, ms);
+        const geom = (it: BarLayout) => ({ left: px(it.startMs), width: Math.max(2, px(it.endMs) - px(it.startMs)) });
+        const bands = layoutRowBands(events, r.id, 'background', scale, p.timezone);
+        const states = layoutRowBands(events, r.id, 'state', scale, p.timezone);
+        const bars = layoutRowBars(events, r.id, scale, p.timezone);
+        const barArea = rowH - 6;   // 3px vertical inset
+        return (
+            <>
+                {bands.map((it, i) => (
+                    <div
+                        key={`bg-${it.event.id || i}`} className="tml-band tml-band--bg"
+                        style={{ ...geom(it), background: resolveColor(p.categories, it.event) || undefined }}
+                    />
+                ))}
+                {states.map((it, i) => {
+                    const g = geom(it);
+                    return (
+                        <div
+                            key={`st-${it.event.id || i}`}
+                            className={`tml-band tml-band--state${statusClass(it.event)}`}
+                            style={{ ...g, ['--ev' as string]: resolveColor(p.categories, it.event) } as React.CSSProperties}
+                            onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
+                            onMouseLeave={this.hideHover}
+                        >
+                            {g.width > 48 && <span className="tml-band-label">{it.event.title}</span>}
+                        </div>
+                    );
+                })}
+                {bars.map((it, i) => {
+                    const g = geom(it);
+                    const laneH = barArea / it.lanes;
+                    const cls = ['tml-bar'];
+                    if (it.continuesLeft) { cls.push('tml-bar--cont-left'); }
+                    if (it.continuesRight) { cls.push('tml-bar--cont-right'); }
+                    const color = resolveColor(p.categories, it.event);
+                    return (
+                        <div
+                            key={`b-${it.event.id || i}`}
+                            className={cls.join(' ') + statusClass(it.event)}
+                            style={{
+                                ...g,
+                                top: 3 + it.lane * laneH,
+                                height: Math.max(10, laneH - 2),
+                                ...(color ? { ['--ev' as string]: color } : {})
+                            } as React.CSSProperties}
+                            title={it.event.title}
+                            onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
+                            onMouseLeave={this.hideHover}
+                        >
+                            <EventIcon ev={it.event} categories={p.categories} />
+                            <span className="tml-bar-title">{it.event.title}</span>
+                        </div>
+                    );
+                })}
+            </>
+        );
+    }
+
     render(): React.ReactNode {
         const p = this.props.props;
         const scale = this.scale();
         const width = scaleWidth(scale);
         const ticks = buildTicks(scale, p.zoom, p.timezone, p.locale);
         const rows: RowItem[] = buildRows(p.resources);
+        const events = this.visibleEvents();
         const nowMs = Date.now();
         const nowVisible = nowMs >= scale.startMs && nowMs < scale.endMs;
+        const stepPx = (ZOOM_PRESETS[p.zoom].lowerStepMin / 60) * scale.pxPerHour;
         const rowH = p.rowHeight;
         return (
             <div {...this.props.emit({ classes: p.loading ? ['mustry-timeline', 'tml-loading'] : ['mustry-timeline'] })}>
                 {p.showToolbar && this.renderToolbar()}
                 {p.loading && <div className="tml-loading-bar" aria-hidden="true" />}
-                <div className="tml-body">
-                    <div className="tml-resources">
-                        <div className="tml-corner" />
-                        {rows.map((r) => (
-                            <div
-                                key={r.key}
-                                className={r.type === 'group' ? 'tml-group-label' : 'tml-resource-label'}
-                                style={{ height: r.type === 'group' ? undefined : rowH }}
-                            >
-                                {r.label}
+                <div className="tml-scroll" onScroll={this.hideHover}>
+                    <div className="tml-grid" style={{ width: LABEL_COL_PX + width }}>
+                        <div className="tml-corner" style={{ width: LABEL_COL_PX, height: AXIS_PX }} />
+                        <div className="tml-axis" style={{ width, height: AXIS_PX }}>
+                            <div className="tml-axis-row tml-axis-upper">
+                                {ticks.upper.map((t) => (
+                                    <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
+                                ))}
                             </div>
-                        ))}
-                        {rows.length === 0 && <div className="tml-empty">{p.labels.noResources}</div>}
-                    </div>
-                    <div className="tml-scroll">
-                        <div className="tml-canvas" style={{ width }}>
-                            <div className="tml-axis">
-                                <div className="tml-axis-row tml-axis-upper">
-                                    {ticks.upper.map((t) => (
-                                        <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
-                                    ))}
-                                </div>
-                                <div className="tml-axis-row tml-axis-lower">
-                                    {ticks.lower.map((t) => (
-                                        <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
-                                    ))}
-                                </div>
+                            <div className="tml-axis-row tml-axis-lower">
+                                {ticks.lower.map((t) => (
+                                    <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
+                                ))}
                             </div>
-                            {rows.map((r) => (
-                                <div
-                                    key={r.key}
-                                    className={r.type === 'group' ? 'tml-group-row' : 'tml-row'}
-                                    style={{ height: r.type === 'group' ? undefined : rowH }}
-                                >
-                                    {r.type === 'resource' && ticks.lower.map((t) => (
-                                        <span key={t.ms} className="tml-gridline" style={{ left: t.px }} />
-                                    ))}
-                                </div>
-                            ))}
-                            {nowVisible && <div className="tml-now" style={{ left: msToPx(scale, nowMs) }} />}
                         </div>
+                        {rows.map((row) => (
+                            <React.Fragment key={row.key}>
+                                <div
+                                    className={row.type === 'group' ? 'tml-label tml-label--group' : 'tml-label'}
+                                    style={{ width: LABEL_COL_PX, height: row.type === 'group' ? GROUP_ROW_PX : rowH }}
+                                >
+                                    {row.label}
+                                </div>
+                                <div
+                                    className={row.type === 'group' ? 'tml-track tml-track--group' : 'tml-track'}
+                                    style={{
+                                        width,
+                                        height: row.type === 'group' ? GROUP_ROW_PX : rowH,
+                                        backgroundSize: `${stepPx}px 100%`
+                                    }}
+                                >
+                                    {row.type === 'resource' && this.renderTrack(row, events, scale)}
+                                </div>
+                            </React.Fragment>
+                        ))}
+                        {rows.length === 0 && (
+                            <div className="tml-empty" style={{ width: LABEL_COL_PX }}>{p.labels.noResources}</div>
+                        )}
+                        {nowVisible && (
+                            <div
+                                className="tml-now"
+                                style={{ left: LABEL_COL_PX + msToPx(scale, nowMs), top: AXIS_PX }}
+                            />
+                        )}
                     </div>
                 </div>
+                {this.renderLegend()}
+                {this.state.hover && (
+                    <TimelineHover
+                        hover={this.state.hover}
+                        locale={p.locale}
+                        timezone={p.timezone}
+                        categories={p.categories}
+                    />
+                )}
             </div>
         );
     }

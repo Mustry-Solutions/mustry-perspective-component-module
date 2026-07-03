@@ -1,8 +1,18 @@
 # Resource Timeline — component plan
 
-**Status: planned (2026-07-03). Nothing built yet.** Third component of the module:
-`mustrysolutions.display.resourcetimeline`. Decisions below were settled with Sam;
-change them here first if they change.
+**Status (2026-07-03): M0 + M1 built and live-verified.** Third component of the
+module: `mustrysolutions.display.resourcetimeline`. Decisions below were settled
+with Sam; change them here first if they change.
+
+Deviations from the original plan:
+- CSS prefix is `--tml-*` / `.tml-*` (not `--rtl-*` — that reads as right-to-left).
+- Row virtualization was planned for M1 and **deliberately deferred**: the stress
+  view (60 resources × 3,524 events, week zoom ≈ 1,700 bars in the window)
+  renders and scrolls smoothly without it. Revisit only if a real deployment
+  hurts; the windowed data binding already bounds what exists at all.
+- Layout is one scroll container (sticky axis / sticky label column / sticky
+  corner) rather than split panes, so both scroll axes stay aligned by
+  construction; row gridlines are a CSS background, not DOM ticks.
 
 ## What & why
 
@@ -77,12 +87,15 @@ Perspective theme.
 
 ## Milestones
 
-- **M0** — purge + recommission the dev gateway (approved); shared-layer
-  extraction (calendar keeps passing all tests); scaffold: descriptor + schema +
-  component renders resource rows + time axis.
-- **M1 read-only** — bars/states/backgrounds, zoom presets + pan + Today +
-  now-line, hover, categories/legend, windowed outputs, recurrence display,
-  localization, virtualization, stress view.
+- **M0 — DONE (2026-07-03)** — purge + recommission the dev gateway (also fixed
+  the fresh-volume ownership fault in setup.sh); shared-layer extraction
+  (calendar keeps passing all tests); scaffold: descriptor + schema + component
+  renders resource rows + time axis.
+- **M1 read-only — DONE (2026-07-03)** — bars (lane-packed) / states /
+  backgrounds, zoom presets + pan + Today + now-line, hover popover,
+  categories/legend (+ output.hiddenCategories), windowed outputs, recurrence
+  display, localization, TimelineStress at /timeline-stress (virtualization
+  deferred — see deviations).
 - **M2 editing** — drag-retime with snapping, cross-row reassign, both-edge
   resize, drag-empty-to-create, reused editor (+ resource dropdown), full
   onChange contract.

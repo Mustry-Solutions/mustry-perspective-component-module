@@ -30,7 +30,7 @@
           "height": 28
         },
         "props": {
-          "text": "Resource Timeline demo \u2014 M0 scaffold: rows + grouped headers + zoomable time axis + now-line. Events render in M1."
+          "text": "Resource Timeline demo — M1 read-only board: bars (lane-packed), state bands, background spans, recurring events, hover, legend filter. Editing comes in M2."
         }
       },
       {
@@ -84,6 +84,176 @@
                 "id": "crew-b",
                 "label": "Crew B",
                 "group": "Crews"
+              }
+            ],
+            "categories": [
+              {
+                "id": "prod",
+                "label": "Production",
+                "color": "#0c7bb3",
+                "icon": "material/build"
+              },
+              {
+                "id": "maint",
+                "label": "Maintenance",
+                "color": "#e67e22",
+                "icon": "material/handyman"
+              },
+              {
+                "id": "down",
+                "label": "Downtime",
+                "color": "#e11d48"
+              },
+              {
+                "id": "meeting",
+                "label": "Meetings",
+                "color": "#8e44ad"
+              }
+            ]
+          },
+          "data": {
+            "events": [
+              {
+                "id": "j1",
+                "resourceId": "mixer1",
+                "title": "Batch 4711",
+                "start": "2026-07-03T06:00:00",
+                "end": "2026-07-03T10:00:00",
+                "category": "prod"
+              },
+              {
+                "id": "j2",
+                "resourceId": "mixer1",
+                "title": "Batch 4712",
+                "start": "2026-07-03T10:30:00",
+                "end": "2026-07-03T14:00:00",
+                "category": "prod"
+              },
+              {
+                "id": "j3",
+                "resourceId": "mixer2",
+                "title": "Batch 4713",
+                "start": "2026-07-03T07:00:00",
+                "end": "2026-07-03T12:00:00",
+                "category": "prod"
+              },
+              {
+                "id": "j4",
+                "resourceId": "mixer2",
+                "title": "Rush order",
+                "start": "2026-07-03T09:00:00",
+                "end": "2026-07-03T11:00:00",
+                "category": "prod",
+                "status": "tentative"
+              },
+              {
+                "id": "j5",
+                "resourceId": "filler1",
+                "title": "CIP clean",
+                "start": "2026-07-03T05:00:00",
+                "end": "2026-07-03T07:30:00",
+                "category": "maint"
+              },
+              {
+                "id": "j6",
+                "resourceId": "filler1",
+                "title": "Fill run A",
+                "start": "2026-07-03T08:00:00",
+                "end": "2026-07-03T16:00:00",
+                "category": "prod"
+              },
+              {
+                "id": "j7",
+                "resourceId": "packer1",
+                "title": "Order 981 (no end)",
+                "start": "2026-07-03T13:00:00",
+                "category": "prod"
+              },
+              {
+                "id": "j8",
+                "resourceId": "packer2",
+                "title": "Cancelled run",
+                "start": "2026-07-03T06:00:00",
+                "end": "2026-07-03T09:00:00",
+                "category": "prod",
+                "status": "cancelled"
+              },
+              {
+                "id": "j9",
+                "resourceId": "packer2",
+                "title": "Long changeover",
+                "start": "2026-07-02T20:00:00",
+                "end": "2026-07-03T05:00:00",
+                "category": "maint"
+              },
+              {
+                "id": "s1",
+                "resourceId": "mixer2",
+                "title": "RUNNING",
+                "start": "2026-07-03T00:00:00",
+                "end": "2026-07-03T04:00:00",
+                "category": "prod",
+                "display": "state"
+              },
+              {
+                "id": "s2",
+                "resourceId": "mixer2",
+                "title": "FAULT",
+                "start": "2026-07-03T04:00:00",
+                "end": "2026-07-03T05:30:00",
+                "category": "down",
+                "display": "state"
+              },
+              {
+                "id": "s3",
+                "resourceId": "mixer2",
+                "title": "RUNNING (ongoing)",
+                "start": "2026-07-03T05:30:00",
+                "category": "prod",
+                "display": "state"
+              },
+              {
+                "id": "bg1",
+                "resourceId": "packer1",
+                "title": "Planned maintenance window",
+                "start": "2026-07-03T02:00:00",
+                "end": "2026-07-03T05:00:00",
+                "category": "maint",
+                "display": "background"
+              },
+              {
+                "id": "bg2",
+                "resourceId": "packer2",
+                "title": "Planned maintenance window",
+                "start": "2026-07-03T02:00:00",
+                "end": "2026-07-03T05:00:00",
+                "category": "maint",
+                "display": "background"
+              }
+            ],
+            "recurringEvents": [
+              {
+                "id": "r1",
+                "resourceId": "crew-a",
+                "title": "Shift handover",
+                "start": "2026-06-01T06:45:00",
+                "end": "2026-06-01T07:00:00",
+                "category": "meeting",
+                "rrule": {
+                  "freq": "daily"
+                },
+                "description": "Recurring daily — expanded per visible window."
+              },
+              {
+                "id": "r2",
+                "resourceId": "crew-b",
+                "title": "Shift handover",
+                "start": "2026-06-01T14:45:00",
+                "end": "2026-06-01T15:00:00",
+                "category": "meeting",
+                "rrule": {
+                  "freq": "daily"
+                }
               }
             ]
           }
