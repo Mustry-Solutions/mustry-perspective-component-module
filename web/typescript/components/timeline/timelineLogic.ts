@@ -121,6 +121,9 @@ export interface RowItem {
     key: string;                  // unique render key
     label: string;
     resource?: TimelineResource;  // set when type === 'resource'
+    group?: string;               // the group NAME (group rows) — collapse is keyed on it
+    collapsed?: boolean;          // group rows: whether this section is collapsed
+    hiddenCount?: number;         // group rows, collapsed: how many resource rows are hidden
 }
 
 // --- CSV export -----------------------------------------------------------------
@@ -272,19 +275,36 @@ export function layoutRowBands(
 
 /** Rows to render: resources in array order, with a group header row inserted
  *  whenever the (non-empty) group changes. Order is the author's — resources are
- *  NOT re-sorted, so a group listed twice gets two sections, by design. */
-export function buildRows(resources: TimelineResource[]): RowItem[] {
+ *  NOT re-sorted, so a group listed twice gets two sections, by design (collapse
+ *  is keyed on the group NAME, so it affects every section of that group).
+ *  Collapsed groups keep their header row but drop their resource rows. */
+export function buildRows(resources: TimelineResource[], collapsedGroups?: Set<string>): RowItem[] {
+    const collapsed = collapsedGroups || new Set<string>();
     const out: RowItem[] = [];
     let currentGroup: string | null = null;
+    let openHeader: RowItem | null = null;   // the current group's header (to count hidden rows)
     for (const r of resources || []) {
         if (!r || !r.id) {
             continue;
         }
         const g = r.group || '';
         if (g && g !== currentGroup) {
-            out.push({ type: 'group', key: `g:${g}:${out.length}`, label: g });
+            openHeader = {
+                type: 'group', key: `g:${g}:${out.length}`, label: g, group: g,
+                collapsed: collapsed.has(g), hiddenCount: 0
+            };
+            out.push(openHeader);
+        }
+        if (!g) {
+            openHeader = null;
         }
         currentGroup = g || null;
+        if (g && collapsed.has(g)) {
+            if (openHeader) {
+                openHeader.hiddenCount = (openHeader.hiddenCount || 0) + 1;
+            }
+            continue;   // section collapsed: skip the resource row
+        }
         out.push({ type: 'resource', key: `r:${r.id}`, label: r.label || r.id, resource: r });
     }
     return out;

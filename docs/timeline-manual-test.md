@@ -8,7 +8,9 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
 ## Read-only board
 
 - [ ] Rows render in `config.resources` order; consecutive equal `group` values share
-      one sticky section header; the label column and axis stay aligned while
+      one sticky section header; **clicking a header collapses/expands its section**
+      (chevron flips, hidden-row count appears, `config.collapsedGroups` updates
+      two-way — pre-setting it opens the view collapsed); the label column and axis stay aligned while
       scrolling both directions.
 - [ ] Zoom presets (Hour / Day / Week) change tick tiers + density; `config.zoom` is
       two-way. Prev / Today / Next page by the zoom span.

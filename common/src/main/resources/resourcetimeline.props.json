@@ -246,6 +246,14 @@
           ],
           "default": "monday",
           "description": "First day of the week in the mini month navigator (title popover)."
+        },
+        "collapsedGroups": {
+          "type": "array",
+          "default": [],
+          "description": "Group names whose sections are collapsed (two-way: clicking a group header writes the user's choice back). Set it to open a view pre-collapsed, or bind it to drive/persist the state. Collapse is keyed on the group NAME, so a group split into multiple sections collapses everywhere.",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

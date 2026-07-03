@@ -151,6 +151,33 @@ describe('buildRows', () => {
         ]);
     });
 
+    it('collapsed groups keep their header (flagged, with a hidden count) but drop their rows', () => {
+        const rows = buildRows([
+            { id: 'm1', label: 'Mixer 1', group: 'Line 1' },
+            { id: 'm2', label: 'Mixer 2', group: 'Line 1' },
+            { id: 'p1', label: 'Packer 1', group: 'Line 2' },
+            { id: 'solo', label: 'Solo' }
+        ], new Set(['Line 1']));
+        expect(rows.map((r) => `${r.type}:${r.label}`)).toEqual([
+            'group:Line 1', 'group:Line 2', 'resource:Packer 1', 'resource:Solo'
+        ]);
+        expect(rows[0]).toMatchObject({ collapsed: true, hiddenCount: 2, group: 'Line 1' });
+        expect(rows[1]).toMatchObject({ collapsed: false });
+    });
+
+    it('collapse is keyed on the group name: a split group collapses in every section', () => {
+        const rows = buildRows([
+            { id: 'a', label: 'A', group: 'G' },
+            { id: 'x', label: 'X', group: 'Other' },
+            { id: 'b', label: 'B', group: 'G' }
+        ], new Set(['G']));
+        expect(rows.map((r) => `${r.type}:${r.label}`)).toEqual([
+            'group:G', 'group:Other', 'resource:X', 'group:G'
+        ]);
+        expect(rows[0].hiddenCount).toBe(1);
+        expect(rows[3].hiddenCount).toBe(1);
+    });
+
     it('ungrouped resources get no header; label falls back to id; empty ids drop', () => {
         const rows = buildRows([
             { id: 'a', label: '' },

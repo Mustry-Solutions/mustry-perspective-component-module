@@ -209,6 +209,25 @@
     letter-spacing: 0.04em;
     color: var(--tml-muted);
     background: var(--tml-group-bg);
+    cursor: pointer;   // the whole header row collapses/expands the group
+}
+
+.tml-label--group:hover {
+    color: var(--tml-accent);
+}
+
+.tml-group-caret {
+    display: inline-block;
+    width: 12px;
+    margin-right: 2px;
+    font-size: 9px;
+}
+
+.tml-group-count {
+    margin-left: 4px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
 .tml-track {

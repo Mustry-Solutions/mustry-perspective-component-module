@@ -246,7 +246,20 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private onResourceClick(row: RowItem): void {
         if (row.type === 'resource') {
             this.fireEvent('onResourceClick', { resourceId: row.resource!.id });
+            return;
         }
+        this.toggleGroup(row.group || row.label);
+    }
+
+    /** Collapse/expand a group. `config.collapsedGroups` is two-way, so a view can
+     *  also start collapsed (or be driven by a binding). */
+    private toggleGroup(group: string): void {
+        if (!group) {
+            return;
+        }
+        const cur = this.props.props.collapsedGroups || [];
+        const next = cur.indexOf(group) >= 0 ? cur.filter((g) => g !== group) : [...cur, group];
+        this.props.store.props.write('config.collapsedGroups', next);
     }
 
     /** Apply a released gesture — the controller's commit decision — to the component. */
@@ -644,7 +657,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const scale = this.scale();
         const width = scaleWidth(scale);
         const ticks = buildTicks(scale, p.zoom, p.timezone, p.locale);
-        const rows: RowItem[] = buildRows(p.resources);
+        const rows: RowItem[] = buildRows(p.resources, new Set(p.collapsedGroups));
         const events = this.visibleEvents();
         const nowMs = Date.now();
         const nowVisible = nowMs >= scale.startMs && nowMs < scale.endMs;
@@ -675,8 +688,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     className={row.type === 'group' ? 'tml-label tml-label--group' : 'tml-label'}
                                     style={{ width: LABEL_COL_PX, height: row.type === 'group' ? GROUP_ROW_PX : rowH }}
                                     onClick={() => this.onResourceClick(row)}
+                                    role={row.type === 'group' ? 'button' : undefined}
+                                    aria-expanded={row.type === 'group' ? !row.collapsed : undefined}
                                 >
+                                    {row.type === 'group' && (
+                                        <span className="tml-group-caret" aria-hidden="true">{row.collapsed ? '▸' : '▾'}</span>
+                                    )}
                                     {row.label}
+                                    {row.type === 'group' && row.collapsed && !!row.hiddenCount && (
+                                        <span className="tml-group-count">({row.hiddenCount})</span>
+                                    )}
                                 </div>
                                 <div
                                     className={row.type === 'group' ? 'tml-track tml-track--group' : 'tml-track'}
@@ -688,6 +709,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     }}
                                     onPointerDown={row.type === 'resource'
                                         ? (e) => this.gestures.startCreate(row.resource!.id, e)
+                                        : undefined}
+                                    onClick={row.type === 'group'
+                                        ? () => this.toggleGroup(row.group || row.label)
                                         : undefined}
                                 >
                                     {row.type === 'resource' && this.renderTrack(row, events, scale)}

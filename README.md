@@ -172,7 +172,7 @@ A scheduling board: resources (machines, lines, crews) as rows on a zoomable hor
 
 ### Features
 
-- **Rows & groups** — `config.resources` renders in array order; consecutive equal `group` values share a sticky section header. The label column, time axis and corner are all sticky, so both scroll directions stay aligned.
+- **Rows & groups** — `config.resources` renders in array order; consecutive equal `group` values share a sticky section header. **Click a header to collapse/expand its section** (chevron + hidden-row count; `config.collapsedGroups` is two-way, so a view can open pre-collapsed or drive it from a binding). The label column, time axis and corner are all sticky, so both scroll directions stay aligned.
 - **Epoch-linear time scale** with stepped **zoom presets** (`config.zoom`: `hour` / `day` / `week`, two-way) — each preset sets density, paging span and gesture snapping. DST days render as their real 23/25 hours; tick labels follow `config.timezone` + `config.locale`.
 - **Three display kinds** per event: `bar` (default — lane-packed when overlapping), `state` (full-height contiguous band, e.g. machine states; no end = ongoing, runs to the window edge) and `background` (translucent span behind everything).
 - **Editable** (`config.editable`) — drag a bar to retime it (ghost preview, snap per zoom preset), **drag it onto another row to reassign**, drag either edge to resize; **selectable** (`config.selectable`) — drag empty track to create.
