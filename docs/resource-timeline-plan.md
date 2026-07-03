@@ -102,8 +102,12 @@ Perspective theme.
   styles), full onChange contract; recurring occurrences stay display-only
   (click falls through to onEventClick). Manual checklist:
   docs/timeline-manual-test.md (touch still PENDING on real hardware).
-- **M3 polish** — perf pass, CSV export, manual-test checklist, README recipes
-  (windowed query + one-handler write-back), TimelineDemo/TimelineDbDemo views.
+- **M3 polish — DONE (2026-07-03)** — CSV export (`config.showExport`), mini
+  month navigator on the title (shared `MiniMonthNav`; `config.weekStart`),
+  legend icons (calendar parity), README section, TimelineDbDemo at
+  /timeline-db (windowed-fetch recipe as a live binding), perf validated on
+  the stress view. Still deferred: zone-exact ticks across DST seams, a
+  `shift` zoom preset driven by `config.shifts`, repeat-editing UI.
 
 ## Out of scope (v1)
 

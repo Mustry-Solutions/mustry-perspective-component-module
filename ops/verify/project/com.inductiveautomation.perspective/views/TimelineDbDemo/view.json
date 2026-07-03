@@ -1,0 +1,119 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "height": 620,
+      "width": 1200
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed"
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Header"
+        },
+        "position": {
+          "x": 10,
+          "y": 6,
+          "width": 1150,
+          "height": 28
+        },
+        "props": {
+          "text": "Timeline DB demo — data.events is BOUND to output.visibleEnd with a transform that fetches only the visible window (the windowed-query recipe). Navigate/zoom and watch the jobs follow."
+        }
+      },
+      {
+        "type": "mustrysolutions.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "Timeline"
+        },
+        "position": {
+          "x": 10,
+          "y": 40,
+          "width": 1160,
+          "height": 520
+        },
+        "props": {
+          "config": {
+            "timezone": "America/Chicago",
+            "showExport": true,
+            "categories": [
+              {
+                "id": "prod",
+                "label": "Production",
+                "color": "#0c7bb3",
+                "icon": "material/build"
+              },
+              {
+                "id": "maint",
+                "label": "Maintenance",
+                "color": "#e67e22",
+                "icon": "material/handyman"
+              },
+              {
+                "id": "down",
+                "label": "Downtime",
+                "color": "#e11d48"
+              }
+            ],
+            "resources": [
+              {
+                "id": "m1",
+                "label": "Mixer 1",
+                "group": "Line 1"
+              },
+              {
+                "id": "m2",
+                "label": "Mixer 2",
+                "group": "Line 1"
+              },
+              {
+                "id": "f1",
+                "label": "Filler 1",
+                "group": "Line 1"
+              },
+              {
+                "id": "p1",
+                "label": "Packer 1",
+                "group": "Line 2"
+              },
+              {
+                "id": "p2",
+                "label": "Packer 2",
+                "group": "Line 2"
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "this.props.output.visibleEnd"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# Simulates a windowed DB query: derive jobs for ONLY the visible window.\n\t# In a real project this is a Named Query bound with :start/:end from\n\t# output.visibleStart / output.visibleEnd (ts >= :start AND ts < :end).\n\tfrom java.text import SimpleDateFormat\n\tfrom java.util import TimeZone\n\timport java.util.Date as JDate\n\tdef toMs(iso):\n\t\tfor pat in [\"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'\", \"yyyy-MM-dd'T'HH:mm:ss'Z'\"]:\n\t\t\ttry:\n\t\t\t\tf = SimpleDateFormat(pat)\n\t\t\t\tf.setTimeZone(TimeZone.getTimeZone('UTC'))\n\t\t\t\treturn f.parse(iso).getTime()\n\t\t\texcept:\n\t\t\t\tpass\n\t\treturn None\n\tout = SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss'Z'\")\n\tout.setTimeZone(TimeZone.getTimeZone('UTC'))\n\ts = toMs(self.props.output.visibleStart)\n\te = toMs(self.props.output.visibleEnd)\n\tif s is None or e is None:\n\t\treturn []\n\tHOUR = 3600000\n\tevents = []\n\tresources = [r.id for r in self.props.config.resources]\n\tcats = ['prod', 'prod', 'maint', 'down']\n\t# deterministic 3h jobs on a 4h grid per resource, phase-shifted per row\n\tfor idx in range(len(resources)):\n\t\trid = resources[idx]\n\t\tt = (s // (4 * HOUR)) * (4 * HOUR) + idx * HOUR\n\t\twhile t < e:\n\t\t\tif t + 3 * HOUR > s:\n\t\t\t\tevents.append({\n\t\t\t\t\t'id': '%s-%d' % (rid, t // HOUR),\n\t\t\t\t\t'resourceId': rid,\n\t\t\t\t\t'title': 'Job %d' % ((t // HOUR) % 1000),\n\t\t\t\t\t'start': out.format(JDate(t)),\n\t\t\t\t\t'end': out.format(JDate(t + 3 * HOUR)),\n\t\t\t\t\t'category': cats[int((t // HOUR + idx) % 4)]})\n\t\t\tt += 4 * HOUR\n\treturn events\n"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -110,10 +110,8 @@ export interface Editor {
     scope: 'series' | 'occurrence';// apply-to choice (only meaningful when seriesId != null)
 }
 
-export interface MiniNav {
-    rect: { top: number; bottom: number; left: number; right: number };  // anchor (title) rect
-    month: Date;   // the month shown in the mini grid (independent of the main cursor)
-}
+export type { MiniNav } from '../../shared/MiniMonthNav';
+import { MiniNav } from '../../shared/MiniMonthNav';
 
 export interface DayPop {
     iso: string;   // the day whose events are listed

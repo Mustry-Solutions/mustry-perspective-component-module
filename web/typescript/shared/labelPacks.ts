@@ -76,6 +76,8 @@ export interface TimelineLabels {
     previous: string; next: string;   // nav arrows (accessible labels)
     zoomHour: string; zoomDay: string; zoomWeek: string;   // zoom-preset buttons
     noResources: string;              // empty text when config.resources is empty
+    exportCsv: string;                // export button tooltip / accessible label
+    previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // built-in editor
     newEvent: string; editEvent: string;
     title: string; eventTitle: string;   // field label / placeholder
@@ -91,6 +93,8 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     previous: 'Previous', next: 'Next',
     zoomHour: 'Hour', zoomDay: 'Day', zoomWeek: 'Week',
     noResources: 'No resources',
+    exportCsv: 'Export events to CSV',
+    previousMonth: 'Previous month', nextMonth: 'Next month',
     newEvent: 'New event', editEvent: 'Edit event',
     title: 'Title', eventTitle: 'Event title',
     resource: 'Resource',
@@ -106,6 +110,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Précédent', next: 'Suivant',
         zoomHour: 'Heure', zoomDay: 'Jour', zoomWeek: 'Semaine',
         noResources: 'Aucune ressource',
+        exportCsv: 'Exporter les événements en CSV',
+        previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
         newEvent: 'Nouvel événement', editEvent: "Modifier l'événement",
         title: 'Titre', eventTitle: "Titre de l'événement",
         resource: 'Ressource',
@@ -119,6 +125,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Zurück', next: 'Weiter',
         zoomHour: 'Stunde', zoomDay: 'Tag', zoomWeek: 'Woche',
         noResources: 'Keine Ressourcen',
+        exportCsv: 'Ereignisse als CSV exportieren',
+        previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
         newEvent: 'Neues Ereignis', editEvent: 'Ereignis bearbeiten',
         title: 'Titel', eventTitle: 'Ereignistitel',
         resource: 'Ressource',
@@ -132,6 +140,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Anterior', next: 'Siguiente',
         zoomHour: 'Hora', zoomDay: 'Día', zoomWeek: 'Semana',
         noResources: 'Sin recursos',
+        exportCsv: 'Exportar eventos a CSV',
+        previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
         newEvent: 'Nuevo evento', editEvent: 'Editar evento',
         title: 'Título', eventTitle: 'Título del evento',
         resource: 'Recurso',
@@ -145,6 +155,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Vorige', next: 'Volgende',
         zoomHour: 'Uur', zoomDay: 'Dag', zoomWeek: 'Week',
         noResources: 'Geen resources',
+        exportCsv: 'Evenementen exporteren als CSV',
+        previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
         newEvent: 'Nieuw evenement', editEvent: 'Evenement bewerken',
         title: 'Titel', eventTitle: 'Titel van het evenement',
         resource: 'Resource',
@@ -158,6 +170,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Precedente', next: 'Successivo',
         zoomHour: 'Ora', zoomDay: 'Giorno', zoomWeek: 'Settimana',
         noResources: 'Nessuna risorsa',
+        exportCsv: 'Esporta eventi in CSV',
+        previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
         newEvent: 'Nuovo evento', editEvent: 'Modifica evento',
         title: 'Titolo', eventTitle: "Titolo dell'evento",
         resource: 'Risorsa',
@@ -171,6 +185,8 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         previous: 'Anterior', next: 'Seguinte',
         zoomHour: 'Hora', zoomDay: 'Dia', zoomWeek: 'Semana',
         noResources: 'Sem recursos',
+        exportCsv: 'Exportar eventos para CSV',
+        previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
         newEvent: 'Novo evento', editEvent: 'Editar evento',
         title: 'Título', eventTitle: 'Título do evento',
         resource: 'Recurso',

@@ -7,12 +7,16 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { msToZonedIso, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
+import { IconRenderer } from '@inductiveautomation/perspective-client';
+import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents } from '../../shared/recurrence';
 import { EventIcon, categoryColor, resolveColor, statusClass } from '../../shared/eventStyle';
+import { DocDismiss } from '../../shared/dismiss';
+import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
+import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS, MS_PER_HOUR,
-    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, scaleWidth
+    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, scaleWidth, timelineEventsToCsv
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
@@ -36,6 +40,7 @@ interface ResourceTimelineState {
     hiddenCats: Set<string>;             // category ids hidden via the legend
     preview: TlPreview | null;           // in-flight gesture ghost / selection
     editor: TlEditor | null;             // built-in editor popover
+    mini: MiniNav | null;                // mini month navigator (from the title)
 }
 
 /** Epoch ms of today's zone-local midnight. */
@@ -71,11 +76,15 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         commit: (kind, g, preview) => this.commitGesture(kind, g, preview)
     });
 
+    private miniDismiss = new DocDismiss(
+        // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
+        ['.cal-mini', '.tml-title--btn'], () => this.closeMini());
+
     constructor(props: ComponentProps<TimelineProps>) {
         super(props);
         this.state = {
             anchorMs: todayAnchorMs(props.props.timezone),
-            hover: null, hiddenCats: new Set(), preview: null, editor: null
+            hover: null, hiddenCats: new Set(), preview: null, editor: null, mini: null
         };
     }
 
@@ -100,6 +109,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         this.clearHoverTimer();
         this.gestures.dispose();
+        this.miniDismiss.close();
     }
 
     /** The visible window: [anchor, anchor + zoom span), epoch-linear. */
@@ -341,6 +351,75 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         this.props.store.props.write('config.zoom', zoom);
     }
 
+    // --- mini month navigator (popover from the toolbar title) ---------------
+    /** The window's zone-local date span (half-open ISO dates, for the mini grid highlight). */
+    private windowDates(): { start: string; end: string; cursor: string } {
+        const tz = this.props.props.timezone;
+        const s = this.scale();
+        const iso = (ms: number) => {
+            const w = zoneWallClock(new Date(ms), tz);
+            return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}`;
+        };
+        // The last included instant's date, plus one day = the exclusive end date
+        // (a window ending exactly at midnight doesn't highlight that day).
+        const last = parseDate(iso(s.endMs - 1))!;
+        return { start: iso(s.startMs), end: fmtDate(addDays(last, 1)), cursor: iso(s.startMs) };
+    }
+
+    private toggleMini = (e: React.MouseEvent): void => {
+        if (this.state.mini) {
+            this.closeMini();
+            return;
+        }
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const w = zoneWallClock(new Date(this.state.anchorMs), this.props.props.timezone);
+        this.setState({
+            mini: {
+                rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+                month: startOfMonth(new Date(w.y, w.mo - 1, w.d))
+            }
+        });
+        this.miniDismiss.open();
+    };
+
+    private miniStep(dir: number): void {
+        const m = this.state.mini;
+        if (m) {
+            this.setState({ mini: { ...m, month: addMonths(m.month, dir) } });
+        }
+    }
+
+    /** Pick a day in the mini grid: anchor the window on that day's zone-local midnight. */
+    private miniPick(iso: string): void {
+        const d = parseDate(iso);
+        this.closeMini();
+        if (d) {
+            this.setState({ anchorMs: resolveZoned(d, this.props.props.timezone).epochMs });
+        }
+    }
+
+    private closeMini(): void {
+        this.miniDismiss.close();
+        if (this.state.mini) {
+            this.setState({ mini: null });
+        }
+    }
+
+    /** Export the loaded events (windowed + recurring definitions) to a CSV download. */
+    private exportCsv = (): void => {
+        const p = this.props.props;
+        const csv = timelineEventsToCsv([...(p.events || []), ...(p.recurringEvents || [])]);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'timeline-events.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    };
+
     // --- hover detail popover ----------------------------------------------
     private clearHoverTimer(): void {
         if (this.hoverTimer) {
@@ -391,7 +470,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         className={`tml-legend-item${this.state.hiddenCats.has(c.id) ? ' tml-legend-item--off' : ''}`}
                         onClick={() => this.toggleCategory(c.id)}
                     >
-                        <span className="tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />
+                        {c.icon
+                            ? <span className="tml-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
+                            : <span className="tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />}
                         {c.label}
                     </button>
                 ))}
@@ -407,11 +488,19 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             { id: 'day', label: labels.zoomDay },
             { id: 'week', label: labels.zoomWeek }
         ];
+        const title = buildTicks(this.scale(), 'week', this.props.props.timezone, this.props.props.locale).upper[0]?.label || '';
         return (
             <div className="tml-toolbar">
-                <div className="tml-title">
-                    {buildTicks(this.scale(), 'week', this.props.props.timezone, this.props.props.locale).upper[0]?.label || ''}
-                </div>
+                <button
+                    type="button"
+                    className={`tml-title tml-title--btn${this.state.mini ? ' is-open' : ''}`}
+                    onClick={this.toggleMini}
+                    aria-haspopup="true"
+                    aria-expanded={!!this.state.mini}
+                >
+                    {title}
+                    <span className="tml-title-caret" aria-hidden="true">▾</span>
+                </button>
                 <div className="tml-zooms">
                     {zooms.map((z) => (
                         <button
@@ -424,6 +513,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     ))}
                 </div>
                 <div className="tml-nav">
+                    {this.props.props.showExport && (
+                        <button type="button" className="tml-nav-btn tml-export-btn" onClick={this.exportCsv} title={labels.exportCsv} aria-label={labels.exportCsv}>
+                            <IconRenderer path="material/get_app" color="var(--tml-accent)" />
+                        </button>
+                    )}
                     <button type="button" className="tml-nav-btn" onClick={this.prev} aria-label={labels.previous}>‹</button>
                     <button type="button" className="tml-today" onClick={this.goToday}>{labels.today}</button>
                     <button type="button" className="tml-nav-btn" onClick={this.next} aria-label={labels.next}>›</button>
@@ -618,6 +712,19 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         locale={p.locale}
                         timezone={p.timezone}
                         categories={p.categories}
+                    />
+                )}
+                {this.state.mini && (
+                    <MiniMonthNav
+                        mini={this.state.mini}
+                        locale={p.locale}
+                        mondayFirst={p.weekStart === 'monday'}
+                        range={{ start: this.windowDates().start, end: this.windowDates().end }}
+                        cursorIso={this.windowDates().cursor}
+                        showRange={true}
+                        labels={p.labels}
+                        onStep={(dir) => this.miniStep(dir)}
+                        onPick={(iso) => this.miniPick(iso)}
                     />
                 )}
                 {this.state.editor && (

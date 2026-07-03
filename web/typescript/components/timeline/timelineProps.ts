@@ -14,6 +14,8 @@ export interface TimelineProps {
     editable: boolean;       // drag to move/reassign, edge-resize, click-to-edit (with builtInEditor)
     selectable: boolean;     // drag empty track to create
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
+    showExport: boolean;     // toolbar CSV-download button
+    weekStart: 'monday' | 'sunday';   // for the mini month navigator
     rowHeight: number;
     timezone: string;        // IANA zone for display (empty = browser-local)
     locale: string;
@@ -61,6 +63,8 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         editable: tree.readBoolean('config.editable', false),
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
+        showExport: tree.readBoolean('config.showExport', false),
+        weekStart: (tree.readString('config.weekStart', 'monday') === 'sunday' ? 'sunday' : 'monday'),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
         timezone: tree.readString('config.timezone', ''),
         locale,

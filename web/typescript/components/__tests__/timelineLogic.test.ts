@@ -1,6 +1,7 @@
 import {
     MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
-    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth
+    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth,
+    timelineEventsToCsv
 } from '../timeline/timelineLogic';
 import { mapTimelineProps } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
@@ -160,6 +161,20 @@ describe('buildRows', () => {
     });
 });
 
+describe('timelineEventsToCsv', () => {
+    it('serialises one row per event with RFC-4180 quoting', () => {
+        const csv = timelineEventsToCsv([
+            { id: 'a', resourceId: 'm1', title: 'Job, "special"', start: '2026-07-03T08:00:00', end: '2026-07-03T10:00:00', category: 'prod' },
+            { id: 'b', resourceId: 'm2', title: 'Shift', start: '2026-06-01T06:00:00', rrule: { freq: 'daily' } }
+        ]);
+        const lines = csv.split('\r\n');
+        expect(lines[0]).toBe('id,resourceId,title,start,end,category,status,display,color,description,rrule');
+        expect(lines[1]).toContain('"Job, ""special"""');
+        expect(lines[2]).toContain('"{""freq"":""daily""}"');
+        expect(lines).toHaveLength(3);
+    });
+});
+
 describe('mapTimelineProps', () => {
     it('applies defaults (day zoom, clamped rowHeight, empty arrays, English labels)', () => {
         const p = mapTimelineProps(stubReader({}));
@@ -170,6 +185,12 @@ describe('mapTimelineProps', () => {
         expect(p.events).toEqual([]);
         expect(p.labels.today).toBe('Today');
         expect(p.labels.zoomWeek).toBe('Week');
+        expect(p.editable).toBe(false);
+        expect(p.showExport).toBe(false);
+        expect(p.weekStart).toBe('monday');
+        expect(p.labels.previousMonth).toBe('Previous month');
+        expect(mapTimelineProps(stubReader({ config: { weekStart: 'sunday', locale: 'fr' } })).weekStart).toBe('sunday');
+        expect(mapTimelineProps(stubReader({ config: { locale: 'fr' } })).labels.previousMonth).toBe('Mois précédent');
     });
 
     it('sanitises zoom and rowHeight; maps resources and events', () => {

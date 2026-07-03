@@ -1,9 +1,22 @@
-// Mini-month navigator — a compact month grid in a popover anchored under the title.
+// Mini month navigator — a compact month grid in a popover anchored under a
+// component's title button. Shared by the calendar and the resource timeline;
+// styles are the top-level .cal-mini classes.
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from '../../shared/dateUtils';
-import { buildMonthGrid } from '../calendarLogic';
-import { CalLabels, MiniNav } from './types';
+import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from './dateUtils';
+import { buildMonthGrid } from './monthGrid';
+
+export interface MiniNav {
+    rect: { top: number; bottom: number; left: number; right: number };  // anchor (title) rect
+    month: Date;   // the month shown in the mini grid (independent of the main cursor)
+}
+
+/** The labels the navigator needs (both components' label sets satisfy this). */
+export interface MiniNavLabels {
+    previousMonth: string;
+    nextMonth: string;
+    today: string;
+}
 
 interface MiniMonthNavProps {
     mini: MiniNav;
@@ -11,8 +24,8 @@ interface MiniMonthNavProps {
     mondayFirst: boolean;
     range: { start: string; end: string };
     cursorIso: string;
-    showRange: boolean;   // highlight the visible range (week/day/list, not month)
-    labels: CalLabels;
+    showRange: boolean;   // highlight the visible range (multi-day windows)
+    labels: MiniNavLabels;
     onStep: (dir: number) => void;
     onPick: (iso: string) => void;
 }

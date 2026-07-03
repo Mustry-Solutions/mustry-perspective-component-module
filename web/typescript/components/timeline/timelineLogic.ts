@@ -123,6 +123,38 @@ export interface RowItem {
     resource?: TimelineResource;  // set when type === 'resource'
 }
 
+// --- CSV export -----------------------------------------------------------------
+
+/** Quote a CSV cell only when it contains a comma, quote, or newline (RFC 4180). */
+function csvCell(v: string): string {
+    return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** Serialise timeline events to CSV text (one row per event, CRLF line endings). */
+export function timelineEventsToCsv(events: TimelineEvent[]): string {
+    const cols = ['id', 'resourceId', 'title', 'start', 'end', 'category', 'status', 'display', 'color', 'description', 'rrule'];
+    const rows = [cols.join(',')];
+    for (const ev of events || []) {
+        if (!ev) {
+            continue;
+        }
+        rows.push([
+            ev.id || '',
+            ev.resourceId || '',
+            ev.title || '',
+            ev.start || '',
+            ev.end || '',
+            ev.category || '',
+            ev.status || '',
+            ev.display || '',
+            ev.color || '',
+            ev.description || '',
+            ev.rrule ? JSON.stringify(ev.rrule) : ''
+        ].map((c) => csvCell(String(c))).join(','));
+    }
+    return rows.join('\r\n');
+}
+
 // --- per-row bar/band layout --------------------------------------------------
 
 export const DEFAULT_BAR_MIN = 60;   // assumed duration (minutes) for a bar with no end

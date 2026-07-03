@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It currently ships two components — a **Date/Time Range Picker** and a **Calendar / Scheduler** — with more to follow.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It currently ships three components — a **Date/Time Range Picker**, a **Calendar / Scheduler** and a **Resource Timeline** (scheduling board) — with more to follow.
 
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
@@ -163,6 +163,36 @@ self.props.data.events = events
 Override the `--cal-*` CSS variables via a style class / project stylesheet: `--cal-accent`, `--cal-accent-text`, `--cal-text`, `--cal-muted`, `--cal-border`, `--cal-bg`, `--cal-weekend-bg`. They default to the active Perspective theme.
 
 > Manual test checklist: [`docs/calendar-manual-test.md`](docs/calendar-manual-test.md).
+
+---
+
+## Resource Timeline
+
+A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.display.resourcetimeline`. Design doc: [`docs/resource-timeline-plan.md`](docs/resource-timeline-plan.md).
+
+### Features
+
+- **Rows & groups** — `config.resources` renders in array order; consecutive equal `group` values share a sticky section header. The label column, time axis and corner are all sticky, so both scroll directions stay aligned.
+- **Epoch-linear time scale** with stepped **zoom presets** (`config.zoom`: `hour` / `day` / `week`, two-way) — each preset sets density, paging span and gesture snapping. DST days render as their real 23/25 hours; tick labels follow `config.timezone` + `config.locale`.
+- **Three display kinds** per event: `bar` (default — lane-packed when overlapping), `state` (full-height contiguous band, e.g. machine states; no end = ongoing, runs to the window edge) and `background` (translucent span behind everything).
+- **Editable** (`config.editable`) — drag a bar to retime it (ghost preview, snap per zoom preset), **drag it onto another row to reassign**, drag either edge to resize; **selectable** (`config.selectable`) — drag empty track to create.
+- **Built-in editor** (`config.builtInEditor`) — create/edit/delete via a popup with a grouped resource dropdown; recurring occurrences are display-only for now (clicking one fires `onEventClick` instead).
+- **One change event** — `onChange` fires for every mutation (`create`/`edit`/`delete`/`move`/`resize`) with the resulting event carrying its final `start`/`end`/`resourceId`; a cross-row drag adds `fromResourceId`. One script persists everything.
+- **Mini month navigator** — the toolbar title opens a compact month picker to jump the window anywhere (`config.weekStart` sets its first day).
+- **Categories, icons & legend** — same contract as the calendar (`config.categories`, `event.category`, `event.status` restyling, interactive legend mirrored to `output.hiddenCategories`).
+- **Recurrence (display)** — events with an `rrule` expand per visible window; bind `config.data.recurringEvents` to an always-loaded query so windowed fetches never drop a series.
+- **Windowed data binding** — `output.visibleStart`/`visibleEnd` are ISO-8601 UTC instants (half-open); bind your query `ts >= :start AND ts < :end` and `config.loading` to its state. See the live recipe at `/timeline-db` in the verify project.
+- **CSV export** (`config.showExport`), now-line (`config.refreshSeconds`), localization (same 7 languages + `config.labels` overrides), CSS-variable theming (`--tml-*`).
+
+### How events work
+
+Identical philosophy to the calendar: **controlled, read-from-data**. The timeline never mutates `config.data.events`; gestures fire `onChange` and your handler writes back (upsert-or-delete by `id` — the event always carries its final `resourceId`, so a reassign needs no special casing). The demo view at `/timeline` ships a complete one-handler write-back script.
+
+### Theming
+
+Override the `--tml-*` variables via a style class / project stylesheet: `--tml-accent`, `--tml-accent-text`, `--tml-text`, `--tml-muted`, `--tml-border`, `--tml-line`, `--tml-bg`, `--tml-group-bg`, `--tml-now`.
+
+> Manual test checklist: [`docs/timeline-manual-test.md`](docs/timeline-manual-test.md).
 
 ---
 

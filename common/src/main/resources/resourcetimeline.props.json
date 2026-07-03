@@ -142,6 +142,18 @@
             "delete": {
               "type": "string",
               "description": "Editor: delete button."
+            },
+            "exportCsv": {
+              "type": "string",
+              "description": "Tooltip + accessible label of the CSV export button."
+            },
+            "previousMonth": {
+              "type": "string",
+              "description": "Accessible label of the mini-nav back arrow."
+            },
+            "nextMonth": {
+              "type": "string",
+              "description": "Accessible label of the mini-nav forward arrow."
             }
           }
         },
@@ -220,6 +232,20 @@
           "type": "boolean",
           "default": false,
           "description": "Built-in editor popover — for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
+        },
+        "showExport": {
+          "type": "boolean",
+          "default": false,
+          "description": "Toolbar button that downloads the loaded events (windowed + recurring definitions) as timeline-events.csv."
+        },
+        "weekStart": {
+          "type": "string",
+          "enum": [
+            "monday",
+            "sunday"
+          ],
+          "default": "monday",
+          "description": "First day of the week in the mini month navigator (title popover)."
         }
       }
     },
