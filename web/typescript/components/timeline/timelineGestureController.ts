@@ -65,9 +65,27 @@ export class TimelineGestureController {
         this.removeDocListeners();
     }
 
+    /** Only the primary button starts gestures — a right-click opens the context
+     *  menu, which eats the pointerup and would strand the document listeners.
+     *  Capturing the pointer keeps move/up events flowing during fast drags. */
+    private begin(e: React.PointerEvent): boolean {
+        if (e.button !== 0) {
+            return false;
+        }
+        try {
+            (e.target as Element).setPointerCapture?.(e.pointerId);
+        } catch (err) {
+            // inactive pointer — capture is best-effort
+        }
+        return true;
+    }
+
     /** Pointer-down on a bar. Always starts a gesture so a plain click resolves to a
      *  click; only the drag/preview behaviour is gated on `editable`. */
     startMove = (ev: TimelineEvent, startMs: number, endMs: number, e: React.PointerEvent): void => {
+        if (!this.begin(e)) {
+            return;
+        }
         e.stopPropagation();
         this.host.hideHover();
         this.captureRows();
@@ -86,7 +104,7 @@ export class TimelineGestureController {
     };
 
     startResize = (edge: 'start' | 'end', ev: TimelineEvent, startMs: number, endMs: number, e: React.PointerEvent): void => {
-        if (!this.host.env().editable) {
+        if (!this.host.env().editable || !this.begin(e)) {
             return;
         }
         e.preventDefault();
@@ -107,6 +125,9 @@ export class TimelineGestureController {
 
     /** Pointer-down on empty track: anchor a create gesture at the pointer's instant. */
     startCreate = (resourceId: string, e: React.PointerEvent): void => {
+        if (!this.begin(e)) {
+            return;
+        }
         this.host.hideHover();
         this.captureRows();
         const row = this.rowRects.find((r) => r.resourceId === resourceId);

@@ -423,12 +423,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     const from = parseDate(g.origDayIso);
                     const to = parseDate(preview!.dayIso);
                     const delta = from && to ? daysBetween(from, to) : 0;
-                    if (delta !== 0) {
-                        this.fireSpec(moveResizeSpec('move', g.ev!, {
-                            start: shiftWallDays(g.ev!.start, delta),
-                            end: g.ev!.end ? shiftWallDays(g.ev!.end, delta) : undefined
-                        }, tz));
+                    if (delta === 0) {
+                        // Dropped back on its own day: a sloppy click, not a move.
+                        this.commitGesture(this.useEditorForEdit() ? 'editEvent' : 'eventClick', g, preview);
+                        break;
                     }
+                    this.fireSpec(moveResizeSpec('move', g.ev!, {
+                        start: shiftWallDays(g.ev!.start, delta),
+                        end: g.ev!.end ? shiftWallDays(g.ev!.end, delta) : undefined
+                    }, tz));
+                    break;
+                }
+                if (preview!.dayIso === g.origDayIso && preview!.startMin === g.origStartMin) {
+                    // Snapping pulled the bar back where it started: treat as a click.
+                    this.commitGesture(this.useEditorForEdit() ? 'editEvent' : 'eventClick', g, preview);
                     break;
                 }
                 this.fireSpec(moveResizeSpec('move', g.ev!, {

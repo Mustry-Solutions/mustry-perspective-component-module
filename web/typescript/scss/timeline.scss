@@ -234,13 +234,16 @@
     position: relative;
     border-bottom: 1px solid var(--tml-line);
     overflow: hidden;
-    // Hourly/sub-step gridlines without per-tick DOM (background-size set inline).
-    background-image: linear-gradient(to right, var(--tml-line) 1px, transparent 1px);
-    background-repeat: repeat-x;
 }
 
-.tml-track--group {
-    background-image: none;
+// One full-height vertical gridline per lower axis tick (zone-exact, incl. DST days).
+.tml-gridcol {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    border-left: 1px solid var(--tml-line);
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .tml-empty {

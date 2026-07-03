@@ -18,10 +18,19 @@ export interface MsRange {
     endMs: number;
 }
 
-/** Move: shift the bar by `deltaMs`, snapped, preserving its duration. */
+/** Move: shift the bar by the SNAPPED DELTA, preserving its duration — and its
+ *  original grid offset (an 08:07 bar stays :07-aligned; a sloppy near-zero drag
+ *  snaps back to exactly the original, so no silent retime on a wobbly click). */
 export function movePreviewMs(origStartMs: number, origEndMs: number, deltaMs: number, snapMinutes: number): MsRange {
-    const startMs = snapMs(origStartMs + deltaMs, snapMinutes);
+    const step = Math.max(1, snapMinutes) * MS_PER_MIN;
+    const startMs = origStartMs + Math.round(deltaMs / step) * step;
     return { startMs, endMs: startMs + (origEndMs - origStartMs) };
+}
+
+/** Whether a committed move preview is a no-op (same row, same instants) — the
+ *  component treats those as a click instead of firing a phantom onChange. */
+export function isNoopMove(origStartMs: number, origResourceId: string, previewStartMs: number, previewResourceId: string): boolean {
+    return origStartMs === previewStartMs && origResourceId === previewResourceId;
 }
 
 /** Resize one edge by `deltaMs`, snapped, keeping at least one snap step of duration. */

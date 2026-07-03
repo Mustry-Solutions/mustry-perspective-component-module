@@ -15,13 +15,14 @@ import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
-    BarLayout, RowItem, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS, MS_PER_HOUR,
-    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, scaleWidth, timelineEventsToCsv
+    BarLayout, RowItem, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS,
+    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, scaleWidth,
+    timelineEventsToCsv, windowFor
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
 import { TimelineGestureController, TlGesture, TlPreview } from './timelineGestureController';
-import { TlCommitKind } from './timelineGestureLogic';
+import { TlCommitKind, isNoopMove } from './timelineGestureLogic';
 import {
     TlChangeSpec, TlEditor, tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlMoveResizeSpec, tlSaveSpec
 } from './timelineEditorLogic';
@@ -112,14 +113,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         this.miniDismiss.close();
     }
 
-    /** The visible window: [anchor, anchor + zoom span), epoch-linear. */
+    /** The visible window (day/week span whole wall-calendar days — DST-safe). */
     private scale(): TimeScale {
-        const preset = ZOOM_PRESETS[this.props.props.zoom];
-        return {
-            startMs: this.state.anchorMs,
-            endMs: this.state.anchorMs + preset.spanHours * MS_PER_HOUR,
-            pxPerHour: preset.pxPerHour
-        };
+        return windowFor(this.state.anchorMs, this.props.props.zoom, this.props.props.timezone);
     }
 
     private setupRefreshTimer(): void {
@@ -277,14 +273,25 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 this.fireEvent('onEventClick', this.eventPayload(g.ev!));
                 break;
             case 'move':
+                // A drag that snapped back to exactly where it started is a click,
+                // not a phantom onChange.
+                if (isNoopMove(g.origStartMs, g.origResourceId, preview!.startMs, preview!.resourceId)) {
+                    this.commitGesture(this.useEditorForEdit() ? 'editEvent' : 'eventClick', g, preview);
+                    break;
+                }
                 this.fireSpec(tlMoveResizeSpec('move', g.ev!, {
-                    startMs: preview!.startMs, endMs: preview!.endMs, resourceId: preview!.resourceId
+                    startMs: preview!.startMs,
+                    // An open-ended event stays open-ended when moved.
+                    endMs: g.ev!.end ? preview!.endMs : undefined,
+                    resourceId: preview!.resourceId
                 }, tz));
                 break;
             case 'resize':
-                this.fireSpec(tlMoveResizeSpec('resize', g.ev!, {
-                    startMs: preview!.startMs, endMs: preview!.endMs
-                }, tz));
+                this.fireSpec(tlMoveResizeSpec('resize', g.ev!, g.mode === 'resize-start'
+                    // Start-edge resize doesn't touch the end (an open-ended event stays so).
+                    ? { startMs: preview!.startMs, endMs: g.ev!.end ? preview!.endMs : undefined }
+                    // End-edge resize SETS the end deliberately (incl. on open-ended events).
+                    : { endMs: preview!.endMs }, tz));
                 break;
             case 'selectEditor':
                 this.openEditor(preview!.resourceId, preview!.startMs, preview!.endMs);
@@ -351,8 +358,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     // --- navigation ---------------------------------------------------------
     private step(dir: number): void {
-        const preset = ZOOM_PRESETS[this.props.props.zoom];
-        this.setState({ anchorMs: this.state.anchorMs + dir * preset.spanHours * MS_PER_HOUR });
+        this.setState({ anchorMs: pageAnchorMs(this.state.anchorMs, dir, this.props.props.zoom, this.props.props.timezone) });
     }
 
     private prev = (): void => this.step(-1);
@@ -661,7 +667,6 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const events = this.visibleEvents();
         const nowMs = Date.now();
         const nowVisible = nowMs >= scale.startMs && nowMs < scale.endMs;
-        const stepPx = (ZOOM_PRESETS[p.zoom].lowerStepMin / 60) * scale.pxPerHour;
         const rowH = p.rowHeight;
         return (
             <div {...this.props.emit({ classes: p.loading ? ['mustry-timeline', 'tml-loading'] : ['mustry-timeline'] })}>
@@ -704,8 +709,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     data-resource={row.type === 'resource' ? row.resource!.id : undefined}
                                     style={{
                                         width,
-                                        height: row.type === 'group' ? GROUP_ROW_PX : rowH,
-                                        backgroundSize: `${stepPx}px 100%`
+                                        height: row.type === 'group' ? GROUP_ROW_PX : rowH
                                     }}
                                     onPointerDown={row.type === 'resource'
                                         ? (e) => this.gestures.startCreate(row.resource!.id, e)
@@ -721,6 +725,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         {rows.length === 0 && (
                             <div className="tml-empty" style={{ width: LABEL_COL_PX }}>{p.labels.noResources}</div>
                         )}
+                        {/* One full-height gridline per lower tick — always aligned with the
+                            axis, even across 23/25h DST days (unlike a fixed-step background). */}
+                        {ticks.lower.map((t) => (
+                            <div key={`gl-${t.ms}`} className="tml-gridcol" style={{ left: LABEL_COL_PX + t.px, top: AXIS_PX }} />
+                        ))}
                         {nowVisible && (
                             <div
                                 className="tml-now"

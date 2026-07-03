@@ -45,9 +45,27 @@ export class GestureController {
         this.removeDocListeners();
     }
 
+    /** Only the primary button starts gestures — a right-click opens the context
+     *  menu, which eats the pointerup and would strand the document listeners.
+     *  Capturing the pointer keeps move/up events flowing during fast drags. */
+    private begin(e: React.PointerEvent): boolean {
+        if (e.button !== 0) {
+            return false;
+        }
+        try {
+            (e.target as Element).setPointerCapture?.(e.pointerId);
+        } catch (err) {
+            // inactive pointer — capture is best-effort
+        }
+        return true;
+    }
+
     startMove = (ev: CalEvent, e: React.PointerEvent): void => {
         // Always start a gesture so a plain click resolves to onEventClick; only the
         // drag/preview behaviour is gated on `editable`.
+        if (!this.begin(e)) {
+            return;
+        }
         e.stopPropagation();
         this.host.hideHover();
         const { s, e: end } = this.eventMinutes(ev);
@@ -65,7 +83,7 @@ export class GestureController {
     };
 
     startResize = (ev: CalEvent, e: React.PointerEvent): void => {
-        if (!this.host.env().editable) {
+        if (!this.host.env().editable || !this.begin(e)) {
             return;
         }
         e.preventDefault();
@@ -84,6 +102,9 @@ export class GestureController {
     /** Month view: drag an event bar onto another day cell (whole-day move, time kept).
      *  Like startMove, a gesture always starts so a plain click resolves to a click. */
     startMonthMove = (ev: CalEvent, e: React.PointerEvent): void => {
+        if (!this.begin(e)) {
+            return;
+        }
         e.stopPropagation();
         this.host.hideHover();
         this.captureMonthCells();
@@ -101,6 +122,9 @@ export class GestureController {
     };
 
     startCreate = (dayIso: string, e: React.PointerEvent): void => {
+        if (!this.begin(e)) {
+            return;
+        }
         this.host.hideHover();
         this.captureCols();
         const col = this.colRects.filter((c) => c.day === dayIso)[0];
