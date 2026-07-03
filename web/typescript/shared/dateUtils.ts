@@ -327,10 +327,15 @@ export function toEpochMs(raw: string, timeZone: string): number | null {
 }
 
 /** An epoch instant as an offset-bearing ISO string in `timeZone`
- *  ("2026-07-03T09:00:00-05:00") — the emitted form for timeline write-backs. */
+ *  ("2026-07-03T09:00:00-05:00") — the emitted form for timeline write-backs.
+ *  Computes the offset AT the instant (not via a wall-clock round trip), so an
+ *  instant in the repeated fall-back hour keeps its identity instead of being
+ *  re-resolved to the first occurrence. */
 export function msToZonedIso(ms: number, timeZone: string): string {
-    const w = zoneWallClock(new Date(ms), timeZone);
-    return resolveZoned(new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s), timeZone).iso;
+    const d = new Date(ms);
+    const w = zoneWallClock(d, timeZone);
+    const off = timeZone ? tzOffsetMinutes(d, timeZone) : -d.getTimezoneOffset();
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}${offsetToStr(off)}`;
 }
 
 /** An epoch instant as a zone-local 'YYYY-MM-DDTHH:mm' — the value format of a

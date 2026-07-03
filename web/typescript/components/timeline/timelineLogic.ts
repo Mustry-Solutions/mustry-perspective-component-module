@@ -5,7 +5,7 @@
 // The scale is EPOCH-linear (ms -> px), not wall-clock-linear: DST days are
 // 23/25 hours long and must render that way instead of tearing the axis. Tick
 // LABELS are zone-aware via Intl.
-import { toEpochMs } from '../../shared/dateUtils';
+import { resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { RRule } from '../../shared/recurrence';
 
 /** One timeline event/bar (controlled data — the component never mutates these). */
@@ -47,6 +47,40 @@ export interface TimeScale {
     pxPerHour: number;
 }
 
+/** Epoch ms of the zone-local midnight of the wall date containing `ms`,
+ *  optionally shifted by whole wall-calendar days (DST-safe: date arithmetic
+ *  happens on the wall calendar, then resolves back to an instant). */
+export function zoneMidnightMs(ms: number, timeZone: string, addDaysBy = 0): number {
+    const w = zoneWallClock(new Date(ms), timeZone);
+    return resolveZoned(new Date(w.y, w.mo - 1, w.d + addDaysBy), timeZone).epochMs;
+}
+
+/**
+ * The visible window for an anchor + zoom. Day/week windows span whole
+ * wall-calendar days (a DST day really is 23/25 hours wide on the epoch-linear
+ * scale); the hour window is a plain epoch span.
+ */
+export function windowFor(anchorMs: number, zoom: TimelineZoom, timeZone: string): TimeScale {
+    const preset = ZOOM_PRESETS[zoom];
+    const endMs = zoom === 'hour'
+        ? anchorMs + preset.spanHours * MS_PER_HOUR
+        : zoneMidnightMs(anchorMs, timeZone, Math.round(preset.spanHours / 24));
+    return { startMs: anchorMs, endMs, pxPerHour: preset.pxPerHour };
+}
+
+/**
+ * The anchor after paging by one window. Day/week page by wall-calendar days and
+ * re-anchor on the zone-local midnight (paging across a 23/25h DST day must not
+ * leave every later window anchored at 23:00/01:00); hour pages by plain epoch.
+ */
+export function pageAnchorMs(anchorMs: number, dir: number, zoom: TimelineZoom, timeZone: string): number {
+    const preset = ZOOM_PRESETS[zoom];
+    if (zoom === 'hour') {
+        return anchorMs + dir * preset.spanHours * MS_PER_HOUR;
+    }
+    return zoneMidnightMs(anchorMs, timeZone, dir * Math.round(preset.spanHours / 24));
+}
+
 export function msToPx(scale: TimeScale, ms: number): number {
     return ((ms - scale.startMs) / MS_PER_HOUR) * scale.pxPerHour;
 }
@@ -82,10 +116,10 @@ export interface TickRows {
 }
 
 /**
- * Ticks for the window. Steps are fixed epoch increments from the window start;
- * with windows anchored to zone-local midnight they land on local boundaries.
- * (Within a window that crosses a DST seam the later ticks shift by the offset
- * change — accepted for now; zone-boundary-exact ticks are a later milestone.)
+ * Ticks for the window, ZONE-aware: upper ticks sit on real zone-local midnights
+ * (plus the window start when it isn't one), and lower ticks step from each
+ * day's own midnight — so across a 23/25h DST day every tick still lands on the
+ * wall-clock boundary its label names.
  */
 export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string): TickRows {
     const preset = ZOOM_PRESETS[zoom];
@@ -94,14 +128,33 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
         ? zonedFormat(locale, timezone, { hour: '2-digit', hour12: false })
         : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
 
-    const upper: Tick[] = [];
-    for (let ms = scale.startMs; ms < scale.endMs; ms += 24 * MS_PER_HOUR) {
-        upper.push({ ms, px: msToPx(scale, ms), label: upperFmt.format(new Date(ms)) });
+    // Zone-local midnights covering the window (starting at the day containing start).
+    const dayStarts: number[] = [];
+    for (let d = zoneMidnightMs(scale.startMs, timezone), i = 0; d < scale.endMs && i < 40; i++) {
+        dayStarts.push(d);
+        d = zoneMidnightMs(d, timezone, 1);
     }
+
+    const upper: Tick[] = [];
+    if (dayStarts.length && dayStarts[0] < scale.startMs) {
+        // Window starts mid-day (hour zoom): label the partial day at the window edge.
+        upper.push({ ms: scale.startMs, px: 0, label: upperFmt.format(new Date(scale.startMs)) });
+    }
+    for (const d of dayStarts) {
+        if (d >= scale.startMs) {
+            upper.push({ ms: d, px: msToPx(scale, d), label: upperFmt.format(new Date(d)) });
+        }
+    }
+
     const lower: Tick[] = [];
     const step = preset.lowerStepMin * 60000;
-    for (let ms = scale.startMs; ms < scale.endMs; ms += step) {
-        lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });
+    for (let i = 0; i < dayStarts.length; i++) {
+        const dayEnd = Math.min(i + 1 < dayStarts.length ? dayStarts[i + 1] : zoneMidnightMs(dayStarts[i], timezone, 1), scale.endMs);
+        for (let ms = dayStarts[i]; ms < dayEnd; ms += step) {
+            if (ms >= scale.startMs) {
+                lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });
+            }
+        }
     }
     return { upper, lower };
 }
