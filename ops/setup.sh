@@ -15,6 +15,19 @@ info "Starting the Ignition gateway container..."
 # it during first-time commissioning.
 "${COMPOSE[@]}" up -d
 
+# Fresh-volume fix: Docker creates the bind-mount's parent path (data/projects/)
+# as root inside a brand-new volume, and the gateway then faults with "unable to
+# create resource dir: .../projects/.resources". Hand the directory to the
+# ignition user and bounce the gateway once so it starts clean. Idempotent —
+# a no-op restart on an already-correct volume.
+if ! "${COMPOSE[@]}" exec -T -u root gateway \
+        stat -c '%U' /usr/local/bin/ignition/data/projects 2>/dev/null | grep -q ignition; then
+    info "Fresh volume: fixing data/projects ownership for the ignition user..."
+    "${COMPOSE[@]}" exec -T -u root gateway \
+        chown ignition:ignition /usr/local/bin/ignition/data/projects
+    "${COMPOSE[@]}" restart gateway
+fi
+
 wait_for_gateway 60 || true
 
 echo
