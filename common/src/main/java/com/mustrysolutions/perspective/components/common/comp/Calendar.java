@@ -1,6 +1,9 @@
 package com.mustrysolutions.perspective.components.common.comp;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
+
+import javax.swing.ImageIcon;
 
 import com.inductiveautomation.ignition.common.jsonschema.JsonSchema;
 import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
@@ -42,6 +45,9 @@ public class Calendar {
     public static final JsonSchema ON_CHANGE_SCHEMA = JsonSchema.parse(
         Calendar.class.getResourceAsStream("/calendar.onchange.event.json"));
 
+    /** Palette/browser icon + drag thumbnail (drawn, not bundled). */
+    private static final BufferedImage ICON = MustrySolutionsPerspectiveComponentsModule.paletteIcon(COMPONENT_ID);
+
     /** The descriptor registered with Perspective's component registries. */
     public static final ComponentDescriptor DESCRIPTOR = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
         .setPaletteCategory(MustrySolutionsPerspectiveComponentsModule.COMPONENT_CATEGORY)
@@ -49,8 +55,9 @@ public class Calendar {
         .setModuleId(MustrySolutionsPerspectiveComponentsModule.MODULE_ID)
         .setSchema(SCHEMA)
         .setName("Calendar")
+        .setIcon(new ImageIcon(ICON))
         .addPaletteEntry("", "Calendar",
-            "A month/week/day calendar bound to a list of events.", null, null)
+            "A month/week/day calendar bound to a list of events.", ICON, null)
         .setDefaultMetaName("calendar")
         .setEvents(List.of(
             new ComponentEventDescriptor(

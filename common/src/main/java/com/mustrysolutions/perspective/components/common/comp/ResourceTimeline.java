@@ -1,6 +1,9 @@
 package com.mustrysolutions.perspective.components.common.comp;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
+
+import javax.swing.ImageIcon;
 
 import com.inductiveautomation.ignition.common.jsonschema.JsonSchema;
 import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
@@ -37,6 +40,9 @@ public class ResourceTimeline {
     public static final JsonSchema ON_RESOURCE_CLICK_SCHEMA = JsonSchema.parse(
         ResourceTimeline.class.getResourceAsStream("/timeline.onresourceclick.event.json"));
 
+    /** Palette/browser icon + drag thumbnail (drawn, not bundled). */
+    private static final BufferedImage ICON = MustrySolutionsPerspectiveComponentsModule.paletteIcon(COMPONENT_ID);
+
     /** The descriptor registered with Perspective's component registries. */
     public static final ComponentDescriptor DESCRIPTOR = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
         .setPaletteCategory(MustrySolutionsPerspectiveComponentsModule.COMPONENT_CATEGORY)
@@ -44,8 +50,9 @@ public class ResourceTimeline {
         .setModuleId(MustrySolutionsPerspectiveComponentsModule.MODULE_ID)
         .setSchema(SCHEMA)
         .setName("Resource Timeline")
+        .setIcon(new ImageIcon(ICON))
         .addPaletteEntry("", "Resource Timeline",
-            "A scheduling board: resources as rows on a zoomable horizontal time axis.", null, null)
+            "A scheduling board: resources as rows on a zoomable horizontal time axis.", ICON, null)
         .setDefaultMetaName("resourceTimeline")
         .setEvents(List.of(
             new ComponentEventDescriptor(
