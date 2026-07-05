@@ -11,6 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # schema guard diffs against the parent commit
+
+      # Fail if a published props.json key was removed/renamed (existing views
+      # would silently reset that setting). PRs compare against the base branch.
+      - name: Prop-schema guard
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            ops/schema-guard.sh "origin/${{ github.base_ref }}"
+          else
+            ops/schema-guard.sh HEAD^
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

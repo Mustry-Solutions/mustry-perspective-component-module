@@ -174,10 +174,10 @@ A scheduling board: resources (machines, lines, crews) as rows on a zoomable hor
 ### Features
 
 - **Rows & groups** — `config.resources` renders in array order; consecutive equal `group` values share a sticky section header. **Click a header to collapse/expand its section** (chevron + hidden-row count; `config.collapsedGroups` is two-way, so a view can open pre-collapsed or drive it from a binding). The label column, time axis and corner are all sticky, so both scroll directions stay aligned.
-- **Epoch-linear time scale** with stepped **zoom presets** (`config.zoom`: `hour` / `day` / `week`, two-way) — each preset sets density, paging span and gesture snapping. DST days render as their real 23/25 hours; tick labels follow `config.timezone` + `config.locale`.
+- **Epoch-linear time scale** with stepped **zoom presets** (`config.zoom`: `hour` / `day` / `shift` / `week`, two-way) — each preset sets density, paging span and gesture snapping. The **`shift` preset** appears when `config.shifts` is set (`[{label, start: 'HH:mm'}]`): a day-wide window whose lower ticks and gridlines sit on the shift boundaries, labelled with the shift names. DST days render as their real 23/25 hours; tick labels follow `config.timezone` + `config.locale`.
 - **Three display kinds** per event: `bar` (default — lane-packed when overlapping), `state` (full-height contiguous band, e.g. machine states; no end = ongoing, runs to the window edge) and `background` (translucent span behind everything).
 - **Editable** (`config.editable`) — drag a bar to retime it (ghost preview, snap per zoom preset), **drag it onto another row to reassign**, drag either edge to resize; **selectable** (`config.selectable`) — drag empty track to create.
-- **Built-in editor** (`config.builtInEditor`) — create/edit/delete via a popup with a grouped resource dropdown; editing a recurring occurrence offers the same "This event / All events" choice as the calendar.
+- **Built-in editor** (`config.builtInEditor`) — create/edit/delete via a popup with a grouped resource dropdown and the same **Repeat controls as the calendar** (frequency, every-N, weekly weekday picker, ends never/on-date/after-N); editing a recurring occurrence offers the "This event / All events" choice.
 - **One change event** — `onChange` fires for every mutation (`create`/`edit`/`delete`/`move`/`resize`) with the resulting event carrying its final `start`/`end`/`resourceId`; a cross-row drag adds `fromResourceId`. Recurring mutations add the calendar's `scope`/`seriesId`/`occurrenceDate` context. One script persists everything.
 - **Mini month navigator** — the toolbar title opens a compact month picker to jump the window anywhere (`config.weekStart` sets its first day).
 - **Categories, icons & legend** — same contract as the calendar (`config.categories`, `event.category`, `event.status` restyling, interactive legend mirrored to `output.hiddenCategories`).
@@ -236,6 +236,10 @@ Unit tests use **Jest + ts-jest** (`web/jest.config.js`, `web/tsconfig.test.json
 
 After changing a component, render it in a real Perspective session rather than trusting a gateway 200 — use `ops/verify/` (or the `/verify-component` skill). See [`ops/verify/README.md`](ops/verify/README.md).
 
+### Accessibility
+
+Every interactive surface is keyboard-reachable: toolbar/legend/navigator controls are real buttons, and events (calendar chips and time blocks, timeline bars and state bands, group headers) are focusable with a visible accent focus ring — **Enter/Space activates them like a click** (opens the editor / fires the event; dragging remains pointer-only). The built-in editors are `role="dialog"` (`aria-modal`), auto-focus their first field, and close on Escape. Full grid arrow-key navigation and keyboard drag are not implemented.
+
 ---
 
 ## Roadmap / deferred work
@@ -254,6 +258,6 @@ Perspective serializes each instance's configured **prop values** into the view'
 2. **Additive-only policy** thereafter — new props are optional with defaults (non-breaking); renames/moves require a converter.
 3. **Versioned converters** — confirm the exact Perspective 8.3 SDK hook (component descriptor version + prop converter; verify via `javap`) and register migrations that rewrite old prop trees forward. As a cheaper interim, the reducer can read legacy paths as fallbacks.
 4. **Document the policy** here and in `CLAUDE.md`.
-5. *(Optional)* a CI guard that flags a removed/renamed key in `props.json` versus the previous commit.
+5. ~~*(Optional)* a CI guard that flags a removed/renamed key in `props.json` versus the previous commit.~~ **Done:** `ops/schema-guard.sh`, wired into CI.
 
 Until the component is actively used, breaking schema changes remain acceptable.
