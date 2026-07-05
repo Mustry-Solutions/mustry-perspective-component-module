@@ -1,9 +1,17 @@
 # Calendar / Scheduler component — build plan
 
-**Status: M0–M3 built, tested, and live-verified** (`mustrysolutions.display.calendar`).
-See the [README Calendar section](../README.md#calendar--scheduler) and the
-[manual test checklist](calendar-manual-test.md). Remaining future polish:
-multi-day spanning *bars* in week/day (per-day chips today).
+**Status: M0–M3 built, tested, and live-verified** (`mustrysolutions.display.calendar`),
+plus later additions (multi-day spanning bars in month + the week/day all-day strip,
+month-view drag, timezone support, localization in 7 languages, CSV export, editor
+validation, recurring detach/series editing). See the
+[README Calendar section](../README.md#calendar--scheduler) and the
+[manual test checklist](calendar-manual-test.md).
+
+> The "v2 resource-timeline view" contemplated below was **built instead as a
+> separate component** — the Resource Timeline
+> (`mustrysolutions.display.resourcetimeline`, see
+> [`resource-timeline-plan.md`](resource-timeline-plan.md)) — custom, with no
+> FullCalendar Scheduler license.
 
 Researched June 2026 (IA forum + Ideas/Canny portal + FullCalendar). This is the
 strongest validated gap in Perspective: the "Perspective Calendar" idea is at

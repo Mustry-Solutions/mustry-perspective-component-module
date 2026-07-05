@@ -2,56 +2,196 @@
   "custom": {},
   "params": {},
   "props": {
-    "defaultSize": { "width": 1000, "height": 720 }
+    "defaultSize": {
+      "width": 1000,
+      "height": 720
+    }
   },
   "root": {
     "type": "ia.container.coord",
     "version": 0,
     "props": {},
-    "meta": { "name": "root" },
+    "meta": {
+      "name": "root"
+    },
     "children": [
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "Calendar demo — editable. Drag empty time to create (editor pops open), click an event to edit/delete it, drag to move, drag the bottom edge to resize. Every change (create/edit/delete/move/resize) persists via a single onChange script on the calendar.", "style": { "fontSize": "13px" } },
-        "meta": { "name": "help" },
-        "position": { "x": 16, "y": 10, "width": 960, "height": 40 }
+        "props": {
+          "text": "Calendar demo \u2014 editable. Drag empty time to create (editor pops open), click an event to edit/delete it, drag to move, drag the bottom edge to resize. Every change (create/edit/delete/move/resize) persists via a single onChange script on the calendar.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 960,
+          "height": 40
+        }
       },
       {
         "type": "mustrysolutions.display.calendar",
         "version": 0,
         "props": {
           "config": {
-            "view": "week", "editable": true, "selectable": true, "builtInEditor": true, "scrollToHour": 8,
-            "scrollToNow": true, "refreshSeconds": 60, "showLegend": true, "showExport": true,
-            "timezone": "America/Chicago", "slotMinutes": 15,
+            "view": "week",
+            "editable": true,
+            "selectable": true,
+            "builtInEditor": true,
+            "scrollToHour": 8,
+            "scrollToNow": true,
+            "refreshSeconds": 60,
+            "showLegend": true,
+            "showExport": true,
+            "timezone": "America/Chicago",
+            "slotMinutes": 15,
             "categories": [
-              { "id": "ops", "label": "Operations", "color": "#0c7bb3", "icon": "material/settings" },
-              { "id": "maint", "label": "Maintenance", "color": "#e67e22", "icon": "material/build" },
-              { "id": "meeting", "label": "Meetings", "color": "#8e44ad", "icon": "material/groups" }
+              {
+                "id": "ops",
+                "label": "Operations",
+                "color": "#0c7bb3",
+                "icon": "material/settings"
+              },
+              {
+                "id": "maint",
+                "label": "Maintenance",
+                "color": "#e67e22",
+                "icon": "material/build"
+              },
+              {
+                "id": "meeting",
+                "label": "Meetings",
+                "color": "#8e44ad",
+                "icon": "material/groups"
+              }
             ]
           },
           "data": {
             "events": [
-              { "id": "seed-1", "title": "Standup", "start": "2026-06-24T09:00:00", "end": "2026-06-24T09:30:00", "category": "meeting", "description": "Daily team sync in the control room. Review overnight alarms and the day's PM tasks." },
-              { "id": "seed-2", "title": "Lunch", "start": "2026-06-24T12:00:00", "end": "2026-06-24T13:00:00", "category": "ops", "description": "Line 2 changeover window — no production scheduled." },
-              { "id": "seed-3", "title": "Pump A service", "start": "2026-06-25T10:00:00", "end": "2026-06-25T11:30:00", "category": "maint", "description": "Scheduled preventive maintenance on pump A." },
-              { "id": "seed-4", "title": "Vendor call", "start": "2026-06-24T10:00:00", "end": "2026-06-24T10:30:00", "category": "meeting", "status": "tentative" },
-              { "id": "seed-5", "title": "Filter swap", "start": "2026-06-24T11:00:00", "end": "2026-06-24T11:30:00", "category": "maint", "status": "done" },
-              { "id": "seed-6", "title": "Batch start", "start": "2026-06-24T13:30:00", "end": "2026-06-24T14:00:00", "category": "ops" },
-              { "id": "seed-7", "title": "Safety walk", "start": "2026-06-24T14:30:00", "end": "2026-06-24T15:00:00", "category": "ops" },
-              { "id": "seed-8", "title": "Shift handover", "start": "2026-06-24T15:30:00", "end": "2026-06-24T16:00:00", "category": "meeting" },
-              { "id": "seed-9", "title": "Night shift", "start": "2026-06-30T22:00:00", "end": "2026-07-01T06:00:00", "category": "ops", "description": "Overnight run — crosses midnight into the next day." },
-              { "id": "seed-10", "title": "Outage window", "start": "2026-06-30", "end": "2026-07-03", "allDay": true, "category": "maint", "description": "Planned multi-day maintenance outage." },
-              { "id": "tz-utc", "title": "UTC 14:00Z (→09:00 CDT)", "start": "2026-07-01T14:00:00Z", "end": "2026-07-01T15:30:00Z", "category": "ops", "description": "Stored as a UTC instant; renders at 09:00 America/Chicago." },
-              { "id": "tz-off", "title": "Offset 13:00-05 (→13:00 CDT)", "start": "2026-07-01T13:00:00-05:00", "end": "2026-07-01T14:00:00-05:00", "category": "meeting", "description": "Stored with a -05:00 offset (already CDT)." },
-              { "id": "rec-1", "title": "Daily check", "start": "2026-06-29T07:00:00-05:00", "end": "2026-06-29T07:15:00-05:00", "category": "ops", "description": "Recurring daily — for testing series vs single-occurrence edits.", "rrule": { "freq": "daily", "count": 30 } }
+              {
+                "id": "seed-1",
+                "title": "Standup",
+                "start": "2026-06-24T09:00:00",
+                "end": "2026-06-24T09:30:00",
+                "category": "meeting",
+                "description": "Daily team sync in the control room. Review overnight alarms and the day's PM tasks."
+              },
+              {
+                "id": "seed-2",
+                "title": "Lunch",
+                "start": "2026-06-24T12:00:00",
+                "end": "2026-06-24T13:00:00",
+                "category": "ops",
+                "description": "Line 2 changeover window \u2014 no production scheduled."
+              },
+              {
+                "id": "seed-3",
+                "title": "Pump A service",
+                "start": "2026-06-25T10:00:00",
+                "end": "2026-06-25T11:30:00",
+                "category": "maint",
+                "description": "Scheduled preventive maintenance on pump A."
+              },
+              {
+                "id": "seed-4",
+                "title": "Vendor call",
+                "start": "2026-06-24T10:00:00",
+                "end": "2026-06-24T10:30:00",
+                "category": "meeting",
+                "status": "tentative"
+              },
+              {
+                "id": "seed-5",
+                "title": "Filter swap",
+                "start": "2026-06-24T11:00:00",
+                "end": "2026-06-24T11:30:00",
+                "category": "maint",
+                "status": "done"
+              },
+              {
+                "id": "seed-6",
+                "title": "Batch start",
+                "start": "2026-06-24T13:30:00",
+                "end": "2026-06-24T14:00:00",
+                "category": "ops"
+              },
+              {
+                "id": "seed-7",
+                "title": "Safety walk",
+                "start": "2026-06-24T14:30:00",
+                "end": "2026-06-24T15:00:00",
+                "category": "ops"
+              },
+              {
+                "id": "seed-8",
+                "title": "Shift handover",
+                "start": "2026-06-24T15:30:00",
+                "end": "2026-06-24T16:00:00",
+                "category": "meeting"
+              },
+              {
+                "id": "seed-9",
+                "title": "Night shift",
+                "start": "2026-06-30T22:00:00",
+                "end": "2026-07-01T06:00:00",
+                "category": "ops",
+                "description": "Overnight run \u2014 crosses midnight into the next day."
+              },
+              {
+                "id": "seed-10",
+                "title": "Outage window",
+                "start": "2026-06-30",
+                "end": "2026-07-03",
+                "allDay": true,
+                "category": "maint",
+                "description": "Planned multi-day maintenance outage."
+              },
+              {
+                "id": "tz-utc",
+                "title": "UTC 14:00Z (\u219209:00 CDT)",
+                "start": "2026-07-01T14:00:00Z",
+                "end": "2026-07-01T15:30:00Z",
+                "category": "ops",
+                "description": "Stored as a UTC instant; renders at 09:00 America/Chicago."
+              },
+              {
+                "id": "tz-off",
+                "title": "Offset 13:00-05 (\u219213:00 CDT)",
+                "start": "2026-07-01T13:00:00-05:00",
+                "end": "2026-07-01T14:00:00-05:00",
+                "category": "meeting",
+                "description": "Stored with a -05:00 offset (already CDT)."
+              },
+              {
+                "id": "rec-1",
+                "title": "Daily check",
+                "start": "2026-06-29T07:00:00-05:00",
+                "end": "2026-06-29T07:15:00-05:00",
+                "category": "ops",
+                "description": "Recurring daily \u2014 for testing series vs single-occurrence edits.",
+                "rrule": {
+                  "freq": "daily",
+                  "count": 30
+                }
+              }
             ]
           }
         },
         "custom": {},
-        "meta": { "name": "calendar" },
-        "position": { "x": 16, "y": 56, "width": 968, "height": 640 },
+        "meta": {
+          "name": "calendar"
+        },
+        "position": {
+          "x": 16,
+          "y": 56,
+          "width": 968,
+          "height": 640
+        },
         "events": {
           "component": {
             "onChange": [
@@ -59,7 +199,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\t# One handler for every mutation: create / edit / delete / move / resize,\n\t# including recurring-event scope (series vs single occurrence).\n\tev = event.event\n\taction = event.action\n\tscope = getattr(event, \"scope\", None)            # 'series' | 'occurrence' | None\n\tseriesId = getattr(event, \"seriesId\", None)\n\toccDate = getattr(event, \"occurrenceDate\", None)\n\tevents = [dict(e) for e in self.props.data.events]\n\n\tdef idx_of(eid):\n\t\tfor i in range(len(events)):\n\t\t\tif events[i].get(\"id\") == eid:\n\t\t\t\treturn i\n\t\treturn -1\n\n\tdef row_from(e):\n\t\treturn {\"id\": e.id, \"title\": e.title, \"start\": e.start, \"end\": e.end,\n\t\t\t\"allDay\": e.allDay, \"category\": e.category, \"description\": e.description,\n\t\t\t\"rrule\": getattr(e, \"rrule\", None)}\n\n\tdef upsert(row):\n\t\ti = idx_of(row.get(\"id\"))\n\t\tif i >= 0:\n\t\t\tevents[i] = row\n\t\telse:\n\t\t\tevents.append(row)\n\n\tdef add_exdate(sid, d):\n\t\ti = idx_of(sid)\n\t\tif i < 0:\n\t\t\treturn\n\t\tbase = dict(events[i])\n\t\trr = dict(base.get(\"rrule\") or {})\n\t\tex = list(rr.get(\"exdate\") or [])\n\t\tif d not in ex:\n\t\t\tex.append(d)\n\t\trr[\"exdate\"] = ex\n\t\tbase[\"rrule\"] = rr\n\t\tevents[i] = base\n\n\tif scope == \"occurrence\":\n\t\tadd_exdate(seriesId, occDate)          # hide this date in the series\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(row_from(ev))               # standalone override for this date\n\telif scope == \"series\":\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != seriesId]\n\t\telse:\n\t\t\tupsert(row_from(ev))               # the base series (with its rule)\n\telse:\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(row_from(ev))\n\n\tself.props.data.events = events\n"
+                  "script": "\t# One handler for every mutation: create / edit / delete / move / resize,\n\t# including recurring-event scope (series vs single occurrence).\n\tev = event.event\n\taction = event.action\n\tscope = getattr(event, \"scope\", None)            # 'series' | 'occurrence' | None\n\tseriesId = getattr(event, \"seriesId\", None)\n\toccDate = getattr(event, \"occurrenceDate\", None)\n\tevents = [dict(e) for e in self.props.data.events]\n\n\tdef idx_of(eid):\n\t\tfor i in range(len(events)):\n\t\t\tif events[i].get(\"id\") == eid:\n\t\t\t\treturn i\n\t\treturn -1\n\n\tdef row_from(e):\n\t\trow = {\"id\": e.id, \"title\": e.title, \"start\": e.start, \"end\": e.end,\n\t\t\t\"allDay\": e.allDay, \"category\": e.category, \"description\": e.description,\n\t\t\t\"rrule\": getattr(e, \"rrule\", None)}\n\t\t# the payload carries the styling fields too \u2014 keep them on write-back\n\t\tfor k in (\"color\", \"status\", \"display\"):\n\t\t\tval = getattr(e, k, \"\")\n\t\t\tif val:\n\t\t\t\trow[k] = val\n\t\treturn row\n\n\tdef upsert(row):\n\t\ti = idx_of(row.get(\"id\"))\n\t\tif i >= 0:\n\t\t\tevents[i] = row\n\t\telse:\n\t\t\tevents.append(row)\n\n\tdef add_exdate(sid, d):\n\t\ti = idx_of(sid)\n\t\tif i < 0:\n\t\t\treturn\n\t\tbase = dict(events[i])\n\t\trr = dict(base.get(\"rrule\") or {})\n\t\tex = list(rr.get(\"exdate\") or [])\n\t\tif d not in ex:\n\t\t\tex.append(d)\n\t\trr[\"exdate\"] = ex\n\t\tbase[\"rrule\"] = rr\n\t\tevents[i] = base\n\n\tif scope == \"occurrence\":\n\t\tadd_exdate(seriesId, occDate)          # hide this date in the series\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(row_from(ev))               # standalone override for this date\n\telif scope == \"series\":\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != seriesId]\n\t\telse:\n\t\t\tupsert(row_from(ev))               # the base series (with its rule)\n\telse:\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(row_from(ev))\n\n\tself.props.data.events = events\n"
                 }
               }
             ]

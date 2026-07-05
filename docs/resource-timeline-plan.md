@@ -1,7 +1,8 @@
 # Resource Timeline — component plan
 
-**Status (2026-07-03): M0 + M1 built and live-verified.** Third component of the
-module: `mustrysolutions.display.resourcetimeline`. Decisions below were settled
+**Status (2026-07-05): M0–M3 + post-M3 hardening built and live-verified** (see
+Milestones). Third component of the module:
+`mustrysolutions.display.resourcetimeline`. Decisions below were settled
 with Sam; change them here first if they change.
 
 Deviations from the original plan:
@@ -12,7 +13,9 @@ Deviations from the original plan:
   hurts; the windowed data binding already bounds what exists at all.
 - Layout is one scroll container (sticky axis / sticky label column / sticky
   corner) rather than split panes, so both scroll axes stay aligned by
-  construction; row gridlines are a CSS background, not DOM ticks.
+  construction. Row gridlines started as a fixed-step CSS background and were
+  replaced (P1 batch) by full-height overlay divs generated from the real axis
+  ticks, so they stay zone-exact across 23/25h DST days.
 
 ## What & why
 
@@ -35,6 +38,8 @@ a different product and stay out.
 2. **V1 focus: scheduling board** (edit-heavy). M2 gestures are the point.
 3. **Row model: flat list + optional `group` field** rendered as sticky section
    headers. No collapse in v1 (addable later without schema changes).
+   *(Superseded post-M3: group headers collapse/expand; `config.collapsedGroups`
+   is two-way.)*
 4. **Recurrence: display-only in v1** — events accept `rrule`, expanded by the
    shared engine, so recurring shift patterns render. Repeat-editing UI and
    occurrence-detach come later. *(Superseded post-M3: occurrences now drag/edit
@@ -108,14 +113,22 @@ Perspective theme.
   month navigator on the title (shared `MiniMonthNav`; `config.weekStart`),
   legend icons (calendar parity), README section, TimelineDbDemo at
   /timeline-db (windowed-fetch recipe as a live binding), perf validated on
-  the stress view. Still deferred: zone-exact ticks across DST seams, a
-  `shift` zoom preset driven by `config.shifts`, repeat-editing UI.
+  the stress view.
+- **Post-M3 (2026-07-03 → 07-05)** — collapsible groups; Designer palette /
+  project-browser icons; P1 correctness batch (DST-safe windows/paging/ticks,
+  delta-snap + noop-move guards, editor validation, complete mutation
+  payloads); P2 batch (memoized layout, hover gated during drags, min
+  grabbable bar geometry, CSV BOM + injection guard, zone-true recurrence);
+  recurring occurrences drag/edit with calendar parity (detach + series
+  scope, ↻ marker). Still deferred: a `shift` zoom preset driven by
+  `config.shifts`, repeat-editing UI (rule editing in the timeline editor —
+  rules are edited on the data or via the calendar).
 
 ## Out of scope (v1)
 
-Dependency arrows/links, collapsible hierarchy, repeat-editing UI, printing,
-ICS, continuous zoom, per-event locks (calendar shares this gap — revisit
-together).
+Dependency arrows/links, nested (multi-level) hierarchy — single-level group
+collapse HAS shipped — repeat-editing UI, printing, ICS, continuous zoom,
+per-event locks (calendar shares this gap — revisit together).
 
 ## Risks
 

@@ -19,9 +19,13 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       everything.
 - [ ] Category colours/icons apply; `status` restyles (tentative striped, cancelled
       struck-through, done faded); a bar clamped at a window edge squares that edge.
+- [ ] **Very short events** still render as a visible, clickable pill (~12px floor);
+      below ~24px the edge-resize handles disappear (move/click still work).
+- [ ] Vertical gridlines line up exactly under the lower axis ticks — including on
+      a 23/25h DST day (set `config.timezone` and navigate across a transition).
 - [ ] Hover shows the detail popover with the event's real (unclamped) extent in the
-      configured timezone. Legend click filters a category (mirrors to
-      `output.hiddenCategories`).
+      configured timezone — but **not while a drag is in flight**. Legend click
+      filters a category (mirrors to `output.hiddenCategories`).
 - [ ] Recurring events (`rrule`) render per window; occurrences carry a ↻ marker.
 - [ ] `output.visibleStart/visibleEnd` update (debounced) when navigating/zooming —
       ISO-8601 UTC instants, half-open.
@@ -51,6 +55,19 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       *All events* edits the base series (re-anchored on its own start date, rule
       kept). Delete honours the same scope.
 - [ ] Editor times are in the configured timezone (hint under the fields).
+- [ ] **Editor validation** — set End at or before Start: a red "End must be after
+      start" hint appears and Save/Create disables; fixing the range re-enables it.
+- [ ] **Sloppy click** — press a bar and wiggle less than half a snap step: no move
+      fires; it commits as a click (editor / `onEventClick`). Right-click never
+      starts a drag.
+
+## CSV export
+
+- [ ] `config.showExport` shows the toolbar download button; clicking downloads
+      `timeline-events.csv` (header + one row per loaded event incl. recurring
+      definitions).
+- [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with
+      `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
 ## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)
 

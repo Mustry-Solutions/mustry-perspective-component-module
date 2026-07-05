@@ -18,7 +18,7 @@ theming. Suggested libraries noted per item.
 
 | Component | What people want | Native today | Lib |
 |---|---|---|---|
-| **Calendar / Scheduler** | Month/week/day/agenda calendar with event create/drag/resize; shift & maintenance schedules. Ideas portal: **44 votes, "Planned"** (IA surveyed users in 2023). | None (Equipment Schedule is timeline/MES-only) | FullCalendar |
+| ~~**Calendar / Scheduler**~~ **✅ BUILT** (`mustrysolutions.display.calendar`, custom — no FullCalendar) | Month/week/day/agenda calendar with event create/drag/resize; shift & maintenance schedules. Ideas portal: **44 votes, "Planned"** (IA surveyed users in 2023). | None (Equipment Schedule is timeline/MES-only) | ~~FullCalendar~~ custom |
 | **Editable data grid** | Excel-like: cell editing, validation, per-column edit permissions, write-back to DB, frozen columns, grouping. Largest raw thread volume. | Partial — Table edits but hits limits fast | AG-Grid (community) |
 | **Rich text / WYSIWYG editor** | Edit *formatted* text for SOPs/notes/work orders. "Markdown styles but can't edit; text input can't style." Zero native coverage. | None (Markdown is display-only) | TipTap / Quill |
 | **Touchscreen on-screen keyboard / numpad** | On-screen entry for Workstation HMIs; persistent 2019→2024 pain. | None native | (custom) |
@@ -27,7 +27,7 @@ theming. Suggested libraries noted per item.
 
 | Component | What people want | Native today | Lib |
 |---|---|---|---|
-| **Gantt / production timeline** | First-class interactive Gantt (draggable bars). Today people fake it with the XY chart. | Poor (XY-chart hack) | FullCalendar resource-timeline / DHTMLX |
+| ~~**Gantt / production timeline**~~ **✅ largely covered** by the Resource Timeline (`mustrysolutions.display.resourcetimeline`, custom scheduling board — no dependency arrows, which stay a separate product) | First-class interactive Gantt (draggable bars). Today people fake it with the XY chart. | Poor (XY-chart hack) | ~~FullCalendar / DHTMLX~~ custom |
 | **Advanced charts** | Sankey, Waterfall, Pareto, funnel. Third parties (Nivo, ApexCharts modules) already fill this. | Heatmap yes; these no | ECharts |
 | **Flow / node-graph editor** | React-Flow-style interactive node graphs / flow charts. Explicitly asked in 8.3 EA. | None (8.3 Drawing Editor is static SVG) | React Flow |
 | **Fancy gauges / KPI widgets** | Circular/bar gauges, circular sliders. Commercially validated (multiple paid/Exchange modules). | Partial (basic gauges) | ECharts gauge |
@@ -52,7 +52,9 @@ theming. Suggested libraries noted per item.
 - ApexCharts module: https://github.com/Kyvis-Labs/ignition-apexcharts-module
 - React Flow request: https://forum.inductiveautomation.com/t/react-flow-node-tool/106462
 
-## Current pick
+## Status
 
-A focused build plan for the **Calendar / Scheduler** is in
-[`calendar-component-plan.md`](calendar-component-plan.md).
+The **Calendar / Scheduler** ([`calendar-component-plan.md`](calendar-component-plan.md))
+and the **Resource Timeline** ([`resource-timeline-plan.md`](resource-timeline-plan.md))
+are built and shipping in the module. Leading candidate for the next build:
+the **editable data grid** (largest raw demand of what remains).

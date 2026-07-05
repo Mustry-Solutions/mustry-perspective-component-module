@@ -107,12 +107,13 @@ There are two kinds of events. **Intent** events (`onEventClick`, `onDateClick`,
 
 So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onChange` (or `onSelect`); the event appears only once your handler writes it back into `config.data.events`.
 
-**The one-handler recipe** (`onChange`) — upsert-or-delete by id, covering every mutation:
+**The one-handler recipe** (`onChange`) — upsert-or-delete by id, covering every mutation. (This is the minimal version for non-recurring data; if you use `rrule`, use the scope-aware version in [`docs/calendar-manual-test.md`](docs/calendar-manual-test.md#write-back-recipes-paste-into-the-components-event-config-in-the-designer), which also honours `scope`/`seriesId`/`occurrenceDate`.)
 
 ```python
 ev = event.event
 row = {"id": ev.id, "title": ev.title, "start": ev.start, "end": ev.end,
        "allDay": ev.allDay, "category": ev.category, "color": ev.color,
+       "status": getattr(ev, "status", ""), "display": getattr(ev, "display", ""),
        "description": ev.description}
 events, found = [], False
 for e in self.props.data.events:
@@ -130,7 +131,7 @@ self.props.data.events = events
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path) · `labels` (override any built-in UI string — defaults follow `locale` for bundled languages, else English; `{n}`/`{tz}` are substituted).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `loading` (bind to your query state → thin loading bar + stale-while-revalidate) · `refetchDebounceMs` (coalesce rapid navigation into one visibleStart/End write; default 150, 0 = immediate) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path) · `labels` (override any built-in UI string — defaults follow `locale` for bundled languages, else English; `{n}`/`{tz}` are substituted).
 
 **`config.data.events`** — array of event objects:
 
@@ -186,7 +187,7 @@ A scheduling board: resources (machines, lines, crews) as rows on a zoomable hor
 
 ### How events work
 
-Identical philosophy to the calendar: **controlled, read-from-data**. The timeline never mutates `config.data.events`; gestures fire `onChange` and your handler writes back (upsert-or-delete by `id` — the event always carries its final `resourceId`, so a reassign needs no special casing). The demo view at `/timeline` ships a complete one-handler write-back script.
+Identical philosophy to the calendar: **controlled, read-from-data**. The timeline never mutates `config.data.events`; gestures fire `onChange` and your handler writes back (upsert-or-delete by `id` — the event always carries its final `resourceId`, so a reassign needs no special casing). The demo view at `/timeline` ships a complete one-handler write-back script, including the recurring branches (`scope`/`seriesId`/`occurrenceDate` → series `exdate` + standalone override) across both `data.events` and `data.recurringEvents`.
 
 ### Theming
 
@@ -229,7 +230,7 @@ Signing is conditional: a self-signed keystore is generated by the ops scripts; 
 
 ### Tests
 
-Unit tests use **Jest + ts-jest** (`web/jest.config.js`, `web/tsconfig.test.json`). They cover the pure logic: `dateUtils.ts` (date math, `startOfWeek`, `formatPattern`, timezone/DST resolution, time-of-day round-trips) and `pickerLogic.ts` (layout resolution, selectable bounds, rolling/calendar preset ranges, preset conflicts, the output contract). The React component's own rendering/state machine isn't directly unit-tested — it's exercised via the live verification harness.
+Unit tests use **Jest + ts-jest** (`web/jest.config.js`, `web/tsconfig.test.json`) and run in a plain node environment — all the non-trivial logic lives in pure, DOM-free modules. The suites cover: shared date/timezone math incl. DST resolution (`dateUtils`), recurrence expansion, label packs, the CSV serialiser (quoting + injection guard); picker logic + prop mapping; calendar grid/packing/gesture/editor logic (incl. recurring detach & series scope) + prop mapping; and timeline scale/tick/layout/gesture/editor logic + prop mapping, with a dedicated DST regression suite pinned on the 2026 US transitions. The React components' rendering isn't directly unit-tested — that's exercised via the live verification harness.
 
 ### Live verification
 

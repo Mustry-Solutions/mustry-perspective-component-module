@@ -6,15 +6,27 @@ behave** in a browser, instead of only checking that the gateway served the bund
 ## What's here
 
 - `project/` — a Perspective project named **`verify`**, bind-mounted into the dev
-  gateway (see the volume in `../../docker-compose.yml`). It contains:
-  - `project.json` — the project definition.
-  - `com.inductiveautomation.perspective/views/Main/` — a view with the
-    DateTimeRangePicker in three layouts (oneMonth / compact / twoMonths), labelled.
-  - `com.inductiveautomation.perspective/page-config/` — maps the page `/` to that view.
+  gateway (see the volume in `../../docker-compose.yml`). Views live under
+  `com.inductiveautomation.perspective/views/`, routed by `page-config/`:
+
+| Route | View | What it exercises |
+|---|---|---|
+| `/` | Main | DateTimeRangePicker in three layouts (oneMonth / compact / twoMonths). |
+| `/demo` | CalendarDemo | Editable calendar with the full scope-aware `onChange` write-back script (create/edit/delete/move/resize, recurring detach + series edits stick). |
+| `/dbdemo` | CalendarDbDemo | Windowed-fetch recipe: `data.events` driven by `output.visibleStart/End` over a 114-event source + always-loaded `recurringEvents`. |
+| `/empty` | CalendarEmpty | Empty-state badge/tooltip behaviour. |
+| `/stress` | CalendarStress | Calendar volume test. |
+| `/timeline` | TimelineDemo | Editable Resource Timeline with the full write-back script (drag/reassign/resize/create/editor, recurring detach + series scope across `events` **and** `recurringEvents`). |
+| `/timeline-db` | TimelineDbDemo | Timeline windowed-fetch recipe (window-scoped transform on `output.visibleEnd`). |
+| `/timeline-stress` | TimelineStress | 60 resources × ~3,500 events. |
 
 Because it's bind-mounted, the project is always present in the gateway (survives
 `teardown.sh --purge`), and anything you save against it in the Designer writes
 **straight back into this folder** in the repo.
+
+> Demo mutations persist only in the Perspective session (the component write-backs
+> update session props, not the committed view JSON) — a fresh browser session
+> starts from the committed data again.
 
 ## Use it
 
@@ -24,8 +36,9 @@ Because it's bind-mounted, the project is always present in the gateway (survive
    **http://localhost:9088/data/perspective/client/verify**
 
    (host port follows `GATEWAY_HTTP_PORT` in `../../.env`).
-3. You should see the picker in all three layouts. Interact with it and confirm the
-   behaviour of whatever you changed.
+3. Open the route for the component you changed (table above) and confirm the
+   behaviour live. Manual checklists: `docs/calendar-manual-test.md`,
+   `docs/timeline-manual-test.md`.
 
 > **Trial expired?** The dev gateway runs Perspective in a **2-hour trial**, and this
 > image persists it across container restarts. If the session shows "Trial Expired",
@@ -45,8 +58,7 @@ layouts → report what's on screen. Run it after component changes.
 ## Notes
 
 - The view/page JSON is hand-authored (it renders correctly on Ignition 8.3.6). If a
-  future Ignition version changes the resource format, recreate the `Main` view +
-  page in the Designer and save — it writes back here through the bind mount.
-- To test a specific config (disableDates / spanDays / granularity / presets),
-  temporarily tweak an instance's props in `Main/view.json` and restart the gateway,
-  then revert.
+  future Ignition version changes the resource format, recreate the views + pages
+  in the Designer and save — they write back here through the bind mount.
+- To test a specific config, temporarily tweak an instance's props in the relevant
+  `view.json` and restart the gateway, then revert.

@@ -140,9 +140,15 @@ def idx_of(eid):
     return -1
 
 def row_from(e):
-    return {"id": e.id, "title": e.title, "start": e.start, "end": e.end,
-            "allDay": e.allDay, "category": e.category,
-            "description": e.description, "rrule": getattr(e, "rrule", None)}
+    row = {"id": e.id, "title": e.title, "start": e.start, "end": e.end,
+           "allDay": e.allDay, "category": e.category,
+           "description": e.description, "rrule": getattr(e, "rrule", None)}
+    # the payload carries the styling fields too — keep them on write-back
+    for k in ("color", "status", "display"):
+        v = getattr(e, k, "")
+        if v:
+            row[k] = v
+    return row
 
 def upsert(row):
     i = idx_of(row.get("id"))
@@ -239,7 +245,8 @@ self.props.data.events = events
 ## Editing (set `config.editable = true`)
 
 - [ ] Hovering an event shows a grab cursor; a resize handle sits at its bottom edge.
-- [ ] **Drag** an event — a ghost follows, snapping to 15 min; release fires `onChange` (`action = "move"`).
+- [ ] **Drag** an event — a ghost follows, snapping to the grid resolution (`slotMinutes`); release fires `onChange` (`action = "move"`). The snap shifts by whole steps from the event's own start, so an off-grid event keeps its minute offset.
+- [ ] **Sloppy click** — press an event and wiggle less than half a snap step: no move fires; it commits as a click (editor / `onEventClick`). Right-click never starts a drag.
 - [ ] Drag across day columns changes the day in the payload (`event.start`).
 - [ ] **Resize** from the bottom edge changes the end; release fires `onChange` (`action = "resize"`).
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
@@ -250,7 +257,7 @@ self.props.data.events = events
 - [ ] **Drag a chip onto another day** — the target cell highlights, the source chip dims; release fires `onChange` (`action = "move"`) with start/end shifted by whole days, the **time of day kept**.
 - [ ] **Drag a multi-day spanning bar** — the whole span shifts by the dragged day delta.
 - [ ] **Drag a recurring occurrence** — it detaches (EXDATE + `…-x-…` override), other occurrences stay put.
-- [ ] **Drop on the same day** — nothing fires (no-op).
+- [ ] **Drop on the same day** — no move fires; it commits as a plain click instead (opens the editor / fires `onEventClick`).
 - [ ] A plain **click** on a chip still opens the editor / fires `onEventClick`; a click on the empty cell area still creates / fires `onDateClick`.
 
 ## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)
@@ -274,6 +281,8 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 
 - [ ] **Click an event** — the editor opens **pre-filled** ("Edit event" header, title/start/end/category/notes populated, the event's category pre-selected). The **Category** field appears only when `config.categories` are defined; the colour follows the category.
 - [ ] Change a field and **Save** — fires `onChange` (`action = "edit"`); with the demo's write-back the event **updates in place** (no duplicate).
+- [ ] **Validation** — set End at or before Start: a red "End must be after start" hint appears and Save disables; fixing the range re-enables it. All-day events may end on their start date (inclusive end — same-day is valid).
+- [ ] **Fields the editor doesn't show survive a save** — an event with `color`/`status`/`display` keeps them after Save/move/resize (the payload carries them through).
 - [ ] **Delete** removes the event — fires `onChange` (`action = "delete"`); with write-back it disappears.
 - [ ] Move/resize an event — fires `onChange` (`action = "move"` / `"resize"`).
 
@@ -294,6 +303,7 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 - [ ] Set `config.showExport = true` → a download button appears in the toolbar.
 - [ ] Clicking it downloads `calendar-events.csv` with a header row + one row per loaded event (id, title, start, end, allDay, category, status, color, description, rrule).
 - [ ] Fields with commas / quotes / newlines are quoted/escaped correctly.
+- [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
 ## Theming & i18n
 
