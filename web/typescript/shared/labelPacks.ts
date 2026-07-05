@@ -81,6 +81,7 @@ export interface TimelineLabels {
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // built-in editor
     newEvent: string; editEvent: string;
+    thisEvent: string; allEvents: string;   // apply-to scope for a recurring occurrence
     title: string; eventTitle: string;   // field label / placeholder
     resource: string;
     start: string; end: string;
@@ -98,6 +99,7 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     exportCsv: 'Export events to CSV',
     previousMonth: 'Previous month', nextMonth: 'Next month',
     newEvent: 'New event', editEvent: 'Edit event',
+    thisEvent: 'This event', allEvents: 'All events',
     title: 'Title', eventTitle: 'Event title',
     resource: 'Resource',
     start: 'Start', end: 'End',
@@ -116,6 +118,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Exporter les événements en CSV',
         previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
         newEvent: 'Nouvel événement', editEvent: "Modifier l'événement",
+        thisEvent: 'Cet événement', allEvents: 'Tous les événements',
         title: 'Titre', eventTitle: "Titre de l'événement",
         resource: 'Ressource',
         start: 'Début', end: 'Fin',
@@ -132,6 +135,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Ereignisse als CSV exportieren',
         previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
         newEvent: 'Neues Ereignis', editEvent: 'Ereignis bearbeiten',
+        thisEvent: 'Dieses Ereignis', allEvents: 'Alle Ereignisse',
         title: 'Titel', eventTitle: 'Ereignistitel',
         resource: 'Ressource',
         start: 'Beginn', end: 'Ende',
@@ -148,6 +152,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Exportar eventos a CSV',
         previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
         newEvent: 'Nuevo evento', editEvent: 'Editar evento',
+        thisEvent: 'Este evento', allEvents: 'Todos los eventos',
         title: 'Título', eventTitle: 'Título del evento',
         resource: 'Recurso',
         start: 'Inicio', end: 'Fin',
@@ -164,6 +169,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Evenementen exporteren als CSV',
         previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
         newEvent: 'Nieuw evenement', editEvent: 'Evenement bewerken',
+        thisEvent: 'Dit evenement', allEvents: 'Alle evenementen',
         title: 'Titel', eventTitle: 'Titel van het evenement',
         resource: 'Resource',
         start: 'Begin', end: 'Einde',
@@ -180,6 +186,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Esporta eventi in CSV',
         previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
         newEvent: 'Nuovo evento', editEvent: 'Modifica evento',
+        thisEvent: 'Questo evento', allEvents: 'Tutti gli eventi',
         title: 'Titolo', eventTitle: "Titolo dell'evento",
         resource: 'Risorsa',
         start: 'Inizio', end: 'Fine',
@@ -196,6 +203,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         exportCsv: 'Exportar eventos para CSV',
         previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
         newEvent: 'Novo evento', editEvent: 'Editar evento',
+        thisEvent: 'Este evento', allEvents: 'Todos os eventos',
         title: 'Título', eventTitle: 'Título do evento',
         resource: 'Recurso',
         start: 'Início', end: 'Fim',

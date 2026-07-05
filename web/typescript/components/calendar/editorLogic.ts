@@ -4,8 +4,10 @@
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from '../calendarLogic';
-import { emitWall, instantToZonedIso } from '../../shared/dateUtils';
+import { emitWall, reanchorSeries } from '../../shared/dateUtils';
 import { Editor } from './types';
+
+export { reanchorSeries };   // shared with the timeline; re-exported for callers/tests
 
 /** What a mutation should fire: the onChange action, payload, and recurrence context. */
 export interface ChangeSpec {
@@ -123,15 +125,6 @@ export function buildRRule(ed: Editor, baseEventById: BaseEventLookup): RRule | 
         rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
     }
     return rr;
-}
-
-/** Keep a series anchored on the base's (zone-local) date while applying an edited time. */
-export function reanchorSeries(baseRaw: string | undefined, editedWall: string, allDay: boolean, timezone: string): string {
-    const baseDate = instantToZonedIso(baseRaw || '', timezone).slice(0, 10);
-    if (allDay) {
-        return baseDate;
-    }
-    return baseDate + (editedWall.length >= 11 ? editedWall.slice(10) : 'T00:00:00');
 }
 
 /**

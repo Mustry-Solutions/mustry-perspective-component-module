@@ -99,7 +99,7 @@ describe('editor logic', () => {
     });
 
     it('save: create gets a fresh id, edit keeps it; times emit with offsets', () => {
-        const created = tlSaveSpec(tlEditorForCreate('m2', T0, T0 + 60 * MIN, TZ, ''), TZ, () => 'fixed');
+        const created = tlSaveSpec(tlEditorForCreate('m2', T0, T0 + 60 * MIN, TZ, ''), TZ, () => undefined, () => 'fixed');
         expect(created.action).toBe('create');
         expect(created.event).toMatchObject({ id: 'fixed', resourceId: 'm2', start: '2026-07-03T08:00:00+00:00' });
         const edited = tlSaveSpec(tlEditorForEvent(ev, TZ), TZ);
@@ -164,5 +164,68 @@ describe('editor logic', () => {
         expect(tlEditorProblem({ ...ok, end: ok.start }, TZ)).toBe('range');
         expect(tlEditorProblem({ ...ok, end: '2026-07-03T07:00' }, TZ)).toBe('range');
         expect(tlEditorProblem({ ...ok, end: '' }, TZ)).toBe('parse');
+    });
+});
+
+describe('recurring occurrences (detach / series scope, calendar parity)', () => {
+    const base: TimelineEvent = {
+        id: 'r1', resourceId: 'crew-a', title: 'Handover',
+        start: '2026-07-01T06:45:00', end: '2026-07-01T07:00:00',
+        category: 'meeting', rrule: { freq: 'daily', exdate: ['2026-07-02'] }
+    };
+    const occ: TimelineEvent = {
+        id: 'r1::2026-07-06', resourceId: 'crew-a', title: 'Handover',
+        start: '2026-07-06T06:45:00', end: '2026-07-06T07:00:00', category: 'meeting'
+    };
+    const lookup = (id: string): TimelineEvent | undefined => (id === 'r1' ? base : undefined);
+
+    it('editorForEvent recovers the series context, scoped to this event', () => {
+        const e = tlEditorForEvent(occ, TZ);
+        expect(e).toMatchObject({ seriesId: 'r1', occurrenceDate: '2026-07-06', scope: 'occurrence' });
+        expect(e.carry.rrule).toBeUndefined();
+        // a plain event has no series context
+        expect(tlEditorForEvent({ ...occ, id: 'plain' }, TZ)).toMatchObject({ seriesId: null, scope: 'series' });
+    });
+
+    it('occurrence save detaches into an override that must NOT carry the rule', () => {
+        const spec = tlSaveSpec({ ...tlEditorForEvent(occ, TZ), title: 'Moved handover' }, TZ, lookup);
+        expect(spec.action).toBe('edit');
+        expect(spec.event).toMatchObject({ id: 'r1-x-2026-07-06', title: 'Moved handover' });
+        expect('rrule' in (spec.event as object)).toBe(false);
+        expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'r1', occurrenceDate: '2026-07-06' });
+    });
+
+    it('series save re-anchors on the base date and keeps the rule + exdates', () => {
+        const e = { ...tlEditorForEvent(occ, TZ), scope: 'series' as const, start: '2026-07-06T07:15', end: '2026-07-06T07:30' };
+        const spec = tlSaveSpec(e, TZ, lookup);
+        expect(spec.event).toMatchObject({
+            id: 'r1',
+            start: '2026-07-01T07:15:00+00:00',   // base DATE + edited time
+            end: '2026-07-01T07:30:00+00:00',
+            rrule: { freq: 'daily', exdate: ['2026-07-02'] }
+        });
+        expect(spec.extra).toEqual({ scope: 'series', seriesId: 'r1' });
+    });
+
+    it('deleting one occurrence / the whole series carries the right context', () => {
+        const e = tlEditorForEvent(occ, TZ);
+        expect(tlDeleteSpec(e)).toMatchObject({
+            event: { id: 'r1-x-2026-07-06' },
+            extra: { scope: 'occurrence', seriesId: 'r1', occurrenceDate: '2026-07-06' }
+        });
+        expect(tlDeleteSpec({ ...e, scope: 'series' })).toMatchObject({
+            event: { id: 'r1' }, extra: { scope: 'series', seriesId: 'r1' }
+        });
+    });
+
+    it('dragging an occurrence detaches it, incl. across rows', () => {
+        const s = Date.UTC(2026, 6, 6, 8);
+        const spec = tlMoveResizeSpec('move', occ, { startMs: s, endMs: s + 15 * MIN, resourceId: 'crew-b' }, TZ);
+        expect(spec.event).toMatchObject({
+            id: 'r1-x-2026-07-06', resourceId: 'crew-b', start: '2026-07-06T08:00:00+00:00'
+        });
+        expect('rrule' in (spec.event as object)).toBe(false);
+        expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'r1', occurrenceDate: '2026-07-06' });
+        expect(spec.fromResourceId).toBe('crew-a');
     });
 });

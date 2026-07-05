@@ -336,6 +336,14 @@
     white-space: nowrap;
 }
 
+// "Part of a series" marker on recurring occurrences (drag/edit detaches one).
+.tml-bar-recur {
+    flex: 0 0 auto;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.75;
+}
+
 .tml-band {
     position: absolute;
     top: 0;

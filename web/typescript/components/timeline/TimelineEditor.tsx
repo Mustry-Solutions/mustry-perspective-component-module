@@ -36,6 +36,18 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >
                 <div className="cal-editor-head">{isEdit ? labels.editEvent : labels.newEvent}</div>
+                {ed.seriesId !== null && (
+                    <div className="cal-editor-scope">
+                        <label>
+                            <input type="radio" checked={ed.scope === 'occurrence'} onChange={() => onUpdate({ scope: 'occurrence' })} />
+                            <span>{labels.thisEvent}</span>
+                        </label>
+                        <label>
+                            <input type="radio" checked={ed.scope === 'series'} onChange={() => onUpdate({ scope: 'series' })} />
+                            <span>{labels.allEvents}</span>
+                        </label>
+                    </div>
+                )}
                 <label className="cal-editor-field">
                     <span>{labels.title}</span>
                     <input

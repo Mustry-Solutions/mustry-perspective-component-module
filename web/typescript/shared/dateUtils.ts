@@ -280,6 +280,17 @@ export function shiftWallDays(wall: string, days: number): string {
     return fmtDate(addDays(d, days)) + wall.slice(10);
 }
 
+/** Keep a recurring series anchored on its base's (zone-local) date while applying
+ *  an edited wall time — editing one occurrence's time must not move the series'
+ *  start date. `dateOnly` returns just the base date (all-day events). */
+export function reanchorSeries(baseRaw: string | undefined, editedWall: string, dateOnly: boolean, timeZone: string): string {
+    const baseDate = instantToZonedIso(baseRaw || '', timeZone).slice(0, 10);
+    if (dateOnly) {
+        return baseDate;
+    }
+    return baseDate + (editedWall.length >= 11 ? editedWall.slice(10) : 'T00:00:00');
+}
+
 /**
  * Convert an internal zone-local wall-clock string to the emitted form: an
  * offset-bearing instant ("YYYY-MM-DDTHH:mm:ss±HH:mm") for timed values, or a

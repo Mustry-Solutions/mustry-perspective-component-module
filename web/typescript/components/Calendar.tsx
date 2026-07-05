@@ -276,7 +276,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     /** The raw (unexpanded) base event for a series id, looked up in the bound data. */
     private baseEventById(id: string): CalEvent | undefined {
-        return (this.props.props.events || []).find((e) => e.id === id);
+        // A series can be bound via `events` OR the always-loaded `recurringEvents`.
+        const p = this.props.props;
+        return [...(p.events || []), ...(p.recurringEvents || [])].find((e) => e && e.id === id);
     }
 
     /** Open the built-in editor pre-filled from an existing event, to edit it in place. */

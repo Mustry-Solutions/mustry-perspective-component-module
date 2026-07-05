@@ -103,6 +103,14 @@
               "type": "string",
               "description": "Editor: resource dropdown label."
             },
+            "thisEvent": {
+              "type": "string",
+              "description": "Editor: apply-to choice for one occurrence of a recurring series."
+            },
+            "allEvents": {
+              "type": "string",
+              "description": "Editor: apply-to choice for the whole recurring series."
+            },
             "start": {
               "type": "string",
               "description": "Editor: start field label."

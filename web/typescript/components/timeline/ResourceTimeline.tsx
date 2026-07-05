@@ -228,14 +228,20 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return this.props.props.builtInEditor && this.props.props.editable;
     }
 
-    /** V1: recurring occurrences (id "base::date") are display-only — not draggable,
-     *  not editable in place. */
+    /** A recurring occurrence (id "base::date"): draggable/editable like the
+     *  calendar's — touching one detaches it into an override + series EXDATE. */
     private isOccurrence(ev: TimelineEvent): boolean {
         return (ev.id || '').indexOf('::') >= 0;
     }
 
     private movable(ev: TimelineEvent): boolean {
-        return this.props.props.editable && !this.isOccurrence(ev) && ev.display !== 'background';
+        return this.props.props.editable && ev.display !== 'background';
+    }
+
+    /** The raw (unexpanded) base event of a series id, wherever it's bound. */
+    private baseEventById(id: string): TimelineEvent | undefined {
+        const p = this.props.props;
+        return [...(p.events || []), ...(p.recurringEvents || [])].find((e) => e && e.id === id);
     }
 
     /** An event's real (unclamped) extent, with the same no-end rules as the layout. */
@@ -260,7 +266,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private fireSpec(spec: TlChangeSpec): void {
         this.fireEvent('onChange', {
             action: spec.action, event: spec.event,
-            ...(spec.fromResourceId ? { fromResourceId: spec.fromResourceId } : {})
+            ...(spec.fromResourceId ? { fromResourceId: spec.fromResourceId } : {}),
+            ...(spec.extra || {})   // scope / seriesId / occurrenceDate for recurring mutations
         });
     }
 
@@ -272,8 +279,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     private onBarClick = (ev: TimelineEvent): void => {
-        // Occurrences stay intent-only while recurrence is display-only.
-        if (this.useEditorForEdit() && !this.isOccurrence(ev)) {
+        if (this.useEditorForEdit()) {
             this.openEditorForEvent(ev);
             return;
         }
@@ -304,10 +310,6 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const tz = this.props.props.timezone;
         switch (kind) {
             case 'editEvent':
-                if (this.isOccurrence(g.ev!)) {
-                    this.fireEvent('onEventClick', this.eventPayload(g.ev!));
-                    break;
-                }
                 this.openEditorForEvent(g.ev!);
                 break;
             case 'eventClick':
@@ -383,7 +385,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (!ed) {
             return;
         }
-        this.fireSpec(tlSaveSpec(ed, this.props.props.timezone));
+        this.fireSpec(tlSaveSpec(ed, this.props.props.timezone, (id) => this.baseEventById(id)));
         this.setState({ editor: null });
     };
 
@@ -686,6 +688,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     className="tml-resize tml-resize--start"
                                     onPointerDown={(e) => this.gestures.startResize('start', ev, extent.startMs, extent.endMs, e)}
                                 />
+                            )}
+                            {this.isOccurrence(ev) && (
+                                // Part of a series: dragging/editing detaches this occurrence.
+                                <span className="tml-bar-recur" aria-hidden="true">↻</span>
                             )}
                             <EventIcon ev={ev} categories={p.categories} />
                             <span className="tml-bar-title">{ev.title}</span>

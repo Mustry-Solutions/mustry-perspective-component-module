@@ -22,7 +22,7 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
 - [ ] Hover shows the detail popover with the event's real (unclamped) extent in the
       configured timezone. Legend click filters a category (mirrors to
       `output.hiddenCategories`).
-- [ ] Recurring events (`rrule`) render per window; occurrences are display-only.
+- [ ] Recurring events (`rrule`) render per window; occurrences carry a ↻ marker.
 - [ ] `output.visibleStart/visibleEnd` update (debounced) when navigating/zooming —
       ISO-8601 UTC instants, half-open.
 
@@ -42,8 +42,14 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
 - [ ] **Click a bar** — opens the editor pre-filled (resource dropdown shows
       "Group — Label"); Save fires `edit`, Delete fires `delete`. Without
       `builtInEditor`, clicks fire `onEventClick`.
-- [ ] **Recurring occurrences** are not draggable/editable (v1: recurrence is
-      display-only); clicking one fires `onEventClick` even with the editor on.
+- [ ] **Drag a recurring occurrence (↻)** — it detaches: `onChange` carries
+      `scope: "occurrence"` + `seriesId` + `occurrenceDate`; the write-back adds an
+      `exdate` to the series and upserts a standalone override. Later occurrences
+      keep recurring.
+- [ ] **Click a recurring occurrence** — the editor opens with a
+      "This event / All events" choice: *This event* saves a detached override;
+      *All events* edits the base series (re-anchored on its own start date, rule
+      kept). Delete honours the same scope.
 - [ ] Editor times are in the configured timezone (hint under the fields).
 
 ## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)

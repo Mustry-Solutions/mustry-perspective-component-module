@@ -37,7 +37,8 @@ a different product and stay out.
    headers. No collapse in v1 (addable later without schema changes).
 4. **Recurrence: display-only in v1** — events accept `rrule`, expanded by the
    shared engine, so recurring shift patterns render. Repeat-editing UI and
-   occurrence-detach come later.
+   occurrence-detach come later. *(Superseded post-M3: occurrences now drag/edit
+   with calendar-parity detach + "All events" series scope.)*
 5. **Epoch-linear time scale** with zone-aware tick labels (DST days are 23/25 h;
    the axis must not tear at the seam). Ticks/labels via the shared zone math.
 6. **Stepped zoom presets** (`config.zoom`, two-way: e.g. `hour | shift | day |
@@ -99,8 +100,9 @@ Perspective theme.
 - **M2 editing — DONE (2026-07-03)** — drag-retime with snapping, cross-row
   reassign (`fromResourceId` on onChange), both-edge resize, drag-empty-to-create,
   built-in editor with a grouped resource dropdown (reuses the shared .cal-editor
-  styles), full onChange contract; recurring occurrences stay display-only
-  (click falls through to onEventClick). Manual checklist:
+  styles), full onChange contract; recurring occurrences were
+  display-only in M2 (occurrence detach + series scope added post-M3, matching
+  the calendar). Manual checklist:
   docs/timeline-manual-test.md (touch still PENDING on real hardware).
 - **M3 polish — DONE (2026-07-03)** — CSV export (`config.showExport`), mini
   month navigator on the title (shared `MiniMonthNav`; `config.weekStart`),
