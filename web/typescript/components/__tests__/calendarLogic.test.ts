@@ -403,4 +403,12 @@ describe('eventsToCsv', () => {
         const csv = eventsToCsv([{ id: '1', title: 'R', start: 's', rrule: { freq: 'daily', count: 3 } }]);
         expect(csv.split('\r\n')[1]).toContain('"{""freq"":""daily"",""count"":3}"');
     });
+
+    it('guards formula-looking cells against CSV injection', () => {
+        const csv = eventsToCsv([{ id: '=HYPERLINK("http://x")', title: '@cmd', start: 's', description: '-run' }]);
+        const row = csv.split('\r\n')[1];
+        expect(row).toContain('"\'=HYPERLINK(""http://x"")"');
+        expect(row).toContain("'@cmd");
+        expect(row).toContain("'-run");
+    });
 });

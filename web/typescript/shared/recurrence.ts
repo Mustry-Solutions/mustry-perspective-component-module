@@ -1,7 +1,7 @@
 // Recurrence (rrule) expansion, shared by every component that renders recurring
 // items (calendar events, timeline bars, …). Pure and framework-free; operates on
 // any item shape that carries id/start/end/rrule and preserves the rest verbatim.
-import { addDays, daysBetween, fmtDate, parseDate } from './dateUtils';
+import { addDays, daysBetween, fmtDate, instantToZonedIso, parseDate } from './dateUtils';
 
 export interface RRule {
     freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -102,15 +102,23 @@ function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date
     return dates;
 }
 
-function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date): T[] {
-    const base = parseDate(ev.start);
+function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date, timezone: string): T[] {
+    // A series recurs by ZONE-LOCAL wall clock. An absolute base instant (offset /
+    // Z / epoch) is normalised to the zone's naive wall time FIRST, so occurrences
+    // don't inherit the base's UTC offset glued onto new dates — each occurrence
+    // re-resolves its own offset downstream (DST-correct), and the base's wall
+    // DATE is read in the display zone, not the offset's. Naive and date-only
+    // starts pass through instantToZonedIso unchanged.
+    const startWall = instantToZonedIso(ev.start, timezone).slice(0, 19);
+    const endWall = ev.end ? instantToZonedIso(ev.end, timezone).slice(0, 19) : undefined;
+    const base = parseDate(startWall);
     if (!base || !ev.rrule) {
         return [ev];
     }
-    const startTime = ev.start.length > 10 ? ev.start.slice(10) : '';
-    const baseEnd = ev.end ? parseDate(ev.end) : null;
+    const startTime = startWall.length > 10 ? startWall.slice(10) : '';
+    const baseEnd = endWall ? parseDate(endWall) : null;
     const endOffsetDays = baseEnd ? daysBetween(base, baseEnd) : 0;
-    const endTime = ev.end && ev.end.length > 10 ? ev.end.slice(10) : '';
+    const endTime = endWall && endWall.length > 10 ? endWall.slice(10) : '';
     const exdate = new Set(ev.rrule.exdate || []);   // dates removed/overridden (EXDATE)
     const out: T[] = [];
     for (const d of occurrenceStartDates(base, ev.rrule, winStart, winEnd)) {
@@ -124,22 +132,24 @@ function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date)
             ...ev,
             id: `${ev.id}::${fmtDate(d)}`,
             start: fmtDate(d) + startTime,
-            end: ev.end ? fmtDate(addDays(d, endOffsetDays)) + endTime : undefined,
+            end: endWall ? fmtDate(addDays(d, endOffsetDays)) + endTime : undefined,
             rrule: undefined
         });
     }
     return out;
 }
 
-/** Expand recurring items into concrete occurrences within [winStart, winEnd). */
-export function expandEvents<T extends RecurringItem>(events: T[], winStart: Date, winEnd: Date): T[] {
+/** Expand recurring items into concrete occurrences within [winStart, winEnd).
+ *  `timezone` is the display zone occurrences recur in ('' = browser-local);
+ *  non-recurring items pass through verbatim, whatever their format. */
+export function expandEvents<T extends RecurringItem>(events: T[], winStart: Date, winEnd: Date, timezone = ''): T[] {
     const out: T[] = [];
     for (const ev of events) {
         if (!ev || !ev.start) {
             continue;
         }
         if (ev.rrule && ev.rrule.freq) {
-            for (const occ of expandOne(ev, winStart, winEnd)) {
+            for (const occ of expandOne(ev, winStart, winEnd, timezone)) {
                 out.push(occ);
             }
         } else {

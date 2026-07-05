@@ -2,6 +2,7 @@
 // time-grid packing, unit-tested without rendering. Recurrence expansion and
 // month-grid construction live in the shared layer.
 
+import { csvCell } from '../shared/csv';
 import {
     addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today
 } from '../shared/dateUtils';
@@ -62,11 +63,6 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
                     : (a.title || '').localeCompare(b.title || ''));
     }
     return map;
-}
-
-/** Quote a CSV cell only when it contains a comma, quote, or newline (RFC 4180). */
-function csvCell(v: string): string {
-    return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
 /** Serialise events to CSV text (one row per event, CRLF line endings). */

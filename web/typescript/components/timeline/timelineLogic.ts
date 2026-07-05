@@ -5,6 +5,7 @@
 // The scale is EPOCH-linear (ms -> px), not wall-clock-linear: DST days are
 // 23/25 hours long and must render that way instead of tearing the axis. Tick
 // LABELS are zone-aware via Intl.
+import { csvCell } from '../../shared/csv';
 import { resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { RRule } from '../../shared/recurrence';
 
@@ -181,11 +182,6 @@ export interface RowItem {
 
 // --- CSV export -----------------------------------------------------------------
 
-/** Quote a CSV cell only when it contains a comma, quote, or newline (RFC 4180). */
-function csvCell(v: string): string {
-    return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
-
 /** Serialise timeline events to CSV text (one row per event, CRLF line endings). */
 export function timelineEventsToCsv(events: TimelineEvent[]): string {
     const cols = ['id', 'resourceId', 'title', 'start', 'end', 'category', 'status', 'display', 'color', 'description', 'rrule'];
@@ -214,6 +210,16 @@ export function timelineEventsToCsv(events: TimelineEvent[]): string {
 // --- per-row bar/band layout --------------------------------------------------
 
 export const DEFAULT_BAR_MIN = 60;   // assumed duration (minutes) for a bar with no end
+export const MIN_BAR_PX = 12;        // rendered floor so short events stay visible/clickable
+export const BAR_HANDLES_MIN_PX = 24; // below this, edge handles would swallow the bar
+
+/** Rendered geometry for a bar: a minimum width so a 5-minute job at week zoom
+ *  (≈1px true width) can still be seen and grabbed, and whether the bar is wide
+ *  enough to carry edge-resize handles (narrower bars are move/click only). */
+export function barGeom(leftPx: number, rightPx: number): { left: number; width: number; showHandles: boolean } {
+    const width = Math.max(MIN_BAR_PX, rightPx - leftPx);
+    return { left: leftPx, width, showHandles: width >= BAR_HANDLES_MIN_PX };
+}
 
 /** A window-clamped item ready to render on one row. */
 export interface BarLayout {

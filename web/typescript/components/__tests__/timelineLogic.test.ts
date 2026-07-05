@@ -1,6 +1,6 @@
 import {
-    MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
-    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth,
+    BAR_HANDLES_MIN_PX, MIN_BAR_PX, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
+    barGeom, buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth,
     timelineEventsToCsv
 } from '../timeline/timelineLogic';
 import { mapTimelineProps } from '../timeline/timelineProps';
@@ -199,6 +199,31 @@ describe('timelineEventsToCsv', () => {
         expect(lines[1]).toContain('"Job, ""special"""');
         expect(lines[2]).toContain('"{""freq"":""daily""}"');
         expect(lines).toHaveLength(3);
+    });
+
+    it('guards formula-looking cells against CSV injection', () => {
+        const csv = timelineEventsToCsv([
+            { id: '=1+1', resourceId: 'm1', title: '=SUM(A1:A9)', start: '2026-07-03T08:00:00', description: '+cmd, run' },
+            { id: 'b', resourceId: 'm2', title: '@import', start: '2026-07-03T08:00:00', category: '-x' }
+        ]);
+        const lines = csv.split('\r\n');
+        expect(lines[1]).toContain("'=1+1");
+        expect(lines[1]).toContain("'=SUM(A1:A9)");
+        expect(lines[1]).toContain('"\'+cmd, run"');   // guard first, then RFC quoting
+        expect(lines[2]).toContain("'@import");
+        expect(lines[2]).toContain("'-x");
+        expect(lines[2]).toContain('m2,');             // plain cells untouched
+    });
+});
+
+describe('barGeom', () => {
+    it('floors the rendered width so short bars stay grabbable', () => {
+        expect(barGeom(100, 101)).toEqual({ left: 100, width: MIN_BAR_PX, showHandles: false });
+        expect(barGeom(100, 400)).toEqual({ left: 100, width: 300, showHandles: true });
+    });
+    it('drops the edge handles when they would swallow the bar', () => {
+        expect(barGeom(0, BAR_HANDLES_MIN_PX - 1).showHandles).toBe(false);
+        expect(barGeom(0, BAR_HANDLES_MIN_PX).showHandles).toBe(true);
     });
 });
 

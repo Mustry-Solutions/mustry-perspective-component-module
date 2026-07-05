@@ -2,6 +2,7 @@
 // shared instant emitter, pinned on the 2026 US transitions in America/Chicago:
 // spring-forward Sun 2026-03-08 (23h day), fall-back Sun 2026-11-01 (25h day).
 import { msToZonedIso, toEpochMs } from '../../shared/dateUtils';
+import { expandEvents } from '../../shared/recurrence';
 import {
     buildTicks, MS_PER_HOUR, pageAnchorMs, windowFor, zoneMidnightMs
 } from '../timeline/timelineLogic';
@@ -86,6 +87,31 @@ describe('buildTicks across DST', () => {
         // last tick (Mar 8) sits 6*24h minus nothing — days before the seam are 24h.
         expect(upper[6].ms).toBe(t('2026-03-08T00:00:00'));
         expect(upper[6].px).toBe(6 * 24 * w.pxPerHour);
+    });
+});
+
+describe('recurrence normalization of absolute-instant bases', () => {
+    it('an offset/Z base recurs by zone wall clock, DST-correct', () => {
+        // 2026-03-07T14:00Z = 08:00 CST in Chicago, the day before spring-forward.
+        const series = {
+            id: 's', start: '2026-03-07T14:00:00Z', end: '2026-03-07T16:00:00Z',
+            rrule: { freq: 'daily' as const }
+        };
+        const occ = expandEvents([series], new Date(2026, 2, 6), new Date(2026, 2, 10), CHI);
+        expect(occ.map((o) => o.start)).toEqual([
+            '2026-03-07T08:00:00', '2026-03-08T08:00:00', '2026-03-09T08:00:00'
+        ]);
+        expect(occ[0].end).toBe('2026-03-07T10:00:00');
+        // Same WALL time on both sides of the seam = 23h apart on the epoch.
+        expect(toEpochMs(occ[1].start, CHI)! - toEpochMs(occ[0].start, CHI)!).toBe(23 * MS_PER_HOUR);
+        // No occurrence carries the base's offset glued onto a new date.
+        expect(occ.some((o) => /Z|[+-]\d\d:\d\d$/.test(o.start))).toBe(false);
+    });
+
+    it('naive and date-only bases pass through the default (no-zone) path unchanged', () => {
+        const naive = { id: 'n', start: '2026-06-10T09:00:00', rrule: { freq: 'daily' as const } };
+        const occ = expandEvents([naive], new Date(2026, 5, 10), new Date(2026, 5, 12));
+        expect(occ.map((o) => o.start)).toEqual(['2026-06-10T09:00:00', '2026-06-11T09:00:00']);
     });
 });
 

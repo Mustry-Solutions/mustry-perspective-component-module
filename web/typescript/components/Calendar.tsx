@@ -36,6 +36,7 @@ import {
     CalView, Gesture, Editor, Preview,
     CalendarProps, CalendarState, hourHeightPx
 } from './calendar/types';
+import { CSV_BOM } from '../shared/csv';
 import { resolveColor as styleResolveColor } from '../shared/eventStyle';
 import { expandEvents } from '../shared/recurrence';
 import { mapCalendarProps } from './calendarProps';
@@ -233,6 +234,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     private onEventHover = (ev: CalEvent, e: React.MouseEvent): void => {
+        if (this.gestures.active) {
+            return;   // no detail popovers while a drag is in flight
+        }
         const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
         this.clearHoverTimer();
@@ -492,7 +496,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     /** Export the loaded events to a CSV file (downloaded client-side). */
     private exportCsv = (): void => {
         const csv = eventsToCsv(this.props.props.events || []);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -742,7 +746,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             start: instantToZonedIso(ev.start, tz),
             end: ev.end != null ? instantToZonedIso(ev.end, tz) : undefined
         }));
-        return expandEvents(zoned, s, e)
+        return expandEvents(zoned, s, e, tz)
             .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
     }
 

@@ -8,6 +8,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
+import { CSV_BOM } from '../../shared/csv';
 import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents } from '../../shared/recurrence';
 import { EventIcon, categoryColor, resolveColor, statusClass } from '../../shared/eventStyle';
@@ -15,9 +16,9 @@ import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
-    BarLayout, RowItem, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS,
-    buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, scaleWidth,
-    timelineEventsToCsv, windowFor
+    BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS,
+    barGeom, buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs,
+    scaleWidth, timelineEventsToCsv, windowFor, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
@@ -34,6 +35,13 @@ export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
 const LABEL_COL_PX = 160;
 const AXIS_PX = 42;        // two 21px tick rows (matches .tml-axis-row)
 const GROUP_ROW_PX = 22;
+
+/** One resource row's laid-out content. */
+interface RowLayouts {
+    bands: BarLayout[];
+    states: BarLayout[];
+    bars: BarLayout[];
+}
 
 interface ResourceTimelineState {
     anchorMs: number;                    // epoch ms of the window start
@@ -118,6 +126,39 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return windowFor(this.state.anchorMs, this.props.props.zoom, this.props.props.timezone);
     }
 
+    private layoutMemo: { deps: unknown[]; rows: RowItem[]; ticks: TickRows; byRow: Map<string, RowLayouts> } | null = null;
+
+    /** Rows, axis ticks and every row's bar/band layout, recomputed only when an
+     *  input actually changes — NOT on each hover/ghost setState. A drag re-renders
+     *  per pointer move, and relayouting every row each move is the component's
+     *  dominant cost on large boards. */
+    private layout(scale: TimeScale): { rows: RowItem[]; ticks: TickRows; byRow: Map<string, RowLayouts> } {
+        const p = this.props.props;
+        const deps: unknown[] = [
+            p.events, p.recurringEvents, p.resources, p.collapsedGroups, this.state.hiddenCats,
+            scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, p.zoom, p.locale
+        ];
+        const m = this.layoutMemo;
+        if (m && m.deps.every((d, i) => d === deps[i])) {
+            return m;
+        }
+        const rows = buildRows(p.resources, new Set(p.collapsedGroups));
+        const events = this.visibleEvents();
+        const byRow = new Map<string, RowLayouts>();
+        for (const row of rows) {
+            if (row.type === 'resource') {
+                const id = row.resource!.id;
+                byRow.set(id, {
+                    bands: layoutRowBands(events, id, 'background', scale, p.timezone),
+                    states: layoutRowBands(events, id, 'state', scale, p.timezone),
+                    bars: layoutRowBars(events, id, scale, p.timezone)
+                });
+            }
+        }
+        this.layoutMemo = { deps, rows, ticks: buildTicks(scale, p.zoom, p.timezone, p.locale), byRow };
+        return this.layoutMemo;
+    }
+
     private setupRefreshTimer(): void {
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
@@ -172,7 +213,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const winEnd = new Date(we.y, we.mo - 1, we.d + 2);
         const merged = [...(p.events || []), ...(p.recurringEvents || [])];
         const hidden = this.state.hiddenCats;
-        return expandEvents(merged, winStart, winEnd)
+        return expandEvents(merged, winStart, winEnd, p.timezone)
             .filter((ev) => !(ev.category && hidden.has(ev.category)));
     }
 
@@ -428,7 +469,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private exportCsv = (): void => {
         const p = this.props.props;
         const csv = timelineEventsToCsv([...(p.events || []), ...(p.recurringEvents || [])]);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -455,6 +496,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     };
 
     private onBarHover(it: BarLayout, resourceLabel: string, e: React.MouseEvent): void {
+        if (this.gestures.active) {
+            return;   // no detail popovers while a drag is in flight
+        }
         const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
         const { startMs, endMs } = this.eventExtent(it.event);
@@ -507,7 +551,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             { id: 'day', label: labels.zoomDay },
             { id: 'week', label: labels.zoomWeek }
         ];
-        const title = buildTicks(this.scale(), 'week', this.props.props.timezone, this.props.props.locale).upper[0]?.label || '';
+        const title = zonedFormat(this.props.props.locale, this.props.props.timezone,
+            { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
         return (
             <div className="tml-toolbar">
                 <button
@@ -570,16 +615,13 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     /** One resource row's track: background bands, state bands, then lane-packed bars. */
-    private renderTrack(row: RowItem, events: TimelineEvent[], scale: TimeScale): React.ReactNode {
+    private renderTrack(row: RowItem, lay: RowLayouts, scale: TimeScale): React.ReactNode {
         const p = this.props.props;
-        const r = row.resource!;
         const rowH = p.rowHeight;
         const preview = this.state.preview;
         const px = (ms: number) => msToPx(scale, ms);
         const geom = (it: BarLayout) => ({ left: px(it.startMs), width: Math.max(2, px(it.endMs) - px(it.startMs)) });
-        const bands = layoutRowBands(events, r.id, 'background', scale, p.timezone);
-        const states = layoutRowBands(events, r.id, 'state', scale, p.timezone);
-        const bars = layoutRowBars(events, r.id, scale, p.timezone);
+        const { bands, states, bars } = lay;
         const barArea = rowH - 6;   // 3px vertical inset
         return (
             <>
@@ -609,7 +651,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     if (preview && preview.mode !== 'create' && preview.eventId === ev.id) {
                         return null;   // hidden while dragging; the ghost is shown instead
                     }
-                    const g = geom(it);
+                    // Floor the width so short jobs stay grabbable; drop the edge
+                    // handles when they'd swallow the whole bar (move/click only).
+                    const g = barGeom(px(it.startMs), px(it.endMs));
                     const laneH = barArea / it.lanes;
                     const movable = this.movable(ev);
                     const cls = ['tml-bar'];
@@ -623,7 +667,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             key={`b-${ev.id || i}`}
                             className={cls.join(' ') + statusClass(ev)}
                             style={{
-                                ...g,
+                                left: g.left,
+                                width: g.width,
                                 top: 3 + it.lane * laneH,
                                 height: Math.max(10, laneH - 2),
                                 ...(color ? { ['--ev' as string]: color } : {})
@@ -636,7 +681,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
                             onMouseLeave={this.hideHover}
                         >
-                            {movable && !it.continuesLeft && (
+                            {movable && g.showHandles && !it.continuesLeft && (
                                 <div
                                     className="tml-resize tml-resize--start"
                                     onPointerDown={(e) => this.gestures.startResize('start', ev, extent.startMs, extent.endMs, e)}
@@ -644,7 +689,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             )}
                             <EventIcon ev={ev} categories={p.categories} />
                             <span className="tml-bar-title">{ev.title}</span>
-                            {movable && !it.continuesRight && (
+                            {movable && g.showHandles && !it.continuesRight && (
                                 <div
                                     className="tml-resize tml-resize--end"
                                     onPointerDown={(e) => this.gestures.startResize('end', ev, extent.startMs, extent.endMs, e)}
@@ -662,9 +707,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const p = this.props.props;
         const scale = this.scale();
         const width = scaleWidth(scale);
-        const ticks = buildTicks(scale, p.zoom, p.timezone, p.locale);
-        const rows: RowItem[] = buildRows(p.resources, new Set(p.collapsedGroups));
-        const events = this.visibleEvents();
+        const { rows, ticks, byRow } = this.layout(scale);
         const nowMs = Date.now();
         const nowVisible = nowMs >= scale.startMs && nowMs < scale.endMs;
         const rowH = p.rowHeight;
@@ -718,7 +761,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                         ? () => this.toggleGroup(row.group || row.label)
                                         : undefined}
                                 >
-                                    {row.type === 'resource' && this.renderTrack(row, events, scale)}
+                                    {row.type === 'resource' && this.renderTrack(row, byRow.get(row.resource!.id)!, scale)}
                                 </div>
                             </React.Fragment>
                         ))}
