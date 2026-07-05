@@ -38,6 +38,15 @@ export function EventBar({ seg, colOffset, categories, draggingId, enterClass, h
             } as React.CSSProperties}
             onPointerDown={onStartMove ? (e) => onStartMove(ev, e) : undefined}
             onClick={(e) => { e.stopPropagation(); if (!onStartMove) { onEventClick(ev, e); } }}
+            // Keyboard: the draggable path suppresses onClick (the gesture's commit
+            // decides), so Enter/Space must open the event directly.
+            onKeyDown={onStartMove ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEventClick(ev, e as unknown as React.MouseEvent);
+                }
+            } : undefined}
             {...hoverProps(ev)}
         >
             <EventIcon ev={ev} categories={categories} />

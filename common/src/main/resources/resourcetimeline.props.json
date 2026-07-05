@@ -10,10 +10,11 @@
           "enum": [
             "hour",
             "day",
+            "shift",
             "week"
           ],
           "default": "day",
-          "description": "Zoom preset (two-way: the toolbar writes the user's choice back). Each preset sets the horizontal density, the paging span and the snap granularity."
+          "description": "Zoom preset (two-way: the toolbar writes the user's choice back). Each preset sets the horizontal density, the paging span and the snap granularity. 'shift' is a day-wide window whose lower ticks/gridlines sit on the config.shifts boundaries; it requires config.shifts and is otherwise treated as 'day'."
         },
         "showToolbar": {
           "type": "boolean",
@@ -23,7 +24,7 @@
         "rowHeight": {
           "type": "number",
           "default": 36,
-          "description": "Resource row height in pixels (20–120)."
+          "description": "Resource row height in pixels (20\u2013120)."
         },
         "timezone": {
           "type": "string",
@@ -74,6 +75,10 @@
             "zoomDay": {
               "type": "string",
               "description": "Day zoom-preset button."
+            },
+            "zoomShift": {
+              "type": "string",
+              "description": "Shift zoom-preset button (shown when config.shifts is set)."
             },
             "zoomWeek": {
               "type": "string",
@@ -126,6 +131,70 @@
             "invalidRange": {
               "type": "string",
               "description": "Editor validation hint shown (and Save disabled) when the end is not after the start."
+            },
+            "repeat": {
+              "type": "string",
+              "description": "Editor: repeat field label."
+            },
+            "doesNotRepeat": {
+              "type": "string",
+              "description": "Repeat option: none."
+            },
+            "daily": {
+              "type": "string",
+              "description": "Repeat option: daily."
+            },
+            "weekly": {
+              "type": "string",
+              "description": "Repeat option: weekly."
+            },
+            "monthly": {
+              "type": "string",
+              "description": "Repeat option: monthly."
+            },
+            "yearly": {
+              "type": "string",
+              "description": "Repeat option: yearly."
+            },
+            "every": {
+              "type": "string",
+              "description": "Repeat interval prefix (\"Every N day(s)\")."
+            },
+            "unitDays": {
+              "type": "string",
+              "description": "Repeat interval unit for daily."
+            },
+            "unitWeeks": {
+              "type": "string",
+              "description": "Repeat interval unit for weekly."
+            },
+            "unitMonths": {
+              "type": "string",
+              "description": "Repeat interval unit for monthly."
+            },
+            "unitYears": {
+              "type": "string",
+              "description": "Repeat interval unit for yearly."
+            },
+            "ends": {
+              "type": "string",
+              "description": "Repeat end-mode row label."
+            },
+            "never": {
+              "type": "string",
+              "description": "Repeat end mode: never ends."
+            },
+            "on": {
+              "type": "string",
+              "description": "Repeat end mode: until a date."
+            },
+            "after": {
+              "type": "string",
+              "description": "Repeat end mode: after N occurrences."
+            },
+            "times": {
+              "type": "string",
+              "description": "Suffix after the occurrence count (\"After N times\")."
             },
             "category": {
               "type": "string",
@@ -233,7 +302,7 @@
         "editable": {
           "type": "boolean",
           "default": false,
-          "description": "Allow editing gestures: drag a bar to retime it, drag it onto another row to reassign, drag an edge to resize. Every gesture only FIRES onChange — your handler writes back to the data source."
+          "description": "Allow editing gestures: drag a bar to retime it, drag it onto another row to reassign, drag an edge to resize. Every gesture only FIRES onChange \u2014 your handler writes back to the data source."
         },
         "selectable": {
           "type": "boolean",
@@ -243,7 +312,7 @@
         "builtInEditor": {
           "type": "boolean",
           "default": false,
-          "description": "Built-in editor popover — for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
+          "description": "Built-in editor popover \u2014 for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
         },
         "showExport": {
           "type": "boolean",
@@ -266,12 +335,30 @@
           "items": {
             "type": "string"
           }
+        },
+        "shifts": {
+          "type": "array",
+          "default": [],
+          "description": "Shift definitions (zone-local start times) enabling the 'shift' zoom preset: its lower tick row and gridlines sit on these boundaries, labelled with the shift names. Example: [{label: 'Early', start: '06:00'}, {label: 'Late', start: '14:00'}, {label: 'Night', start: '22:00'}].",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Shift name shown on the tick (e.g. 'Early')."
+              },
+              "start": {
+                "type": "string",
+                "description": "Start of the shift as a zone-local wall time 'HH:mm' (e.g. '06:00')."
+              }
+            }
+          }
         }
       }
     },
     "data": {
       "type": "object",
-      "description": "The controlled event data. The timeline never mutates it — editing gestures fire onChange and your handler writes back.",
+      "description": "The controlled event data. The timeline never mutates it \u2014 editing gestures fire onChange and your handler writes back.",
       "properties": {
         "events": {
           "type": "array",
@@ -298,7 +385,7 @@
         "visibleStart": {
           "type": "string",
           "default": "",
-          "description": "Start of the visible window as an ISO-8601 UTC instant (half-open [start, end)) — bind your query: ts >= visibleStart AND ts < visibleEnd."
+          "description": "Start of the visible window as an ISO-8601 UTC instant (half-open [start, end)) \u2014 bind your query: ts >= visibleStart AND ts < visibleEnd."
         },
         "visibleEnd": {
           "type": "string",

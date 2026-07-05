@@ -7,6 +7,7 @@
 // EXDATE on the series; the editor's apply-to choice can target the whole series
 // instead, which re-anchors on the base's date and keeps its rule.
 import { msToZonedIso, msToWallInput, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
+import { RRule } from '../../shared/recurrence';
 import { TimelineEvent } from './timelineLogic';
 
 /** Recurrence context of a mutation (same contract as the calendar's onChange). */
@@ -38,11 +39,63 @@ export interface TlEditor {
     description: string;
     /** Fields the editor doesn't edit but the save payload must not drop
      *  (a verbatim write-back would otherwise strip them from the row). */
-    carry: { color?: string; status?: string; display?: string; rrule?: object };
+    carry: { color?: string; status?: string; display?: string };
+    // --- recurrence rule (same controls as the calendar's editor) ---
+    repeatFreq: '' | 'daily' | 'weekly' | 'monthly' | 'yearly';   // '' = does not repeat
+    repeatInterval: number;        // every N units (>=1)
+    repeatByweekday: number[];     // weekly only: 0=Sun..6=Sat
+    repeatEndMode: 'never' | 'until' | 'count';
+    repeatUntil: string;           // 'YYYY-MM-DD' (when repeatEndMode='until')
+    repeatCount: number;           // (when repeatEndMode='count')
     // --- edit context for an occurrence of an existing series ---
     seriesId: string | null;       // base event id when editing a recurring occurrence (else null)
     occurrenceDate: string | null; // 'YYYY-MM-DD' of the opened occurrence
     scope: 'series' | 'occurrence';// apply-to choice (only meaningful when seriesId != null)
+}
+
+/** Default recurrence fields for a fresh editor (no repeat). */
+function repeatDefaults(): Pick<TlEditor, 'repeatFreq' | 'repeatInterval' | 'repeatByweekday' | 'repeatEndMode' | 'repeatUntil' | 'repeatCount'> {
+    return { repeatFreq: '', repeatInterval: 1, repeatByweekday: [], repeatEndMode: 'never', repeatUntil: '', repeatCount: 10 };
+}
+
+/** The recurrence fields recovered from an existing rule (for the editor). */
+function repeatFromRule(rr: RRule | undefined): ReturnType<typeof repeatDefaults> {
+    if (!rr || !rr.freq) {
+        return repeatDefaults();
+    }
+    return {
+        repeatFreq: rr.freq,
+        repeatInterval: rr.interval && rr.interval > 1 ? rr.interval : 1,
+        repeatByweekday: rr.byweekday ? rr.byweekday.slice() : [],
+        repeatEndMode: rr.until ? 'until' : (rr.count ? 'count' : 'never'),
+        repeatUntil: rr.until || '',
+        repeatCount: rr.count || 10
+    };
+}
+
+/** Build an RRule from the editor's repeat fields (undefined = does not repeat).
+ *  Preserves an existing series' exdate list when re-saving the whole series. */
+export function tlBuildRRule(ed: TlEditor, baseEventById: TlBaseEventLookup): RRule | undefined {
+    if (!ed.repeatFreq) {
+        return undefined;
+    }
+    const rr: RRule = { freq: ed.repeatFreq };
+    if (ed.repeatInterval > 1) {
+        rr.interval = ed.repeatInterval;
+    }
+    if (ed.repeatFreq === 'weekly' && ed.repeatByweekday.length) {
+        rr.byweekday = ed.repeatByweekday.slice().sort((a, b) => a - b);
+    }
+    if (ed.repeatEndMode === 'until' && ed.repeatUntil) {
+        rr.until = ed.repeatUntil;
+    } else if (ed.repeatEndMode === 'count' && ed.repeatCount > 0) {
+        rr.count = ed.repeatCount;
+    }
+    const base = ed.seriesId ? baseEventById(ed.seriesId) : undefined;
+    if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
+        rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
+    }
+    return rr;
 }
 
 /** A fresh editor for a new bar on the given row/range. */
@@ -52,14 +105,16 @@ export function tlEditorForCreate(resourceId: string, startMs: number, endMs: nu
         start: msToWallInput(startMs, timezone),
         end: msToWallInput(endMs, timezone),
         category: defaultCategory, description: '', carry: {},
+        ...repeatDefaults(),
         seriesId: null, occurrenceDate: null, scope: 'series'
     };
 }
 
 /** An editor pre-filled from an existing bar (a missing/invalid end shows one
  *  hour). A recurring occurrence (id "base::date") recovers its series context
- *  and defaults the apply-to scope to "this event". */
-export function tlEditorForEvent(ev: TimelineEvent, timezone: string): TlEditor {
+ *  (incl. the series' rule, for the "All events" scope) and defaults the
+ *  apply-to choice to "this event". */
+export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventById: TlBaseEventLookup = () => undefined): TlEditor {
     const startMs = toEpochMs(ev.start, timezone) ?? Date.now();
     let endMs = ev.end ? toEpochMs(ev.end, timezone) : null;
     if (endMs === null || endMs <= startMs) {
@@ -67,6 +122,8 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string): TlEditor 
     }
     const rawId = ev.id || '';
     const isOcc = rawId.indexOf('::') >= 0;
+    const seriesId = isOcc ? rawId.split('::')[0] : null;
+    const rr = seriesId ? (baseEventById(seriesId) || {} as TimelineEvent).rrule : ev.rrule;
     return {
         id: rawId, resourceId: ev.resourceId, title: ev.title || '',
         start: msToWallInput(startMs, timezone),
@@ -75,10 +132,10 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string): TlEditor 
         carry: {
             ...(ev.color ? { color: ev.color } : {}),
             ...(ev.status ? { status: ev.status } : {}),
-            ...(ev.display ? { display: ev.display } : {}),
-            ...(ev.rrule ? { rrule: ev.rrule } : {})   // occurrences never carry one (expansion strips it)
+            ...(ev.display ? { display: ev.display } : {})
         },
-        seriesId: isOcc ? rawId.split('::')[0] : null,
+        ...repeatFromRule(rr),
+        seriesId,
         occurrenceDate: isOcc ? rawId.split('::')[1] : null,
         scope: isOcc ? 'occurrence' : 'series'
     };
@@ -105,9 +162,9 @@ function emitWallInput(v: string, timezone: string): string {
  * Decide what saving the editor should fire:
  *  (1) one occurrence of a series -> a detached standalone override (the series gets
  *      an EXDATE from the write-back; the override must NOT carry the rule);
- *  (2) the whole series -> the base event, re-anchored on its own date, keeping
- *      the base's rule (the timeline editor doesn't edit rules);
- *  (3) a plain create / edit of a standalone bar.
+ *  (2) the whole series -> the base event, re-anchored on its own date, with the
+ *      (possibly edited or removed) rule — prior exdates are preserved;
+ *  (3) a plain create / edit of a standalone bar, which may add a rule.
  *  Carries the fields the editor doesn't edit (color/status/display) so a
  *  verbatim write-back never strips them.
  */
@@ -138,6 +195,8 @@ export function tlSaveSpec(
         };
     }
 
+    const rr = tlBuildRRule(ed, baseEventById);
+
     if (ed.seriesId && ed.scope === 'series') {
         const base = baseEventById(ed.seriesId);
         return {
@@ -147,8 +206,7 @@ export function tlSaveSpec(
                 ...common,
                 start: emitWallInput(reanchorSeries(base && base.start, ed.start, false, timezone), timezone),
                 end: emitWallInput(reanchorSeries(base && (base.end || base.start), ed.end, false, timezone), timezone),
-                // The rule stays the base's (incl. its exdates); rules aren't edited here.
-                rrule: (base && base.rrule) || null
+                rrule: rr || null   // null = recurrence removed from the series
             },
             extra: { scope: 'series', seriesId: ed.seriesId }
         };
@@ -161,7 +219,8 @@ export function tlSaveSpec(
             id: isEdit ? ed.id : newId(),
             ...common,
             start: emitWallInput(ed.start, timezone),
-            end: emitWallInput(ed.end, timezone)
+            end: emitWallInput(ed.end, timezone),
+            rrule: rr || null
         }
     };
 }

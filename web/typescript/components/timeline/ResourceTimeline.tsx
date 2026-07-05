@@ -136,7 +136,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const p = this.props.props;
         const deps: unknown[] = [
             p.events, p.recurringEvents, p.resources, p.collapsedGroups, this.state.hiddenCats,
-            scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, p.zoom, p.locale
+            scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, p.zoom, p.locale, p.shifts
         ];
         const m = this.layoutMemo;
         if (m && m.deps.every((d, i) => d === deps[i])) {
@@ -155,7 +155,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 });
             }
         }
-        this.layoutMemo = { deps, rows, ticks: buildTicks(scale, p.zoom, p.timezone, p.locale), byRow };
+        this.layoutMemo = { deps, rows, ticks: buildTicks(scale, p.zoom, p.timezone, p.locale, p.shifts), byRow };
         return this.layoutMemo;
     }
 
@@ -367,7 +367,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     private openEditorForEvent(ev: TimelineEvent): void {
         this.hideHover();
-        this.setState({ editor: tlEditorForEvent(ev, this.props.props.timezone) });
+        this.setState({ editor: tlEditorForEvent(ev, this.props.props.timezone, (id) => this.baseEventById(id)) });
     }
 
     private updateEditor(patch: Partial<TlEditor>): void {
@@ -547,10 +547,12 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     // --- rendering ----------------------------------------------------------
     private renderToolbar(): React.ReactNode {
-        const { labels, zoom } = this.props.props;
+        const { labels, zoom, shifts } = this.props.props;
         const zooms: Array<{ id: TimelineZoom; label: string }> = [
             { id: 'hour', label: labels.zoomHour },
             { id: 'day', label: labels.zoomDay },
+            // Only offered when shifts are configured (config.shifts).
+            ...(shifts.length ? [{ id: 'shift' as TimelineZoom, label: labels.zoomShift }] : []),
             { id: 'week', label: labels.zoomWeek }
         ];
         const title = zonedFormat(this.props.props.locale, this.props.props.timezone,
@@ -640,9 +642,18 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             key={`st-${it.event.id || i}`}
                             className={`tml-band tml-band--state${statusClass(it.event)}`}
                             style={{ ...g, ['--ev' as string]: resolveColor(p.categories, it.event) } as React.CSSProperties}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${it.event.title || ''} — ${row.label}`}
                             onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
                             onMouseLeave={this.hideHover}
                             onClick={() => this.fireEvent('onEventClick', this.eventPayload(it.event))}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    this.fireEvent('onEventClick', this.eventPayload(it.event));
+                                }
+                            }}
                         >
                             {g.width > 48 && <span className="tml-band-label">{it.event.title}</span>}
                         </div>
@@ -676,10 +687,22 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                 ...(color ? { ['--ev' as string]: color } : {})
                             } as React.CSSProperties}
                             title={ev.title}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${ev.title || ''} — ${row.label}`}
                             onPointerDown={movable
                                 ? (e) => this.gestures.startMove(ev, extent.startMs, extent.endMs, e)
                                 : undefined}
                             onClick={movable ? undefined : () => this.onBarClick(ev)}
+                            // Keyboard: gestures hang off pointerdown, so Enter/Space
+                            // opens the bar directly (a keyboard can't drag).
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    this.onBarClick(ev);
+                                }
+                            }}
                             onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
                             onMouseLeave={this.hideHover}
                         >
@@ -743,7 +766,14 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     style={{ width: LABEL_COL_PX, height: row.type === 'group' ? GROUP_ROW_PX : rowH }}
                                     onClick={() => this.onResourceClick(row)}
                                     role={row.type === 'group' ? 'button' : undefined}
+                                    tabIndex={row.type === 'group' ? 0 : undefined}
                                     aria-expanded={row.type === 'group' ? !row.collapsed : undefined}
+                                    onKeyDown={row.type === 'group' ? (e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            this.onResourceClick(row);
+                                        }
+                                    } : undefined}
                                 >
                                     {row.type === 'group' && (
                                         <span className="tml-group-caret" aria-hidden="true">{row.collapsed ? '▸' : '▾'}</span>
@@ -815,6 +845,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         resources={p.resources}
                         categories={p.categories}
                         timezone={p.timezone}
+                        locale={p.locale}
                         labels={p.labels}
                         onUpdate={(patch) => this.updateEditor(patch)}
                         onCancel={this.editorCancel}

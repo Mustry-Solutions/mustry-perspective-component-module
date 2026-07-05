@@ -336,6 +336,16 @@
     white-space: nowrap;
 }
 
+// Keyboard focus: a clear accent ring on every focusable surface (bars, state
+// bands, group headers) — Enter/Space activates them like a click.
+.tml-bar:focus-visible,
+.tml-band--state:focus-visible,
+.tml-label--group:focus-visible {
+    outline: 2px solid var(--tml-accent);
+    outline-offset: 1px;
+    z-index: 1;
+}
+
 // "Part of a series" marker on recurring occurrences (drag/edit detaches one).
 .tml-bar-recur {
     flex: 0 0 auto;

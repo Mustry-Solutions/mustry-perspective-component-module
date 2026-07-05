@@ -146,7 +146,7 @@ describe('editor logic', () => {
         expect('status' in (tlMoveResizeSpec('move', ev, { startMs: T0 }, TZ).event as object)).toBe(false);
     });
 
-    it('save spec carries color/status/display/rrule the editor does not edit', () => {
+    it('save spec carries color/status/display and round-trips an existing rule', () => {
         const rich: TimelineEvent = {
             ...ev, color: '#ff0000', status: 'confirmed', display: 'bar', rrule: { freq: 'daily' }
         };
@@ -154,8 +154,17 @@ describe('editor logic', () => {
         expect(spec.event).toMatchObject({
             color: '#ff0000', status: 'confirmed', display: 'bar', rrule: { freq: 'daily' }
         });
-        // a plain event carries nothing extra
-        expect('rrule' in (tlSaveSpec(tlEditorForEvent(ev, TZ), TZ).event as object)).toBe(false);
+        // a plain event stays non-recurring (explicit null, like the calendar)
+        expect((tlSaveSpec(tlEditorForEvent(ev, TZ), TZ).event as { rrule: unknown }).rrule).toBeNull();
+    });
+
+    it('the repeat controls create and remove rules', () => {
+        const created = tlSaveSpec(
+            { ...tlEditorForCreate('m1', T0, T0 + 60 * MIN, TZ, ''), repeatFreq: 'weekly', repeatByweekday: [5, 1] }, TZ);
+        expect(created.event).toMatchObject({ rrule: { freq: 'weekly', byweekday: [1, 5] } });
+        const cleared = tlSaveSpec(
+            { ...tlEditorForEvent({ ...ev, rrule: { freq: 'daily' } }, TZ), repeatFreq: '' }, TZ);
+        expect((cleared.event as { rrule: unknown }).rrule).toBeNull();
     });
 
     it('tlEditorProblem blocks a reversed or unparseable range', () => {
@@ -179,12 +188,14 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
     };
     const lookup = (id: string): TimelineEvent | undefined => (id === 'r1' ? base : undefined);
 
-    it('editorForEvent recovers the series context, scoped to this event', () => {
-        const e = tlEditorForEvent(occ, TZ);
-        expect(e).toMatchObject({ seriesId: 'r1', occurrenceDate: '2026-07-06', scope: 'occurrence' });
-        expect(e.carry.rrule).toBeUndefined();
+    it('editorForEvent recovers the series context and rule, scoped to this event', () => {
+        const e = tlEditorForEvent(occ, TZ, lookup);
+        expect(e).toMatchObject({
+            seriesId: 'r1', occurrenceDate: '2026-07-06', scope: 'occurrence',
+            repeatFreq: 'daily'   // the series' rule, editable under "All events"
+        });
         // a plain event has no series context
-        expect(tlEditorForEvent({ ...occ, id: 'plain' }, TZ)).toMatchObject({ seriesId: null, scope: 'series' });
+        expect(tlEditorForEvent({ ...occ, id: 'plain' }, TZ)).toMatchObject({ seriesId: null, scope: 'series', repeatFreq: '' });
     });
 
     it('occurrence save detaches into an override that must NOT carry the rule', () => {
@@ -196,7 +207,7 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
     });
 
     it('series save re-anchors on the base date and keeps the rule + exdates', () => {
-        const e = { ...tlEditorForEvent(occ, TZ), scope: 'series' as const, start: '2026-07-06T07:15', end: '2026-07-06T07:30' };
+        const e = { ...tlEditorForEvent(occ, TZ, lookup), scope: 'series' as const, start: '2026-07-06T07:15', end: '2026-07-06T07:30' };
         const spec = tlSaveSpec(e, TZ, lookup);
         expect(spec.event).toMatchObject({
             id: 'r1',

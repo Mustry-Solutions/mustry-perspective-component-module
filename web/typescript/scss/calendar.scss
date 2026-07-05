@@ -1406,3 +1406,17 @@
         transition: none !important;
     }
 }
+
+// --- keyboard focus (a11y) -----------------------------------------------------
+// A clear accent ring on the event surfaces; Enter/Space activates them like a
+// click (a keyboard can't drag — activation opens the editor / fires the event).
+.mustry-calendar {
+    .cal-mbar:focus-visible,
+    .cal-tg-event:focus-visible,
+    .cal-daynum:focus-visible,
+    .cal-more:focus-visible {
+        outline: 2px solid var(--cal-accent);
+        outline-offset: 1px;
+        z-index: 2;
+    }
+}

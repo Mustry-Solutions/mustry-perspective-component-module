@@ -24,7 +24,7 @@ export interface TimelineEvent {
     rrule?: RRule;         // expanded per visible window (display-only in v1)
 }
 
-export type TimelineZoom = 'hour' | 'day' | 'week';
+export type TimelineZoom = 'hour' | 'day' | 'shift' | 'week';
 
 export interface ZoomPreset {
     pxPerHour: number;    // horizontal density
@@ -36,8 +36,28 @@ export interface ZoomPreset {
 export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
     hour: { pxPerHour: 180, spanHours: 8, snapMinutes: 5, lowerStepMin: 15 },
     day: { pxPerHour: 60, spanHours: 24, snapMinutes: 15, lowerStepMin: 60 },
+    // Same day-wide window as 'day', but the lower tick row (and the gridlines
+    // derived from it) sits on the configured shift boundaries instead of hours.
+    shift: { pxPerHour: 60, spanHours: 24, snapMinutes: 15, lowerStepMin: 60 },
     week: { pxPerHour: 12, spanHours: 168, snapMinutes: 60, lowerStepMin: 360 }
 };
+
+/** One shift definition: a zone-local start-of-shift wall time. */
+export interface ShiftDef {
+    label: string;
+    start: string;   // 'HH:mm'
+}
+
+/** Parsed 'HH:mm' (minutes into the wall day), or null when malformed. */
+export function shiftStartMinutes(start: string): number | null {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(start || '');
+    if (!m) {
+        return null;
+    }
+    const h = Number(m[1]);
+    const mi = Number(m[2]);
+    return h < 24 && mi < 60 ? h * 60 + mi : null;
+}
 
 export const MS_PER_HOUR = 3600000;
 
@@ -120,9 +140,10 @@ export interface TickRows {
  * Ticks for the window, ZONE-aware: upper ticks sit on real zone-local midnights
  * (plus the window start when it isn't one), and lower ticks step from each
  * day's own midnight — so across a 23/25h DST day every tick still lands on the
- * wall-clock boundary its label names.
+ * wall-clock boundary its label names. At 'shift' zoom the lower row sits on the
+ * configured shift boundaries (labelled with the shift names) instead.
  */
-export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string): TickRows {
+export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string, shifts?: ShiftDef[]): TickRows {
     const preset = ZOOM_PRESETS[zoom];
     const upperFmt = zonedFormat(locale, timezone, { weekday: 'short', day: 'numeric', month: 'short' });
     const lowerFmt = zoom === 'week'
@@ -148,9 +169,25 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
     }
 
     const lower: Tick[] = [];
-    const step = preset.lowerStepMin * 60000;
+    const shiftMinutes = (zoom === 'shift' ? (shifts || []) : [])
+        .map((s) => ({ label: s.label || '', min: shiftStartMinutes(s.start) }))
+        .filter((s): s is { label: string; min: number } => s.min !== null)
+        .sort((a, b) => a.min - b.min);
     for (let i = 0; i < dayStarts.length; i++) {
         const dayEnd = Math.min(i + 1 < dayStarts.length ? dayStarts[i + 1] : zoneMidnightMs(dayStarts[i], timezone, 1), scale.endMs);
+        if (shiftMinutes.length) {
+            // One tick per shift boundary, placed on the day's WALL clock (a shift
+            // that starts at 06:00 starts at 06:00 on a DST day too).
+            const w = zoneWallClock(new Date(dayStarts[i]), timezone);
+            for (const s of shiftMinutes) {
+                const ms = resolveZoned(new Date(w.y, w.mo - 1, w.d, Math.floor(s.min / 60), s.min % 60), timezone).epochMs;
+                if (ms >= scale.startMs && ms >= dayStarts[i] && ms < dayEnd) {
+                    lower.push({ ms, px: msToPx(scale, ms), label: `${lowerFmt.format(new Date(ms))} ${s.label}`.trim() });
+                }
+            }
+            continue;
+        }
+        const step = preset.lowerStepMin * 60000;
         for (let ms = dayStarts[i]; ms < dayEnd; ms += step) {
             if (ms >= scale.startMs) {
                 lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });

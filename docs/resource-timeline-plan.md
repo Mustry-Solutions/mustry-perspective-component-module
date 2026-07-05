@@ -120,15 +120,18 @@ Perspective theme.
   payloads); P2 batch (memoized layout, hover gated during drags, min
   grabbable bar geometry, CSV BOM + injection guard, zone-true recurrence);
   recurring occurrences drag/edit with calendar parity (detach + series
-  scope, ↻ marker). Still deferred: a `shift` zoom preset driven by
-  `config.shifts`, repeat-editing UI (rule editing in the timeline editor —
-  rules are edited on the data or via the calendar).
+  scope, ↻ marker); `shift` zoom preset driven by `config.shifts` (ticks +
+  gridlines on shift boundaries); repeat-editing UI in the editor (calendar's
+  Repeat controls); keyboard/a11y pass (focusable events, Enter/Space
+  activation, dialog semantics, focus rings). Nothing deferred from the
+  original plan remains.
 
 ## Out of scope (v1)
 
 Dependency arrows/links, nested (multi-level) hierarchy — single-level group
-collapse HAS shipped — repeat-editing UI, printing, ICS, continuous zoom,
-per-event locks (calendar shares this gap — revisit together).
+collapse HAS shipped — printing, ICS, continuous zoom, per-event locks
+(calendar shares this gap — revisit together). Repeat-editing UI shipped
+post-M3.
 
 ## Risks
 

@@ -51,6 +51,9 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
         <div className="cal-editor-backdrop" onPointerDown={onCancel}>
             <div
                 className="cal-editor"
+                role="dialog"
+                aria-modal="true"
+                aria-label={isEdit ? labels.editEvent : labels.newEvent}
                 onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >

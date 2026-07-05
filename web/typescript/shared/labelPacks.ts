@@ -75,7 +75,7 @@ export interface LabelConfig {
 export interface TimelineLabels {
     today: string;
     previous: string; next: string;   // nav arrows (accessible labels)
-    zoomHour: string; zoomDay: string; zoomWeek: string;   // zoom-preset buttons
+    zoomHour: string; zoomDay: string; zoomShift: string; zoomWeek: string;   // zoom-preset buttons
     noResources: string;              // empty text when config.resources is empty
     exportCsv: string;                // export button tooltip / accessible label
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
@@ -87,6 +87,12 @@ export interface TimelineLabels {
     start: string; end: string;
     timesIn: string;                     // timezone hint, '{tz}' = the configured zone
     invalidRange: string;                // save-blocking hint when the end is not after the start
+    // recurrence rule editing (same controls as the calendar's editor)
+    repeat: string; doesNotRepeat: string;
+    daily: string; weekly: string; monthly: string; yearly: string;
+    every: string;
+    unitDays: string; unitWeeks: string; unitMonths: string; unitYears: string;
+    ends: string; never: string; on: string; after: string; times: string;
     category: string; none: string; notes: string;
     save: string; create: string; cancel: string; delete: string;
 }
@@ -94,7 +100,7 @@ export interface TimelineLabels {
 export const EN_TIMELINE_LABELS: TimelineLabels = {
     today: 'Today',
     previous: 'Previous', next: 'Next',
-    zoomHour: 'Hour', zoomDay: 'Day', zoomWeek: 'Week',
+    zoomHour: 'Hour', zoomDay: 'Day', zoomShift: 'Shift', zoomWeek: 'Week',
     noResources: 'No resources',
     exportCsv: 'Export events to CSV',
     previousMonth: 'Previous month', nextMonth: 'Next month',
@@ -105,6 +111,11 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     start: 'Start', end: 'End',
     timesIn: 'Times in {tz}',
     invalidRange: 'End must be after start',
+    repeat: 'Repeat', doesNotRepeat: 'Does not repeat',
+    daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly',
+    every: 'Every',
+    unitDays: 'day(s)', unitWeeks: 'week(s)', unitMonths: 'month(s)', unitYears: 'year(s)',
+    ends: 'Ends', never: 'Never', on: 'On', after: 'After', times: 'times',
     category: 'Category', none: 'None', notes: 'Notes',
     save: 'Save', create: 'Create', cancel: 'Cancel', delete: 'Delete'
 };
@@ -113,7 +124,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     fr: {
         today: "Aujourd'hui",
         previous: 'Précédent', next: 'Suivant',
-        zoomHour: 'Heure', zoomDay: 'Jour', zoomWeek: 'Semaine',
+        zoomHour: 'Heure', zoomDay: 'Jour', zoomShift: 'Poste', zoomWeek: 'Semaine',
         noResources: 'Aucune ressource',
         exportCsv: 'Exporter les événements en CSV',
         previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
@@ -124,13 +135,18 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Début', end: 'Fin',
         timesIn: 'Heures en {tz}',
         invalidRange: 'La fin doit être après le début',
+        repeat: 'Répéter', doesNotRepeat: 'Ne se répète pas',
+        daily: 'Quotidien', weekly: 'Hebdomadaire', monthly: 'Mensuel', yearly: 'Annuel',
+        every: 'Tous les',
+        unitDays: 'jour(s)', unitWeeks: 'semaine(s)', unitMonths: 'mois', unitYears: 'an(s)',
+        ends: 'Se termine', never: 'Jamais', on: 'Le', after: 'Après', times: 'fois',
         category: 'Catégorie', none: 'Aucune', notes: 'Notes',
         save: 'Enregistrer', create: 'Créer', cancel: 'Annuler', delete: 'Supprimer'
     },
     de: {
         today: 'Heute',
         previous: 'Zurück', next: 'Weiter',
-        zoomHour: 'Stunde', zoomDay: 'Tag', zoomWeek: 'Woche',
+        zoomHour: 'Stunde', zoomDay: 'Tag', zoomShift: 'Schicht', zoomWeek: 'Woche',
         noResources: 'Keine Ressourcen',
         exportCsv: 'Ereignisse als CSV exportieren',
         previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
@@ -141,13 +157,18 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Beginn', end: 'Ende',
         timesIn: 'Zeiten in {tz}',
         invalidRange: 'Das Ende muss nach dem Beginn liegen',
+        repeat: 'Wiederholen', doesNotRepeat: 'Wiederholt sich nicht',
+        daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich', yearly: 'Jährlich',
+        every: 'Alle',
+        unitDays: 'Tag(e)', unitWeeks: 'Woche(n)', unitMonths: 'Monat(e)', unitYears: 'Jahr(e)',
+        ends: 'Endet', never: 'Nie', on: 'Am', after: 'Nach', times: 'Terminen',
         category: 'Kategorie', none: 'Keine', notes: 'Notizen',
         save: 'Speichern', create: 'Erstellen', cancel: 'Abbrechen', delete: 'Löschen'
     },
     es: {
         today: 'Hoy',
         previous: 'Anterior', next: 'Siguiente',
-        zoomHour: 'Hora', zoomDay: 'Día', zoomWeek: 'Semana',
+        zoomHour: 'Hora', zoomDay: 'Día', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sin recursos',
         exportCsv: 'Exportar eventos a CSV',
         previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
@@ -158,13 +179,18 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Inicio', end: 'Fin',
         timesIn: 'Horas en {tz}',
         invalidRange: 'El fin debe ser posterior al inicio',
+        repeat: 'Repetir', doesNotRepeat: 'No se repite',
+        daily: 'Diario', weekly: 'Semanal', monthly: 'Mensual', yearly: 'Anual',
+        every: 'Cada',
+        unitDays: 'día(s)', unitWeeks: 'semana(s)', unitMonths: 'mes(es)', unitYears: 'año(s)',
+        ends: 'Termina', never: 'Nunca', on: 'El', after: 'Después de', times: 'veces',
         category: 'Categoría', none: 'Ninguna', notes: 'Notas',
         save: 'Guardar', create: 'Crear', cancel: 'Cancelar', delete: 'Eliminar'
     },
     nl: {
         today: 'Vandaag',
         previous: 'Vorige', next: 'Volgende',
-        zoomHour: 'Uur', zoomDay: 'Dag', zoomWeek: 'Week',
+        zoomHour: 'Uur', zoomDay: 'Dag', zoomShift: 'Ploeg', zoomWeek: 'Week',
         noResources: 'Geen resources',
         exportCsv: 'Evenementen exporteren als CSV',
         previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
@@ -175,13 +201,18 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Begin', end: 'Einde',
         timesIn: 'Tijden in {tz}',
         invalidRange: 'Het einde moet na het begin liggen',
+        repeat: 'Herhalen', doesNotRepeat: 'Wordt niet herhaald',
+        daily: 'Dagelijks', weekly: 'Wekelijks', monthly: 'Maandelijks', yearly: 'Jaarlijks',
+        every: 'Elke',
+        unitDays: 'dag(en)', unitWeeks: 'week/weken', unitMonths: 'maand(en)', unitYears: 'jaar/jaren',
+        ends: 'Eindigt', never: 'Nooit', on: 'Op', after: 'Na', times: 'keer',
         category: 'Categorie', none: 'Geen', notes: 'Notities',
         save: 'Opslaan', create: 'Aanmaken', cancel: 'Annuleren', delete: 'Verwijderen'
     },
     it: {
         today: 'Oggi',
         previous: 'Precedente', next: 'Successivo',
-        zoomHour: 'Ora', zoomDay: 'Giorno', zoomWeek: 'Settimana',
+        zoomHour: 'Ora', zoomDay: 'Giorno', zoomShift: 'Turno', zoomWeek: 'Settimana',
         noResources: 'Nessuna risorsa',
         exportCsv: 'Esporta eventi in CSV',
         previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
@@ -192,13 +223,18 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Inizio', end: 'Fine',
         timesIn: 'Orari in {tz}',
         invalidRange: "La fine deve essere successiva all'inizio",
+        repeat: 'Ripeti', doesNotRepeat: 'Non si ripete',
+        daily: 'Giornaliero', weekly: 'Settimanale', monthly: 'Mensile', yearly: 'Annuale',
+        every: 'Ogni',
+        unitDays: 'giorno/i', unitWeeks: 'settimana/e', unitMonths: 'mese/i', unitYears: 'anno/i',
+        ends: 'Termina', never: 'Mai', on: 'Il', after: 'Dopo', times: 'volte',
         category: 'Categoria', none: 'Nessuna', notes: 'Note',
         save: 'Salva', create: 'Crea', cancel: 'Annulla', delete: 'Elimina'
     },
     pt: {
         today: 'Hoje',
         previous: 'Anterior', next: 'Seguinte',
-        zoomHour: 'Hora', zoomDay: 'Dia', zoomWeek: 'Semana',
+        zoomHour: 'Hora', zoomDay: 'Dia', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sem recursos',
         exportCsv: 'Exportar eventos para CSV',
         previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
@@ -209,6 +245,11 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         start: 'Início', end: 'Fim',
         timesIn: 'Horas em {tz}',
         invalidRange: 'O fim deve ser posterior ao início',
+        repeat: 'Repetir', doesNotRepeat: 'Não se repete',
+        daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual',
+        every: 'A cada',
+        unitDays: 'dia(s)', unitWeeks: 'semana(s)', unitMonths: 'mês/meses', unitYears: 'ano(s)',
+        ends: 'Termina', never: 'Nunca', on: 'Em', after: 'Após', times: 'vezes',
         category: 'Categoria', none: 'Nenhuma', notes: 'Notas',
         save: 'Salvar', create: 'Criar', cancel: 'Cancelar', delete: 'Excluir'
     }

@@ -1,7 +1,7 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
     barGeom, buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth,
-    timelineEventsToCsv
+    shiftStartMinutes, timelineEventsToCsv
 } from '../timeline/timelineLogic';
 import { mapTimelineProps } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
@@ -213,6 +213,39 @@ describe('timelineEventsToCsv', () => {
         expect(lines[2]).toContain("'@import");
         expect(lines[2]).toContain("'-x");
         expect(lines[2]).toContain('m2,');             // plain cells untouched
+    });
+});
+
+describe('shift zoom', () => {
+    it('shiftStartMinutes parses HH:mm and rejects junk', () => {
+        expect(shiftStartMinutes('06:00')).toBe(360);
+        expect(shiftStartMinutes('22:30')).toBe(1350);
+        expect(shiftStartMinutes('24:00')).toBeNull();
+        expect(shiftStartMinutes('six')).toBeNull();
+        expect(shiftStartMinutes('')).toBeNull();
+    });
+
+    it('shift ticks sit on the configured boundaries, labelled with the shift names', () => {
+        const w: TimeScale = { startMs: Date.UTC(2026, 5, 17), endMs: Date.UTC(2026, 5, 18), pxPerHour: 60 };
+        const shifts = [
+            { label: 'Early', start: '06:00' }, { label: 'Late', start: '14:00' }, { label: 'Night', start: '22:00' }
+        ];
+        const { lower } = buildTicks(w, 'shift', 'UTC', 'en-US', shifts);
+        expect(lower).toHaveLength(3);
+        expect(lower.map((t) => t.px)).toEqual([6 * 60, 14 * 60, 22 * 60]);
+        expect(lower[0].label).toContain('Early');
+        expect(lower[2].label).toContain('Night');
+    });
+
+    it('shift boundaries follow the WALL clock across a DST day', () => {
+        const CHI = 'America/Chicago';
+        const anchor = toEpochMs('2026-03-08T00:00:00', CHI)!;   // 23h spring-forward day
+        const w: TimeScale = { startMs: anchor, endMs: toEpochMs('2026-03-09T00:00:00', CHI)!, pxPerHour: 60 };
+        const { lower } = buildTicks(w, 'shift', CHI, 'en-US', [{ label: 'Early', start: '06:00' }]);
+        expect(lower).toHaveLength(1);
+        // 06:00 wall on the 23h day is only 5 epoch-hours after midnight.
+        expect(lower[0].px).toBe(5 * 60);
+        expect(lower[0].label).toContain('06:00');
     });
 });
 

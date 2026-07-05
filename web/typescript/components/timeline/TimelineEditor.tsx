@@ -5,6 +5,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { Category } from '../../shared/types';
+import { intlFormat } from '../../shared/dateUtils';
 import { TimelineLabels } from '../../shared/labelPacks';
 import { UNCATEGORIZED_COLOR, categoryColor } from '../../shared/eventStyle';
 import { TimelineResource } from './timelineLogic';
@@ -15,6 +16,7 @@ interface TimelineEditorProps {
     resources: TimelineResource[];
     categories: Category[];
     timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
+    locale: string;     // for the weekly weekday initials
     labels: TimelineLabels;
     onUpdate: (patch: Partial<TlEditor>) => void;
     onCancel: () => void;
@@ -23,15 +25,38 @@ interface TimelineEditorProps {
 }
 
 export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
-    const { editor: ed, resources, categories, timezone, labels, onUpdate, onCancel, onSave, onDelete } = props;
+    const { editor: ed, resources, categories, timezone, locale, labels, onUpdate, onCancel, onSave, onDelete } = props;
     const isEdit = ed.id !== null;
     const problem = tlEditorProblem(ed, timezone);   // non-null blocks Save
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
+
+    // Recurrence UI state (mirrors the calendar's editor). Editing one occurrence
+    // shows the apply-to choice; the rule is only editable on the whole series.
+    const editingOccurrence = ed.seriesId !== null;
+    const showRepeat = !editingOccurrence || ed.scope === 'series';
+    // Localized weekday initials, Sunday-first to match rrule.byweekday (0=Sun..6=Sat).
+    const wdFmt = intlFormat(locale, { weekday: 'narrow' });
+    const WD: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        WD.push(wdFmt.format(new Date(2024, 0, 7 + i)));   // 2024-01-07 is a Sunday
+    }
+    const unitLabel: { [k: string]: string } = {
+        daily: labels.unitDays, weekly: labels.unitWeeks, monthly: labels.unitMonths, yearly: labels.unitYears
+    };
+    const toggleWd = (i: number): void => {
+        const set = ed.repeatByweekday.slice();
+        const at = set.indexOf(i);
+        if (at >= 0) { set.splice(at, 1); } else { set.push(i); }
+        onUpdate({ repeatByweekday: set });
+    };
     return ReactDOM.createPortal(
         <div className="cal-editor-backdrop" onPointerDown={onCancel}>
             <div
                 className="cal-editor"
+                role="dialog"
+                aria-modal="true"
+                aria-label={isEdit ? labels.editEvent : labels.newEvent}
                 onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >
@@ -82,6 +107,71 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                 )}
                 {problem === 'range' && (
                     <div className="cal-editor-problem">{labels.invalidRange}</div>
+                )}
+                {showRepeat && (
+                    <label className="cal-editor-field">
+                        <span>{labels.repeat}</span>
+                        <select
+                            className="cal-editor-select"
+                            value={ed.repeatFreq}
+                            onChange={(e) => onUpdate({ repeatFreq: e.target.value as TlEditor['repeatFreq'] })}
+                        >
+                            <option value="">{labels.doesNotRepeat}</option>
+                            <option value="daily">{labels.daily}</option>
+                            <option value="weekly">{labels.weekly}</option>
+                            <option value="monthly">{labels.monthly}</option>
+                            <option value="yearly">{labels.yearly}</option>
+                        </select>
+                    </label>
+                )}
+                {showRepeat && ed.repeatFreq && (
+                    <div className="cal-editor-repeat">
+                        <div className="cal-editor-repeat-line">
+                            <span>{labels.every}</span>
+                            <input
+                                type="number" min={1} className="cal-editor-num"
+                                value={ed.repeatInterval}
+                                onChange={(e) => onUpdate({ repeatInterval: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                            />
+                            <span>{unitLabel[ed.repeatFreq]}</span>
+                        </div>
+                        {ed.repeatFreq === 'weekly' && (
+                            <div className="cal-editor-weekdays">
+                                {WD.map((lbl, i) => (
+                                    <button
+                                        type="button" key={i}
+                                        className={'cal-wd' + (ed.repeatByweekday.indexOf(i) >= 0 ? ' cal-wd--on' : '')}
+                                        onClick={() => toggleWd(i)}
+                                    >{lbl}</button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="cal-editor-ends">
+                            <span className="cal-editor-ends-label">{labels.ends}</span>
+                            <label>
+                                <input type="radio" checked={ed.repeatEndMode === 'never'} onChange={() => onUpdate({ repeatEndMode: 'never' })} />
+                                <span>{labels.never}</span>
+                            </label>
+                            <label>
+                                <input type="radio" checked={ed.repeatEndMode === 'until'} onChange={() => onUpdate({ repeatEndMode: 'until' })} />
+                                <span>{labels.on}</span>
+                                <input
+                                    type="date" className="cal-editor-ends-input" value={ed.repeatUntil}
+                                    onChange={(e) => onUpdate({ repeatUntil: e.target.value, repeatEndMode: 'until' })}
+                                />
+                            </label>
+                            <label>
+                                <input type="radio" checked={ed.repeatEndMode === 'count'} onChange={() => onUpdate({ repeatEndMode: 'count' })} />
+                                <span>{labels.after}</span>
+                                <input
+                                    type="number" min={1} className="cal-editor-num"
+                                    value={ed.repeatCount}
+                                    onChange={(e) => onUpdate({ repeatCount: Math.max(1, parseInt(e.target.value, 10) || 1), repeatEndMode: 'count' })}
+                                />
+                                <span>{labels.times}</span>
+                            </label>
+                        </div>
+                    </div>
                 )}
                 {(categories || []).length > 0 && (
                     <label className="cal-editor-field">

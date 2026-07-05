@@ -3,7 +3,7 @@
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
-import { TimelineEvent, TimelineResource, TimelineZoom } from './timelineLogic';
+import { ShiftDef, TimelineEvent, TimelineResource, TimelineZoom, shiftStartMinutes } from './timelineLogic';
 
 export type { TimelineEvent };
 
@@ -16,6 +16,7 @@ export interface TimelineProps {
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
     weekStart: 'monday' | 'sunday';   // for the mini month navigator
+    shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
     collapsedGroups: string[];        // two-way: clicking a group header writes it back
     rowHeight: number;
     timezone: string;        // IANA zone for display (empty = browser-local)
@@ -57,8 +58,13 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         const v = tree.readString(`config.labels.${k}`, '');
         labels[k] = v === '' || v === EN_TIMELINE_LABELS[k] ? base[k] : v;
     });
+    const shifts: ShiftDef[] = (tree.readArray('config.shifts', []) || [])
+        .map((s: any) => ({ label: String((s && s.label) || ''), start: String((s && s.start) || '') }))
+        .filter((s: ShiftDef) => shiftStartMinutes(s.start) !== null);
     return {
-        zoom: ((z) => (z === 'hour' || z === 'week' ? z : 'day'))(tree.readString('config.zoom', 'day')) as TimelineZoom,
+        // 'shift' is only meaningful when shifts are configured; else fall back to day.
+        zoom: ((z) => (z === 'hour' || z === 'week' || (z === 'shift' && shifts.length) ? z : 'day'))(
+            tree.readString('config.zoom', 'day')) as TimelineZoom,
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showLegend: tree.readBoolean('config.showLegend', true),
         editable: tree.readBoolean('config.editable', false),
@@ -66,6 +72,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         showExport: tree.readBoolean('config.showExport', false),
         weekStart: (tree.readString('config.weekStart', 'monday') === 'sunday' ? 'sunday' : 'monday'),
+        shifts,
         collapsedGroups: (tree.readArray('config.collapsedGroups', []) || []).map((g: any) => String(g)).filter((g: string) => g),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
         timezone: tree.readString('config.timezone', ''),

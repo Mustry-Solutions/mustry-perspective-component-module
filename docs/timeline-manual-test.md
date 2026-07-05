@@ -14,6 +14,10 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       scrolling both directions.
 - [ ] Zoom presets (Hour / Day / Week) change tick tiers + density; `config.zoom` is
       two-way. Prev / Today / Next page by the zoom span.
+- [ ] **Shift zoom** — with `config.shifts` set (the `/timeline` demo has
+      Early/Late/Night), a Shift button appears; its lower ticks + gridlines sit on
+      the shift boundaries labelled "06:00 Early" etc. Without shifts the button is
+      hidden and `zoom: 'shift'` falls back to Day.
 - [ ] Bars pack into lanes when overlapping; `state` bands are full-height and
       contiguous (no end = runs to the window edge); `background` spans sit behind
       everything.
@@ -52,8 +56,12 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       keep recurring.
 - [ ] **Click a recurring occurrence** — the editor opens with a
       "This event / All events" choice: *This event* saves a detached override;
-      *All events* edits the base series (re-anchored on its own start date, rule
-      kept). Delete honours the same scope.
+      *All events* edits the base series (re-anchored on its own start date).
+      Delete honours the same scope.
+- [ ] **Repeat controls** — under *All events* (or on any non-occurrence event) the
+      editor shows the calendar's Repeat block: frequency, every-N, weekly weekday
+      picker, Ends never/on/after. Editing the rule updates the series (exdates
+      kept); "Does not repeat" removes it; a new event can be created recurring.
 - [ ] Editor times are in the configured timezone (hint under the fields).
 - [ ] **Editor validation** — set End at or before Start: a red "End must be after
       start" hint appears and Save/Create disables; fixing the range re-enables it.
@@ -68,6 +76,14 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       definitions).
 - [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with
       `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
+
+## Keyboard / a11y
+
+- [ ] Tab reaches every control: toolbar, group headers, bars, state bands, legend —
+      each shows an accent focus ring.
+- [ ] **Enter/Space on a bar** opens the editor (or fires `onEventClick`); on a
+      group header it collapses/expands; the editor auto-focuses Title and closes
+      on Escape.
 
 ## Touch (⚠️ must be verified on a real touch device — not just desktop/emulation)
 

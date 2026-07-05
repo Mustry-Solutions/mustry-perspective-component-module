@@ -305,6 +305,14 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 - [ ] Fields with commas / quotes / newlines are quoted/escaped correctly.
 - [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
+## Keyboard / a11y
+
+- [ ] Tab reaches every control: toolbar, view switcher, event chips/blocks, date
+      numbers, "+N more", legend — each shows an accent focus ring.
+- [ ] **Enter/Space on an event** (month chip or week/day block, including draggable
+      ones) opens the editor / fires `onEventClick`; the editor auto-focuses Title
+      and closes on Escape.
+
 ## Theming & i18n
 
 - [ ] Set a project-stylesheet rule `.mustry-calendar { --cal-accent: #2e7d32; }` → accents change.

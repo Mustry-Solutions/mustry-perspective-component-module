@@ -159,6 +159,15 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                             ...(color ? { ['--ev' as string]: color } : {})
                                         } as React.CSSProperties}
                                         onPointerDown={(e) => (movable ? onStartMove(ev, e) : onEventClick(ev, e))}
+                                        // Keyboard: gestures hang off pointerdown, so Enter/Space
+                                        // must open the event directly (a keyboard can't drag).
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onEventClick(ev, e as unknown as React.MouseEvent);
+                                            }
+                                        }}
                                         {...hoverProps(ev)}
                                     >
                                         <EventIcon ev={ev} categories={categories} />
