@@ -3,8 +3,8 @@
   "params": {},
   "props": {
     "defaultSize": {
-      "width": 780,
-      "height": 1040
+      "width": 1200,
+      "height": 1120
     }
   },
   "root": {
@@ -18,47 +18,512 @@
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "oneMonth" },
-        "meta": { "name": "label_oneMonth" },
-        "position": { "x": 24, "y": 4, "width": 200, "height": 18 }
-      },
-      {
-        "type": "mustrysolutions.input.datetimerangepicker",
-        "version": 0,
-        "props": { "config": { "layout": "oneMonth" } },
-        "custom": {},
-        "meta": { "name": "oneMonth" },
-        "position": { "x": 24, "y": 24, "width": 360, "height": 500 }
-      },
-      {
-        "type": "ia.display.label",
-        "version": 0,
-        "props": { "text": "compact" },
-        "meta": { "name": "label_compact" },
-        "position": { "x": 420, "y": 4, "width": 200, "height": 18 }
-      },
-      {
-        "type": "mustrysolutions.input.datetimerangepicker",
-        "version": 0,
-        "props": { "config": { "layout": "compact" } },
-        "custom": {},
-        "meta": { "name": "compact" },
-        "position": { "x": 420, "y": 24, "width": 320, "height": 150 }
+        "props": {
+          "text": "Date/Time Range Picker — presets, realtime window and the three layouts. Click a rolling preset on the demo to arm the live window (it re-derives every 5 s; any manual pick disarms).",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "header"
+        },
+        "position": {
+          "x": 24,
+          "y": 6,
+          "width": 940,
+          "height": 34
+        }
       },
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "twoMonths" },
-        "meta": { "name": "label_twoMonths" },
-        "position": { "x": 24, "y": 544, "width": 200, "height": 18 }
+        "props": {
+          "text": "twoMonths — presets + realtime"
+        },
+        "meta": {
+          "name": "label_demo"
+        },
+        "position": {
+          "x": 24,
+          "y": 44,
+          "width": 400,
+          "height": 18
+        }
       },
       {
         "type": "mustrysolutions.input.datetimerangepicker",
         "version": 0,
-        "props": { "config": { "layout": "twoMonths" } },
+        "props": {
+          "config": {
+            "layout": "twoMonths",
+            "granularity": "minute",
+            "disableDates": "future",
+            "presets": [
+              {
+                "label": "Last 24 hours",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 24,
+                  "unit": "hours"
+                }
+              },
+              {
+                "label": "Last 7 days",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 7,
+                  "unit": "days"
+                }
+              },
+              {
+                "label": "Last 30 days",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 30,
+                  "unit": "days"
+                }
+              },
+              {
+                "label": "Today",
+                "type": "calendar",
+                "calendar": {
+                  "period": "today"
+                }
+              },
+              {
+                "label": "This week",
+                "type": "calendar",
+                "calendar": {
+                  "period": "thisWeek"
+                }
+              },
+              {
+                "label": "This month",
+                "type": "calendar",
+                "calendar": {
+                  "period": "thisMonth"
+                }
+              }
+            ],
+            "realtime": {
+              "enabled": true,
+              "refreshSeconds": 5
+            }
+          }
+        },
         "custom": {},
-        "meta": { "name": "twoMonths" },
-        "position": { "x": 24, "y": 564, "width": 700, "height": 460 }
+        "meta": {
+          "name": "Demo"
+        },
+        "position": {
+          "x": 24,
+          "y": 64,
+          "width": 700,
+          "height": 470
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "output.startDateTime",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98"
+          }
+        },
+        "meta": {
+          "name": "cap_start"
+        },
+        "position": {
+          "x": 750,
+          "y": 64,
+          "width": 420,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "fontFamily": "monospace"
+          }
+        },
+        "meta": {
+          "name": "out_start"
+        },
+        "position": {
+          "x": 750,
+          "y": 82,
+          "width": 420,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../Demo.props.output.startDateTime"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "output.endDateTime",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98"
+          }
+        },
+        "meta": {
+          "name": "cap_end"
+        },
+        "position": {
+          "x": 750,
+          "y": 114,
+          "width": 420,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "fontFamily": "monospace"
+          }
+        },
+        "meta": {
+          "name": "out_end"
+        },
+        "position": {
+          "x": 750,
+          "y": 132,
+          "width": 420,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../Demo.props.output.endDateTime"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "output.durationLabel",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98"
+          }
+        },
+        "meta": {
+          "name": "cap_dur"
+        },
+        "position": {
+          "x": 750,
+          "y": 164,
+          "width": 420,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "fontFamily": "monospace"
+          }
+        },
+        "meta": {
+          "name": "out_dur"
+        },
+        "position": {
+          "x": 750,
+          "y": 182,
+          "width": 420,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../Demo.props.output.durationLabel"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "output.isRealtime",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98"
+          }
+        },
+        "meta": {
+          "name": "cap_live"
+        },
+        "position": {
+          "x": 750,
+          "y": 214,
+          "width": 420,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "fontFamily": "monospace"
+          }
+        },
+        "meta": {
+          "name": "out_live"
+        },
+        "position": {
+          "x": 750,
+          "y": 232,
+          "width": 420,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../Demo.props.output.isRealtime"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Bind a history query to output.startDateTime / endDateTime (or the epoch outputs) — with realtime armed the window keeps sliding, alarm-journal style.",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98"
+          }
+        },
+        "meta": {
+          "name": "hint"
+        },
+        "position": {
+          "x": 750,
+          "y": 270,
+          "width": 420,
+          "height": 60
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "oneMonth"
+        },
+        "meta": {
+          "name": "label_oneMonth"
+        },
+        "position": {
+          "x": 24,
+          "y": 560,
+          "width": 200,
+          "height": 18
+        }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": {
+          "config": {
+            "layout": "oneMonth"
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "oneMonth"
+        },
+        "position": {
+          "x": 24,
+          "y": 580,
+          "width": 360,
+          "height": 500
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "compact"
+        },
+        "meta": {
+          "name": "label_compact"
+        },
+        "position": {
+          "x": 420,
+          "y": 560,
+          "width": 200,
+          "height": 18
+        }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": {
+          "config": {
+            "layout": "compact"
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "compact"
+        },
+        "position": {
+          "x": 420,
+          "y": 580,
+          "width": 320,
+          "height": 150
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "popover"
+        },
+        "meta": {
+          "name": "label_popover"
+        },
+        "position": {
+          "x": 420,
+          "y": 760,
+          "width": 200,
+          "height": 18
+        }
+      },
+      {
+        "type": "mustrysolutions.input.datetimerangepicker",
+        "version": 0,
+        "props": {
+          "config": {
+            "display": "popover"
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "popover"
+        },
+        "position": {
+          "x": 420,
+          "y": 780,
+          "width": 320,
+          "height": 40
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "theme",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98",
+            "textAlign": "right"
+          }
+        },
+        "meta": {
+          "name": "theme_caption"
+        },
+        "position": {
+          "x": 1000,
+          "y": 14,
+          "width": 44,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "props": {
+          "options": [
+            {
+              "value": "light",
+              "label": "light"
+            },
+            {
+              "value": "light-warm",
+              "label": "light-warm"
+            },
+            {
+              "value": "light-cool",
+              "label": "light-cool"
+            },
+            {
+              "value": "dark",
+              "label": "dark"
+            },
+            {
+              "value": "dark-warm",
+              "label": "dark-warm"
+            },
+            {
+              "value": "dark-cool",
+              "label": "dark-cool"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.props.theme"
+              },
+              "bidirectional": true
+            },
+            "onChange": {
+              "enabled": true,
+              "script": "\tval = currentValue.value if currentValue else None\n\tif val and val != self.session.props.theme:\n\t\tself.session.props.theme = val\n"
+            }
+          }
+        },
+        "meta": {
+          "name": "theme_dropdown"
+        },
+        "position": {
+          "x": 1050,
+          "y": 6,
+          "width": 130,
+          "height": 32
+        }
       }
     ]
   }

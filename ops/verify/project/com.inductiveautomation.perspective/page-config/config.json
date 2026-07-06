@@ -4,32 +4,32 @@
       "viewPath": "Main",
       "viewParams": {}
     },
-    "/demo": {
+    "/calendar": {
       "viewPath": "CalendarDemo",
       "viewParams": {}
     },
-    "/stress": {
-      "viewPath": "CalendarStress",
+    "/calendar-db": {
+      "viewPath": "CalendarDbDemo",
       "viewParams": {}
     },
-    "/empty": {
+    "/calendar-empty": {
       "viewPath": "CalendarEmpty",
       "viewParams": {}
     },
-    "/dbdemo": {
-      "viewPath": "CalendarDbDemo",
+    "/picker": {
+      "viewPath": "Main",
       "viewParams": {}
     },
     "/timeline": {
       "viewPath": "TimelineDemo",
       "viewParams": {}
     },
-    "/timeline-stress": {
-      "viewPath": "TimelineStress",
-      "viewParams": {}
-    },
     "/timeline-db": {
       "viewPath": "TimelineDbDemo",
+      "viewParams": {}
+    },
+    "/timeline-empty": {
+      "viewPath": "TimelineEmpty",
       "viewParams": {}
     }
   },

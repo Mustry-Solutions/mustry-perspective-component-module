@@ -1,0 +1,40 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1100, "height": 600 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Empty-state fixture — no events configured. The toolbar shows a subtle 'No events' badge with a how-to tooltip; the board is still usable (drag empty track to create).", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 10, "width": 1060, "height": 40 }
+      },
+      {
+        "type": "mustrysolutions.display.resourcetimeline",
+        "version": 0,
+        "props": {
+          "config": {
+            "editable": true, "selectable": true, "builtInEditor": true,
+            "resources": [
+              { "id": "mixer1", "label": "Mixer 1", "group": "Line 1" },
+              { "id": "mixer2", "label": "Mixer 2", "group": "Line 1" },
+              { "id": "packer1", "label": "Packer 1", "group": "Line 2" }
+            ]
+          },
+          "data": { "events": [] }
+        },
+        "custom": {},
+        "meta": { "name": "timeline" },
+        "position": { "x": 16, "y": 56, "width": 1068, "height": 520 }
+      }
+    ]
+  }
+}

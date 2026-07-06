@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "DB-binding demo (no DB): data.events is fetched PER VISIBLE WINDOW via a script transform over a 114-event source; data.recurringEvents is a separate, always-loaded query (rrule only). Navigate months \u2014 only in-window one-offs load, yet the April 'Weekly standup' and the multi-day audit still appear.",
+          "text": "DB-binding demo (no DB): data.events is fetched PER VISIBLE WINDOW via a script transform over a 114-event source; data.recurringEvents is a separate, always-loaded query (rrule only). Navigate months — only in-window one-offs load, yet the April 'Weekly standup' and the multi-day audit still appear.",
           "style": {
             "fontSize": "13px"
           }
@@ -39,7 +39,6 @@
         "version": 0,
         "props": {
           "config": {
-            "view": "month",
             "showLegend": true,
             "refetchDebounceMs": 150,
             "categories": [
@@ -66,6 +65,9 @@
           "data": {
             "events": [],
             "recurringEvents": []
+          },
+          "state": {
+            "view": "month"
           }
         },
         "custom": {
@@ -856,7 +858,7 @@
             },
             {
               "id": "span-audit",
-              "title": "Multi-day audit (spans Jun\u2192Jul)",
+              "title": "Multi-day audit (spans Jun→Jul)",
               "start": "2026-06-28",
               "end": "2026-07-03",
               "allDay": true,

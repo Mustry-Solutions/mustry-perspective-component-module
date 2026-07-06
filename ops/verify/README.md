@@ -11,14 +11,21 @@ behave** in a browser, instead of only checking that the gateway served the bund
 
 | Route | View | What it exercises |
 |---|---|---|
-| `/` | Main | DateTimeRangePicker in three layouts (oneMonth / compact / twoMonths). |
-| `/demo` | CalendarDemo | Editable calendar with the full scope-aware `onChange` write-back script (create/edit/delete/move/resize, recurring detach + series edits stick). |
-| `/dbdemo` | CalendarDbDemo | Windowed-fetch recipe: `data.events` driven by `output.visibleStart/End` over a 114-event source + always-loaded `recurringEvents`. |
-| `/empty` | CalendarEmpty | Empty-state badge/tooltip behaviour. |
-| `/stress` | CalendarStress | Calendar volume test. |
-| `/timeline` | TimelineDemo | Editable Resource Timeline with the full write-back script (drag/reassign/resize/create/editor, recurring detach + series scope across `events` **and** `recurringEvents`). |
+| `/` or `/picker` | Main | DateTimeRangePicker showcase: a presets+realtime demo instance with live output readouts, plus the labelled oneMonth / compact / popover layout gallery. |
+| `/calendar` | CalendarDemo | Evergreen editable calendar (data seeded relative to today via a `now(0)` binding): shifts, categories, statuses, backgrounds, recurring series, export, Live toggle, and the full scope-aware `onChange` write-back script across `events` **and** `recurringEvents`. |
+| `/calendar-db` | CalendarDbDemo | Windowed-fetch recipe: `data.events` driven by `output.visibleStart/End` over a 114-event source + always-loaded `recurringEvents`. |
+| `/calendar-empty` | CalendarEmpty | Empty-state badge/tooltip behaviour. |
+| `/timeline` | TimelineDemo | Evergreen editable Resource Timeline (seeded relative to today): groups, icons, state/background bands, shifts, export, Live toggle, and the full write-back script (drag/reassign/resize/create/editor, recurring detach + series scope). |
 | `/timeline-db` | TimelineDbDemo | Timeline windowed-fetch recipe (window-scoped transform on `output.visibleEnd`). |
-| `/timeline-stress` | TimelineStress | 60 resources × ~3,500 events. |
+| `/timeline-empty` | TimelineEmpty | Empty-state badge/tooltip behaviour. |
+
+(The former `CalendarStress`/`TimelineStress` volume fixtures were removed after
+the P2 perf pass — restore from git history if ever needed.)
+
+The three demo views carry a **theme dropdown** (top-right) that writes
+`session.props.theme` (light / dark / warm / cool variants) so the components
+can be eyeballed against any Perspective theme. The theme is session-scoped: a
+full page reload starts a fresh session and resets it to the project default.
 
 Because it's bind-mounted, the project is always present in the gateway (survives
 `teardown.sh --purge`), and anything you save against it in the Designer writes

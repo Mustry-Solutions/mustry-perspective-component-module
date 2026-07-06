@@ -13,9 +13,18 @@ There is a committed verification harness:
 - `ops/verify/project/` — a Perspective project ("verify") bind-mounted into the
   dev gateway (see `docker-compose.yml`). Its `Main` view contains the
   DateTimeRangePicker in three layouts (oneMonth / compact / twoMonths), each
-  labelled.
+  labelled, plus a presets+realtime demo instance with live output readouts and
+  a popover instance.
 - Session URL: **http://localhost:9088/data/perspective/client/verify**
-  (port follows `GATEWAY_HTTP_PORT` in `.env`).
+  (port follows `GATEWAY_HTTP_PORT` in `.env`). Routes, one per fixture
+  (append to the session URL):
+  - `/` or `/picker` — the picker showcase (Main)
+  - `/calendar` — evergreen calendar demo (data seeded relative to today);
+    `/calendar-db` — windowed-binding recipe; `/calendar-empty` — empty-state badge
+  - `/timeline` — evergreen timeline demo; `/timeline-db` — windowed-binding
+    recipe; `/timeline-empty` — empty-state badge
+  The evergreen demos regenerate their data on view load (`now(0)` binding +
+  script transform in the view.json), so they always show a populated "today".
 
 ## Steps
 
