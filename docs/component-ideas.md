@@ -62,9 +62,9 @@ The **editable data grid** ([`data-grid-plan.md`](data-grid-plan.md)) is
 built and shipping (M0–M3 core; custom build — the AG-Grid note below is
 historical: its row grouping is Enterprise-only anyway).
 
-**Next build (chosen 2026-07-06): the Pan & Zoom View** — Sam's own idea,
-demand-validated (Canny "zoom and pan for large view", the 2019 pan/zoom
-container thread, the Exchange "Pan Zoom Frame" hack): embed any view and
-navigate it like a map, with scriptable two-way center/zoom (fly-to). See
-[`panzoom-view-plan.md`](panzoom-view-plan.md). Feasibility verified:
-perspective-client publicly exports the `View` component.
+The **Pan & Zoom View** (`mustrysolutions.display.panzoomview`) — Sam's own
+idea, demand-validated (Canny "zoom and pan for large view", the 2019 pan/zoom
+container thread, the Exchange "Pan Zoom Frame" hack) — is built through
+M0/M1: embed any view by path + params and navigate it like a map, with
+scriptable two-way center/zoom (fly-to). M2 polish (pinch, localized labels,
+fly-to smoothing) remains. See [`panzoom-view-plan.md`](panzoom-view-plan.md).

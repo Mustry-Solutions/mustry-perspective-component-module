@@ -24,6 +24,10 @@
       "viewPath": "GridStress",
       "viewParams": {}
     },
+    "/panzoom": {
+      "viewPath": "PanZoomDemo",
+      "viewParams": {}
+    },
     "/picker": {
       "viewPath": "Main",
       "viewParams": {}

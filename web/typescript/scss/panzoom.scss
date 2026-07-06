@@ -1,0 +1,105 @@
+// Pan & Zoom View styles (theme pattern shared with the other components).
+@mixin pz-theme {
+    --pz-accent: var(--callToAction, #0c7bb3);
+    --pz-text: var(--neutral-90, #1f2937);
+    --pz-muted: var(--neutral-60, #6b7280);
+    --pz-border: var(--neutral-30, #d1d5db);
+    --pz-bg: var(--neutral-10, #ffffff);
+    --pz-canvas: var(--neutral-20, #eceff3);   // behind/around the content
+}
+
+.mustry-panzoom {
+    @include pz-theme;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--pz-border);
+    border-radius: 6px;
+    overflow: hidden;
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+.pz-viewport {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+    background: var(--pz-canvas);
+    touch-action: none;     // pointer events own the gestures
+    cursor: grab;
+
+    &.pz-panning {
+        cursor: grabbing;
+    }
+}
+
+.pz-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    background: var(--pz-bg);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
+}
+
+.pz-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 13px;
+    color: var(--pz-muted);
+}
+
+.pz-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 5;
+
+    button {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font: inherit;
+        font-size: 17px;
+        color: var(--pz-accent);
+        background: var(--pz-bg);
+        border: 1px solid var(--pz-border);
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--pz-accent);
+            background: color-mix(in srgb, var(--pz-accent) 8%, var(--pz-bg));
+        }
+
+        svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+    }
+}
+
+.pz-zoom-badge {
+    position: absolute;
+    left: 10px;
+    bottom: 8px;
+    z-index: 5;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--pz-muted);
+    background: color-mix(in srgb, var(--pz-bg) 80%, transparent);
+    border: 1px solid var(--pz-border);
+    pointer-events: none;
+}

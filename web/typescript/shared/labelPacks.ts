@@ -747,6 +747,36 @@ export function gridLabelBase(locale: string): GridLabels {
     return GRID_PACKS[primaryLang(locale)] || EN_GRID_LABELS;
 }
 
+// --- pan & zoom view --------------------------------------------------------------
+
+export interface PzLabels {
+    zoomIn: string;
+    zoomOut: string;
+    home: string;                     // reset to config.home
+    fit: string;                      // fit the whole content
+}
+
+export const EN_PZ_LABELS: PzLabels = {
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    home: 'Reset view',
+    fit: 'Fit to view',
+};
+
+const PZ_PACKS: { [lang: string]: PzLabels } = {
+    fr: { zoomIn: 'Zoomer', zoomOut: 'Dézoomer', home: 'Réinitialiser la vue', fit: 'Ajuster à la vue' },
+    de: { zoomIn: 'Vergrößern', zoomOut: 'Verkleinern', home: 'Ansicht zurücksetzen', fit: 'Einpassen' },
+    es: { zoomIn: 'Acercar', zoomOut: 'Alejar', home: 'Restablecer vista', fit: 'Ajustar a la vista' },
+    nl: { zoomIn: 'Inzoomen', zoomOut: 'Uitzoomen', home: 'Weergave herstellen', fit: 'Passend maken' },
+    it: { zoomIn: 'Ingrandisci', zoomOut: 'Riduci', home: 'Reimposta vista', fit: 'Adatta alla vista' },
+    pt: { zoomIn: 'Aproximar', zoomOut: 'Afastar', home: 'Redefinir vista', fit: 'Ajustar à vista' },
+};
+
+/** The pan/zoom label pack for a locale (primary subtag; unknown -> English). */
+export function pzLabelBase(locale: string): PzLabels {
+    return PZ_PACKS[primaryLang(locale)] || EN_PZ_LABELS;
+}
+
 /** The empty-badge text: the schema default ('No events') counts as "unset" so it
  *  follows the locale pack's noEvents; any other value (including '' = hide the
  *  badge) is an explicit author choice. */

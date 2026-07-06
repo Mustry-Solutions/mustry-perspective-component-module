@@ -163,6 +163,35 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   blank grid — the virtualization window now clamps both ends into the
   dataset and renders the tail.
 
+### Pan & Zoom View (new component, M0/M1 — `mustrysolutions.display.panzoomview`)
+Fifth component: embeds ANY Perspective view (`config.viewPath` +
+`config.viewParams`) inside a clipped viewport and navigates it like a map.
+Custom build on perspective-client's publicly exported `View` component (no
+third-party libs); plan: docs/panzoom-view-plan.md.
+- **Navigation**: drag to pan (house threshold + click-suppression pattern, so
+  buttons/inputs INSIDE the embedded view keep working — verified live with a
+  click-counter inside the transformed view), wheel zoom **toward the cursor**
+  (native non-passive listener; React's delegated `onWheel` is passive and
+  can't `preventDefault`), double-click zoom, +/−/home/fit control buttons,
+  live zoom badge.
+- **Two-way `state.zoom`/`state.center`** (content coordinates): bind or
+  script them to fly the viewport ("center on Pump 3 on alarm") — verified
+  live from a demo button script. Gestures write back debounced with the
+  house draft/echo-reconciliation pattern; zoom `0` = unset (resolves to
+  home).
+- **`config.home`** `{x, y, zoom}` is the reset/initial target (`zoom` 0 =
+  fit content, `x`/`y` -1 = content center); pan clamped so ≥25% of the
+  viewport always shows content (smaller-than-viewport content stays
+  centered); zoom clamped to `config.minZoom`/`maxZoom`.
+- **`output.viewState`** surfaces the embedded view's ViewStateType so
+  authors can react to a bad `viewPath`.
+- All geometry in pure `panZoomLogic.ts` (fit/clamp/resolve/transform/
+  zoom-at-point/pan) with Jest coverage; `--pz-*` theming; palette icon.
+- Known quirk (documented in the plan): popups/portals inside the embedded
+  view portal to the document and escape the transform (unscaled).
+- M2 tracked: pinch zoom, localized control tooltips, fly-to smoothing,
+  overpan tuning, manual-test checklist, dark-mode pass.
+
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with
   script transforms seed the data relative to today on every view load
@@ -181,6 +210,10 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
 - Routes renamed component-first: `/picker` (alias of `/`), `/calendar`,
   `/calendar-db`, `/calendar-empty`, `/timeline`, `/timeline-db`,
   `/timeline-empty` (docs + skill updated).
+- New `/panzoom` route (PanZoomDemo): hosts the Pan & Zoom View embedding
+  `SynopticDemo` — a 2400×1500 plant-floor coordinate view with an interactive
+  click-counter proving embedded interactivity survives the transform — plus
+  "Fly to Pump 3" / "Fly home (fit)" buttons scripting the two-way state.
 - Each demo has a **session-theme dropdown** (light/dark + warm/cool variants)
   that writes `session.props.theme` — all three components verified rendering
   correctly in dark. Note: a full page reload starts a fresh Perspective

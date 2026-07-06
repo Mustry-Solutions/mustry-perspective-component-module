@@ -59,7 +59,12 @@ public class MustrySolutionsPerspectiveComponentsModule {
         g.setColor(new Color(0x53, 0x53, 0x53));
         g.setStroke(new BasicStroke(1.4f));
         String k = id.toLowerCase();
-        if (k.contains("datagrid")) {
+        if (k.contains("panzoomview")) {
+            // Magnifier over a sheet corner (pan/zoom hint).
+            g.drawRoundRect(2, 2, 9, 9, 2, 2);                    // content sheet
+            g.drawOval(6, 6, 7, 7);                               // lens
+            g.drawLine(12, 12, 15, 15);                           // handle
+        } else         if (k.contains("datagrid")) {
             // Table sheet: header band + column/row rules.
             g.drawRoundRect(2, 3, 12, 11, 2, 2);
             g.fillRect(2, 3, 12, 3);                              // header band

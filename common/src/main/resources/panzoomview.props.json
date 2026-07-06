@@ -1,0 +1,103 @@
+{
+  "type": "object",
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Set-and-forget configuration: which view to embed and how navigation behaves.",
+      "default": {
+        "viewPath": "",
+        "viewParams": [],
+        "contentWidth": 1600,
+        "contentHeight": 1200,
+        "minZoom": 0.1,
+        "maxZoom": 8,
+        "zoomStep": 1.25,
+        "wheelZoom": true,
+        "doubleClickZoom": true,
+        "showControls": true,
+        "home": { "x": -1, "y": -1, "zoom": 0 }
+      },
+      "properties": {
+        "viewPath": {
+          "type": "string",
+          "description": "Path of the Perspective view to embed and navigate."
+        },
+        "viewParams": {
+          "type": "array",
+          "description": "Parameters passed into the embedded view: [{name, value}].",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "description": "The view input parameter name." },
+              "value": { "description": "The value passed to it (bindable)." }
+            }
+          }
+        },
+        "contentWidth": {
+          "type": "number",
+          "description": "The embedded view's natural width in px — the coordinate space for center/home and the basis for fit.",
+          "default": 1600
+        },
+        "contentHeight": {
+          "type": "number",
+          "description": "The embedded view's natural height in px.",
+          "default": 1200
+        },
+        "minZoom": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
+        "maxZoom": { "type": "number", "description": "Largest zoom factor.", "default": 8 },
+        "zoomStep": { "type": "number", "description": "Zoom multiplier per wheel tick / button press (1.05–3).", "default": 1.25 },
+        "wheelZoom": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
+        "doubleClickZoom": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true },
+        "showControls": { "type": "boolean", "description": "Show the zoom / reset / fit buttons.", "default": true },
+        "home": {
+          "type": "object",
+          "description": "The reset target (and initial position while state.zoom is unset): a content-coordinate center point and zoom. x/y -1 = content center; zoom 0 = fit.",
+          "properties": {
+            "x": { "type": "number", "description": "Center x in content coordinates (-1 = content center).", "default": -1 },
+            "y": { "type": "number", "description": "Center y in content coordinates (-1 = content center).", "default": -1 },
+            "zoom": { "type": "number", "description": "Zoom factor (0 = fit the whole content).", "default": 0 }
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way runtime state: navigation writes back here, and writing values drives the viewport (fly-to from bindings/scripts).",
+      "default": { "zoom": 0, "center": { "x": 0, "y": 0 } },
+      "properties": {
+        "zoom": {
+          "type": "number",
+          "description": "Current zoom factor (two-way). 0/unset = follow config.home.",
+          "default": 0
+        },
+        "center": {
+          "type": "object",
+          "description": "The content point under the viewport middle (two-way) — write it to fly there.",
+          "properties": {
+            "x": { "type": "number", "default": 0 },
+            "y": { "type": "number", "default": 0 }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values.",
+      "default": { "viewState": "" },
+      "properties": {
+        "viewState": {
+          "type": "string",
+          "description": "The embedded view's load state: loading / valid / notFound / error / access-denied."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": { "classes": "" }
+    }
+  }
+}
