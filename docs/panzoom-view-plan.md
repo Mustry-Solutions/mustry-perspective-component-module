@@ -1,14 +1,15 @@
 # Pan & Zoom View — component plan
 
-**Status (2026-07-06): M0 + M1 BUILT and live-verified** (embed, drag-pan
-with click preservation, wheel zoom toward the cursor via a native
-non-passive listener — React's delegated `onWheel` is passive and can't
-`preventDefault` — double-click zoom, +/−/home/fit controls, two-way
-`state.zoom`/`state.center` with scripted fly-to proven, `output.viewState`).
-M2 (pinch zoom, localized control labels, fly-to smoothing, overpan tuning,
-manual-test checklist, dark-mode pass) remains. Fifth component of the
-module: id `mustrysolutions.display.panzoomview`. Sam's own idea (not from
-the researched backlog). Demo: `/panzoom` in the verify project.
+**Status (2026-07-06): M0–M2 BUILT and verified** (embed, drag-pan with
+click preservation, wheel zoom toward the cursor via a native non-passive
+listener — React's delegated `onWheel` is passive and can't
+`preventDefault` — double-click zoom, +/−/home/fit controls with
+`config.locale` tooltips, two-way `state.zoom`/`state.center` with scripted
+fly-to proven, fly-to smoothing over `config.flyToMs`, pinch zoom
+(synthetic-verified; real-hardware pass joins the standing tablet item),
+`output.viewState`). Checklist: `panzoom-manual-test.md`. Fifth component
+of the module: id `mustrysolutions.display.panzoomview`. Sam's own idea
+(not from the researched backlog). Demo: `/panzoom` in the verify project.
 
 ## What & why
 

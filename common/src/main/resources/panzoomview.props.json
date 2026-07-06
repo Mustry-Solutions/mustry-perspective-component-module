@@ -16,6 +16,8 @@
         "wheelZoom": true,
         "doubleClickZoom": true,
         "showControls": true,
+        "locale": "",
+        "flyToMs": 350,
         "home": { "x": -1, "y": -1, "zoom": 0 }
       },
       "properties": {
@@ -51,6 +53,15 @@
         "wheelZoom": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
         "doubleClickZoom": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true },
         "showControls": { "type": "boolean", "description": "Show the zoom / reset / fit buttons.", "default": true },
+        "locale": {
+          "type": "string",
+          "description": "BCP-47 locale for the built-in control tooltips (en/fr/de/es/nl/it/pt built in). Empty = English."
+        },
+        "flyToMs": {
+          "type": "number",
+          "description": "When a script/binding writes state.zoom/center, the viewport animates there over this many ms (0 = snap).",
+          "default": 350
+        },
         "home": {
           "type": "object",
           "description": "The reset target (and initial position while state.zoom is unset): a content-coordinate center point and zoom. x/y -1 = content center; zoom 0 = fit.",

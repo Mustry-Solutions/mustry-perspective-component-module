@@ -13,6 +13,8 @@ export interface PanZoomProps {
     wheelZoom: boolean;
     doubleClickZoom: boolean;
     showControls: boolean;
+    locale: string;
+    flyToMs: number;     // externally-written state.zoom/center animate over this; 0 = snap
     home: PzHome;
     zoom: number;        // state.zoom (two-way; <= 0 = unset -> home)
     center: PzPoint;     // state.center (two-way, content coords)
@@ -47,6 +49,8 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         wheelZoom: tree.readBoolean('config.wheelZoom', true),
         doubleClickZoom: tree.readBoolean('config.doubleClickZoom', true),
         showControls: tree.readBoolean('config.showControls', true),
+        locale: tree.readString('config.locale', ''),
+        flyToMs: Math.min(5000, Math.max(0, num('config.flyToMs', 350))),
         home: {
             x: num('config.home.x', -1),
             y: num('config.home.y', -1),

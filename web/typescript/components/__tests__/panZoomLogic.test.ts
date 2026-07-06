@@ -1,6 +1,6 @@
 import {
-    clampCenter, clampZoom, fitZoom, homeViewport, panBy, resolveViewport,
-    viewTransform, zoomAt
+    clampCenter, clampZoom, fitZoom, flyStep, homeViewport, panBy, pinchViewport,
+    resolveViewport, viewTransform, zoomAt
 } from '../panzoom/panZoomLogic';
 
 // content 2000x1200, viewport 800x600 throughout
@@ -74,5 +74,55 @@ describe('viewTransform / zoomAt / panBy (the invariants that matter)', () => {
     it('panBy moves the content WITH the pointer, scaled by zoom', () => {
         expect(panBy(vp, 100, -50).center).toEqual({ x: 900, y: 650 });
         expect(panBy({ ...vp, zoom: 2 }, 100, 0).center.x).toBe(950);
+    });
+});
+
+describe('pinchViewport', () => {
+    const start = { zoom: 1, center: { x: 1000, y: 600 } };
+    const mid0 = { x: 300, y: 200 };
+
+    it('scales by the finger-distance ratio (clamped) with a stationary midpoint anchored', () => {
+        const pinched = pinchViewport(start, mid0, mid0, 100, 200, VW, VH, 0.1, 8);
+        expect(pinched.zoom).toBe(2);
+        // the content that was under the midpoint is still under it
+        const t0 = viewTransform(start, VW, VH);
+        const contentMid = { x: (mid0.x - t0.tx) / start.zoom, y: (mid0.y - t0.ty) / start.zoom };
+        const t1 = viewTransform(pinched, VW, VH);
+        expect(contentMid.x * pinched.zoom + t1.tx).toBeCloseTo(mid0.x, 4);
+        expect(contentMid.y * pinched.zoom + t1.ty).toBeCloseTo(mid0.y, 4);
+        expect(pinchViewport(start, mid0, mid0, 100, 5000, VW, VH, 0.1, 8).zoom).toBe(8);
+    });
+
+    it('a moving midpoint at constant distance is a pure pan', () => {
+        const moved = pinchViewport(start, mid0, { x: 400, y: 250 }, 100, 100, VW, VH, 0.1, 8);
+        expect(moved.zoom).toBe(1);
+        expect(moved.center).toEqual(panBy(start, 100, 50).center);
+    });
+
+    it('a zero start distance degrades to no zoom change', () => {
+        expect(pinchViewport(start, mid0, mid0, 0, 150, VW, VH, 0.1, 8).zoom).toBe(1);
+    });
+});
+
+describe('flyStep', () => {
+    const from = { zoom: 0.5, center: { x: 400, y: 300 } };
+    const target = { zoom: 2, center: { x: 1600, y: 900 } };
+
+    it('starts at from, ends at target, and clamps k', () => {
+        expect(flyStep(from, target, 0)).toEqual(from);
+        expect(flyStep(from, target, 1).zoom).toBeCloseTo(target.zoom, 6);
+        expect(flyStep(from, target, 1).center.x).toBeCloseTo(target.center.x, 6);
+        expect(flyStep(from, target, -1)).toEqual(from);
+        expect(flyStep(from, target, 2).zoom).toBeCloseTo(target.zoom, 6);
+    });
+
+    it('zoom interpolates in log space (halfway = geometric mean) and moves monotonically', () => {
+        expect(flyStep(from, target, 0.5).zoom).toBeCloseTo(Math.sqrt(0.5 * 2), 6);
+        let prev = from.zoom;
+        for (let k = 0.1; k <= 1; k += 0.1) {
+            const z = flyStep(from, target, k).zoom;
+            expect(z).toBeGreaterThanOrEqual(prev);
+            prev = z;
+        }
     });
 });

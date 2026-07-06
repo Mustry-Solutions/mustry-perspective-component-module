@@ -189,8 +189,24 @@ third-party libs); plan: docs/panzoom-view-plan.md.
   zoom-at-point/pan) with Jest coverage; `--pz-*` theming; palette icon.
 - Known quirk (documented in the plan): popups/portals inside the embedded
   view portal to the document and escape the transform (unscaled).
-- M2 tracked: pinch zoom, localized control tooltips, fly-to smoothing,
-  overpan tuning, manual-test checklist, dark-mode pass.
+
+M2 polish (same cut):
+- **Pinch zoom**: two fingers zoom by the distance ratio anchored at the
+  moving midpoint (pure `pinchViewport`, unit-tested; synthetic two-pointer
+  events verified exact — real-hardware pass joins the standing tablet
+  item); lifting one finger hands over to a pan; a pinch never fires a
+  click into the embedded view.
+- **Fly-to smoothing**: an external `state.zoom`/`center` write animates the
+  viewport over new `config.flyToMs` (default 350 ms, 0 = snap; zoom eases
+  in log space via pure `flyStep`). Visual-only (no state writes), snaps in
+  hidden tabs (rAF doesn't run there) with a safety-net timer, cancels the
+  moment a gesture takes over, and the component's own write-echo never
+  re-animates.
+- **Localized control tooltips** via new `config.locale` (en/fr/de/es/nl/it/pt).
+- Gesture internals reworked for multi-pointer: up/cancel listen on window so
+  a release outside the viewport can't leak a tracked pointer.
+- Manual checklist: docs/panzoom-manual-test.md; dark-mode pass done
+  (`--pz-*` chrome verified against the dark session theme).
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with

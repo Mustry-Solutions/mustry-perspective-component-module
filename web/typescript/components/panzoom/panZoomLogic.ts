@@ -110,3 +110,36 @@ export function panBy(vp: PzViewport, dxPx: number, dyPx: number): PzViewport {
         center: { x: vp.center.x - dxPx / vp.zoom, y: vp.center.y - dyPx / vp.zoom }
     };
 }
+
+/** Two-finger pinch, relative to the GESTURE START: scale by the finger-distance
+ *  ratio and keep the content point that began under the fingers' midpoint under
+ *  the (possibly moving) midpoint — so a pinch both zooms and pans naturally. */
+export function pinchViewport(startVp: PzViewport, startMid: PzPoint, mid: PzPoint,
+                              startDist: number, dist: number,
+                              viewportW: number, viewportH: number,
+                              minZoom: number, maxZoom: number): PzViewport {
+    const zoom = clampZoom(startVp.zoom * (startDist > 0 ? dist / startDist : 1), minZoom, maxZoom);
+    const t = viewTransform(startVp, viewportW, viewportH);
+    const contentMid = { x: (startMid.x - t.tx) / startVp.zoom, y: (startMid.y - t.ty) / startVp.zoom };
+    return {
+        zoom,
+        center: {
+            x: contentMid.x + (viewportW / 2 - mid.x) / zoom,
+            y: contentMid.y + (viewportH / 2 - mid.y) / zoom
+        }
+    };
+}
+
+/** The viewport at progress k (0..1) of a fly-to animation: ease-in-out, with the
+ *  zoom interpolated in log space (a constant zoom-FACTOR per step feels linear). */
+export function flyStep(from: PzViewport, target: PzViewport, k: number): PzViewport {
+    const kk = Math.max(0, Math.min(1, k));
+    const e = kk < 0.5 ? 2 * kk * kk : 1 - Math.pow(-2 * kk + 2, 2) / 2;
+    return {
+        zoom: from.zoom * Math.pow(target.zoom / from.zoom, e),
+        center: {
+            x: from.center.x + (target.center.x - from.center.x) * e,
+            y: from.center.y + (target.center.y - from.center.y) * e
+        }
+    };
+}
