@@ -1,6 +1,7 @@
 import {
-    clampCenter, clampZoom, fitZoom, flyStep, homeViewport, panBy, pinchViewport,
-    resolveViewport, viewTransform, zoomAt
+    clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, edgeIndicator,
+    fitZoom, flyStep, homeViewport, minimapLayout, minimapViewRect, panBy,
+    pinchViewport, resolveViewport, viewTransform, zoomAt
 } from '../panzoom/panZoomLogic';
 
 // content 2000x1200, viewport 800x600 throughout
@@ -101,6 +102,63 @@ describe('pinchViewport', () => {
 
     it('a zero start distance degrades to no zoom change', () => {
         expect(pinchViewport(start, mid0, mid0, 0, 150, VW, VH, 0.1, 8).zoom).toBe(1);
+    });
+});
+
+describe('contentToViewportPt / contentFullyVisible', () => {
+    it('round-trips a content point through the transform', () => {
+        const vp = { zoom: 2, center: { x: 1000, y: 600 } };
+        // the center itself lands at the viewport middle
+        expect(contentToViewportPt({ x: 1000, y: 600 }, vp, VW, VH)).toEqual({ x: VW / 2, y: VH / 2 });
+        // one content-unit right of center = zoom pixels right of middle
+        expect(contentToViewportPt({ x: 1001, y: 600 }, vp, VW, VH).x).toBeCloseTo(VW / 2 + 2, 6);
+    });
+
+    it('fully-visible means both content axes fit at the current zoom', () => {
+        expect(contentFullyVisible({ zoom: 0.3, center: { x: 0, y: 0 } }, CW, CH, VW, VH)).toBe(true);
+        expect(contentFullyVisible({ zoom: 0.5, center: { x: 0, y: 0 } }, CW, CH, VW, VH)).toBe(false);
+    });
+});
+
+describe('minimap geometry', () => {
+    it('layout preserves the content aspect inside the box', () => {
+        const l = minimapLayout(CW, CH, 160, 120);
+        expect(l.scale).toBeCloseTo(160 / 2000, 6);   // width-limited (2000x1200 -> 160x96)
+        expect(l.w).toBe(160);
+        expect(l.h).toBe(96);
+        expect(minimapLayout(0, 0, 160, 120)).toEqual({ w: 160, h: 120, scale: 1 });
+    });
+
+    it('the view rect mirrors the visible content window', () => {
+        const scale = 160 / CW;
+        const r = minimapViewRect({ zoom: 1, center: { x: 1000, y: 600 } }, VW, VH, scale);
+        expect(r.w).toBeCloseTo(VW * scale, 6);
+        expect(r.h).toBeCloseTo(VH * scale, 6);
+        // centered content -> centered rect
+        expect(r.x + r.w / 2).toBeCloseTo(1000 * scale, 6);
+        expect(r.y + r.h / 2).toBeCloseTo(600 * scale, 6);
+    });
+});
+
+describe('edgeIndicator', () => {
+    it('reports on-screen points and needs no indicator', () => {
+        expect(edgeIndicator({ x: 400, y: 300 }, VW, VH, 64, 18).onScreen).toBe(true);
+    });
+
+    it('clamps an off-screen point to the per-axis inset edge, pointing at it', () => {
+        const right = edgeIndicator({ x: VW + 500, y: 300 }, VW, VH, 64, 18);
+        expect(right.onScreen).toBe(false);
+        expect(right.x).toBe(VW - 64);
+        expect(right.y).toBe(300);
+        expect(right.angle).toBeCloseTo(0, 5);            // due right
+        const above = edgeIndicator({ x: 400, y: -200 }, VW, VH, 64, 18);
+        expect(above.y).toBe(18);
+        expect(above.angle).toBeCloseTo(-90, 5);          // due up
+        const corner = edgeIndicator({ x: -1000, y: -1000 }, VW, VH, 64, 18);
+        expect(corner.x).toBe(64);
+        expect(corner.y).toBe(18);
+        expect(corner.angle).toBeLessThan(-90);           // up-left quadrant
+        expect(corner.angle).toBeGreaterThan(-180);
     });
 });
 

@@ -754,6 +754,8 @@ export interface PzLabels {
     zoomOut: string;
     home: string;                     // reset to config.home
     fit: string;                      // fit the whole content
+    goTo: string;                     // POI list placeholder
+    overview: string;                 // minimap aria-label
 }
 
 export const EN_PZ_LABELS: PzLabels = {
@@ -761,15 +763,17 @@ export const EN_PZ_LABELS: PzLabels = {
     zoomOut: 'Zoom out',
     home: 'Reset view',
     fit: 'Fit to view',
+    goTo: 'Go to…',
+    overview: 'Overview',
 };
 
 const PZ_PACKS: { [lang: string]: PzLabels } = {
-    fr: { zoomIn: 'Zoomer', zoomOut: 'Dézoomer', home: 'Réinitialiser la vue', fit: 'Ajuster à la vue' },
-    de: { zoomIn: 'Vergrößern', zoomOut: 'Verkleinern', home: 'Ansicht zurücksetzen', fit: 'Einpassen' },
-    es: { zoomIn: 'Acercar', zoomOut: 'Alejar', home: 'Restablecer vista', fit: 'Ajustar a la vista' },
-    nl: { zoomIn: 'Inzoomen', zoomOut: 'Uitzoomen', home: 'Weergave herstellen', fit: 'Passend maken' },
-    it: { zoomIn: 'Ingrandisci', zoomOut: 'Riduci', home: 'Reimposta vista', fit: 'Adatta alla vista' },
-    pt: { zoomIn: 'Aproximar', zoomOut: 'Afastar', home: 'Redefinir vista', fit: 'Ajustar à vista' },
+    fr: { zoomIn: 'Zoomer', zoomOut: 'Dézoomer', home: 'Réinitialiser la vue', fit: 'Ajuster à la vue', goTo: 'Aller à…', overview: 'Vue d’ensemble' },
+    de: { zoomIn: 'Vergrößern', zoomOut: 'Verkleinern', home: 'Ansicht zurücksetzen', fit: 'Einpassen', goTo: 'Gehe zu…', overview: 'Übersicht' },
+    es: { zoomIn: 'Acercar', zoomOut: 'Alejar', home: 'Restablecer vista', fit: 'Ajustar a la vista', goTo: 'Ir a…', overview: 'Vista general' },
+    nl: { zoomIn: 'Inzoomen', zoomOut: 'Uitzoomen', home: 'Weergave herstellen', fit: 'Passend maken', goTo: 'Ga naar…', overview: 'Overzicht' },
+    it: { zoomIn: 'Ingrandisci', zoomOut: 'Riduci', home: 'Reimposta vista', fit: 'Adatta alla vista', goTo: 'Vai a…', overview: 'Panoramica' },
+    pt: { zoomIn: 'Aproximar', zoomOut: 'Afastar', home: 'Redefinir vista', fit: 'Ajustar à vista', goTo: 'Ir para…', overview: 'Visão geral' },
 };
 
 /** The pan/zoom label pack for a locale (primary subtag; unknown -> English). */

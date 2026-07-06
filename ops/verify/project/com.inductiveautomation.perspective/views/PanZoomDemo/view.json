@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Pan & Zoom View demo (M0/M1) — the SynopticDemo view (2400×1500) embedded and navigable: drag to pan, wheel to zoom toward the cursor, +/−/home/fit controls, zoom badge. Click the button INSIDE the synoptic to prove embedded interactivity survives. 'Fly to Pump 3' writes the two-way state from a script.",
+          "text": "Pan & Zoom View demo (M0/M1) \u2014 the SynopticDemo view (2400\u00d71500) embedded and navigable: drag to pan, wheel to zoom toward the cursor, +/\u2212/home/fit controls, zoom badge. Click the button INSIDE the synoptic to prove embedded interactivity survives. 'Fly to Pump 3' writes the two-way state from a script.",
           "style": {
             "fontSize": "13px"
           }
@@ -125,6 +125,45 @@
               "y": -1,
               "zoom": 0
             }
+          },
+          "data": {
+            "pois": [
+              {
+                "name": "Tank 101",
+                "x": 330,
+                "y": 360,
+                "zoom": 1.2,
+                "flagged": false
+              },
+              {
+                "name": "Mixer 1",
+                "x": 1150,
+                "y": 360,
+                "zoom": 1.2,
+                "flagged": false
+              },
+              {
+                "name": "Pump 3",
+                "x": 2030,
+                "y": 990,
+                "zoom": 1.5,
+                "flagged": true
+              },
+              {
+                "name": "Boiler",
+                "x": 2050,
+                "y": 330,
+                "zoom": 0,
+                "flagged": false
+              },
+              {
+                "name": "Warehouse",
+                "x": 1850,
+                "y": 1300,
+                "zoom": 1.0,
+                "flagged": false
+              }
+            ]
           }
         },
         "custom": {},
@@ -160,7 +199,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\t# The two-way state IS the API: write it to navigate.\n\tpz = self.getSibling(\"pz\")\n\tpz.props.state.zoom = 1.5\n\tpz.props.state.center = {\"x\": 2030, \"y\": 990}\n"
+                  "script": "\t# Named fly-to: write a data.pois name to state.target.\n\tself.getSibling(\"pz\").props.state.target = \"Pump 3\"\n"
                 }
               }
             ]
@@ -190,6 +229,35 @@
                 "scope": "G",
                 "config": {
                   "script": "\tpz = self.getSibling(\"pz\")\n\tpz.props.state.zoom = 0\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Toggle Pump 3 alarm"
+        },
+        "meta": {
+          "name": "alarmBtn"
+        },
+        "position": {
+          "x": 325,
+          "y": 600,
+          "width": 190,
+          "height": 32
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Bindable in real projects: poi.flagged <- alarm state.\n\tpz = self.getSibling(\"pz\")\n\tpz.props.data.pois[2].flagged = not pz.props.data.pois[2].flagged\n"
                 }
               }
             ]

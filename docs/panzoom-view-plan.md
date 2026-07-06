@@ -1,6 +1,6 @@
 # Pan & Zoom View — component plan
 
-**Status (2026-07-06): M0–M2 BUILT and verified** (embed, drag-pan with
+**Status (2026-07-06): M0–M3 BUILT and verified** (embed, drag-pan with
 click preservation, wheel zoom toward the cursor via a native non-passive
 listener — React's delegated `onWheel` is passive and can't
 `preventDefault` — double-click zoom, +/−/home/fit controls with
@@ -10,6 +10,20 @@ fly-to proven, fly-to smoothing over `config.flyToMs`, pinch zoom
 `output.viewState`). Checklist: `panzoom-manual-test.md`. Fifth component
 of the module: id `mustrysolutions.display.panzoomview`. Sam's own idea
 (not from the researched backlog). Demo: `/panzoom` in the verify project.
+
+**M3 (same day): navigation aids** — `data.pois` (named fly-to targets;
+write a name to two-way `state.target`, which self-clears so the same name
+re-triggers; `zoom` 0 keeps the current zoom), localized "Go to…" list
+(`config.showPoiList`), corner **minimap** (`config.showMinimap`: content
+box + draggable view rectangle + POI dots; auto-hides while the whole
+content is visible), and **flagged POIs** (`flagged: true`, bindable to
+alarm state) that pulse when visible and get a clickable edge-indicator
+chip pointing at them when off-screen. All live-verified incl. exact
+minimap jump/drag math and target re-trigger.
+
+Remaining backlog (M4 candidates, from the improvement review): inertia
+panning, semantic zoom (`output.visibleRect` + zoom-param pattern),
+gesture-conflict modes (two-finger-pan / Ctrl+wheel).
 
 ## What & why
 

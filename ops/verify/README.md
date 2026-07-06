@@ -20,7 +20,7 @@ behave** in a browser, instead of only checking that the gateway served the bund
 | `/timeline-empty` | TimelineEmpty | Empty-state badge/tooltip behaviour. |
 | `/grid-stress` | GridStress | 50,000 generated rows (5.6 KB committed): validates the client-side ceiling — virtualization, sort/filter latency, the ~6 MB payload constraint. |
 | `/grid` | GridDemo | Data Grid M0-M3: 2,500 evergreen work orders — virtualization, frozen columns, sort/filter/select, column layout gestures, typed formatting + validation, dropdown-in-cell + BATCH editing (Save/Discard), Excel paste, Qty sum footer, add/delete rows, CSV export. |
-| `/panzoom` | PanZoomDemo | Pan & Zoom View M0/M1: embeds `SynopticDemo` (a 2400×1500 plant-floor coordinate view with a click-counter button proving embedded interactivity survives the transform) — drag-pan, wheel/double-click zoom toward the cursor, +/−/home/fit controls, zoom badge, and "Fly to Pump 3" / "Fly home" buttons scripting the two-way `state.zoom`/`state.center`. |
+| `/panzoom` | PanZoomDemo | Pan & Zoom View M0–M3: embeds `SynopticDemo` (a 2400×1500 plant-floor coordinate view with a click-counter button proving embedded interactivity survives the transform) — drag-pan, wheel/pinch/double-click zoom toward the cursor, +/−/home/fit controls, zoom badge, minimap, `data.pois` with the "Go to…" list, and buttons scripting the two-way state: "Fly to Pump 3" (`state.target`), "Fly home" (`state.zoom = 0`), "Toggle Pump 3 alarm" (`pois[].flagged` → pulse ring / edge indicator). |
 
 (The former `CalendarStress`/`TimelineStress` volume fixtures were removed after
 the P2 perf pass — restore from git history if ever needed.)

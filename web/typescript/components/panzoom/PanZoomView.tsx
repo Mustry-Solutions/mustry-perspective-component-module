@@ -11,8 +11,10 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { PzLabels, pzLabelBase } from '../../shared/labelPacks';
 import {
-    PzPoint, PzViewport, clampCenter, clampZoom, fitZoom, flyStep, homeViewport,
-    panBy, pinchViewport, resolveViewport, viewTransform, zoomAt
+    PzPoi, PzPoint, PzViewport, clampCenter, clampZoom, contentFullyVisible,
+    contentToViewportPt, edgeIndicator, fitZoom, flyStep, homeViewport,
+    minimapLayout, minimapViewRect, panBy, pinchViewport, resolveViewport,
+    viewTransform, zoomAt
 } from './panZoomLogic';
 import { PanZoomProps, mapPanZoomProps } from './pzProps';
 
@@ -51,6 +53,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     // fly-to animation (visual only — the target is already in props)
     private flyRaf = 0;
     private flyTimeout = 0;
+    private miniRef = React.createRef<HTMLDivElement>();
+    private pendingTarget = '';   // state.target pre-set before the first measure
 
     constructor(props: ComponentProps<PanZoomProps>) {
         super(props);
@@ -73,6 +77,10 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         el?.addEventListener('pointermove', this.onPointerMove);
         window.addEventListener('pointerup', this.onPointerUp);
         window.addEventListener('pointercancel', this.onPointerUp);
+        // a target pre-set before we can measure flies once the size is known
+        if (this.props.props.target) {
+            this.pendingTarget = this.props.props.target;
+        }
     }
 
     componentDidUpdate(prevProps: ComponentProps<PanZoomProps>): void {
@@ -95,6 +103,16 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 this.startFly(q);
             }
         }
+        // A name written to state.target flies to that POI (and clears the target
+        // so the same name can be written again).
+        if (p.target && p.target !== q.target && !this.pendingTarget) {
+            const poi = p.pois.find((x) => x.name === p.target);
+            if (poi) {
+                this.flyToPoi(poi);
+            } else {
+                this.props.store.props.write('state.target', '');
+            }
+        }
     }
 
     componentWillUnmount(): void {
@@ -115,7 +133,17 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     private measure(): void {
         const el = this.viewportRef.current;
         if (el && (el.clientWidth !== this.state.viewportW || el.clientHeight !== this.state.viewportH)) {
-            this.setState({ viewportW: el.clientWidth, viewportH: el.clientHeight });
+            this.setState({ viewportW: el.clientWidth, viewportH: el.clientHeight }, () => {
+                if (this.pendingTarget && this.state.viewportW > 0) {
+                    const poi = this.props.props.pois.find((x) => x.name === this.pendingTarget);
+                    this.pendingTarget = '';
+                    if (poi) {
+                        this.flyToPoi(poi);
+                    } else {
+                        this.props.store.props.write('state.target', '');
+                    }
+                }
+            });
         }
     }
 
@@ -151,6 +179,12 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     /** Animate from what's on screen to the (already-in-props) target. Visual only:
      *  the draft interpolates and then clears so props lead again — no state writes. */
     private startFly(prev: PanZoomProps): void {
+        const from = this.state.draft || this.resolveFor(prev.zoom, prev.center);
+        const p = this.props.props;
+        this.animateTo(from, this.resolveFor(p.zoom, p.center));
+    }
+
+    private animateTo(from: PzViewport, target: PzViewport): void {
         const p = this.props.props;
         this.cancelFly();
         // rAF doesn't fire in background/hidden tabs — snap there instead of animating
@@ -158,8 +192,6 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
             this.setState({ draft: null });
             return;
         }
-        const from = this.state.draft || this.resolveFor(prev.zoom, prev.center);
-        const target = this.resolveFor(p.zoom, p.center);
         if (Math.abs(from.zoom - target.zoom) < 1e-6
             && Math.abs(from.center.x - target.center.x) < 0.5
             && Math.abs(from.center.y - target.center.y) < 0.5) {
@@ -202,21 +234,43 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         if (this.writeTimer) {
             window.clearTimeout(this.writeTimer);
         }
-        const write = (): void => {
-            const sig = `${clamped.zoom.toFixed(4)}|${Math.round(clamped.center.x)}|${Math.round(clamped.center.y)}`;
-            if (sig !== this.lastWritten) {
-                this.lastWritten = sig;
-                this.props.store.props.write('state', {
-                    zoom: clamped.zoom,
-                    center: { x: Math.round(clamped.center.x), y: Math.round(clamped.center.y) }
-                });
-            }
-        };
+        const write = (): void => this.writeState(clamped);
         if (immediate) {
             write();
         } else {
             this.writeTimer = window.setTimeout(write, 200);
         }
+    }
+
+    /** Write a viewport to the two-way state (sig-guarded so its echo never
+     *  re-animates). Always writes the WHOLE state object — including a cleared
+     *  target — because an object write replaces the subtree. */
+    private writeState(vpt: PzViewport): void {
+        const sig = `${vpt.zoom.toFixed(4)}|${Math.round(vpt.center.x)}|${Math.round(vpt.center.y)}`;
+        if (sig !== this.lastWritten) {
+            this.lastWritten = sig;
+            this.props.store.props.write('state', {
+                zoom: vpt.zoom,
+                center: { x: Math.round(vpt.center.x), y: Math.round(vpt.center.y) },
+                target: ''
+            });
+        }
+    }
+
+    /** Fly to a POI: write the destination (own write — no echo re-fly), clear the
+     *  target in the same write, and play the flight locally. */
+    private flyToPoi(poi: PzPoi): void {
+        const p = this.props.props;
+        const cur = this.vp();
+        const zoom = poi.zoom > 0 ? clampZoom(poi.zoom, p.minZoom, p.maxZoom) : cur.zoom;
+        const target: PzViewport = {
+            zoom,
+            center: clampCenter({ x: poi.x, y: poi.y }, zoom, p.contentWidth, p.contentHeight,
+                this.state.viewportW, this.state.viewportH)
+        };
+        this.lastWritten = '';   // force the write even if we're already there
+        this.writeState(target);
+        this.animateTo(cur, target);
     }
 
     // --- gestures -----------------------------------------------------------------
@@ -396,6 +450,120 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         this.applyViewport({ zoom, center: { x: p.contentWidth / 2, y: p.contentHeight / 2 } }, true);
     };
 
+    // --- minimap --------------------------------------------------------------------
+    private onMiniPointerDown = (e: React.PointerEvent, scale: number): void => {
+        e.stopPropagation();   // never starts a viewport pan
+        const el = this.miniRef.current;
+        if (!el || (e.pointerType === 'mouse' && e.button !== 0)) {
+            return;
+        }
+        const toCenter = (clientX: number, clientY: number): PzPoint => {
+            const rect = el.getBoundingClientRect();
+            return { x: (clientX - rect.left) / scale, y: (clientY - rect.top) / scale };
+        };
+        this.applyViewport({ zoom: this.vp().zoom, center: toCenter(e.clientX, e.clientY) });   // jump
+        try {
+            el.setPointerCapture(e.pointerId);
+        } catch (ignored) { /* ignore */ }
+        const move = (ev: PointerEvent): void => {
+            this.applyViewport({ zoom: this.vp().zoom, center: toCenter(ev.clientX, ev.clientY) });
+        };
+        const up = (ev: PointerEvent): void => {
+            el.removeEventListener('pointermove', move);
+            el.removeEventListener('pointerup', up);
+            el.removeEventListener('pointercancel', up);
+            this.applyViewport({ zoom: this.vp().zoom, center: toCenter(ev.clientX, ev.clientY) }, true);
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+        el.addEventListener('pointercancel', up);
+    };
+
+    private renderMinimap(vp: PzViewport): React.ReactNode {
+        const p = this.props.props;
+        if (!p.showMinimap || this.state.viewportW <= 0
+            || contentFullyVisible(vp, p.contentWidth, p.contentHeight, this.state.viewportW, this.state.viewportH)) {
+            return null;
+        }
+        const layout = minimapLayout(p.contentWidth, p.contentHeight, 160, 110);
+        const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
+        return (
+            <div
+                className="pz-minimap"
+                ref={this.miniRef}
+                aria-label={this.labels().overview}
+                style={{ width: layout.w, height: layout.h }}
+                onPointerDown={(e) => this.onMiniPointerDown(e, layout.scale)}
+            >
+                {p.pois.map((poi, i) => (
+                    <div
+                        key={`${poi.name}-${i}`}
+                        className={`pz-mini-poi${poi.flagged ? ' pz-mini-poi--flagged' : ''}`}
+                        style={{ left: poi.x * layout.scale, top: poi.y * layout.scale }}
+                    />
+                ))}
+                <div className="pz-mini-view" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
+            </div>
+        );
+    }
+
+    // --- POIs -----------------------------------------------------------------------
+    /** Flagged POIs: a pulse ring where visible, a clickable edge indicator where not. */
+    private renderPoiOverlays(vp: PzViewport): React.ReactNode {
+        const p = this.props.props;
+        if (this.state.viewportW <= 0) {
+            return null;
+        }
+        return p.pois.filter((poi) => poi.flagged).map((poi, i) => {
+            const pt = contentToViewportPt({ x: poi.x, y: poi.y }, vp, this.state.viewportW, this.state.viewportH);
+            // insets keep the whole chip (max-width 120, translate-centered) inside
+            const ind = edgeIndicator(pt, this.state.viewportW, this.state.viewportH, 64, 18);
+            if (ind.onScreen) {
+                return <div key={`pz-pulse-${i}`} className="pz-pulse" style={{ left: pt.x, top: pt.y }} />;
+            }
+            return (
+                <button
+                    key={`pz-ind-${i}`}
+                    type="button"
+                    className="pz-indicator"
+                    style={{ left: ind.x, top: ind.y }}
+                    title={poi.name}
+                    onClick={() => this.flyToPoi(poi)}
+                >
+                    <svg viewBox="0 0 24 24" style={{ transform: `rotate(${ind.angle}deg)` }} aria-hidden="true">
+                        <path d="M8 5l8 7-8 7z" />
+                    </svg>
+                    <span>{poi.name}</span>
+                </button>
+            );
+        });
+    }
+
+    private renderPoiList(): React.ReactNode {
+        const p = this.props.props;
+        if (!p.showPoiList || p.pois.length === 0) {
+            return null;
+        }
+        const L = this.labels();
+        return (
+            <select
+                className="pz-poi-select"
+                value=""
+                aria-label={L.goTo}
+                onPointerDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                    const poi = p.pois.find((x) => x.name === e.target.value);
+                    if (poi) {
+                        this.flyToPoi(poi);
+                    }
+                }}
+            >
+                <option value="" disabled hidden>{L.goTo}</option>
+                {p.pois.map((poi, i) => <option key={i} value={poi.name}>{poi.name}</option>)}
+            </select>
+        );
+    }
+
     // --- rendering ------------------------------------------------------------------
     private labels(): PzLabels {
         return pzLabelBase(this.props.props.locale);
@@ -463,7 +631,10 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                             <div className="pz-placeholder">{p.viewPath ? '' : 'config.viewPath'}</div>
                         )}
                     </div>
+                    {this.renderPoiOverlays(vp)}
                     {this.renderControls()}
+                    {this.renderPoiList()}
+                    {this.renderMinimap(vp)}
                     <div className="pz-zoom-badge">{Math.round(vp.zoom * 100)}%</div>
                 </div>
             </div>

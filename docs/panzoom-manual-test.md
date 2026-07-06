@@ -60,10 +60,32 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       follow the theme (`--pz-*` vars); verified against the `dark` session
       theme.
 
+## Navigation aids (M3)
+
+- [ ] **POIs** (`data.pois`, `[{name, x, y, zoom, flagged}]`): the localized
+      "Go to…" list (`config.showPoiList`) flies to the picked POI at its
+      `zoom` (`0` = keep the current zoom); writing a name to `state.target`
+      from a script/binding flies there and the component clears the target
+      back to `''`, so writing the SAME name later re-flies.
+- [ ] **Minimap** (`config.showMinimap`): appears only when part of the
+      content is off-screen; shows POI dots (flagged in the alert color) and
+      the view rectangle; clicking jumps the view there, dragging pans it
+      (zoom unchanged); a press on the minimap never starts a viewport pan.
+- [ ] **Flagged POIs** (bind `flagged` to alarm state): a pulse ring at the
+      POI while it's visible (never blocks clicks — `pointer-events: none`);
+      off-screen, a clickable edge chip (name + arrow rotated toward the real
+      location, fully inside the viewport) that flies to it. The demo's
+      "Toggle Pump 3 alarm" button exercises both live.
+
 ## Verified 2026-07-06 (dev gateway, Chrome)
 
 Everything above except the real-hardware touch pass: fit render 34%,
 embedded click-counter through the transform, wheel 43→53% toward cursor,
 double-click 53→83%, drag/home/fit, scripted fly (snap in hidden tab; frame
 interpolation confirmed via instrumented rAF), synthetic pinch 34→68% exact,
-EN tooltips, dark chrome + pinned demo label colors.
+EN tooltips, dark chrome + pinned demo label colors. M3: Go-to list flies at
+POI zoom (120%), indicator click flies back (150% + pulse), `zoom: 0` keeps
+current zoom, `state.target` re-trigger after self-clear, alarm toggle
+pulse on/off, minimap jump/drag exact (predicted rect (9,20)/(73,49.5) →
+measured (9,19)/(73,49)), minimap auto-hide at fit, chip fully inside the
+viewport at the edge.

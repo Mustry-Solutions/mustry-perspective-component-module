@@ -1,6 +1,6 @@
 // Prop-tree -> typed props for the Pan & Zoom View.
 import { PropReader } from '../../shared/propReader';
-import { PzHome, PzPoint } from './panZoomLogic';
+import { PzHome, PzPoi, PzPoint } from './panZoomLogic';
 
 export interface PanZoomProps {
     viewPath: string;
@@ -15,9 +15,13 @@ export interface PanZoomProps {
     showControls: boolean;
     locale: string;
     flyToMs: number;     // externally-written state.zoom/center animate over this; 0 = snap
+    showMinimap: boolean;
+    showPoiList: boolean;
     home: PzHome;
+    pois: PzPoi[];       // data.pois — named fly-to targets
     zoom: number;        // state.zoom (two-way; <= 0 = unset -> home)
     center: PzPoint;     // state.center (two-way, content coords)
+    target: string;      // state.target (two-way) — write a POI name to fly there; cleared by the component
 }
 
 export function mapPanZoomProps(tree: PropReader): PanZoomProps {
@@ -51,12 +55,24 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         showControls: tree.readBoolean('config.showControls', true),
         locale: tree.readString('config.locale', ''),
         flyToMs: Math.min(5000, Math.max(0, num('config.flyToMs', 350))),
+        showMinimap: tree.readBoolean('config.showMinimap', true),
+        showPoiList: tree.readBoolean('config.showPoiList', true),
         home: {
             x: num('config.home.x', -1),
             y: num('config.home.y', -1),
             zoom: num('config.home.zoom', 0)
         },
+        pois: (tree.readArray('data.pois', []) || [])
+            .map((e: any): PzPoi => ({
+                name: String((e && e.name) || ''),
+                x: Number(e && e.x) || 0,
+                y: Number(e && e.y) || 0,
+                zoom: Number(e && e.zoom) || 0,
+                flagged: !!(e && e.flagged)
+            }))
+            .filter((poi: PzPoi) => poi.name !== ''),
         zoom: num('state.zoom', 0),
-        center: { x: num('state.center.x', 0), y: num('state.center.y', 0) }
+        center: { x: num('state.center.x', 0), y: num('state.center.y', 0) },
+        target: tree.readString('state.target', '')
     };
 }

@@ -18,6 +18,8 @@
         "showControls": true,
         "locale": "",
         "flyToMs": 350,
+        "showMinimap": true,
+        "showPoiList": true,
         "home": { "x": -1, "y": -1, "zoom": 0 }
       },
       "properties": {
@@ -62,6 +64,16 @@
           "description": "When a script/binding writes state.zoom/center, the viewport animates there over this many ms (0 = snap).",
           "default": 350
         },
+        "showMinimap": {
+          "type": "boolean",
+          "description": "Corner overview with a draggable view rectangle and POI dots. Hides itself while the whole content is visible.",
+          "default": true
+        },
+        "showPoiList": {
+          "type": "boolean",
+          "description": "'Go to…' dropdown over the viewport when data.pois is non-empty.",
+          "default": true
+        },
         "home": {
           "type": "object",
           "description": "The reset target (and initial position while state.zoom is unset): a content-coordinate center point and zoom. x/y -1 = content center; zoom 0 = fit.",
@@ -73,11 +85,34 @@
         }
       }
     },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bound content: named points of interest.",
+      "default": { "pois": [] },
+      "properties": {
+        "pois": {
+          "type": "array",
+          "description": "Named fly-to targets in content coordinates. Write a name to state.target (or pick it in the 'Go to…' list) to fly there. Flagged POIs get an edge indicator when off-screen and a pulse ring when visible — bind flagged to alarm state.",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "description": "Unique display name (the fly-to key)." },
+              "x": { "type": "number", "description": "Content x." },
+              "y": { "type": "number", "description": "Content y." },
+              "zoom": { "type": "number", "description": "Zoom to fly to (0 = keep the current zoom)." },
+              "flagged": { "type": "boolean", "description": "Highlight this POI (edge indicator off-screen, pulse ring on-screen)." }
+            }
+          }
+        }
+      }
+    },
     "state": {
       "type": "object",
       "additionalProperties": false,
       "description": "Two-way runtime state: navigation writes back here, and writing values drives the viewport (fly-to from bindings/scripts).",
-      "default": { "zoom": 0, "center": { "x": 0, "y": 0 } },
+      "default": { "zoom": 0, "center": { "x": 0, "y": 0 }, "target": "" },
       "properties": {
         "zoom": {
           "type": "number",
@@ -91,6 +126,10 @@
             "x": { "type": "number", "default": 0 },
             "y": { "type": "number", "default": 0 }
           }
+        },
+        "target": {
+          "type": "string",
+          "description": "Write a data.pois name to fly to it; the component clears this back to '' after starting the flight (so the same name can be written again)."
         }
       }
     },

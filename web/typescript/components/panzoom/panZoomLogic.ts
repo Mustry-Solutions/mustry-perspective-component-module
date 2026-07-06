@@ -130,6 +130,65 @@ export function pinchViewport(startVp: PzViewport, startMid: PzPoint, mid: PzPoi
     };
 }
 
+/** A named point of interest (data.pois): a fly-to target by name; `zoom` 0 keeps
+ *  the current zoom when flying; `flagged` drives edge indicators + pulse ring. */
+export interface PzPoi {
+    name: string;
+    x: number;
+    y: number;
+    zoom: number;
+    flagged: boolean;
+}
+
+/** A content point in viewport pixels under the given viewport. */
+export function contentToViewportPt(pt: PzPoint, vp: PzViewport, viewportW: number, viewportH: number): PzPoint {
+    const t = viewTransform(vp, viewportW, viewportH);
+    return { x: pt.x * vp.zoom + t.tx, y: pt.y * vp.zoom + t.ty };
+}
+
+/** True when the whole content fits inside the viewport (nothing to navigate —
+ *  the minimap hides itself). */
+export function contentFullyVisible(vp: PzViewport, contentW: number, contentH: number,
+                                    viewportW: number, viewportH: number): boolean {
+    return contentW * vp.zoom <= viewportW + 0.5 && contentH * vp.zoom <= viewportH + 0.5;
+}
+
+/** Minimap geometry: the content scaled into a maxW×maxH box (aspect preserved). */
+export function minimapLayout(contentW: number, contentH: number, maxW: number, maxH: number):
+    { w: number; h: number; scale: number } {
+    if (contentW <= 0 || contentH <= 0) {
+        return { w: maxW, h: maxH, scale: 1 };
+    }
+    const scale = Math.min(maxW / contentW, maxH / contentH);
+    return { w: Math.max(1, Math.round(contentW * scale)), h: Math.max(1, Math.round(contentH * scale)), scale };
+}
+
+/** The current viewport as a rectangle in minimap pixels. */
+export function minimapViewRect(vp: PzViewport, viewportW: number, viewportH: number, scale: number):
+    { x: number; y: number; w: number; h: number } {
+    const w = (viewportW / vp.zoom) * scale;
+    const h = (viewportH / vp.zoom) * scale;
+    return {
+        x: vp.center.x * scale - w / 2,
+        y: vp.center.y * scale - h / 2,
+        w,
+        h
+    };
+}
+
+/** Where a (possibly off-screen) point's edge indicator sits: the point clamped
+ *  into the viewport with an inset margin per axis (the chip is wider than
+ *  tall), plus the angle (deg, 0 = right) from the indicator toward the real
+ *  point. `onScreen` = no indicator needed. */
+export function edgeIndicator(poiPt: PzPoint, viewportW: number, viewportH: number,
+                              insetX: number, insetY: number):
+    { onScreen: boolean; x: number; y: number; angle: number } {
+    const onScreen = poiPt.x >= 0 && poiPt.x <= viewportW && poiPt.y >= 0 && poiPt.y <= viewportH;
+    const x = Math.max(insetX, Math.min(viewportW - insetX, poiPt.x));
+    const y = Math.max(insetY, Math.min(viewportH - insetY, poiPt.y));
+    return { onScreen, x, y, angle: Math.atan2(poiPt.y - y, poiPt.x - x) * 180 / Math.PI };
+}
+
 /** The viewport at progress k (0..1) of a fly-to animation: ease-in-out, with the
  *  zoom interpolated in log space (a constant zoom-FACTOR per step feels linear). */
 export function flyStep(from: PzViewport, target: PzViewport, k: number): PzViewport {

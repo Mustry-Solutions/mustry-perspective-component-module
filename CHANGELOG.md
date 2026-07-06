@@ -208,6 +208,24 @@ M2 polish (same cut):
 - Manual checklist: docs/panzoom-manual-test.md; dark-mode pass done
   (`--pz-*` chrome verified against the dark session theme).
 
+M3 navigation aids (same cut):
+- **POIs** (`data.pois`, `[{name, x, y, zoom, flagged}]`): named fly-to
+  targets. Write a name to new two-way **`state.target`** to fly there from
+  any script/binding — no coordinates needed; the component clears the
+  target back to `''` so the same name re-triggers. `zoom` 0 keeps the
+  current zoom. A localized **"Go to…" list** over the viewport
+  (`config.showPoiList`) offers them to the operator.
+- **Minimap** (`config.showMinimap`): corner overview with the content box,
+  POI dots and the current view rectangle — click to jump, drag to pan
+  (zoom unchanged). Auto-hides while the whole content is visible.
+- **Flagged POIs** (`flagged: true` — bind it to alarm state): a pulse ring
+  marks the POI while visible (click-transparent), and when it's off-screen
+  a clickable **edge indicator** chip (name + arrow toward the real
+  location) flies to it — the viewport tells the operator where to look.
+- `pinchViewport`/`edgeIndicator`/minimap geometry all pure + unit-tested
+  (387 tests); demo gained POIs, a `state.target` fly button and an alarm
+  toggle.
+
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with
   script transforms seed the data relative to today on every view load

@@ -6,6 +6,7 @@
     --pz-border: var(--neutral-30, #d1d5db);
     --pz-bg: var(--neutral-10, #ffffff);
     --pz-canvas: var(--neutral-20, #eceff3);   // behind/around the content
+    --pz-alert: var(--error, #dc2626);         // flagged POIs (indicators + pulse)
 }
 
 .mustry-panzoom {
@@ -102,4 +103,128 @@
     background: color-mix(in srgb, var(--pz-bg) 80%, transparent);
     border: 1px solid var(--pz-border);
     pointer-events: none;
+}
+
+.pz-poi-select {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 5;
+    max-width: 45%;
+    padding: 4px 8px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--pz-text);
+    background: var(--pz-bg);
+    border: 1px solid var(--pz-border);
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--pz-accent);
+    }
+}
+
+.pz-minimap {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    z-index: 6;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--pz-bg) 85%, transparent);
+    border: 1px solid var(--pz-border);
+    border-radius: 4px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.pz-mini-view {
+    position: absolute;
+    border: 1px solid var(--pz-accent);
+    background: color-mix(in srgb, var(--pz-accent) 15%, transparent);
+    pointer-events: none;
+}
+
+.pz-mini-poi {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 -2.5px;   // center on the coordinate
+    border-radius: 50%;
+    background: var(--pz-muted);
+    pointer-events: none;
+
+    &--flagged {
+        background: var(--pz-alert);
+    }
+}
+
+// Flagged POI currently in view: a fixed-size ring pulsing at its location.
+.pz-pulse {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border: 3px solid var(--pz-alert);
+    border-radius: 50%;
+    pointer-events: none;   // never blocks clicks into the embedded view
+    z-index: 4;
+    animation: pz-pulse-anim 1.4s ease-out infinite;
+}
+
+@keyframes pz-pulse-anim {
+    0% {
+        transform: scale(0.55);
+        opacity: 0.9;
+    }
+
+    70% {
+        transform: scale(1.25);
+        opacity: 0.25;
+    }
+
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+// Off-screen flagged POI: a clickable chip at the viewport edge, arrow rotated
+// toward the real location; clicking flies there.
+.pz-indicator {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 7;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    max-width: 120px;
+    padding: 3px 8px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pz-bg);
+    background: var(--pz-alert);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+
+    &:hover {
+        filter: brightness(1.1);
+    }
+
+    svg {
+        flex: 0 0 auto;
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+    }
+
+    span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
