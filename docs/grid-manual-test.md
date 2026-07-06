@@ -71,6 +71,24 @@ with full write-back scripts (batch mode).
       CURRENT (filtered) view, sticky at the bottom, locale-formatted; empty
       cells are absent, not zero (avg/min unaffected by blanks).
 
+## Stress (`/grid-stress`, 50,000 generated rows)
+
+Fixture generates its rows per view load (5.6 KB committed — no repo bloat).
+Measured 2026-07-06 on the dev gateway:
+
+- [ ] Loads and renders (cold load ≈ 25–40 s: the ~6 MB initial props sync is
+      the real cost at this size — see the plan's guidance). ~23 DOM rows at
+      any position; scrollbar exact over 1.6 M px.
+- [ ] Sort click over 50k: ~140 ms round-trip. Quick filter: ≤ 55 ms per
+      keystroke (matches displayed text across 10 columns). Selection click:
+      ~2 ms. Footer sum over 50k updates with the view.
+- [ ] Filter while scrolled deep: the view renders the TAIL, never a blank
+      grid (stale-scrollTop clamp).
+- [ ] ⚠️ Known constraint: syncing the 6 MB payload in a BACKGROUND/throttled
+      tab can drop the session websocket ("WebSocket disconnected" in the
+      gateway log) and stick at "Synchronizing" — load it foregrounded, or
+      keep datasets this size behind a query filter.
+
 ## Touch (⚠️ joins the standing real-hardware item)
 
 > Same status as the calendar/timeline: pointer-events based, never verified on

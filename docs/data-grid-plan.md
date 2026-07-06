@@ -77,9 +77,13 @@ dropdown-in-cell thread cluster, and the multi-row delete how-to genre.
 ## Settled decisions (proposed)
 
 1. **Client-side row model only**, documented for ≤ ~50k rows (virtualized
-   rendering, but all rows in the prop). The house windowed-binding recipe
-   (`output.visibleStart/End`) doesn't apply; instead document
-   filter-at-the-query pattern + `config.loading` stale-while-revalidate.
+   rendering, but all rows in the prop). VALIDATED at 50k (2026-07-06,
+   `/grid-stress`): interaction is fine (sort ~140 ms, filter ≤ 55 ms per
+   keystroke, selection ~2 ms, exact virtualization) — the binding payload is
+   the real constraint (~6 MB ≈ 25–40 s initial sync; background tabs can
+   drop the websocket mid-sync). Practical guidance: ≤ ~10k rows for snappy
+   loads; filter at the query above that; `config.loading` for
+   stale-while-revalidate.
 2. **Sections follow the house contract**: `config` (columns, options,
    permissions), `data` (rows), `state` (two-way: selection, sort, filter,
    column widths/order), `output` (read-only: derived counts), plus events.

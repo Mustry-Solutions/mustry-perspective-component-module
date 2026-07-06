@@ -1,0 +1,180 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1100,
+      "height": 620
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Grid STRESS fixture — 50,000 generated rows (the schema's documented ceiling). Exercise: initial load, deep scroll, sort, quick filter per keystroke, selection, batch edits, the Qty sum footer over 50k, CSV export (~6 MB).",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1060,
+          "height": 34
+        }
+      },
+      {
+        "type": "mustrysolutions.input.datagrid",
+        "version": 0,
+        "props": {
+          "config": {
+            "rowHeight": 32,
+            "idField": "wo",
+            "rowSelect": "multi",
+            "editable": true,
+            "editMode": "batch",
+            "allowAdd": false,
+            "allowDelete": true,
+            "showExport": true,
+            "columns": [
+              {
+                "field": "wo",
+                "header": "Order",
+                "width": 120,
+                "pinned": true,
+                "editable": false
+              },
+              {
+                "field": "product",
+                "header": "Product",
+                "width": 150
+              },
+              {
+                "field": "line",
+                "header": "Line",
+                "width": 90,
+                "options": [
+                  "Line 1",
+                  "Line 2",
+                  "Line 3",
+                  "Line 4"
+                ]
+              },
+              {
+                "field": "qty",
+                "header": "Qty",
+                "width": 80,
+                "type": "number",
+                "required": true,
+                "min": 0,
+                "max": 999,
+                "aggregate": "sum",
+                "cellStyles": [
+                  {
+                    "gt": 900,
+                    "background": "#fde68a"
+                  }
+                ]
+              },
+              {
+                "field": "customer",
+                "header": "Customer",
+                "width": 160
+              },
+              {
+                "field": "batch",
+                "header": "Batch",
+                "width": 120
+              },
+              {
+                "field": "status",
+                "header": "Status",
+                "width": 110,
+                "options": [
+                  "draft",
+                  "released",
+                  "running",
+                  "done",
+                  "on hold"
+                ],
+                "cellStyles": [
+                  {
+                    "equals": "running",
+                    "color": "#16a34a"
+                  },
+                  {
+                    "equals": "on hold",
+                    "color": "#d97706"
+                  }
+                ]
+              },
+              {
+                "field": "priority",
+                "header": "Priority",
+                "width": 90,
+                "align": "center",
+                "cellStyles": [
+                  {
+                    "equals": "urgent",
+                    "color": "#dc2626"
+                  }
+                ]
+              },
+              {
+                "field": "due",
+                "header": "Due",
+                "width": 130,
+                "type": "date"
+              },
+              {
+                "field": "notes",
+                "header": "Notes",
+                "width": 320
+              }
+            ]
+          },
+          "data": {
+            "rows": []
+          }
+        },
+        "propConfig": {
+          "props.data.rows": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(0)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# Stress fixture: 50,000 rows generated per view load (now(0) = once).\n\t# Committed view stays tiny; the payload itself (~6 MB over the session\n\t# socket) is part of what this fixture stresses.\n\td0 = system.date.midnight(value)\n\tproducts = [\"Widget A\", \"Widget B\", \"Gasket 12mm\", \"Flange XL\", \"Bearing 6204\", \"Valve V2\", \"Seal Kit\", \"Rotor R9\"]\n\tstatuses = [\"draft\", \"released\", \"running\", \"done\", \"on hold\"]\n\tprios = [\"low\", \"normal\", \"high\", \"urgent\"]\n\trows = []\n\tfor i in range(50000):\n\t\trows.append({\n\t\t\t\"wo\": \"WO-%06d\" % (100000 + i),\n\t\t\t\"product\": products[i % 8],\n\t\t\t\"line\": \"Line %d\" % (1 + i % 4),\n\t\t\t\"qty\": 10 + (i * 7) % 990,\n\t\t\t\"customer\": \"Customer %02d\" % (1 + i % 17),\n\t\t\t\"batch\": \"B-%05d\" % (20000 + i // 5),\n\t\t\t\"status\": statuses[i % 5],\n\t\t\t\"priority\": prios[(i // 3) % 4],\n\t\t\t\"due\": system.date.format(system.date.addDays(d0, i % 30), \"yyyy-MM-dd\"),\n\t\t\t\"notes\": (\"Rework after QA hold lot %d\" % i) if i % 11 == 0 else \"\"\n\t\t})\n\treturn rows\n"
+                }
+              ]
+            }
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "grid"
+        },
+        "position": {
+          "x": 16,
+          "y": 50,
+          "width": 1068,
+          "height": 550
+        }
+      }
+    ]
+  }
+}

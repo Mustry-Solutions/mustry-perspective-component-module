@@ -154,6 +154,14 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   mode). **Aggregate footers** (`column.aggregate`: sum/avg/min/max/count)
   over the current view, sticky + locale-formatted; empty cells are absent,
   not zero. Manual checklist: docs/grid-manual-test.md.
+- **50k-row claim validated** (`/grid-stress`, generated fixture — 5.6 KB
+  committed): sort ~140 ms, quick filter ≤ 55 ms/keystroke, selection ~2 ms,
+  exact virtualization at any depth. The honest constraint is the initial
+  ~6 MB props sync (25–40 s; background tabs can drop the session websocket)
+  — guidance documented: prefer query-side filtering above ~10k rows.
+  **Fixed** (found by the stress test): filtering while scrolled deep left a
+  blank grid — the virtualization window now clamps both ends into the
+  dataset and renders the tail.
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with

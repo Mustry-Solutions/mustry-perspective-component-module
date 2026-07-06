@@ -27,6 +27,14 @@ describe('visibleRowRange (row virtualization window)', () => {
         expect(visibleRowRange(0, 0, 32, 100).last).toBeLessThan(0);
     });
 
+    it('stale scrollTop beyond a shrunk view renders the tail, never nothing', () => {
+        // filtered from 50k to 100 rows while scrolled to row ~25,000
+        const r = visibleRowRange(800000, 320, 32, 100);
+        expect(r.first).toBeLessThanOrEqual(r.last);
+        expect(r.last).toBe(99);
+        expect(r.first).toBe(99);   // clamped into the dataset
+    });
+
     it('fractional scroll positions still cover the viewport', () => {
         const r = visibleRowRange(1000, 500, 32, 10000);
         expect(r.first * 32).toBeLessThanOrEqual(1000);

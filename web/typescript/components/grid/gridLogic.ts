@@ -54,9 +54,12 @@ export function visibleRowRange(scrollTop: number, viewportHeight: number, rowHe
     if (rowCount <= 0 || viewportHeight <= 0) {
         return { first: 0, last: -1 };
     }
-    const first = Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN_ROWS);
+    // Clamp BOTH ends into the dataset: scrollTop can be stale-beyond-the-end for
+    // a frame when filtering shrinks the view (the browser clamps scrollTop and
+    // fires the scroll event asynchronously) — render the tail rather than nothing.
+    const first = Math.max(0, Math.min(Math.floor(scrollTop / rowHeight) - OVERSCAN_ROWS, rowCount - 1));
     const last = Math.min(rowCount - 1, Math.ceil((scrollTop + viewportHeight) / rowHeight) + OVERSCAN_ROWS);
-    return { first, last };
+    return { first, last: Math.max(first, last) };
 }
 
 /** A column with its resolved geometry. Pinned columns carry the sticky `left`

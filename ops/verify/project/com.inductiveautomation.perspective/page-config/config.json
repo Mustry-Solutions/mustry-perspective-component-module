@@ -20,6 +20,10 @@
       "viewPath": "GridDemo",
       "viewParams": {}
     },
+    "/grid-stress": {
+      "viewPath": "GridStress",
+      "viewParams": {}
+    },
     "/picker": {
       "viewPath": "Main",
       "viewParams": {}
