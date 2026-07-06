@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Data Grid demo (M2) — EDITING: double-click a cell (or Enter/F2/type on the focused cell) to edit; Enter/Tab commit + move, Escape reverts. Qty validates 0-999 required; Line/Status/Priority are dropdowns; Order is locked. + adds a row, the trash deletes selected. Edits persist via onCellEdit write-back. Everything from M0/M1 still applies (sort/filter/select/reorder/resize/hide/CSV).",
+          "text": "Data Grid demo (M3) — BATCH editing: edits accumulate (italic + dot + '{n} unsaved'), Save fires one onBatchSave, Discard reverts; paste a TSV range from Excel onto the focused cell; the footer sums Qty over the current view. Everything else still applies (sort/filter/select/reorder/resize/hide/CSV, validation, dropdowns, +/trash).",
           "style": {
             "fontSize": "13px"
           }
@@ -157,7 +157,8 @@
                 ],
                 "required": true,
                 "min": 0,
-                "max": 999
+                "max": 999,
+                "aggregate": "sum"
               },
               {
                 "field": "customer",
@@ -234,7 +235,8 @@
             "showExport": true,
             "editable": true,
             "allowAdd": true,
-            "allowDelete": true
+            "allowDelete": true,
+            "editMode": "batch"
           },
           "data": {
             "rows": []
@@ -292,6 +294,15 @@
                 "scope": "G",
                 "config": {
                   "script": "\t# Remove the selected rows.\n\tdoomed = set([str(i) for i in event.rowIds])\n\tself.props.data.rows = [dict(r) for r in self.props.data.rows if str(r.get(\"wo\")) not in doomed]\n"
+                }
+              }
+            ],
+            "onBatchSave": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Persist a batch save: apply every changed row by id, then rebind.\n\trows = [dict(r) for r in self.props.data.rows]\n\tchanged = {str(r[\"wo\"]): dict(r) for r in event.rows}\n\tfor i in range(len(rows)):\n\t\tk = str(rows[i].get(\"wo\"))\n\t\tif k in changed:\n\t\t\trows[i] = changed[k]\n\tself.props.data.rows = rows\n"
                 }
               }
             ]

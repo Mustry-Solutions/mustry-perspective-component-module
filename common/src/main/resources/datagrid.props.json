@@ -17,7 +17,8 @@
         "showExport": false,
         "editable": false,
         "allowAdd": false,
-        "allowDelete": false
+        "allowDelete": false,
+        "editMode": "cell"
       },
       "properties": {
         "columns": {
@@ -130,6 +131,19 @@
                 "type": "array",
                 "description": "Non-empty = dropdown editor restricted to these (strings, or {value, label}).",
                 "default": []
+              },
+              "aggregate": {
+                "type": "string",
+                "enum": [
+                  "",
+                  "sum",
+                  "avg",
+                  "min",
+                  "max",
+                  "count"
+                ],
+                "description": "Footer aggregate over the current (filtered) view.",
+                "default": ""
               }
             }
           }
@@ -209,6 +223,18 @@
             "errOption": {
               "type": "string",
               "description": "Validation: not one of options."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Batch mode: dirty badge; '{n}' = count."
+            },
+            "save": {
+              "type": "string",
+              "description": "Batch mode: save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Batch mode: discard button tooltip."
             }
           }
         },
@@ -251,6 +277,15 @@
           "type": "boolean",
           "description": "Toolbar delete button for the selected rows (fires onRowsDelete).",
           "default": false
+        },
+        "editMode": {
+          "type": "string",
+          "enum": [
+            "cell",
+            "batch"
+          ],
+          "description": "'cell' fires onCellEdit per commit; 'batch' accumulates dirty cells (badge + Save/Discard in the toolbar, count in output.dirtyCount) and fires ONE onBatchSave.",
+          "default": "cell"
         }
       }
     },
@@ -349,6 +384,21 @@
               "default": []
             }
           }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values.",
+      "default": {
+        "dirtyCount": 0
+      },
+      "properties": {
+        "dirtyCount": {
+          "type": "number",
+          "description": "Batch mode: committed-but-unsaved cell edits (0 in cell mode once write-backs land).",
+          "default": 0
         }
       }
     },

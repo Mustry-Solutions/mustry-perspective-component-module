@@ -34,6 +34,7 @@ export interface GridColumn {
     max?: number;
     pattern: string;      // text columns: regex the value must match
     options: SelectOption[];   // non-empty -> dropdown editor restricted to these
+    aggregate: '' | 'sum' | 'avg' | 'min' | 'max' | 'count';   // footer aggregate over the view
 }
 
 export const MIN_COL_PX = 40;
@@ -421,4 +422,102 @@ export function nextCell(pos: CellPos, key: string, rowCount: number, colCount: 
         row: Math.max(0, Math.min(rowCount - 1, row)),
         col: Math.max(0, Math.min(colCount - 1, col))
     };
+}
+
+// --- M3: batch save / range paste / aggregates --------------------------------------
+
+export interface PendingEdit {
+    rowId: string;
+    field: string;
+    oldValue: unknown;
+    newValue: unknown;
+}
+
+/** The batch-save payload from the pending map: per-cell edits plus each
+ *  changed row with ALL its pending values applied. */
+export function batchPayload<T extends Record<string, unknown>>(
+    pending: Record<string, unknown>, rows: T[], idField: string
+): { edits: PendingEdit[]; rows: Array<Record<string, unknown>> } {
+    const byId = new Map<string, T>();
+    rows.forEach((r) => byId.set(cellText(r[idField]), r));
+    const edits: PendingEdit[] = [];
+    const changed = new Map<string, Record<string, unknown>>();
+    Object.keys(pending).forEach((k) => {
+        const sep = k.indexOf('::');
+        const rowId = k.slice(0, sep);
+        const field = k.slice(sep + 2);
+        const row = byId.get(rowId);
+        if (!row) {
+            return;   // the row left the dataset while the edit was pending
+        }
+        edits.push({ rowId, field, oldValue: row[field] === undefined ? null : row[field], newValue: pending[k] });
+        const acc = changed.get(rowId) || { ...row };
+        acc[field] = pending[k];
+        changed.set(rowId, acc);
+    });
+    return { edits, rows: Array.from(changed.values()) };
+}
+
+/** Parse clipboard text into a paste matrix (TSV rows, Excel/Sheets format). */
+export function parsePasteMatrix(text: string): string[][] {
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    while (lines.length && lines[lines.length - 1] === '') {
+        lines.pop();   // trailing newline from a copied range
+    }
+    return lines.map((l) => l.split('\t'));
+}
+
+export interface PasteTarget {
+    row: number;      // view index
+    col: number;      // effective-columns index
+    draft: string;
+}
+
+/** Map a paste matrix onto the grid from the focused cell: consecutive visible
+ *  columns rightward, rows downward; cells over non-editable columns or past
+ *  the edges are dropped (the caller validates + commits what remains). */
+export function pastePlan(matrix: string[][], start: CellPos, columns: GridColumn[], rowCount: number): PasteTarget[] {
+    const out: PasteTarget[] = [];
+    for (let r = 0; r < matrix.length; r++) {
+        const row = start.row + r;
+        if (row >= rowCount) {
+            break;
+        }
+        for (let c = 0; c < matrix[r].length; c++) {
+            const col = start.col + c;
+            if (col >= columns.length) {
+                break;
+            }
+            if (columns[col].editable) {
+                out.push({ row, col, draft: matrix[r][c] });
+            }
+        }
+    }
+    return out;
+}
+
+/** A column's footer aggregate over the current view ('' when not configured;
+ *  count counts non-empty cells; the numeric aggregates ignore non-numbers). */
+export function aggregateValue<T extends Record<string, unknown>>(rows: T[], col: GridColumn): number | null {
+    if (!col.aggregate) {
+        return null;
+    }
+    if (col.aggregate === 'count') {
+        return rows.reduce((n, r) => (r[col.field] === null || r[col.field] === undefined || r[col.field] === '' ? n : n + 1), 0);
+    }
+    const nums = rows
+        .map((r) => r[col.field])
+        .filter((v) => v !== null && v !== undefined && v !== '')   // empties are absent, not zero
+        .map((v) => (typeof v === 'number' ? v : Number(v)))
+        .filter((n) => Number.isFinite(n));
+    if (!nums.length) {
+        return null;
+    }
+    switch (col.aggregate) {
+        case 'sum': return nums.reduce((a, b) => a + b, 0);
+        case 'avg': return nums.reduce((a, b) => a + b, 0) / nums.length;
+        case 'min': return Math.min(...nums);
+        case 'max': return Math.max(...nums);
+        default: return null;
+    }
 }

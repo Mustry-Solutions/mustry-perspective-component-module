@@ -1,0 +1,7 @@
+{
+    "type": "object",
+    "properties": {
+        "edits": { "type": "array", "description": "Every dirty cell: {rowId, field, oldValue, newValue}." },
+        "rows": { "type": "array", "description": "Each changed row with ALL its pending values applied — usually the easiest thing to persist (one UPDATE per row), then rebind data.rows." }
+    }
+}

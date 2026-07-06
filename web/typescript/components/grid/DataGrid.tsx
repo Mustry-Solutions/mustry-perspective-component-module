@@ -12,8 +12,9 @@ import { CSV_BOM, csvCell } from '../../shared/csv';
 import { DocDismiss } from '../../shared/dismiss';
 import {
     CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
-    cellText, columnLayout, editDraft, effectiveColumns, formatCell, gridIsEmpty, gridToCsv,
-    matchStyle, nextCell, nextSelection, nextSort, quickFilterRows, reorderFields, sortRows,
+    aggregateValue, batchPayload, cellText, columnLayout, editDraft, effectiveColumns,
+    formatCell, gridIsEmpty, gridToCsv, matchStyle, nextCell, nextSelection, nextSort,
+    parsePasteMatrix, pastePlan, quickFilterRows, reorderFields, sortRows,
     validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
@@ -92,9 +93,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (this.state.filterDraft !== null && this.state.filterDraft === this.props.props.quickFilter) {
             this.setState({ filterDraft: null });   // the write echoed back; the prop leads again
         }
-        if (prevProps.props.rows !== this.props.props.rows && Object.keys(this.state.pending).length) {
-            this.setState({ pending: {} });         // the write-back rebound the rows
-        }
+        this.reconcilePending();
     }
 
     componentWillUnmount(): void {
@@ -274,9 +273,60 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         this.setState({ editing: null }, () => this.scrollRef.current?.focus());
     }
 
-    private fireCellEdit(row: Row, field: string, oldValue: unknown, newValue: unknown): void {
+    private lastDirtyCount = -1;
+
+    private setPending(pending: Record<string, unknown>): void {
+        this.setState({ pending });
+        const n = Object.keys(pending).length;
+        if (n !== this.lastDirtyCount) {
+            this.lastDirtyCount = n;
+            this.props.store.props.write('output.dirtyCount', n);
+        }
+    }
+
+    /** Drop pending entries whose value now matches the bound data — the author's
+     *  write-back landed. (Identity checks are useless here: the props reducer
+     *  rebuilds the rows array on EVERY prop write, including our own dirtyCount
+     *  write — comparing values is the only reliable signal.) */
+    private reconcilePending(): void {
+        const pending = this.state.pending;
+        const keys = Object.keys(pending);
+        if (!keys.length) {
+            return;
+        }
+        const p = this.props.props;
+        const byId = new Map<string, Row>();
+        p.rows.forEach((r) => byId.set(this.rowId(r), r));
+        const next: Record<string, unknown> = {};
+        let dropped = false;
+        for (const k of keys) {
+            const sep = k.indexOf('::');
+            const row = byId.get(k.slice(0, sep));
+            if (row && cellText(row[k.slice(sep + 2)]) === cellText(pending[k])) {
+                dropped = true;   // the data caught up with the edit
+            } else {
+                next[k] = pending[k];
+            }
+        }
+        if (dropped) {
+            this.setPending(next);
+        }
+    }
+
+    /** Route a validated value: cell mode fires onCellEdit immediately; batch
+     *  mode only accumulates (Save fires one onBatchSave). Both overlay. When
+     *  `acc` is given (multi-cell paste), the overlay entry goes there instead —
+     *  setState is async, so per-cell setPending calls would clobber each other. */
+    private fireCellEdit(row: Row, field: string, oldValue: unknown, newValue: unknown, acc?: Record<string, unknown>): void {
         const k = `${this.rowId(row)}::${field}`;
-        this.setState({ pending: { ...this.state.pending, [k]: newValue } });
+        if (acc) {
+            acc[k] = newValue;
+        } else {
+            this.setPending({ ...this.state.pending, [k]: newValue });
+        }
+        if (this.props.props.editMode === 'batch') {
+            return;
+        }
         this.fireEvent('onCellEdit', {
             rowId: this.rowId(row),
             field,
@@ -285,6 +335,19 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             row: { ...row, [field]: newValue }
         });
     }
+
+    private saveBatch = (): void => {
+        const p = this.props.props;
+        const payload = batchPayload(this.state.pending, p.rows, p.idField);
+        if (payload.edits.length) {
+            this.fireEvent('onBatchSave', payload);
+        }
+        // the overlay stays until the write-back rebinds data.rows (or Discard)
+    };
+
+    private discardBatch = (): void => {
+        this.setPending({});
+    };
 
     /** A boolean cell's checkbox toggled — commits immediately (no editor). */
     private toggleBoolean(row: Row, col: GridColumn): void {
@@ -372,6 +435,37 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
             e.preventDefault();
             this.startEdit(focus, e.key);
+        }
+    };
+
+    private onPaste = (e: React.ClipboardEvent): void => {
+        const p = this.props.props;
+        const focus = this.state.focus;
+        if (!p.editable || !focus || this.state.editing) {
+            return;
+        }
+        const text = e.clipboardData.getData('text/plain');
+        if (!text) {
+            return;
+        }
+        e.preventDefault();
+        const cols = this.effCols();
+        const view = this.viewRows();
+        const plan = pastePlan(parsePasteMatrix(text), focus, cols, view.length);
+        const acc: Record<string, unknown> = {};
+        for (const t of plan) {
+            const col = cols[t.col];
+            const row = view[t.row];
+            const { value, error } = validateCell(t.draft, col);
+            if (!error) {
+                const oldValue = this.cellValue(row, col.field);
+                if (cellText(value) !== cellText(oldValue)) {
+                    this.fireCellEdit(row, col.field, oldValue, value, acc);
+                }
+            }
+        }
+        if (Object.keys(acc).length) {
+            this.setPending({ ...this.state.pending, ...acc });
         }
     };
 
@@ -601,6 +695,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             return null;
         }
         const selCount = p.selection.length;
+        const dirty = Object.keys(this.state.pending).length;
         return (
             <div className="dg-toolbar">
                 <input
@@ -615,6 +710,16 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 <span className="dg-toolbar-spring" />
                 {selCount > 0 && (
                     <span className="dg-selected-badge">{p.labels.selected.replace('{n}', String(selCount))}</span>
+                )}
+                {p.editMode === 'batch' && dirty > 0 && (
+                    <>
+                        <span className="dg-dirty-badge">{p.labels.unsaved.replace('{n}', String(dirty))}</span>
+                        <button type="button" className="dg-save-btn" onClick={this.saveBatch}>{p.labels.save}</button>
+                        <button type="button" className="dg-export-btn dg-discard-btn" title={p.labels.discard}
+                                aria-label={p.labels.discard} onClick={this.discardBatch}>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4L12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z" /></svg>
+                        </button>
+                    </>
                 )}
                 {p.allowAdd && (
                     <button type="button" className="dg-export-btn" title={p.labels.addRow}
@@ -686,6 +791,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                     tabIndex={0}
                     onScroll={this.onScroll}
                     onKeyDown={this.onGridKeyDown}
+                    onPaste={this.onPaste}
                 >
                     <div className="dg-head" style={{ width: layout.totalWidth }}>
                         {cols.map((lc) => this.renderHeadCell(lc, p.sort))}
@@ -693,6 +799,23 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                     <div className="dg-body" style={{ height: view.length * p.rowHeight, width: layout.totalWidth }}>
                         {visible}
                     </div>
+                    {cols.some((lc) => lc.col.aggregate) && (
+                        <div className="dg-foot" style={{ width: layout.totalWidth }}>
+                            {cols.map((lc) => {
+                                const agg = aggregateValue(view, lc.col);
+                                const pinned = lc.left >= 0;
+                                return (
+                                    <div key={lc.col.field}
+                                         className={`dg-cell dg-foot-cell dg-cell--${lc.col.align}${pinned ? ' dg-cell--pinned' : ''}`}
+                                         style={{ width: lc.width, minWidth: lc.width, ...(pinned ? { left: lc.left } : null) }}
+                                         title={lc.col.aggregate || undefined}>
+                                        {agg === null ? '' : lc.col.aggregate === 'count'
+                                            ? String(agg) : formatCell(agg, lc.col, p.locale)}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
                 {emptyLabel && <div className="dg-empty-badge">{emptyLabel}</div>}
             </div>

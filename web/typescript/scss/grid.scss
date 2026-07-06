@@ -395,3 +395,53 @@
         background: var(--dg-bg);
     }
 }
+
+// --- batch mode + aggregate footer (M3) -----------------------------------------
+
+.dg-dirty-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #b45309;
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+}
+
+.dg-save-btn {
+    height: 26px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--dg-accent);
+    border: 1px solid var(--dg-accent);
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+        filter: brightness(1.08);
+    }
+}
+
+// Aggregates over the current view, sticky at the scrollport bottom.
+.dg-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    background: var(--dg-head-bg);
+    border-top: 1px solid var(--dg-border);
+}
+
+.dg-foot-cell {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 25px;
+    height: 26px;
+    background: var(--dg-head-bg);
+}
+
+.dg-foot .dg-cell--pinned {
+    z-index: 4;
+}

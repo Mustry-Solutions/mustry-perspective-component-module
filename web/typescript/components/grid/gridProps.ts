@@ -10,6 +10,7 @@ export interface GridProps {
     idField: string;
     rowSelect: RowSelectMode;
     editable: boolean;
+    editMode: 'cell' | 'batch';
     allowAdd: boolean;
     allowDelete: boolean;
     showToolbar: boolean;
@@ -84,6 +85,7 @@ function mapColumn(c: any): GridColumn | null {
         ...(Number.isFinite(min) ? { min } : {}),
         ...(Number.isFinite(max) ? { max } : {}),
         pattern: String((c && c.pattern) || ''),
+        aggregate: (['sum', 'avg', 'min', 'max', 'count'].indexOf(c && c.aggregate) >= 0 ? c.aggregate : '') as GridColumn['aggregate'],
         options
     };
 }
@@ -111,6 +113,7 @@ export function mapGridProps(tree: PropReader): GridProps {
         rowSelect: ((m) => (m === 'single' || m === 'multi' ? m : 'none'))(
             tree.readString('config.rowSelect', 'none')) as RowSelectMode,
         editable: tree.readBoolean('config.editable', false),
+        editMode: (tree.readString('config.editMode', 'cell') === 'batch' ? 'batch' : 'cell'),
         allowAdd: tree.readBoolean('config.allowAdd', false),
         allowDelete: tree.readBoolean('config.allowDelete', false),
         showToolbar: tree.readBoolean('config.showToolbar', true),

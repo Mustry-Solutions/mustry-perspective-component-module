@@ -8,8 +8,11 @@ validation (required/min/max/pattern/options; Escape reverts), the
 controlled onCellEdit/onRowAdd/onRowsDelete write-back events with
 optimistic pending overlay, per-column editability, and the Excel
 keyboard model (arrows, Enter/F2/type-to-edit, Enter/Tab commit+move).
-Next: M3 (batch mode, Excel range paste, aggregates, section grouping)
-+ a grid manual-test checklist.
+M3 core done too: batch mode (Save/Discard + output.dirtyCount +
+onBatchSave), Excel range paste, aggregate footers; checklist at
+docs/grid-manual-test.md. Remaining: section grouping (timeline pattern —
+needs the virtualization item-list refactor), then backlog (row subviews,
+pagination, per-cell editability hook).
 Fourth component of the module:
 `mustrysolutions.input.datagrid`. Remaining decisions are proposals to settle
 with Sam; change them here first if they change.

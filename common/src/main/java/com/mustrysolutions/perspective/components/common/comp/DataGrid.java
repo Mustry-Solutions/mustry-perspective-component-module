@@ -41,6 +41,9 @@ public class DataGrid {
     public static final JsonSchema ON_ROWS_DELETE_SCHEMA = JsonSchema.parse(
         DataGrid.class.getResourceAsStream("/datagrid.onrowsdelete.event.json"));
 
+    public static final JsonSchema ON_BATCH_SAVE_SCHEMA = JsonSchema.parse(
+        DataGrid.class.getResourceAsStream("/datagrid.onbatchsave.event.json"));
+
     /** Palette/browser icon + drag thumbnail (drawn, not bundled). */
     private static final BufferedImage ICON = MustrySolutionsPerspectiveComponentsModule.paletteIcon(COMPONENT_ID);
 
@@ -67,7 +70,11 @@ public class DataGrid {
             new ComponentEventDescriptor(
                 "onRowsDelete",
                 "Fires when the toolbar delete button is clicked with rows selected (config.allowDelete).",
-                ON_ROWS_DELETE_SCHEMA)))
+                ON_ROWS_DELETE_SCHEMA),
+            new ComponentEventDescriptor(
+                "onBatchSave",
+                "Batch mode: fires once for Save with every dirty cell and each changed row — persist and rebind data.rows.",
+                ON_BATCH_SAVE_SCHEMA)))
         .setResources(MustrySolutionsPerspectiveComponentsModule.BROWSER_RESOURCES)
         .build();
 }

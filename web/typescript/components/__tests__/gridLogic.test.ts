@@ -6,7 +6,7 @@ import { mapGridProps } from '../grid/gridProps';
 import { stubReader } from './_stubReader';
 
 const col = (field: string, over: Partial<GridColumn> = {}): GridColumn =>
-    ({ field, header: '', width: 100, pinned: false, align: 'left', type: 'text', decimals: -1, cellStyles: [], editable: true, required: false, pattern: '', options: [], ...over });
+    ({ field, header: '', width: 100, pinned: false, align: 'left', type: 'text', decimals: -1, cellStyles: [], editable: true, required: false, pattern: '', options: [], aggregate: '', ...over });
 
 describe('visibleRowRange (row virtualization window)', () => {
     it('windows the visible rows plus overscan', () => {
@@ -304,5 +304,56 @@ describe('nextCell (keyboard grid navigation)', () => {
         expect(nextCell({ row: 4, col: 0 }, 'ShiftTab', 10, 5)).toEqual({ row: 3, col: 4 });
         expect(nextCell({ row: 9, col: 1 }, 'Enter', 10, 5)).toEqual({ row: 9, col: 1 });
         expect(nextCell({ row: 0, col: 3 }, 'Home', 10, 5)).toEqual({ row: 0, col: 0 });
+    });
+});
+
+import { aggregateValue, batchPayload, parsePasteMatrix, pastePlan } from '../grid/gridLogic';
+
+describe('batchPayload (Save in batch mode)', () => {
+    const rows = [{ id: 'r1', a: 1, b: 'x' }, { id: 'r2', a: 2, b: 'y' }] as Array<Record<string, unknown>>;
+
+    it('builds per-cell edits and fully-patched changed rows', () => {
+        const { edits, rows: changed } = batchPayload({ 'r1::a': 9, 'r1::b': 'z', 'r2::a': 5 }, rows, 'id');
+        expect(edits).toHaveLength(3);
+        expect(edits.find((e) => e.rowId === 'r1' && e.field === 'a')).toEqual(
+            { rowId: 'r1', field: 'a', oldValue: 1, newValue: 9 });
+        const r1 = changed.find((r) => r.id === 'r1');
+        expect(r1).toEqual({ id: 'r1', a: 9, b: 'z' });   // both pendings applied
+        expect(changed).toHaveLength(2);
+    });
+
+    it('drops pendings whose row left the dataset', () => {
+        expect(batchPayload({ 'gone::a': 1 }, rows, 'id').edits).toHaveLength(0);
+    });
+});
+
+describe('parsePasteMatrix / pastePlan (Excel range paste)', () => {
+    it('parses TSV with CRLF and a trailing newline', () => {
+        expect(parsePasteMatrix('a\tb\r\nc\td\r\n')).toEqual([['a', 'b'], ['c', 'd']]);
+        expect(parsePasteMatrix('single')).toEqual([['single']]);
+    });
+
+    it('maps from the focused cell, skips non-editable columns, clamps at edges', () => {
+        const cols = [col('a'), col('b', { editable: false }), col('c')];
+        const plan = pastePlan([['1', '2', '3'], ['4', '5', '6']], { row: 8, col: 0 }, cols, 10);
+        // column b dropped; row 9 is the last row (rowCount 10)
+        expect(plan).toEqual([
+            { row: 8, col: 0, draft: '1' }, { row: 8, col: 2, draft: '3' },
+            { row: 9, col: 0, draft: '4' }, { row: 9, col: 2, draft: '6' }
+        ]);
+        expect(pastePlan([['x']], { row: 9, col: 2 }, cols, 10)).toEqual([{ row: 9, col: 2, draft: 'x' }]);
+    });
+});
+
+describe('aggregateValue (footer)', () => {
+    const rows = [{ q: 10 }, { q: '20' }, { q: 'junk' }, { q: null }] as Array<Record<string, unknown>>;
+
+    it('sum/avg/min/max over numeric cells only; count counts non-empty', () => {
+        expect(aggregateValue(rows, col('q', { aggregate: 'sum' }))).toBe(30);
+        expect(aggregateValue(rows, col('q', { aggregate: 'avg' }))).toBe(15);
+        expect(aggregateValue(rows, col('q', { aggregate: 'min' }))).toBe(10);
+        expect(aggregateValue(rows, col('q', { aggregate: 'count' }))).toBe(3);
+        expect(aggregateValue(rows, col('q'))).toBeNull();
+        expect(aggregateValue([], col('q', { aggregate: 'sum' }))).toBeNull();
     });
 });
