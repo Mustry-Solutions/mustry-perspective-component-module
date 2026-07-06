@@ -18,7 +18,7 @@ behave** in a browser, instead of only checking that the gateway served the bund
 | `/timeline` | TimelineDemo | Evergreen editable Resource Timeline (seeded relative to today): groups, icons, state/background bands, shifts, export, Live toggle, and the full write-back script (drag/reassign/resize/create/editor, recurring detach + series scope). |
 | `/timeline-db` | TimelineDbDemo | Timeline windowed-fetch recipe (window-scoped transform on `output.visibleEnd`). |
 | `/timeline-empty` | TimelineEmpty | Empty-state badge/tooltip behaviour. |
-| `/grid` | GridDemo | Data Grid M0-M2: 2,500 evergreen work orders — virtualization, frozen columns, sort/filter/select, column layout gestures, typed formatting + validation, dropdown-in-cell editing, add/delete rows with full write-back scripts, CSV export. |
+| `/grid` | GridDemo | Data Grid M0-M3: 2,500 evergreen work orders — virtualization, frozen columns, sort/filter/select, column layout gestures, typed formatting + validation, dropdown-in-cell + BATCH editing (Save/Discard), Excel paste, Qty sum footer, add/delete rows, CSV export. |
 
 (The former `CalendarStress`/`TimelineStress` volume fixtures were removed after
 the P2 perf pass — restore from git history if ever needed.)

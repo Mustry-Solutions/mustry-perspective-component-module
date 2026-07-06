@@ -144,6 +144,16 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
     focused cell (auto-scrolled into view), Enter/F2/type-to-edit open
     the editor, Enter/Tab commit + move (Shift-Tab left), all localized
     (8 new label keys x 7 languages).
+- **M3 core**: `config.editMode: 'batch'` — commits accumulate (italic +
+  dot, "{n} unsaved" badge, read-only `output.dirtyCount`), **Save** fires
+  ONE `onBatchSave` {edits, rows}, **Discard** reverts; overlays reconcile
+  away when the write-back rebinds matching values (identity checks are
+  useless — the reducer rebuilds rows on every prop write). **Excel range
+  paste** onto the focused cell (TSV matrix over visible columns, skipping
+  non-editable/invalid cells; accumulates in batch, fires per-cell in cell
+  mode). **Aggregate footers** (`column.aggregate`: sum/avg/min/max/count)
+  over the current view, sticky + locale-formatted; empty cells are absent,
+  not zero. Manual checklist: docs/grid-manual-test.md.
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with
