@@ -201,6 +201,24 @@ export function dayWord(n: number, labels: DayWordLabels): string {
     return n === 1 ? labels.dayOne : labels.dayMany;
 }
 
+// --- popover focus trap -------------------------------------------------------
+
+/** One Tab step of a dialog focus trap. Given the number of focusable elements in
+ *  the panel, the index of the currently focused one (-1 = focus is outside the
+ *  panel) and the Tab direction, the index that should receive focus to stay
+ *  inside — or -1 to let the browser move focus natively (an in-bounds step). */
+export function focusTrapTarget(count: number, activeIndex: number, shiftKey: boolean): number {
+    if (count <= 0) {
+        return -1;   // nothing focusable; the caller keeps focus where it is
+    }
+    if (shiftKey) {
+        // Backwards off the first element (or from outside) wraps to the last.
+        return activeIndex <= 0 ? count - 1 : -1;
+    }
+    // Forwards off the last element (or from outside) wraps to the first.
+    return activeIndex === count - 1 || activeIndex === -1 ? 0 : -1;
+}
+
 // --- preset conflict --------------------------------------------------------
 
 export interface ConflictLabels {

@@ -11,6 +11,7 @@
     --cal-bg: var(--neutral-10, #ffffff);
     --cal-weekend-bg: var(--neutral-20, #f6f7f9);
     --cal-today: color-mix(in srgb, var(--cal-accent) 7%, var(--cal-bg)); // subtle today tint
+    --cal-shift-line: color-mix(in srgb, var(--cal-accent) 40%, var(--cal-bg)); // shift boundary lines
 }
 
 .mustry-calendar {
@@ -138,6 +139,7 @@
     }
 
     .cal-nav-btn,
+    .cal-live,
     .cal-today {
         font-family: inherit;
         border: 1px solid var(--cal-border);
@@ -168,6 +170,36 @@
         height: 28px;
         padding: 0 10px;
         font-size: 12px;
+    }
+
+    // The follow-now ("Live") toggle: armed = filled + a pulsing live dot (the
+    // timeline's .tml-live styling in calendar dress).
+    .cal-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .cal-live--on,
+    .cal-live--on:hover {
+        background: var(--cal-accent);
+        border-color: var(--cal-accent);
+        color: var(--cal-accent-text);
+    }
+
+    .cal-live--on:hover {
+        filter: brightness(1.08);
+    }
+
+    .cal-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+        animation: cal-live-pulse 2s ease-in-out infinite;
     }
 
     .cal-body {
@@ -614,11 +646,14 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: 0;
         height: 6px;
+        max-height: 45%;      // both handles together never swallow the move surface
         cursor: ns-resize;
         touch-action: none;   // resize the event instead of scrolling
     }
+
+    .cal-tg-resize--start { top: 0; }
+    .cal-tg-resize--end { bottom: 0; }
 
     // Bigger resize hit target on touch/coarse-pointer devices (a 6px edge is unusable).
     @media (pointer: coarse) {
@@ -658,6 +693,40 @@
         font-size: 10px;
         font-weight: 600;
         color: color-mix(in srgb, var(--cal-accent) 75%, var(--cal-text));
+    }
+
+    // Shift boundaries (config.shifts): a labelled line across the grid at each
+    // shift's start time. Behind the events and pointer-transparent — purely visual.
+    .cal-tg-shifts {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .cal-tg-shift {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 0;
+        border-top: 1px dashed var(--cal-shift-line);
+    }
+
+    // Shift name tucked under its line, just right of the time gutter (52px) so it
+    // never collides with an hour label when a shift starts on the hour.
+    .cal-tg-shift-label {
+        position: absolute;
+        top: 1px;
+        left: 54px;
+        max-width: 120px;
+        padding: 0 4px;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--cal-accent) 65%, var(--cal-muted));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     // Background (downtime / availability) bands behind the events.
@@ -1315,6 +1384,20 @@
 
 .cal-legend-icon svg { width: 14px; height: 14px; }
 
+// Recurring-occurrence marker (id "base::date") on chips / bars / rows — dragging
+// or editing one detaches it from its series. (Top-level so portaled popovers match.)
+.cal-ev-recur {
+    flex: 0 0 auto;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.75;
+}
+
+// The timed chip isn't a flex row (title text flows inline), so space the marker by hand.
+.mustry-calendar .cal-tg-event .cal-ev-recur {
+    margin-right: 3px;
+}
+
 // Event status modifiers.
 .cal-ev--done,
 .cal-ev--cancelled {
@@ -1383,6 +1466,11 @@
 @keyframes cal-loading-slide {
     0%   { left: -35%; }
     100% { left: 100%; }
+}
+
+@keyframes cal-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }
 
 // A freshly-created event fades + scales in (applied for one cycle, then removed).

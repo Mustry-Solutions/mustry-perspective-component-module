@@ -422,6 +422,10 @@
             "presetTooLong": {
               "type": "string",
               "description": "Disabled-preset tooltip."
+            },
+            "dialogLabel": {
+              "type": "string",
+              "description": "Accessible name of the popover dialog panel (display = 'popover')."
             }
           }
         },

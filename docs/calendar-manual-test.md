@@ -5,6 +5,11 @@ Drop the component on a view, then work through the sections. The pure logic (gr
 packing, recurrence, gesture math) is unit-tested; this list covers the things only a
 human can judge — rendering, interaction, and the binding contract.
 
+> Prop sections: `config` = set-and-forget, `data` = bound content, `state` =
+> two-way runtime state (view, followNow, hiddenCategories — all pre-settable),
+> `output` = read-only derived values.
+
+
 ## Setup
 
 Paste this into `config.data.events` (dates are around June 2026 — adjust to a month
@@ -39,11 +44,11 @@ already wired) lives in the dev project at:
 ops/verify/project/com.inductiveautomation.perspective/views/CalendarDemo/
 ```
 
-- **In the dev gateway** it's served at `http://localhost:9088/data/perspective/client/verify/demo`.
+- **In the dev gateway** it's served at `http://localhost:9088/data/perspective/client/verify/calendar`.
 - **To use it in your own project:** copy that `CalendarDemo/` folder into your
   project's `com.inductiveautomation.perspective/views/` directory, then open the
   `CalendarDemo` view in the Designer (Preview mode). Drag empty time to create,
-  drag an event to move, drag its bottom edge to resize — and the changes stick.
+  drag an event to move, drag its top/bottom edge to resize — and the changes stick.
 
 **How it works (the whole trick):**
 
@@ -93,10 +98,14 @@ FROM cal_events
 WHERE rrule IS NOT NULL
 ```
 
+- For epoch/`t_stamp` columns, bind **`output.visibleStartMs`** / **`output.visibleEndMs`**
+  instead — the same half-open window as UTC epoch milliseconds (the zone-local midnights
+  the ISO dates denote in `config.timezone`, DST-correct):
+  `t_stamp >= :startMs AND t_stamp < :endMs`. No date parsing in the query.
 - Map the query result rows → the event object shape (a `script` transform on the binding).
 - Bind **`config.loading`** to the query's loading state → a thin bar + stale-while-revalidate (current events stay, dimmed; no "No events" flash).
 - **`config.refetchDebounceMs`** (default 150) coalesces rapid prev/next into a single window write = one query. `0` = immediate.
-- **Live proof (no DB needed):** the `/dbdemo` verify view does exactly this with a script transform over a 114-event source — navigate months and only in-window one-offs load, yet the April "Weekly standup" (recurring) and the multi-day audit still appear.
+- **Live proof (no DB needed):** the `/calendar-db` verify view does exactly this with a script transform over a 114-event source — navigate months and only in-window one-offs load, yet the April "Weekly standup" (recurring) and the multi-day audit still appear.
 
 ## Why "nothing happens" when I drag / create (read this first)
 
@@ -207,7 +216,16 @@ self.props.data.events = events
 - [ ] Multi-day all-day events render as one **continuous spanning bar** across their days (22/23/24, **not** 25 — exclusive end), not separate per-day chips; overlapping bars stack on lanes.
 - [ ] In **week/day** view, a multi-day all-day event is a single spanning bar in the **all-day strip**; an overnight timed event shows on both days (start day → bottom, next day top → end) with dashed continuation edges.
 - [ ] Prev / next / **Today** navigate months; the title updates.
-- [ ] `output.visibleStart` / `visibleEnd` update on navigation (check the props).
+- [ ] **Live (follow-now)** — toolbar toggle next to Prev: arming fills it with a
+      pulsing dot and re-anchors on today (like Today) every `config.refreshSeconds`
+      (60s when unset) so the current day stays in view — at midnight the calendar
+      rolls to the new day/week/month. Prev/Next or a mini-nav day pick disarms it
+      (`state.followNow` writes back false); Today, view switches
+      (Month/Week/Day/List), legend toggles and edits do NOT. Pre-set
+      `state.followNow: true` → the view opens live. Ticks are suppressed while
+      the editor is open or a drag is in flight.
+- [ ] `output.visibleStart` / `visibleEnd` — and their epoch twins
+      `visibleStartMs` / `visibleEndMs` — update on navigation (check the props).
 
 ## Recurrence
 
@@ -216,6 +234,7 @@ self.props.data.events = events
 - [ ] Switch a rule to `daily` with `interval` / `count` and confirm spacing & cap.
 - [ ] `yearly` keeps the month/day (Feb 29 only lands in leap years).
 - [ ] Recurrence shows consistently in **month, week, and list** views.
+- [ ] Every expanded occurrence carries a small **↻ marker** before its title — on month chips, week/day blocks, the all-day strip, the list view, and the day popover; the series definition itself (and plain events) never show it.
 
 ### Creating & editing recurring events (built-in editor)
 
@@ -240,15 +259,18 @@ self.props.data.events = events
 - [ ] A **now-indicator** (red line) shows on today's column.
 - [ ] With `refreshSeconds > 0` (e.g. 60), the now-indicator ticks down on its own over time (the calendar re-renders on that interval) without changing the scroll position.
 - [ ] Background "Maint downtime" renders as a translucent band **behind** events (02:00–05:00).
+- [ ] With `config.shifts` set (e.g. `[{"label": "Early", "start": "06:00"}, {"label": "Late", "start": "14:00"}, {"label": "Night", "start": "22:00"}]`): a dashed **boundary line** crosses the grid at each shift start, its name in the time gutter; lines sit behind events and never block clicks/drags. Starts outside `dayStartHour..dayEndHour` don't draw; malformed entries are ignored; `[]` (default) draws nothing.
 - [ ] Day view shows a single column for the cursor day; nav steps by one day.
 
 ## Editing (set `config.editable = true`)
 
-- [ ] Hovering an event shows a grab cursor; a resize handle sits at its bottom edge.
+- [ ] Hovering an event shows a grab cursor; resize handles sit at its **top and bottom** edges (the top handle is dropped on chips too short to also leave a move surface).
 - [ ] **Drag** an event — a ghost follows, snapping to the grid resolution (`slotMinutes`); release fires `onChange` (`action = "move"`). The snap shifts by whole steps from the event's own start, so an off-grid event keeps its minute offset.
 - [ ] **Sloppy click** — press an event and wiggle less than half a snap step: no move fires; it commits as a click (editor / `onEventClick`). Right-click never starts a drag.
 - [ ] Drag across day columns changes the day in the payload (`event.start`).
-- [ ] **Resize** from the bottom edge changes the end; release fires `onChange` (`action = "resize"`).
+- [ ] **Resize** from the bottom edge changes the end; from the top edge changes the **start** (the end stays put); release fires `onChange` (`action = "resize"`). Both snap to `slotMinutes` and stop at one slot of remaining duration.
+- [ ] A resize that snaps back to the original times fires **no** `onChange`.
+- [ ] A multi-day timed event shows only the start handle on its first day's segment and only the end handle on its last day's (the dashed continuation edges carry no handle).
 - [ ] Because it's controlled, the event **snaps back** on release unless your handler writes back.
 - [ ] A plain **click** (no drag) fires `onEventClick` — **unless** `builtInEditor` is on, where it opens the editor (see below).
 
@@ -269,7 +291,7 @@ self.props.data.events = events
 
 Gestures use Pointer Events + `touch-action`, so mouse and touch share one path. On a tablet:
 - [ ] **Drag an event** with a finger → it moves (doesn't scroll the grid).
-- [ ] **Drag the bottom edge** (enlarged to ~18px on coarse pointers) → it resizes.
+- [ ] **Drag the top or bottom edge** (enlarged to ~18px on coarse pointers) → it resizes the start/end.
 - [ ] **Tap an event** → opens the editor / fires `onEventClick`.
 - [ ] **Tap empty time** → opens the create editor (or fires `onDateClick`/`onSelect`).
 - [ ] **Vertical drag on empty time → the grid SCROLLS** (drag-to-create is disabled on touch; a `pointercancel` aborts the gesture). No create rectangle should appear or stick.
@@ -302,6 +324,7 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 
 - [ ] Set `config.showExport = true` → a download button appears in the toolbar.
 - [ ] Clicking it downloads `calendar-events.csv` with a header row + one row per loaded event (id, title, start, end, allDay, category, status, color, description, rrule).
+- [ ] Recurring definitions from `data.recurringEvents` are included **as-is** (one row per series with its `rrule` JSON, not expanded occurrences); a series bound via both sources appears once.
 - [ ] Fields with commas / quotes / newlines are quoted/escaped correctly.
 - [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
@@ -322,7 +345,7 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 ## Layout & edge cases
 
 - [ ] Resize the component small/large → month grid fills; week/day grid scrolls.
-- [ ] Empty `events` (nothing configured) → a subtle **`emptyMessage`** badge appears next to the title in every view (and as the list-view message); the grid stays clean and usable (you can still drag to create). A populated calendar shows no badge — even when paging to an empty week. `emptyMessage = ""` hides it. (Fixture: the `/empty` verify view.)
+- [ ] Empty `events` (nothing configured) → a subtle **`emptyMessage`** badge appears next to the title in every view (and as the list-view message); the grid stays clean and usable (you can still drag to create). A populated calendar shows no badge — even when paging to an empty week. `emptyMessage = ""` hides it. (Fixture: the `/calendar-empty` verify view.)
 - [ ] Hovering the empty-state badge shows a tooltip explaining the component in a nutshell — and, when the calendar is editable/selectable, how to add an event (drag empty time in Week/Day); a read-only calendar's tooltip instead points to the data binding.
 - [ ] Toggle `showToolbar = false` → header hidden, grid still works.
 - [ ] Bind `config.data.events` to a Named Query keyed on `output.visibleStart`/`visibleEnd` → navigating refetches only the visible window (no request storm).

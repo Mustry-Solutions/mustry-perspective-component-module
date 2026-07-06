@@ -8,6 +8,12 @@
 import { csvCell } from '../../shared/csv';
 import { resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { RRule } from '../../shared/recurrence';
+import { ShiftDef, shiftStartMinutes } from '../../shared/shifts';
+
+// Shift parsing lives in shared/shifts.ts (also used by the calendar); re-exported
+// so the timeline's callers keep one import site.
+export { shiftStartMinutes };
+export type { ShiftDef };
 
 /** One timeline event/bar (controlled data — the component never mutates these). */
 export interface TimelineEvent {
@@ -42,21 +48,14 @@ export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
     week: { pxPerHour: 12, spanHours: 168, snapMinutes: 60, lowerStepMin: 360 }
 };
 
-/** One shift definition: a zone-local start-of-shift wall time. */
-export interface ShiftDef {
-    label: string;
-    start: string;   // 'HH:mm'
-}
-
-/** Parsed 'HH:mm' (minutes into the wall day), or null when malformed. */
-export function shiftStartMinutes(start: string): number | null {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(start || '');
-    if (!m) {
-        return null;
-    }
-    const h = Number(m[1]);
-    const mi = Number(m[2]);
-    return h < 24 && mi < 60 ? h * 60 + mi : null;
+/** The effective gesture snap step: config.snapMinutes when set (> 0), else the
+ *  zoom preset's built-in granularity. Non-finite / non-positive overrides mean
+ *  "no override" — the mapper normalises those to 0, but re-check here so every
+ *  caller gets a sane step regardless. */
+export function resolveSnapMinutes(zoom: TimelineZoom, overrideMinutes: number): number {
+    return Number.isFinite(overrideMinutes) && overrideMinutes > 0
+        ? overrideMinutes
+        : ZOOM_PRESETS[zoom].snapMinutes;
 }
 
 export const MS_PER_HOUR = 3600000;
@@ -89,6 +88,19 @@ export function windowFor(anchorMs: number, zoom: TimelineZoom, timeZone: string
     return { startMs: anchorMs, endMs, pxPerHour: preset.pxPerHour };
 }
 
+/** The published window outputs: ISO-8601 UTC instants (half-open) plus the raw
+ *  epoch-ms numbers, for binding epoch/t_stamp queries without a parse step. */
+export function windowOutputs(scale: TimeScale): {
+    visibleStart: string; visibleEnd: string; visibleStartMs: number; visibleEndMs: number;
+} {
+    return {
+        visibleStart: new Date(scale.startMs).toISOString(),
+        visibleEnd: new Date(scale.endMs).toISOString(),
+        visibleStartMs: scale.startMs,
+        visibleEndMs: scale.endMs
+    };
+}
+
 /**
  * The anchor after paging by one window. Day/week page by wall-calendar days and
  * re-anchor on the zone-local midnight (paging across a 23/25h DST day must not
@@ -100,6 +112,59 @@ export function pageAnchorMs(anchorMs: number, dir: number, zoom: TimelineZoom, 
         return anchorMs + dir * preset.spanHours * MS_PER_HOUR;
     }
     return zoneMidnightMs(anchorMs, timeZone, dir * Math.round(preset.spanHours / 24));
+}
+
+// --- follow-now (live) mode ----------------------------------------------------
+
+export const FOLLOW_DEFAULT_TICK_MS = 60000;
+
+/** Follow-now tick interval, ms: config.refreshSeconds when > 0 (floored at 1s so
+ *  a fractional/zero setting can't spin), else one minute. */
+export function followTickMs(refreshSeconds: number): number {
+    return refreshSeconds > 0 ? Math.max(1, refreshSeconds) * 1000 : FOLLOW_DEFAULT_TICK_MS;
+}
+
+/**
+ * The anchor a follow-now tick should re-anchor to: today's zone-local midnight,
+ * exactly like the Today button. At hour zoom (whose window is narrower than a
+ * day) it then pages forward by the prev/next stride until the window actually
+ * contains `nowMs`, so the now-line stays in view all day.
+ */
+export function followAnchorMs(nowMs: number, zoom: TimelineZoom, timeZone: string): number {
+    let anchor = zoneMidnightMs(nowMs, timeZone);
+    for (let i = 0; windowFor(anchor, zoom, timeZone).endMs <= nowMs && i < 24; i++) {
+        anchor = pageAnchorMs(anchor, 1, zoom, timeZone);
+    }
+    return anchor;
+}
+
+/** Where a follow tick should scroll the board so the now-line stays in view: a
+ * target scrollLeft, or null when the line is already comfortably visible.
+ * `nowX` is the now-line's content x (label column included, like offsetLeft);
+ * the label column is sticky, so the time viewport starts `labelPx` in. */
+export function followScrollLeft(scrollLeft: number, clientWidth: number, labelPx: number, nowX: number): number | null {
+    const visibleL = scrollLeft + labelPx;
+    const visibleR = scrollLeft + clientWidth - 24;   // margin: hugging the edge counts as out
+    if (nowX >= visibleL && nowX <= visibleR) {
+        return null;
+    }
+    return Math.max(0, nowX - labelPx - (clientWidth - labelPx) * 0.6);
+}
+
+/** A user action that might take over from follow-now. */
+export type TimelineNav = 'page' | 'miniPick' | 'today' | 'zoom' | 'legend' | 'edit';
+
+/** Whether a user action disarms follow-now: explicit navigation away (paging,
+ *  a mini-nav day pick) does; Today, zoom changes, legend toggles and event
+ *  edits keep it armed. */
+export function followDisarms(nav: TimelineNav): boolean {
+    return nav === 'page' || nav === 'miniPick';
+}
+
+/** Configured-but-empty (drives the toolbar's empty badge): no events from either
+ *  source and not mid-fetch (config.loading suppresses it — stale-while-revalidate). */
+export function isConfiguredEmpty(loading: boolean, events: unknown[], recurringEvents: unknown[]): boolean {
+    return !loading && (events || []).length === 0 && (recurringEvents || []).length === 0;
 }
 
 export function msToPx(scale: TimeScale, ms: number): number {

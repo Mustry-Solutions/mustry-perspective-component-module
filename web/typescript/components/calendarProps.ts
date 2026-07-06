@@ -4,6 +4,7 @@ import { PropReader } from '../shared/propReader';
 import { CalendarProps, CalLabels, CalView, WeekStart, Category } from './calendar/types';
 import { CalEvent } from './calendarLogic';
 import { calendarLabelBase, EN_CALENDAR_LABELS } from '../shared/labelPacks';
+import { parseShifts } from '../shared/shifts';
 
 /** The built-in English UI text; config.locale swaps the base language (labelPacks)
  *  and config.labels overrides individual keys. */
@@ -43,7 +44,7 @@ function mapEvent(e: any): CalEvent {
 export function mapCalendarProps(tree: PropReader): CalendarProps {
     const locale = tree.readString('config.locale', '');
     return {
-        view: tree.readString('config.view', 'month') as CalView,
+        view: tree.readString('state.view', 'month') as CalView,
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showMiniNav: tree.readBoolean('config.showMiniNav', true),
         showExport: tree.readBoolean('config.showExport', false),
@@ -69,9 +70,14 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         dayStartHour: tree.readNumber('config.dayStartHour', 0),
         dayEndHour: tree.readNumber('config.dayEndHour', 24),
         slotMinutes: ((v) => (Number.isFinite(v) && v >= 5 && v <= 60 && 60 % v === 0 ? v : 60))(tree.readNumber('config.slotMinutes', 60)),
+        shifts: parseShifts(tree.readArray('config.shifts', [])),
         scrollToHour: tree.readNumber('config.scrollToHour', 7),
         scrollToNow: tree.readBoolean('config.scrollToNow', false),
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
+        followNow: tree.readBoolean('state.followNow', false),
+        hiddenCategories: (tree.readArray('state.hiddenCategories', []) || [])
+            .map((id: any) => String(id ?? ''))
+            .filter((id: string) => id),
         labels: mapLabels(tree, locale),
         events: (tree.readArray('data.events', []) || []).map(mapEvent),
         recurringEvents: (tree.readArray('data.recurringEvents', []) || []).map(mapEvent)

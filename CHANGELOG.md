@@ -6,6 +6,123 @@ semver. **Pre-1.0, the prop schemas may still change** — the CI schema guard
 (`ops/schema-guard.sh`) flags any removed/renamed key so breakage is always a
 deliberate decision, never an accident.
 
+## [Unreleased]
+
+Cross-component parity pass: each component's best ideas ported to the others
+where they add real value.
+
+### BREAKING — prop sections harmonized (sanctioned pre-1.0, no deployments)
+Both display components now follow one sections convention (the picker's
+`selection` already embodied it): **`config`** = set-and-forget configuration,
+**`data`** = bound content, **`state`** = two-way runtime state (the component
+writes user interactions back; everything pre-settable/bindable), **`output`**
+= read-only derived values. Moved keys (names unchanged):
+- Calendar: `config.view` → `state.view`, `config.followNow` →
+  `state.followNow`, `output.hiddenCategories` → `state.hiddenCategories`.
+- Timeline: `config.zoom` → `state.zoom`, `config.followNow` →
+  `state.followNow`, `config.collapsedGroups` → `state.collapsedGroups`,
+  `output.hiddenCategories` → `state.hiddenCategories`.
+- `hiddenCategories` is now **genuinely two-way** on both: pre-set or bind it
+  to open with categories pre-filtered (it was a read-only output mirror).
+
+### Calendar / Scheduler
+- CSV export now includes `data.recurringEvents` (series definitions, deduped
+  by id) — previously recurring series were silently missing from exports.
+- Recurring occurrences carry the same ↻ marker as the timeline (month chips,
+  week/day chips and all-day bars, list view, day popover).
+- Both-edge resize in week/day views (timeline parity): a top handle moves the
+  start, the bottom handle the end; multi-day segments get their one legal
+  handle; handles suppressed on chips too short to also grab-move.
+- **Fixed:** resize had no noop guard — a snapped-back resize fired a phantom
+  `onChange`. Both edges are now guarded (moves already were).
+- New `config.shifts` (`[{label, start: 'HH:mm'}]`): dashed shift-boundary
+  lines with gutter labels in week/day views; shared parser in
+  `shared/shifts.ts` (timeline can adopt it later). Themeable via
+  `--cal-shift-line`.
+- `onChange` event schema now documents the recurrence context
+  (`scope`/`seriesId`/`occurrenceDate`) the payload already carried.
+- **Follow-now live mode** (timeline parity): two-way `config.followNow` +
+  toolbar "Live" toggle with pulsing dot; re-anchors on today every
+  `refreshSeconds` (else 60s); paused mid-edit/drag; paging or a mini-nav pick
+  disarms, Today and view switches do not.
+- `output.visibleStartMs` / `visibleEndMs`: the window as DST-correct epoch
+  instants (zone-local midnights), for binding `t_stamp` queries directly.
+- Hover popover status badge and "All day" text are now localized via the
+  label packs (`labels.statusTentative/statusCancelled/statusDone`) — they
+  were hardcoded English.
+- **Fixed (both display components):** the `emptyMessage` default ("No
+  events") is now treated as "unset" and follows the locale packs
+  (`labels.noEvents`) — previously a French calendar showed an English badge.
+  Any other value overrides; `''` still hides the badge.
+
+### Resource Timeline
+- Empty-state badge with context-aware how-to tooltip (calendar parity) +
+  `config.emptyMessage`.
+- **Follow-now live mode** (ported from the picker's realtime mode): two-way
+  `config.followNow` + toolbar "Live" toggle with pulsing dot; re-anchors the
+  window so the now-line stays in view (tick = `refreshSeconds`, else 60s);
+  paused while editing/dragging; manual paging or a mini-nav pick disarms,
+  Today does not. Same Designer-dirty caveat as the picker's realtime mode.
+- Resource `color`/`icon` (already in the schema) are now rendered on row
+  labels (icon-else-dot, matching the legend).
+- `onChange` event schema documents `scope`/`seriesId`/`occurrenceDate`.
+- **Fixed:** the toolbar CSV-export icon rendered at zero size (the SVG was
+  never given dimensions — calendar parity); surfaced by the first fixture to
+  enable `showExport` on a timeline.
+- `output.visibleStartMs` / `visibleEndMs`: the window as raw epoch ms, for
+  binding `t_stamp` queries directly.
+- Hover popover shows a localized status badge (tentative/cancelled/done),
+  calendar parity — new `labels.status*` keys in all 7 languages.
+- Enter animation on newly-appearing bars/state bands (calendar parity, shared
+  `EnterTracker`); never animates mid-drag; respects `prefers-reduced-motion`.
+- `config.snapMinutes`: one snap override for drag-move, both resizes,
+  drag-create and click-to-create at every zoom (0 = per-zoom default).
+- Internal: shift parsing now uses the shared `shared/shifts.ts` module
+  (calendar parity, duplicate deleted).
+- **Fixed:** with Live armed, a zoom (or timezone) change didn't re-anchor
+  until the next tick — at Hour zoom the window could sit up to `refreshSeconds`
+  without the now-line, making Live look broken. Zoom/timezone changes now
+  re-anchor immediately (calendar gets the same immediate re-anchor on a
+  timezone change).
+- `config.showMiniNav` (calendar parity): `false` renders a plain title with
+  no mini month navigator.
+- **Fixed (the real "Live looks dead" bug):** the board scrolls horizontally
+  within the window, and arming Live never scrolled the now-line into view —
+  a correct window could still show 00:00–14:00 at 20:00. Follow ticks now
+  scroll the now-line to ~60% of the viewport whenever it drifts off screen
+  (and only then, so manual scrolling isn't fought while it's visible). The
+  calendar equivalently re-centres its week/day grid on the now indicator
+  while armed when `scrollToNow` is on.
+
+### Date/Time Range Picker
+- Popover is now a real dialog: `role="dialog"`, `aria-modal`, localized
+  `aria-label` (new `labels.dialogLabel`, all 7 languages), focus moves in on
+  open, Tab is trapped, and focus returns to the trigger on close (except
+  after an outside click, which keeps focus where the user clicked).
+
+### Verify harness
+- The three demo views are now **evergreen**: `now(0)` expression bindings with
+  script transforms seed the data relative to today on every view load
+  (in-session edits still stick), so the demos never go stale.
+- `Main` (`/`) is a picker showcase: a twoMonths instance with rolling +
+  calendar presets and realtime enabled, live output readouts
+  (`startDateTime`/`endDateTime`/`durationLabel`/`isRealtime`), plus the
+  labelled oneMonth / compact / popover gallery.
+- `/calendar` (calendar demo, was `/demo`) gained shifts, a Quality category, recurring series in
+  `data.recurringEvents`, and the dual-list write-back script (events +
+  recurringEvents, matching the timeline's).
+- `/timeline` gained `showExport`, resource icons/colors, and the same
+  evergreen treatment; new `/timeline-empty` fixture (empty-state badge).
+- Removed the 1.4 MB `CalendarStress`/`TimelineStress` fixtures (P2 perf pass
+  is signed off; restore from git history if ever needed).
+- Routes renamed component-first: `/picker` (alias of `/`), `/calendar`,
+  `/calendar-db`, `/calendar-empty`, `/timeline`, `/timeline-db`,
+  `/timeline-empty` (docs + skill updated).
+- Each demo has a **session-theme dropdown** (light/dark + warm/cool variants)
+  that writes `session.props.theme` — all three components verified rendering
+  correctly in dark. Note: a full page reload starts a fresh Perspective
+  session, which resets the theme to the project default.
+
 ## [0.1.0] — 2026-07-05
 
 First versioned cut: three components, feature-complete for their v1 scope.

@@ -104,6 +104,8 @@ export class DateTimeRangePicker
         if (el) {
             // Now mounted in the DOM: re-place using the panel's real measured height.
             this.adjustPanelPosition();
+            // Dialog semantics: move focus into the panel on open.
+            this.focusIntoPanel();
         }
     };
 
@@ -211,12 +213,17 @@ export class DateTimeRangePicker
         this.addWindowListeners();
     }
 
-    private closePanel(): void {
+    /** Close the panel. Focus returns to the trigger on every path except an
+     *  outside click, where it must stay with the element the user clicked. */
+    private closePanel(restoreFocus: boolean = true): void {
         if (!this.state.open) {
             return;
         }
         this.removeWindowListeners();
         this.setState({ open: false });
+        if (restoreFocus && this.triggerEl) {
+            this.triggerEl.focus();
+        }
     }
 
     private togglePanel = (): void => {
@@ -236,14 +243,57 @@ export class DateTimeRangePicker
             || (this.triggerEl && this.triggerEl.contains(target))) {
             return;
         }
-        this.closePanel();
+        this.closePanel(false);
     };
 
     private onKeyDown = (e: KeyboardEvent): void => {
         if (e.key === 'Escape') {
             this.closePanel();
+        } else if (e.key === 'Tab') {
+            this.trapTab(e);
         }
     };
+
+    // --- popover focus management (dialog semantics) -----------------------
+    /** The panel's focusable elements, queried live: its contents change with
+     *  layout, presets and disabled days, so the list is never cached. */
+    private panelFocusables(): HTMLElement[] {
+        if (!this.panelEl) {
+            return [];
+        }
+        const nodes = this.panelEl.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), '
+            + 'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        return Array.prototype.slice.call(nodes);
+    }
+
+    /** On open: focus the first focusable element, or the panel itself (tabIndex -1). */
+    private focusIntoPanel(): void {
+        const items = this.panelFocusables();
+        const target = items.length > 0 ? items[0] : this.panelEl;
+        if (target) {
+            target.focus();
+        }
+    }
+
+    /** Keep Tab / Shift+Tab cycling within the open panel. */
+    private trapTab(e: KeyboardEvent): void {
+        if (!this.panelEl) {
+            return;
+        }
+        const items = this.panelFocusables();
+        if (items.length === 0) {
+            e.preventDefault();   // nothing focusable: don't tab out of the dialog
+            return;
+        }
+        const active = document.activeElement as HTMLElement | null;
+        const to = logic.focusTrapTarget(items.length, active ? items.indexOf(active) : -1, e.shiftKey);
+        if (to >= 0) {
+            e.preventDefault();
+            items[to].focus();
+        }
+    }
 
     private reposition = (): void => {
         if (this.state.open) {
@@ -957,7 +1007,15 @@ export class DateTimeRangePicker
             width: this.state.panelWidth
         };
         return (
-            <div className={classes.join(' ')} style={style} ref={this.setPanelEl}>
+            <div
+                className={classes.join(' ')}
+                style={style}
+                ref={this.setPanelEl}
+                role="dialog"
+                aria-modal="true"
+                aria-label={this.props.props.labels.dialogLabel}
+                tabIndex={-1}
+            >
                 {this.renderBody(mode)}
             </div>
         );

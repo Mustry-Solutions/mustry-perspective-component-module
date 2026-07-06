@@ -2,7 +2,10 @@
     "type": "object",
     "properties": {
         "action": { "type": "string", "description": "What happened: 'create' | 'edit' | 'delete' | 'move' | 'resize'." },
-        "event": { "type": "object", "description": "The resulting event with its final start/end and resourceId — a single handler can persist any mutation." },
-        "fromResourceId": { "type": "string", "description": "Set when a drag crossed rows: the row the event came from (reassign)." }
+        "event": { "type": "object", "description": "The resulting event with its final start/end and resourceId — a single handler can persist any mutation. For 'delete' it's the removed event." },
+        "fromResourceId": { "type": "string", "description": "Set when a drag crossed rows: the row the event came from (reassign)." },
+        "scope": { "type": "string", "description": "Recurring-series context, set only when the mutation touched a series: 'occurrence' = one occurrence was detached into the standalone override in `event` (id '<seriesId>-x-<occurrenceDate>') — persist it AND add occurrenceDate to the series rrule's exdate list; 'series' = the whole series (event.id is the series id, and event carries its possibly edited or removed rrule)." },
+        "seriesId": { "type": "string", "description": "The recurring series' base event id (set together with scope)." },
+        "occurrenceDate": { "type": "string", "description": "Zone-local date 'YYYY-MM-DD' of the touched occurrence (set when scope is 'occurrence')." }
     }
 }

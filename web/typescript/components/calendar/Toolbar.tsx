@@ -13,17 +13,22 @@ interface ToolbarProps {
     showExport: boolean;
     emptyLabel: string;   // shown as a muted badge by the title when no events are configured ('' = hidden)
     emptyHint: string;    // tooltip on that badge — a nutshell of how to use / add events
+    followNow: boolean;   // live follow mode armed (state.followNow, two-way)
     labels: CalLabels;
     onToggleMini: (e: React.MouseEvent) => void;
     onSetView: (v: CalView) => void;
     onExport: () => void;
+    onToggleFollow: () => void;
     onPrev: () => void;
     onToday: () => void;
     onNext: () => void;
 }
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
-    const { title, view, showMiniNav, miniOpen, showExport, emptyLabel, emptyHint, labels, onToggleMini, onSetView, onExport, onPrev, onToday, onNext } = props;
+    const {
+        title, view, showMiniNav, miniOpen, showExport, emptyLabel, emptyHint, followNow, labels,
+        onToggleMini, onSetView, onExport, onToggleFollow, onPrev, onToday, onNext
+    } = props;
     return (
         <div className="cal-toolbar">
             {showMiniNav ? (
@@ -59,6 +64,15 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
                         <IconRenderer path="material/get_app" color="var(--cal-accent)" />
                     </button>
                 )}
+                <button
+                    type="button"
+                    className={`cal-live${followNow ? ' cal-live--on' : ''}`}
+                    onClick={onToggleFollow}
+                    aria-pressed={followNow}
+                >
+                    {followNow && <span className="cal-live-dot" aria-hidden="true" />}
+                    {labels.followNow}
+                </button>
                 <button type="button" className="cal-nav-btn" onClick={onPrev} aria-label={labels.previous}>‹</button>
                 <button type="button" className="cal-today" onClick={onToday}>{labels.today}</button>
                 <button type="button" className="cal-nav-btn" onClick={onNext} aria-label={labels.next}>›</button>

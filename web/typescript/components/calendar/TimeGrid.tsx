@@ -3,10 +3,12 @@
 import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
 import {
-    CalEvent, DayCol, hhmm, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
+    CalEvent, DayCol, hhmm, isOccurrence, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
 } from '../calendarLogic';
+import { ResizeEdge } from './gestureLogic';
 import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
+import { ShiftDef, visibleShifts } from '../../shared/shifts';
 import { EventBar } from './EventBar';
 
 interface TimeGridProps {
@@ -18,6 +20,7 @@ interface TimeGridProps {
     dayStartHour: number;
     dayEndHour: number;
     slotMinutes: number;  // grid resolution (divisor of 60); drives gridlines + row height
+    shifts: ShiftDef[];   // labelled boundary lines at each shift's start time
     nowMinutes: number;   // minutes-from-midnight of "now" in the display zone
     preview: Preview | null;
     categories: Category[];
@@ -28,13 +31,13 @@ interface TimeGridProps {
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
     onStartCreate: (iso: string, e: React.PointerEvent) => void;
     onStartMove: (ev: CalEvent, e: React.PointerEvent) => void;
-    onStartResize: (ev: CalEvent, e: React.PointerEvent) => void;
+    onStartResize: (ev: CalEvent, edge: ResizeEdge, e: React.PointerEvent) => void;
     onScroll: () => void;
 }
 
 export function TimeGrid(props: TimeGridProps): React.ReactElement {
     const {
-        cols, events, locale, view, editable, dayStartHour, dayEndHour, slotMinutes, nowMinutes, preview, categories,
+        cols, events, locale, view, editable, dayStartHour, dayEndHour, slotMinutes, shifts, nowMinutes, preview, categories,
         labels, scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
     } = props;
 
@@ -60,6 +63,9 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
         : { backgroundSize: `100% ${hourPx}px` };
     // Background bands read colour off the event, so resolve category colours up front.
     const bgEvents = events.map((e) => ({ ...e, color: resolveColor(categories, e) }));
+    // Shift boundaries within the visible window (the grid is wall-clock-linear, so
+    // a shift start is simply a y-position).
+    const shiftMarks = visibleShifts(shifts, winStart, winEnd);
 
     const renderPreview = (dayIso: string): React.ReactNode => {
         if (!preview || preview.dayIso !== dayIso) {
@@ -170,6 +176,14 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                         }}
                                         {...hoverProps(ev)}
                                     >
+                                        {editable && !it.continuesUp && height >= 24 && (
+                                            // Kept off short chips so the handles don't swallow the move surface.
+                                            <div className="cal-tg-resize cal-tg-resize--start" onPointerDown={(e) => onStartResize(ev, 'start', e)} />
+                                        )}
+                                        {isOccurrence(ev) && (
+                                            // Part of a series: dragging/editing detaches this occurrence.
+                                            <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                                        )}
                                         <EventIcon ev={ev} categories={categories} />
                                         {ev.title}
                                         {height >= 34 && !it.continuesUp && (
@@ -177,8 +191,8 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                                 {hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${hhmm(it.endMin)}`}
                                             </span>
                                         )}
-                                        {movable && (
-                                            <div className="cal-tg-resize" onPointerDown={(e) => onStartResize(ev, e)} />
+                                        {editable && !it.continuesDown && (
+                                            <div className="cal-tg-resize cal-tg-resize--end" onPointerDown={(e) => onStartResize(ev, 'end', e)} />
                                         )}
                                     </button>
                                 );
@@ -189,6 +203,21 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                             )}
                         </div>
                     ))}
+                    {shiftMarks.length > 0 && (
+                        // Behind the events (they carry z-index) and pointer-transparent, so
+                        // the lines never intercept clicks or drags.
+                        <div className="cal-tg-shifts" aria-hidden="true">
+                            {shiftMarks.map((s, i) => (
+                                <div
+                                    className="cal-tg-shift"
+                                    key={`${s.label}-${s.min}-${i}`}
+                                    style={{ top: ((s.min - winStart) / 60) * hourPx }}
+                                >
+                                    <span className="cal-tg-shift-label">{s.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

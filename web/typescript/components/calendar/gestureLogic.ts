@@ -56,10 +56,27 @@ export function movePreview(origStartMin: number, durationMin: number, deltaMin:
     return { startMin, endMin: startMin + durationMin };
 }
 
-/** Resize the end by `deltaMin`, keeping at least `snapMin` of duration and clamping to the window. */
-export function resizePreview(origStartMin: number, origEndMin: number, deltaMin: number, winEnd: number, snapMin: number): MinuteRange {
+/** Which edge of an event a resize gesture grabbed. */
+export type ResizeEdge = 'start' | 'end';
+
+/** Resize one edge by `deltaMin`, keeping at least `snapMin` of duration and clamping
+ *  to the window (the untouched edge stays put, matching the timeline's semantics). */
+export function resizePreview(
+    edge: ResizeEdge, origStartMin: number, origEndMin: number, deltaMin: number,
+    winStart: number, winEnd: number, snapMin: number
+): MinuteRange {
+    if (edge === 'start') {
+        const startMin = Math.min(origEndMin - snapMin, Math.max(winStart, origStartMin + deltaMin));
+        return { startMin, endMin: origEndMin };
+    }
     const endMin = Math.max(origStartMin + snapMin, Math.min(winEnd, origEndMin + deltaMin));
     return { startMin: origStartMin, endMin };
+}
+
+/** Whether a committed resize preview is a no-op (snapping pulled the edge back to
+ *  the original times) — the component must not fire a phantom onChange for it. */
+export function isNoopResize(origStartMin: number, origEndMin: number, previewStartMin: number, previewEndMin: number): boolean {
+    return origStartMin === previewStartMin && origEndMin === previewEndMin;
 }
 
 /** Create: the range between the anchor and the current pointer, at least `snapMin` long. */

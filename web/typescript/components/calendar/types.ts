@@ -2,8 +2,10 @@
 // Category / CalLabels / ENTER_MS moved to the shared layer; re-exported here so
 // the calendar's files keep one type hub.
 import { CalEvent } from '../calendarLogic';
+import { ResizeEdge } from './gestureLogic';
 import { Category } from '../../shared/types';
 import { CalLabels } from '../../shared/labelPacks';
+import { ShiftDef } from '../../shared/shifts';
 
 export { ENTER_MS } from '../../shared/enterAnimation';
 export type { Category, CalLabels };
@@ -45,9 +47,12 @@ export interface CalendarProps {
     dayStartHour: number;
     dayEndHour: number;
     slotMinutes: number;   // week/day grid resolution + snapping (a divisor of 60: 60/30/15/10/5)
+    shifts: ShiftDef[];    // week/day: labelled boundary lines at each shift's start time
     scrollToHour: number;
     scrollToNow: boolean;
     refreshSeconds: number;
+    followNow: boolean;    // live follow mode (two-way: the toolbar's Live toggle writes it back)
+    hiddenCategories: string[];   // legend filter (two-way: the prop is the source of truth; legend clicks write it back)
     labels: CalLabels;
     events: CalEvent[];
     // Recurring event definitions, kept separate so they can be bound to a small,
@@ -60,6 +65,7 @@ export interface CalendarProps {
 export interface Gesture {
     mode: GestureMode;
     surface?: 'month';        // set for a month-view day-to-day move (default: the time grid)
+    edge?: ResizeEdge;        // resize only: which edge was grabbed
     ev?: CalEvent;            // move / resize target
     startClientX: number;
     startClientY: number;
@@ -128,6 +134,5 @@ export interface CalendarState {
     editor: Editor | null;     // built-in new-event editor popover
     mini: MiniNav | null;      // mini-month navigator popover (null = closed)
     dayPop: DayPop | null;     // month-view "all events for a day" popover
-    hiddenCats: Set<string>;   // category ids hidden via the legend filter
     monthCap: number;          // how many chips fit a month cell (auto-fit; measured at runtime)
 }

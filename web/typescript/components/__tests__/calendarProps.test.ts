@@ -2,7 +2,7 @@ import { DEFAULT_LABELS, mapCalendarProps } from '../calendarProps';
 import { stubReader } from './_stubReader';
 
 describe('mapCalendarProps (calendar reducer)', () => {
-    it('applies defaults when config/data are empty', () => {
+    it('applies defaults when config/data/state are empty', () => {
         const p = mapCalendarProps(stubReader({}));
         expect(p.view).toBe('month');
         expect(p.showToolbar).toBe(true);
@@ -21,6 +21,8 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.scrollToHour).toBe(7);
         expect(p.scrollToNow).toBe(false);
         expect(p.refreshSeconds).toBe(0);
+        expect(p.followNow).toBe(false);
+        expect(p.hiddenCategories).toEqual([]);
         expect(p.emptyMessage).toBe('No events');
         expect(p.loading).toBe(false);
         expect(p.refetchDebounceMs).toBe(150);
@@ -41,9 +43,15 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.labels.editEvent).toBe('Edit event');
     });
 
+    it('reads followNow (live follow mode, two-way)', () => {
+        const p = mapCalendarProps(stubReader({ state: { followNow: true } }));
+        expect(p.followNow).toBe(true);
+    });
+
     it('labels: config.locale selects a built-in language pack', () => {
         const fr = mapCalendarProps(stubReader({ config: { locale: 'fr' } }));
         expect(fr.labels.today).toBe("Aujourd'hui");
+        expect(fr.labels.followNow).toBe('En direct');
         expect(fr.labels.month).toBe('Mois');
         expect(fr.labels.editEvent).toBe("Modifier l'événement");
         const de = mapCalendarProps(stubReader({ config: { locale: 'de-AT' } }));   // region variants match the base language
@@ -90,6 +98,21 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(slot(90)).toBe(60);   // > 60 -> fallback
     });
 
+    it('maps shifts: defaults to empty, drops malformed entries', () => {
+        expect(mapCalendarProps(stubReader({})).shifts).toEqual([]);
+        const p = mapCalendarProps(stubReader({
+            config: { shifts: [
+                { label: 'Early', start: '06:00' },
+                { label: 'Broken', start: '99:00' },   // invalid -> dropped
+                { label: 'Late', start: '14:00' }
+            ] }
+        }));
+        expect(p.shifts).toEqual([
+            { label: 'Early', start: '06:00' },
+            { label: 'Late', start: '14:00' }
+        ]);
+    });
+
     it('reads a custom (or empty/opt-out) emptyMessage', () => {
         expect(mapCalendarProps(stubReader({ config: { emptyMessage: 'Nothing scheduled' } })).emptyMessage).toBe('Nothing scheduled');
         expect(mapCalendarProps(stubReader({ config: { emptyMessage: '' } })).emptyMessage).toBe('');
@@ -97,7 +120,7 @@ describe('mapCalendarProps (calendar reducer)', () => {
 
     it('reads config overrides', () => {
         const p = mapCalendarProps(stubReader({
-            config: { view: 'week', editable: true, selectable: true, builtInEditor: true,
+            state: { view: 'week' }, config: { editable: true, selectable: true, builtInEditor: true,
                 timezone: 'America/Chicago', dayStartHour: 6, dayEndHour: 20,
                 scrollToNow: true, refreshSeconds: 60, showWeekends: false, weekStart: 'sunday' }
         }));
@@ -146,5 +169,20 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.events[1].display).toBe('background');
         expect(p.events[1].status).toBe('done');
         expect(p.events[2].rrule).toBeUndefined();
+    });
+});
+
+describe('emptyMessageText (empty-badge localization guard)', () => {
+    const { emptyMessageText } = require('../../shared/labelPacks');
+    const { calendarLabelBase, timelineLabelBase } = require('../../shared/labelPacks');
+
+    it('the English schema default follows the locale pack', () => {
+        expect(emptyMessageText('No events', calendarLabelBase('fr').noEvents)).toBe('Aucun événement');
+        expect(emptyMessageText('No events', timelineLabelBase('de').noEvents)).toBe('Keine Ereignisse');
+    });
+
+    it('any other value is an explicit author choice', () => {
+        expect(emptyMessageText('Nothing here', 'Aucun événement')).toBe('Nothing here');
+        expect(emptyMessageText('', 'Aucun événement')).toBe('');   // '' hides the badge
     });
 });

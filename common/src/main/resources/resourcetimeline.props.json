@@ -5,26 +5,25 @@
       "type": "object",
       "description": "Behaviour & appearance.",
       "properties": {
-        "zoom": {
-          "type": "string",
-          "enum": [
-            "hour",
-            "day",
-            "shift",
-            "week"
-          ],
-          "default": "day",
-          "description": "Zoom preset (two-way: the toolbar writes the user's choice back). Each preset sets the horizontal density, the paging span and the snap granularity. 'shift' is a day-wide window whose lower ticks/gridlines sit on the config.shifts boundaries; it requires config.shifts and is otherwise treated as 'day'."
-        },
         "showToolbar": {
           "type": "boolean",
           "default": true,
           "description": "Show the toolbar (title, zoom presets, navigation)."
         },
+        "showMiniNav": {
+          "type": "boolean",
+          "default": true,
+          "description": "Make the toolbar title a button that opens a mini-month navigator; click a day to jump the timeline there. When false the title is plain text."
+        },
+        "snapMinutes": {
+          "type": "number",
+          "default": 0,
+          "description": "Gesture snap granularity in minutes for drag-move, edge-resize, drag-to-create and the click-to-create slot start. 0 (default) keeps each zoom preset's built-in snap (hour 5, day/shift 15, week 60); a positive value overrides it at every zoom. Negative/invalid values are treated as 0."
+        },
         "rowHeight": {
           "type": "number",
           "default": 36,
-          "description": "Resource row height in pixels (20\u2013120)."
+          "description": "Resource row height in pixels (20–120)."
         },
         "timezone": {
           "type": "string",
@@ -39,12 +38,17 @@
         "refreshSeconds": {
           "type": "number",
           "default": 0,
-          "description": "Re-render every N seconds so the now-line ticks live (0 = off)."
+          "description": "Re-render every N seconds so the now-line ticks live (0 = off). Also the follow-now tick interval when state.followNow is armed (60s when unset)."
+        },
+        "emptyMessage": {
+          "type": "string",
+          "default": "No events",
+          "description": "Shown as a subtle toolbar badge when no events are configured (data.events and data.recurringEvents are both empty); its tooltip explains how to add events. Empty string = no message. The default ('No events') follows the locale packs (labels.noEvents); any other text overrides it, and '' hides the badge."
         },
         "loading": {
           "type": "boolean",
           "default": false,
-          "description": "Bind to your query state for a stale-while-revalidate loading bar."
+          "description": "Bind to your query state for a stale-while-revalidate loading bar; suppresses the empty-state badge while true."
         },
         "refetchDebounceMs": {
           "type": "number",
@@ -59,6 +63,10 @@
             "today": {
               "type": "string",
               "description": "Toolbar 'jump to today' button."
+            },
+            "followNow": {
+              "type": "string",
+              "description": "Toolbar live-follow toggle (state.followNow)."
             },
             "previous": {
               "type": "string",
@@ -87,6 +95,34 @@
             "noResources": {
               "type": "string",
               "description": "Empty text when config.resources is empty."
+            },
+            "statusTentative": {
+              "type": "string",
+              "description": "Hover popover status badge for status 'tentative'."
+            },
+            "statusCancelled": {
+              "type": "string",
+              "description": "Hover popover status badge for status 'cancelled'."
+            },
+            "statusDone": {
+              "type": "string",
+              "description": "Hover popover status badge for status 'done'."
+            },
+            "noEvents": {
+              "type": "string",
+              "description": "Localized default for the empty badge (the emptyMessage default follows it)."
+            },
+            "emptyHintIntro": {
+              "type": "string",
+              "description": "Empty-state badge tooltip: first line."
+            },
+            "emptyHintCreate": {
+              "type": "string",
+              "description": "Empty-state badge tooltip: second line when in-place creation is enabled."
+            },
+            "emptyHintBind": {
+              "type": "string",
+              "description": "Empty-state badge tooltip: second line when creation is not enabled."
             },
             "newEvent": {
               "type": "string",
@@ -302,7 +338,7 @@
         "editable": {
           "type": "boolean",
           "default": false,
-          "description": "Allow editing gestures: drag a bar to retime it, drag it onto another row to reassign, drag an edge to resize. Every gesture only FIRES onChange \u2014 your handler writes back to the data source."
+          "description": "Allow editing gestures: drag a bar to retime it, drag it onto another row to reassign, drag an edge to resize. Every gesture only FIRES onChange — your handler writes back to the data source."
         },
         "selectable": {
           "type": "boolean",
@@ -312,7 +348,7 @@
         "builtInEditor": {
           "type": "boolean",
           "default": false,
-          "description": "Built-in editor popover \u2014 for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
+          "description": "Built-in editor popover — for create (with selectable) and click-to-edit/delete (with editable). Recurring occurrences are not editable in place (recurrence is display-only for now); clicking one fires onEventClick instead."
         },
         "showExport": {
           "type": "boolean",
@@ -327,14 +363,6 @@
           ],
           "default": "monday",
           "description": "First day of the week in the mini month navigator (title popover)."
-        },
-        "collapsedGroups": {
-          "type": "array",
-          "default": [],
-          "description": "Group names whose sections are collapsed (two-way: clicking a group header writes the user's choice back). Set it to open a view pre-collapsed, or bind it to drive/persist the state. Collapse is keyed on the group NAME, so a group split into multiple sections collapses everywhere.",
-          "items": {
-            "type": "string"
-          }
         },
         "shifts": {
           "type": "array",
@@ -358,7 +386,7 @@
     },
     "data": {
       "type": "object",
-      "description": "The controlled event data. The timeline never mutates it \u2014 editing gestures fire onChange and your handler writes back.",
+      "description": "The controlled event data. The timeline never mutates it — editing gestures fire onChange and your handler writes back.",
       "properties": {
         "events": {
           "type": "array",
@@ -378,6 +406,50 @@
         }
       }
     },
+    "state": {
+      "type": "object",
+      "description": "Two-way runtime state: the component writes the user's choices back here, and every key can be pre-set (or bound) to drive the view.",
+      "default": {
+        "zoom": "day",
+        "followNow": false,
+        "collapsedGroups": [],
+        "hiddenCategories": []
+      },
+      "properties": {
+        "zoom": {
+          "type": "string",
+          "enum": [
+            "hour",
+            "day",
+            "shift",
+            "week"
+          ],
+          "default": "day",
+          "description": "Zoom preset (two-way: the toolbar writes the user's choice back; set it to switch the view). Each preset sets the horizontal density, the paging span and the snap granularity. 'shift' is a day-wide window whose lower ticks/gridlines sit on the config.shifts boundaries; it requires config.shifts and is otherwise treated as 'day'."
+        },
+        "followNow": {
+          "type": "boolean",
+          "default": false,
+          "description": "Live follow mode (two-way: the toolbar's Live toggle writes it back; pre-set it true so a wall display opens live). While armed the window re-anchors on today — the same way the Today button does — every config.refreshSeconds (60s when unset, min 1s) so the now-line stays in view; manual navigation (prev/next or a mini-nav day pick) turns it off, Today/zoom/legend/edits don't. Note: while armed, the ticking window writes will mark an open view dirty in the Designer."
+        },
+        "collapsedGroups": {
+          "type": "array",
+          "default": [],
+          "description": "Group names whose sections are collapsed (two-way: clicking a group header writes the user's choice back). Pre-set it to open a view collapsed, or bind it to drive/persist the state. Collapse is keyed on the group NAME, so a group split into multiple sections collapses everywhere.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hiddenCategories": {
+          "type": "array",
+          "default": [],
+          "description": "Category ids filtered out by the legend (two-way: clicking a legend item writes the user's choice back). Pre-set it to open with categories hidden, or bind it to drive/persist the filter.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "output": {
       "type": "object",
       "description": "Read-only, derived.",
@@ -385,20 +457,22 @@
         "visibleStart": {
           "type": "string",
           "default": "",
-          "description": "Start of the visible window as an ISO-8601 UTC instant (half-open [start, end)) \u2014 bind your query: ts >= visibleStart AND ts < visibleEnd."
+          "description": "Start of the visible window as an ISO-8601 UTC instant (half-open [start, end)) — bind your query: ts >= visibleStart AND ts < visibleEnd."
         },
         "visibleEnd": {
           "type": "string",
           "default": "",
           "description": "End of the visible window as an ISO-8601 UTC instant (exclusive)."
         },
-        "hiddenCategories": {
-          "type": "array",
-          "default": [],
-          "description": "Category ids currently filtered out via the legend (read-only).",
-          "items": {
-            "type": "string"
-          }
+        "visibleStartMs": {
+          "type": "number",
+          "default": 0,
+          "description": "Start of the visible window as raw epoch milliseconds (read-only; same debounced write as visibleStart) — for binding epoch/t_stamp queries directly, no parse step."
+        },
+        "visibleEndMs": {
+          "type": "number",
+          "default": 0,
+          "description": "End of the visible window as raw epoch milliseconds (exclusive, read-only) — for binding epoch/t_stamp queries directly."
         }
       }
     }

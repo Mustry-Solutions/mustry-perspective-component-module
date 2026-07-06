@@ -6,14 +6,16 @@ import { addDays, intlFormat, parseDate } from '../../shared/dateUtils';
 import { isTimed, hhmm, timeMinutes } from '../calendarLogic';
 import { Category, HoverInfo, DEFAULT_DUR_MIN } from './types';
 import { resolveColor, eventIcon } from '../../shared/eventStyle';
+import { CalLabels } from '../../shared/labelPacks';
 
 interface HoverPopoverProps {
     hover: HoverInfo;
     locale: string;
     categories: Category[];
+    labels: CalLabels;
 }
 
-export function HoverPopover({ hover, locale, categories }: HoverPopoverProps): React.ReactElement {
+export function HoverPopover({ hover, locale, categories, labels }: HoverPopoverProps): React.ReactElement {
     const ev = hover.event;
     const width = 240;
     let left = hover.rect.right + 8;
@@ -43,13 +45,13 @@ export function HoverPopover({ hover, locale, categories }: HoverPopoverProps): 
     } else if (!sameDay && ev.end) {
         // multi-day all-day: end is exclusive, so the last shown day is end - 1
         const lastDate = addDays(parseDate(ev.end) as Date, -1);
-        timeStr = `All day · ${dateStr} – ${dFmt.format(lastDate)}`;
+        timeStr = `${labels.allDay} · ${dateStr} – ${dFmt.format(lastDate)}`;
     } else {
-        timeStr = `All day · ${dateStr}`;
+        timeStr = `${labels.allDay} · ${dateStr}`;
     }
-    const statusLabel = ev.status === 'tentative' ? 'Tentative'
-        : ev.status === 'cancelled' ? 'Cancelled'
-            : ev.status === 'done' ? 'Done' : '';
+    const statusLabel = ev.status === 'tentative' ? labels.statusTentative
+        : ev.status === 'cancelled' ? labels.statusCancelled
+            : ev.status === 'done' ? labels.statusDone : '';
     const icon = eventIcon(categories, ev);
     const color = resolveColor(categories, ev);
     return ReactDOM.createPortal(

@@ -3,13 +3,15 @@
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
-import { ShiftDef, TimelineEvent, TimelineResource, TimelineZoom, shiftStartMinutes } from './timelineLogic';
+import { ShiftDef, parseShifts } from '../../shared/shifts';
+import { TimelineEvent, TimelineResource, TimelineZoom } from './timelineLogic';
 
 export type { TimelineEvent };
 
 export interface TimelineProps {
-    zoom: TimelineZoom;      // two-way: the toolbar writes the choice back
+    zoom: TimelineZoom;      // two-way (state.zoom): the toolbar writes the choice back
     showToolbar: boolean;
+    showMiniNav: boolean;    // title opens the mini month navigator (false = plain title)
     showLegend: boolean;
     editable: boolean;       // drag to move/reassign, edge-resize, click-to-edit (with builtInEditor)
     selectable: boolean;     // drag empty track to create
@@ -17,11 +19,15 @@ export interface TimelineProps {
     showExport: boolean;     // toolbar CSV-download button
     weekStart: 'monday' | 'sunday';   // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
-    collapsedGroups: string[];        // two-way: clicking a group header writes it back
+    snapMinutes: number;              // gesture snap override; 0 = each zoom preset's built-in
+    collapsedGroups: string[];        // two-way (state.collapsedGroups): clicking a group header writes it back
+    hiddenCategories: string[];       // two-way (state.hiddenCategories): the legend filter writes it back
     rowHeight: number;
     timezone: string;        // IANA zone for display (empty = browser-local)
     locale: string;
     refreshSeconds: number;  // periodic re-render so the now-line ticks (0 = off)
+    followNow: boolean;      // two-way (state.followNow): the toolbar's Live toggle writes it back
+    emptyMessage: string;    // toolbar badge when no events are configured ('' = hidden)
     loading: boolean;
     refetchDebounceMs: number;
     labels: TimelineLabels;
@@ -58,14 +64,13 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         const v = tree.readString(`config.labels.${k}`, '');
         labels[k] = v === '' || v === EN_TIMELINE_LABELS[k] ? base[k] : v;
     });
-    const shifts: ShiftDef[] = (tree.readArray('config.shifts', []) || [])
-        .map((s: any) => ({ label: String((s && s.label) || ''), start: String((s && s.start) || '') }))
-        .filter((s: ShiftDef) => shiftStartMinutes(s.start) !== null);
+    const shifts: ShiftDef[] = parseShifts(tree.readArray('config.shifts', []));
     return {
         // 'shift' is only meaningful when shifts are configured; else fall back to day.
         zoom: ((z) => (z === 'hour' || z === 'week' || (z === 'shift' && shifts.length) ? z : 'day'))(
-            tree.readString('config.zoom', 'day')) as TimelineZoom,
+            tree.readString('state.zoom', 'day')) as TimelineZoom,
         showToolbar: tree.readBoolean('config.showToolbar', true),
+        showMiniNav: tree.readBoolean('config.showMiniNav', true),
         showLegend: tree.readBoolean('config.showLegend', true),
         editable: tree.readBoolean('config.editable', false),
         selectable: tree.readBoolean('config.selectable', false),
@@ -73,11 +78,16 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         showExport: tree.readBoolean('config.showExport', false),
         weekStart: (tree.readString('config.weekStart', 'monday') === 'sunday' ? 'sunday' : 'monday'),
         shifts,
-        collapsedGroups: (tree.readArray('config.collapsedGroups', []) || []).map((g: any) => String(g)).filter((g: string) => g),
+        // 0 = keep each zoom preset's built-in snap; anything non-finite/non-positive -> 0.
+        snapMinutes: ((n) => (Number.isFinite(n) && n > 0 ? n : 0))(tree.readNumber('config.snapMinutes', 0)),
+        collapsedGroups: (tree.readArray('state.collapsedGroups', []) || []).map((g: any) => String(g)).filter((g: string) => g),
+        hiddenCategories: (tree.readArray('state.hiddenCategories', []) || []).map((c: any) => String(c)).filter((c: string) => c),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
         timezone: tree.readString('config.timezone', ''),
         locale,
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
+        followNow: tree.readBoolean('state.followNow', false),
+        emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         loading: tree.readBoolean('config.loading', false),
         refetchDebounceMs: Math.max(0, tree.readNumber('config.refetchDebounceMs', 150)),
         labels: labels as unknown as TimelineLabels,

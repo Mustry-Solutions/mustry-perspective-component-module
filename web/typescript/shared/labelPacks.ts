@@ -13,10 +13,12 @@ export interface CalLabels {
     // toolbar
     month: string; week: string; day: string; list: string;
     today: string;
+    followNow: string;            // toolbar live-follow toggle ('Live')
     exportCsv: string;            // export button tooltip / accessible label
     previous: string; next: string;   // nav arrows (accessible labels)
     // grids, list, popovers
     allDayTime: string;           // the 'all-day' time-cell/gutter label
+    statusTentative: string; statusCancelled: string; statusDone: string;   // hover-popover status badge
     noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
     more: string;                 // month-cell overflow, '{n}' = hidden count
     showDayEvents: string;        // date-number tooltip (opens the day popover)
@@ -69,14 +71,23 @@ export interface LabelConfig {
     presetAfterLatest: string;     // disabled-preset tooltip
     presetTooShort: string;        // disabled-preset tooltip
     presetTooLong: string;         // disabled-preset tooltip
+    dialogLabel: string;           // accessible name of the popover dialog panel
 }
 
 /** The resource timeline's overridable UI text. */
 export interface TimelineLabels {
     today: string;
+    followNow: string;                // toolbar live-follow toggle ('Live')
     previous: string; next: string;   // nav arrows (accessible labels)
     zoomHour: string; zoomDay: string; zoomShift: string; zoomWeek: string;   // zoom-preset buttons
     noResources: string;              // empty text when config.resources is empty
+    noEvents: string;                 // localized empty-badge text (the emptyMessage default follows it)
+    // hover popover status badge (event.status)
+    statusTentative: string; statusCancelled: string; statusDone: string;
+    // empty-state badge tooltip (ResourceTimeline.emptyHint)
+    emptyHintIntro: string;
+    emptyHintCreate: string;
+    emptyHintBind: string;
     exportCsv: string;                // export button tooltip / accessible label
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // built-in editor
@@ -99,9 +110,15 @@ export interface TimelineLabels {
 
 export const EN_TIMELINE_LABELS: TimelineLabels = {
     today: 'Today',
+    followNow: 'Live',
     previous: 'Previous', next: 'Next',
     zoomHour: 'Hour', zoomDay: 'Day', zoomShift: 'Shift', zoomWeek: 'Week',
     noResources: 'No resources',
+    statusTentative: 'Tentative', statusCancelled: 'Cancelled', statusDone: 'Done',
+    noEvents: 'No events',
+    emptyHintIntro: 'This timeline shows the events in its data, one row per resource.',
+    emptyHintCreate: 'Add an event: drag over an empty span on a resource row.',
+    emptyHintBind: 'Events come from the data binding — enable "selectable" + "builtInEditor" to add them here.',
     exportCsv: 'Export events to CSV',
     previousMonth: 'Previous month', nextMonth: 'Next month',
     newEvent: 'New event', editEvent: 'Edit event',
@@ -123,9 +140,15 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
 const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     fr: {
         today: "Aujourd'hui",
+        followNow: 'En direct',
         previous: 'Précédent', next: 'Suivant',
         zoomHour: 'Heure', zoomDay: 'Jour', zoomShift: 'Poste', zoomWeek: 'Semaine',
         noResources: 'Aucune ressource',
+        statusTentative: 'Provisoire', statusCancelled: 'Annulé', statusDone: 'Terminé',
+        noEvents: 'Aucun événement',
+        emptyHintIntro: 'Cette timeline affiche les événements de ses données, une ligne par ressource.',
+        emptyHintCreate: "Ajouter un événement : faites glisser sur une plage vide d'une ligne de ressource.",
+        emptyHintBind: 'Les événements proviennent de la liaison de données — activez « selectable » + « builtInEditor » pour les ajouter ici.',
         exportCsv: 'Exporter les événements en CSV',
         previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
         newEvent: 'Nouvel événement', editEvent: "Modifier l'événement",
@@ -145,9 +168,15 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     },
     de: {
         today: 'Heute',
+        followNow: 'Live',
         previous: 'Zurück', next: 'Weiter',
         zoomHour: 'Stunde', zoomDay: 'Tag', zoomShift: 'Schicht', zoomWeek: 'Woche',
         noResources: 'Keine Ressourcen',
+        statusTentative: 'Vorläufig', statusCancelled: 'Abgesagt', statusDone: 'Erledigt',
+        noEvents: 'Keine Ereignisse',
+        emptyHintIntro: 'Diese Timeline zeigt die Ereignisse ihrer Daten, eine Zeile pro Ressource.',
+        emptyHintCreate: 'Ereignis hinzufügen: über einen leeren Bereich einer Ressourcenzeile ziehen.',
+        emptyHintBind: 'Ereignisse kommen aus der Datenanbindung — aktivieren Sie „selectable“ + „builtInEditor“, um sie hier anzulegen.',
         exportCsv: 'Ereignisse als CSV exportieren',
         previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
         newEvent: 'Neues Ereignis', editEvent: 'Ereignis bearbeiten',
@@ -167,9 +196,15 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     },
     es: {
         today: 'Hoy',
+        followNow: 'En vivo',
         previous: 'Anterior', next: 'Siguiente',
         zoomHour: 'Hora', zoomDay: 'Día', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sin recursos',
+        statusTentative: 'Provisional', statusCancelled: 'Cancelado', statusDone: 'Completado',
+        noEvents: 'Sin eventos',
+        emptyHintIntro: 'Esta línea de tiempo muestra los eventos de sus datos, una fila por recurso.',
+        emptyHintCreate: 'Añadir un evento: arrastre sobre un tramo vacío de una fila de recurso.',
+        emptyHintBind: 'Los eventos provienen del enlace de datos — active «selectable» + «builtInEditor» para añadirlos aquí.',
         exportCsv: 'Exportar eventos a CSV',
         previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
         newEvent: 'Nuevo evento', editEvent: 'Editar evento',
@@ -189,9 +224,15 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     },
     nl: {
         today: 'Vandaag',
+        followNow: 'Live',
         previous: 'Vorige', next: 'Volgende',
         zoomHour: 'Uur', zoomDay: 'Dag', zoomShift: 'Ploeg', zoomWeek: 'Week',
         noResources: 'Geen resources',
+        statusTentative: 'Voorlopig', statusCancelled: 'Geannuleerd', statusDone: 'Afgerond',
+        noEvents: 'Geen evenementen',
+        emptyHintIntro: 'Deze tijdlijn toont de evenementen uit zijn data, één rij per resource.',
+        emptyHintCreate: 'Evenement toevoegen: sleep over een leeg stuk van een resource-rij.',
+        emptyHintBind: 'Evenementen komen uit de databinding — zet "selectable" + "builtInEditor" aan om ze hier toe te voegen.',
         exportCsv: 'Evenementen exporteren als CSV',
         previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
         newEvent: 'Nieuw evenement', editEvent: 'Evenement bewerken',
@@ -211,9 +252,15 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     },
     it: {
         today: 'Oggi',
+        followNow: 'In diretta',
         previous: 'Precedente', next: 'Successivo',
         zoomHour: 'Ora', zoomDay: 'Giorno', zoomShift: 'Turno', zoomWeek: 'Settimana',
         noResources: 'Nessuna risorsa',
+        statusTentative: 'Provvisorio', statusCancelled: 'Annullato', statusDone: 'Completato',
+        noEvents: 'Nessun evento',
+        emptyHintIntro: 'Questa timeline mostra gli eventi dei suoi dati, una riga per risorsa.',
+        emptyHintCreate: 'Aggiungi un evento: trascina su un tratto vuoto di una riga risorsa.',
+        emptyHintBind: 'Gli eventi provengono dal binding dei dati — attiva "selectable" + "builtInEditor" per aggiungerli qui.',
         exportCsv: 'Esporta eventi in CSV',
         previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
         newEvent: 'Nuovo evento', editEvent: 'Modifica evento',
@@ -233,9 +280,15 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
     },
     pt: {
         today: 'Hoje',
+        followNow: 'Ao vivo',
         previous: 'Anterior', next: 'Seguinte',
         zoomHour: 'Hora', zoomDay: 'Dia', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sem recursos',
+        statusTentative: 'Provisório', statusCancelled: 'Cancelado', statusDone: 'Concluído',
+        noEvents: 'Sem eventos',
+        emptyHintIntro: 'Esta linha do tempo mostra os eventos dos seus dados, uma linha por recurso.',
+        emptyHintCreate: 'Adicionar um evento: arraste sobre um trecho vazio de uma linha de recurso.',
+        emptyHintBind: 'Os eventos vêm da ligação de dados — ative "selectable" + "builtInEditor" para os adicionar aqui.',
         exportCsv: 'Exportar eventos para CSV',
         previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
         newEvent: 'Novo evento', editEvent: 'Editar evento',
@@ -268,9 +321,11 @@ export function primaryLang(locale: string): string {
 export const EN_CALENDAR_LABELS: CalLabels = {
     month: 'Month', week: 'Week', day: 'Day', list: 'List',
     today: 'Today',
+    followNow: 'Live',
     exportCsv: 'Export events to CSV',
     previous: 'Previous', next: 'Next',
     allDayTime: 'all-day',
+    statusTentative: 'Tentative', statusCancelled: 'Cancelled', statusDone: 'Done',
     noEvents: 'No events',
     more: '+{n} more',
     showDayEvents: "Show this day's events",
@@ -298,9 +353,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     fr: {
         month: 'Mois', week: 'Semaine', day: 'Jour', list: 'Liste',
         today: "Aujourd'hui",
+        followNow: 'En direct',
         exportCsv: 'Exporter les événements en CSV',
         previous: 'Précédent', next: 'Suivant',
         allDayTime: 'journée',
+        statusTentative: 'Provisoire', statusCancelled: 'Annulé', statusDone: 'Terminé',
         noEvents: 'Aucun événement',
         more: '+{n} autres',
         showDayEvents: 'Voir les événements du jour',
@@ -326,9 +383,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     de: {
         month: 'Monat', week: 'Woche', day: 'Tag', list: 'Liste',
         today: 'Heute',
+        followNow: 'Live',
         exportCsv: 'Ereignisse als CSV exportieren',
         previous: 'Zurück', next: 'Weiter',
         allDayTime: 'ganztägig',
+        statusTentative: 'Vorläufig', statusCancelled: 'Abgesagt', statusDone: 'Erledigt',
         noEvents: 'Keine Ereignisse',
         more: '+{n} weitere',
         showDayEvents: 'Ereignisse dieses Tages anzeigen',
@@ -354,9 +413,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     es: {
         month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista',
         today: 'Hoy',
+        followNow: 'En vivo',
         exportCsv: 'Exportar eventos a CSV',
         previous: 'Anterior', next: 'Siguiente',
         allDayTime: 'todo el día',
+        statusTentative: 'Provisional', statusCancelled: 'Cancelado', statusDone: 'Completado',
         noEvents: 'Sin eventos',
         more: '+{n} más',
         showDayEvents: 'Ver los eventos de este día',
@@ -382,9 +443,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     nl: {
         month: 'Maand', week: 'Week', day: 'Dag', list: 'Lijst',
         today: 'Vandaag',
+        followNow: 'Live',
         exportCsv: 'Evenementen exporteren als CSV',
         previous: 'Vorige', next: 'Volgende',
         allDayTime: 'hele dag',
+        statusTentative: 'Voorlopig', statusCancelled: 'Geannuleerd', statusDone: 'Afgerond',
         noEvents: 'Geen evenementen',
         more: '+{n} meer',
         showDayEvents: 'Toon de evenementen van deze dag',
@@ -410,9 +473,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     it: {
         month: 'Mese', week: 'Settimana', day: 'Giorno', list: 'Elenco',
         today: 'Oggi',
+        followNow: 'In diretta',
         exportCsv: 'Esporta eventi in CSV',
         previous: 'Precedente', next: 'Successivo',
         allDayTime: 'tutto il giorno',
+        statusTentative: 'Provvisorio', statusCancelled: 'Annullato', statusDone: 'Completato',
         noEvents: 'Nessun evento',
         more: '+{n} altri',
         showDayEvents: 'Mostra gli eventi di questo giorno',
@@ -438,9 +503,11 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
     pt: {
         month: 'Mês', week: 'Semana', day: 'Dia', list: 'Lista',
         today: 'Hoje',
+        followNow: 'Ao vivo',
         exportCsv: 'Exportar eventos para CSV',
         previous: 'Anterior', next: 'Seguinte',
         allDayTime: 'dia inteiro',
+        statusTentative: 'Provisório', statusCancelled: 'Cancelado', statusDone: 'Concluído',
         noEvents: 'Sem eventos',
         more: '+{n} mais',
         showDayEvents: 'Mostrar os eventos deste dia',
@@ -483,7 +550,8 @@ export const EN_PICKER_LABELS: LabelConfig = {
     presetBeforeEarliest: 'Starts before the earliest selectable date ({date})',
     presetAfterLatest: 'Ends after the latest selectable date ({date})',
     presetTooShort: 'Shorter than the {n}-day minimum',
-    presetTooLong: 'Exceeds the {n}-day maximum'
+    presetTooLong: 'Exceeds the {n}-day maximum',
+    dialogLabel: 'Choose date range'
 };
 
 const PICKER_PACKS: { [lang: string]: LabelConfig } = {
@@ -505,7 +573,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Commence avant la première date sélectionnable ({date})',
         presetAfterLatest: 'Se termine après la dernière date sélectionnable ({date})',
         presetTooShort: 'Plus court que le minimum de {n} jour(s)',
-        presetTooLong: 'Dépasse le maximum de {n} jour(s)'
+        presetTooLong: 'Dépasse le maximum de {n} jour(s)',
+        dialogLabel: 'Choisissez une plage de dates'
     },
     de: {
         startTime: 'Startzeit', endTime: 'Endzeit',
@@ -525,7 +594,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Beginnt vor dem frühesten wählbaren Datum ({date})',
         presetAfterLatest: 'Endet nach dem spätesten wählbaren Datum ({date})',
         presetTooShort: 'Unterschreitet das Minimum von {n} Tag(en)',
-        presetTooLong: 'Überschreitet das Maximum von {n} Tag(en)'
+        presetTooLong: 'Überschreitet das Maximum von {n} Tag(en)',
+        dialogLabel: 'Zeitraum auswählen'
     },
     es: {
         startTime: 'Hora de inicio', endTime: 'Hora de fin',
@@ -545,7 +615,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Comienza antes de la primera fecha seleccionable ({date})',
         presetAfterLatest: 'Termina después de la última fecha seleccionable ({date})',
         presetTooShort: 'Inferior al mínimo de {n} día(s)',
-        presetTooLong: 'Supera el máximo de {n} día(s)'
+        presetTooLong: 'Supera el máximo de {n} día(s)',
+        dialogLabel: 'Elija un rango de fechas'
     },
     nl: {
         startTime: 'Begintijd', endTime: 'Eindtijd',
@@ -565,7 +636,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Begint vóór de vroegste selecteerbare datum ({date})',
         presetAfterLatest: 'Eindigt na de laatste selecteerbare datum ({date})',
         presetTooShort: 'Korter dan het minimum van {n} dag(en)',
-        presetTooLong: 'Langer dan het maximum van {n} dag(en)'
+        presetTooLong: 'Langer dan het maximum van {n} dag(en)',
+        dialogLabel: 'Kies een periode'
     },
     it: {
         startTime: 'Ora di inizio', endTime: 'Ora di fine',
@@ -585,7 +657,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Inizia prima della prima data selezionabile ({date})',
         presetAfterLatest: "Termina dopo l'ultima data selezionabile ({date})",
         presetTooShort: 'Inferiore al minimo di {n} giorno/i',
-        presetTooLong: 'Supera il massimo di {n} giorno/i'
+        presetTooLong: 'Supera il massimo di {n} giorno/i',
+        dialogLabel: 'Scegli un intervallo di date'
     },
     pt: {
         startTime: 'Hora de início', endTime: 'Hora de fim',
@@ -605,7 +678,8 @@ const PICKER_PACKS: { [lang: string]: LabelConfig } = {
         presetBeforeEarliest: 'Começa antes da primeira data selecionável ({date})',
         presetAfterLatest: 'Termina depois da última data selecionável ({date})',
         presetTooShort: 'Inferior ao mínimo de {n} dia(s)',
-        presetTooLong: 'Excede o máximo de {n} dia(s)'
+        presetTooLong: 'Excede o máximo de {n} dia(s)',
+        dialogLabel: 'Escolha um intervalo de datas'
     }
 };
 
@@ -617,4 +691,11 @@ export function calendarLabelBase(locale: string): CalLabels {
 /** The picker's default label set for a locale (English when not bundled). */
 export function pickerLabelBase(locale: string): LabelConfig {
     return PICKER_PACKS[primaryLang(locale)] || EN_PICKER_LABELS;
+}
+
+/** The empty-badge text: the schema default ('No events') counts as "unset" so it
+ *  follows the locale pack's noEvents; any other value (including '' = hide the
+ *  badge) is an explicit author choice. */
+export function emptyMessageText(configured: string, localizedNoEvents: string): string {
+    return configured === 'No events' ? localizedNoEvents : configured;
 }

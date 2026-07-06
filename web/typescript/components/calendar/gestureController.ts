@@ -6,7 +6,7 @@
 import * as React from 'react';
 import { CalEvent, minuteFromOffset, snapMinutes, timeMinutes } from '../calendarLogic';
 import { DEFAULT_DUR_MIN, Gesture, Preview, hourHeightPx } from './types';
-import { cellAt, CellBound, colAtX, commitDecision, CommitKind, GestureFlags, hasMoved, movePreview, resizePreview, createPreview } from './gestureLogic';
+import { cellAt, CellBound, colAtX, commitDecision, CommitKind, GestureFlags, hasMoved, movePreview, resizePreview, ResizeEdge, createPreview } from './gestureLogic';
 
 /** The prop values a gesture reads — fetched per event so mid-gesture prop edits are honoured. */
 export interface GestureEnv {
@@ -82,17 +82,16 @@ export class GestureController {
         }
     };
 
-    startResize = (ev: CalEvent, e: React.PointerEvent): void => {
+    startResize = (ev: CalEvent, edge: ResizeEdge, e: React.PointerEvent): void => {
         if (!this.host.env().editable || !this.begin(e)) {
             return;
         }
         e.preventDefault();
         e.stopPropagation();
-        const { s, e: end } = this.eventMinutes(ev);
-        const day = ev.start.slice(0, 10);
+        const { day, s, e: end } = this.resizeMinutes(ev, edge);
         this.captureCols();
         this.gesture = {
-            mode: 'resize', ev, startClientX: e.clientX, startClientY: e.clientY,
+            mode: 'resize', edge, ev, startClientX: e.clientX, startClientY: e.clientY,
             origStartMin: s, origEndMin: end, durationMin: end - s, origDayIso: day, moved: false
         };
         this.addDocListeners();
@@ -149,6 +148,26 @@ export class GestureController {
     /** Pixels-per-hour for the current grid resolution (must match TimeGrid's). */
     private hourPx(): number {
         return hourHeightPx(this.host.env().slotMinutes);
+    }
+
+    /** Resize anchoring: the day the grabbed edge lives on and the event's segment
+     *  minutes there. A multi-day event's far edge is represented by the window
+     *  boundary (its segment is clamped there), so the grabbed edge is still bounded
+     *  by "at least one slot remains" within the visible day. */
+    private resizeMinutes(ev: CalEvent, edge: ResizeEdge): { day: string; s: number; e: number } {
+        const { dayStartHour, dayEndHour } = this.host.env();
+        const startDay = ev.start.slice(0, 10);
+        const endDay = ev.end && ev.end.length >= 10 ? ev.end.slice(0, 10) : startDay;
+        if (startDay === endDay) {
+            const { s, e } = this.eventMinutes(ev);
+            return { day: startDay, s, e };
+        }
+        if (edge === 'start') {
+            const sm = timeMinutes(ev.start);
+            return { day: startDay, s: sm === null ? 0 : sm, e: dayEndHour * 60 };
+        }
+        const em = ev.end ? timeMinutes(ev.end) : null;
+        return { day: endDay, s: dayStartHour * 60, e: em === null ? dayEndHour * 60 : em };
     }
 
     /** A timed event's [start, end] minutes (end falls back to the default duration). */
@@ -248,7 +267,7 @@ export class GestureController {
             const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd);
             this.setPreview({ mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.host.resolveColor(g.ev!), dayIso: col.day, startMin, endMin });
         } else if (g.mode === 'resize') {
-            const { startMin, endMin } = resizePreview(g.origStartMin, g.origEndMin, deltaMin, winEnd, slotMinutes);
+            const { startMin, endMin } = resizePreview(g.edge || 'end', g.origStartMin, g.origEndMin, deltaMin, winStart, winEnd, slotMinutes);
             this.setPreview({ mode: 'resize', eventId: g.ev!.id, title: g.ev!.title, color: this.host.resolveColor(g.ev!), dayIso: g.origDayIso, startMin, endMin });
         } else if (selectable && e.pointerType !== 'touch') {
             // Drag-to-create is disabled on touch: a vertical drag on empty time scrolls the

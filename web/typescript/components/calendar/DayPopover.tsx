@@ -2,7 +2,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { intlFormat, parseDate, today } from '../../shared/dateUtils';
-import { CalEvent, timeMinutes } from '../calendarLogic';
+import { CalEvent, isOccurrence, timeMinutes } from '../calendarLogic';
 import { CalLabels, Category, DayPop } from './types';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
@@ -40,6 +40,9 @@ export function DayPopover({ dayPop, events, locale, categories, labels, onActiv
                             <span className="cal-daypop-time">
                                 {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                             </span>
+                            {isOccurrence(ev) && (
+                                <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                            )}
                             <EventIcon ev={ev} categories={categories} />
                             <span className="cal-daypop-title">{ev.title}</span>
                         </button>

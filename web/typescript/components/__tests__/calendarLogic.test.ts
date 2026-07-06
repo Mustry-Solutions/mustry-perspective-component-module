@@ -1,8 +1,10 @@
 import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents,
-    snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv,
-    backgroundBandsForDay, CalEvent
+    snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv, isOccurrence,
+    backgroundBandsForDay, followTickMs, followDisarms, followCursorStale,
+    toggleHiddenCategory, filterHiddenCategories,
+    visibleRangeMs, CalEvent
 } from '../calendarLogic';
 import { expandEvents } from '../../shared/recurrence';
 
@@ -410,5 +412,142 @@ describe('eventsToCsv', () => {
         expect(row).toContain('"\'=HYPERLINK(""http://x"")"');
         expect(row).toContain("'@cmd");
         expect(row).toContain("'-run");
+    });
+
+    it('appends recurring series definitions as-is (not expanded occurrences)', () => {
+        const csv = eventsToCsv(
+            [{ id: '1', title: 'Standup', start: '2026-06-24T09:00' }],
+            [{ id: 'r1', title: 'Handover', start: '2026-06-01T06:00:00', rrule: { freq: 'daily' } }]
+        );
+        const lines = csv.split('\r\n');
+        expect(lines).toHaveLength(3);   // header + windowed event + series definition
+        expect(lines[2]).toBe('r1,Handover,2026-06-01T06:00:00,,false,,,,,"{""freq"":""daily""}"');
+    });
+
+    it('dedupes by id when a series is bound via both sources', () => {
+        const series: CalEvent = { id: 'r1', title: 'R', start: '2026-06-01', rrule: { freq: 'weekly' } };
+        const csv = eventsToCsv([series, { id: '1', title: 'A', start: '2026-06-02' }], [series]);
+        expect(csv.split('\r\n')).toHaveLength(3);   // header + two unique rows
+    });
+});
+
+describe('isOccurrence', () => {
+    it('detects an expanded occurrence by its "base::date" id', () => {
+        expect(isOccurrence({ id: 'r1::2026-06-24', title: 'R', start: '2026-06-24T06:00:00' })).toBe(true);
+        expect(isOccurrence({ id: 'r1', title: 'R', start: '2026-06-24T06:00:00' })).toBe(false);
+        expect(isOccurrence({ id: '', title: 'R', start: '2026-06-24' })).toBe(false);
+    });
+
+    it('flags exactly the events expandEvents produced from a series', () => {
+        const out = expandEvents<CalEvent>([
+            { id: 'r1', title: 'R', start: '2026-06-22T06:00:00', rrule: { freq: 'daily' } },
+            { id: 'p1', title: 'P', start: '2026-06-22T10:00:00' }
+        ], new Date(2026, 5, 22), new Date(2026, 5, 24));
+        expect(out.filter(isOccurrence).map((e) => e.id)).toEqual(['r1::2026-06-22', 'r1::2026-06-23']);
+        expect(isOccurrence(out.find((e) => e.id === 'p1')!)).toBe(false);
+    });
+});
+
+describe('follow-now (live) mode', () => {
+    it('followTickMs: refreshSeconds when > 0, 60s fallback, 1s floor', () => {
+        expect(followTickMs(30)).toBe(30000);
+        expect(followTickMs(1)).toBe(1000);
+        expect(followTickMs(0)).toBe(60000);       // unset -> one minute
+        expect(followTickMs(-5)).toBe(60000);
+        expect(followTickMs(0.2)).toBe(1000);      // clamped to the 1s minimum
+    });
+
+    it('followDisarms: paging and mini-nav picks disarm; Today / view / legend / edits do not', () => {
+        expect(followDisarms('page')).toBe(true);
+        expect(followDisarms('miniPick')).toBe(true);
+        expect(followDisarms('today')).toBe(false);
+        expect(followDisarms('view')).toBe(false);
+        expect(followDisarms('legend')).toBe(false);
+        expect(followDisarms('edit')).toBe(false);
+    });
+
+    it('followCursorStale: only a day change re-anchors (the no-op guard)', () => {
+        expect(followCursorStale(new Date(2026, 5, 17), new Date(2026, 5, 17))).toBe(false);
+        expect(followCursorStale(new Date(2026, 5, 17), new Date(2026, 5, 18))).toBe(true);   // rolled past midnight
+        expect(followCursorStale(new Date(2026, 5, 17), new Date(2026, 6, 17))).toBe(true);   // different month
+        // Time-of-day on the cursor is irrelevant — only the day matters.
+        expect(followCursorStale(new Date(2026, 5, 17, 14, 30), new Date(2026, 5, 17))).toBe(false);
+    });
+});
+
+describe('legend category filter (state.hiddenCategories, two-way)', () => {
+    const evs: CalEvent[] = [
+        { id: '1', title: 'Ops', start: '2026-06-01T09:00:00', category: 'ops' },
+        { id: '2', title: 'Maint', start: '2026-06-01T10:00:00', category: 'maint' },
+        { id: '3', title: 'Plain', start: '2026-06-01T11:00:00' }   // no category: never filtered
+    ];
+
+    it('a pre-set hidden array filters from the first render', () => {
+        expect(filterHiddenCategories(evs, ['maint']).map((e) => e.id)).toEqual(['1', '3']);
+        expect(filterHiddenCategories(evs, ['ops', 'maint']).map((e) => e.id)).toEqual(['3']);
+        expect(filterHiddenCategories(evs, [])).toBe(evs);   // nothing hidden -> untouched
+    });
+
+    it('the legend toggle round-trips through the prop array', () => {
+        const once = toggleHiddenCategory([], 'ops');
+        expect(once).toEqual(['ops']);
+        expect(filterHiddenCategories(evs, once).map((e) => e.id)).toEqual(['2', '3']);
+        // Toggling the same id again writes the category back visible.
+        const twice = toggleHiddenCategory(once, 'ops');
+        expect(twice).toEqual([]);
+        expect(filterHiddenCategories(evs, twice).map((e) => e.id)).toEqual(['1', '2', '3']);
+        // Other hidden ids survive a toggle (the array is the source of truth).
+        expect(toggleHiddenCategory(['maint'], 'ops')).toEqual(['maint', 'ops']);
+        expect(toggleHiddenCategory(['maint', 'ops'], 'maint')).toEqual(['ops']);
+    });
+
+    it('toggle does not mutate the input array (a fresh write every time)', () => {
+        const hidden = ['ops'];
+        toggleHiddenCategory(hidden, 'maint');
+        toggleHiddenCategory(hidden, 'ops');
+        expect(hidden).toEqual(['ops']);
+    });
+});
+
+describe('visibleRangeMs (epoch-ms window outputs)', () => {
+    it('resolves each ISO date to its zone-local midnight UTC instant (half-open)', () => {
+        const r = visibleRangeMs('2026-06-01', '2026-07-13', 'UTC');
+        expect(r.startMs).toBe(Date.UTC(2026, 5, 1));
+        expect(r.endMs).toBe(Date.UTC(2026, 6, 13));
+        expect(r.endMs - r.startMs).toBe(42 * 86400000);   // a 6-week month grid
+        // Zone-aware: midnight in Chicago is 05:00Z during CDT.
+        expect(visibleRangeMs('2026-06-01', '2026-06-02', 'America/Chicago').startMs)
+            .toBe(Date.UTC(2026, 5, 1, 5));
+    });
+
+    it('is DST-correct: spring-forward day is 23h, fall-back day is 25h (America/Chicago)', () => {
+        // DST starts 2026-03-08: midnight is still CST (-6), the next midnight is CDT (-5).
+        const spring = visibleRangeMs('2026-03-08', '2026-03-09', 'America/Chicago');
+        expect(spring.startMs).toBe(Date.UTC(2026, 2, 8, 6));
+        expect(spring.endMs).toBe(Date.UTC(2026, 2, 9, 5));
+        expect(spring.endMs - spring.startMs).toBe(23 * 3600000);
+        // DST ends 2026-11-01: midnight is CDT (-5), the next midnight CST (-6).
+        const fall = visibleRangeMs('2026-11-01', '2026-11-02', 'America/Chicago');
+        expect(fall.startMs).toBe(Date.UTC(2026, 10, 1, 5));
+        expect(fall.endMs).toBe(Date.UTC(2026, 10, 2, 6));
+        expect(fall.endMs - fall.startMs).toBe(25 * 3600000);
+    });
+
+    it('unparseable input maps to 0 (defensive; the component only feeds it fmtDate output)', () => {
+        expect(visibleRangeMs('', 'nope', 'UTC')).toEqual({ startMs: 0, endMs: 0 });
+    });
+});
+
+describe('followScrollStale (armed + scrollToNow keeps the indicator in view)', () => {
+    const { followScrollStale } = require('../calendarLogic');
+
+    it('fresh while the indicator is inside the visible band', () => {
+        expect(followScrollStale(0, 600, 300)).toBe(false);
+    });
+
+    it('stale when it drifts below or above the band (24px margins)', () => {
+        expect(followScrollStale(0, 600, 590)).toBe(true);   // near the bottom edge
+        expect(followScrollStale(400, 600, 410)).toBe(true); // near the top edge
+        expect(followScrollStale(400, 600, 300)).toBe(true); // scrolled past it
     });
 });

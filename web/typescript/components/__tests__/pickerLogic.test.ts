@@ -2,7 +2,8 @@ import { fmtDate, secondsOfDay } from '../../shared/dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
-    computeOutputs, realtimeArmed, realtimeSelection, fillLabel, dayWord, PresetContext, PresetDef
+    computeOutputs, realtimeArmed, realtimeSelection, fillLabel, dayWord, focusTrapTarget,
+    PresetContext, PresetDef
 } from '../pickerLogic';
 
 describe('resolveLayout', () => {
@@ -129,6 +130,35 @@ describe('presetRange dispatch', () => {
     it('routes to rolling vs calendar by type', () => {
         expect(fmtDate(presetRange(rolling, ctx).start)).toBe('2026-06-10');
         expect(fmtDate(presetRange(calendar, ctx).start)).toBe('2026-06-01');
+    });
+});
+
+describe('focusTrapTarget (popover dialog focus trap)', () => {
+    it('lets in-bounds Tab steps proceed natively (-1)', () => {
+        expect(focusTrapTarget(5, 0, false)).toBe(-1);   // first -> second
+        expect(focusTrapTarget(5, 2, false)).toBe(-1);   // middle -> next
+        expect(focusTrapTarget(5, 2, true)).toBe(-1);    // middle -> previous
+        expect(focusTrapTarget(5, 4, true)).toBe(-1);    // last -> fourth
+    });
+
+    it('wraps Tab off the last element to the first', () => {
+        expect(focusTrapTarget(5, 4, false)).toBe(0);
+        expect(focusTrapTarget(1, 0, false)).toBe(0);    // single element cycles onto itself
+    });
+
+    it('wraps Shift+Tab off the first element to the last', () => {
+        expect(focusTrapTarget(5, 0, true)).toBe(4);
+        expect(focusTrapTarget(1, 0, true)).toBe(0);
+    });
+
+    it('pulls focus from outside the panel back inside (activeIndex -1)', () => {
+        expect(focusTrapTarget(5, -1, false)).toBe(0);   // Tab -> first
+        expect(focusTrapTarget(5, -1, true)).toBe(4);    // Shift+Tab -> last
+    });
+
+    it('reports nothing to focus for an empty panel', () => {
+        expect(focusTrapTarget(0, -1, false)).toBe(-1);
+        expect(focusTrapTarget(0, -1, true)).toBe(-1);
     });
 });
 

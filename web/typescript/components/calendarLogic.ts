@@ -4,7 +4,7 @@
 
 import { csvCell } from '../shared/csv';
 import {
-    addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today
+    addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today, toEpochMs
 } from '../shared/dateUtils';
 import { RRule } from '../shared/recurrence';
 import { DayCell, MonthGrid, buildMonthGrid } from '../shared/monthGrid';
@@ -65,13 +65,27 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
     return map;
 }
 
-/** Serialise events to CSV text (one row per event, CRLF line endings). */
-export function eventsToCsv(events: CalEvent[]): string {
+/** Whether an event is an expanded occurrence of a recurring series (id "base::date"). */
+export function isOccurrence(ev: CalEvent): boolean {
+    return (ev.id || '').indexOf('::') >= 0;
+}
+
+/** Serialise events to CSV text (one row per event, CRLF line endings). Recurring
+ *  series definitions ride along as-is (not expanded into occurrences); a series
+ *  bound via both sources exports once (dedupe by id). */
+export function eventsToCsv(events: CalEvent[], recurringEvents: CalEvent[] = []): string {
     const cols = ['id', 'title', 'start', 'end', 'allDay', 'category', 'status', 'color', 'description', 'rrule'];
     const rows = [cols.join(',')];
-    for (const ev of events || []) {
+    const seen = new Set<string>();
+    for (const ev of [...(events || []), ...(recurringEvents || [])]) {
         if (!ev) {
             continue;
+        }
+        if (ev.id) {
+            if (seen.has(ev.id)) {
+                continue;
+            }
+            seen.add(ev.id);
         }
         rows.push([
             ev.id || '',
@@ -197,6 +211,73 @@ export function clampWeekLanes(
         }
     }
     return { visible, more, lanesShown };
+}
+
+// --- follow-now (live) mode ---------------------------------------------------
+
+export const FOLLOW_DEFAULT_TICK_MS = 60000;
+
+/** Follow-now tick interval, ms: config.refreshSeconds when > 0 (floored at 1s so
+ *  a fractional/zero setting can't spin), else one minute. (Same rule as the
+ *  timeline's followTickMs, so the two live modes read alike.) */
+export function followTickMs(refreshSeconds: number): number {
+    return refreshSeconds > 0 ? Math.max(1, refreshSeconds) * 1000 : FOLLOW_DEFAULT_TICK_MS;
+}
+
+/** A user action that might take over from follow-now. */
+export type CalendarNav = 'page' | 'miniPick' | 'today' | 'view' | 'legend' | 'edit';
+
+/** Whether a user action disarms follow-now: explicit navigation away (paging,
+ *  a mini-nav day pick) does; Today, view switches, legend toggles and event
+ *  edits keep it armed. (Mirrors the timeline's followDisarms.) */
+export function followDisarms(nav: CalendarNav): boolean {
+    return nav === 'page' || nav === 'miniPick';
+}
+
+/** Whether a follow-now tick actually has to re-anchor: only when the cursor's
+ *  day differs from today-in-zone (the Today button's target). The no-op guard —
+ *  an armed-but-current calendar must not re-render or re-write its outputs. */
+/** Whether a follow tick should re-centre the week/day grid on "now" (with
+ * scrollToNow on): only when the indicator drifted out of the visible band, so
+ * armed mode doesn't fight the user's scrolling while the line is on screen. */
+export function followScrollStale(scrollTop: number, clientHeight: number, nowY: number): boolean {
+    return nowY < scrollTop + 24 || nowY > scrollTop + clientHeight - 24;
+}
+
+export function followCursorStale(cursor: Date, todayZone: Date): boolean {
+    return fmtDate(cursor) !== fmtDate(todayZone);
+}
+
+// --- legend category filter (state.hiddenCategories, two-way) ------------------
+
+/** The next hidden-category array after a legend click. The `state.hiddenCategories`
+ *  prop is the source of truth: the component writes this result back and the
+ *  re-render applies the filter (no internal copy). */
+export function toggleHiddenCategory(hidden: ReadonlyArray<string>, id: string): string[] {
+    return hidden.indexOf(id) >= 0 ? hidden.filter((c) => c !== id) : [...hidden, id];
+}
+
+/** Apply the legend filter: drop events whose category is hidden. A pre-set (or
+ *  bound) hidden array therefore filters from first render. */
+export function filterHiddenCategories(events: CalEvent[], hidden: ReadonlyArray<string>): CalEvent[] {
+    if (!hidden || hidden.length === 0) {
+        return events;
+    }
+    const h = new Set(hidden);
+    return events.filter((ev) => !(ev.category && h.has(ev.category)));
+}
+
+// --- epoch-ms window outputs --------------------------------------------------
+
+/** The visible ISO date window as UTC epoch-ms instants of the zone-local
+ *  midnights those dates denote (half-open [startMs, endMs)) — for binding
+ *  epoch/t_stamp queries directly. DST-correct: each midnight is resolved in
+ *  `timeZone` (browser-local when empty), not derived by day arithmetic. */
+export function visibleRangeMs(startIso: string, endIso: string, timeZone: string): { startMs: number; endMs: number } {
+    return {
+        startMs: toEpochMs(startIso, timeZone) ?? 0,
+        endMs: toEpochMs(endIso, timeZone) ?? 0
+    };
 }
 
 // --- week / day time-grid ---------------------------------------------------

@@ -1,7 +1,7 @@
 // One event bar — a column-span segment on a lane row. Shared by the month week-rows
 // and the week/day all-day strip. `colOffset` shifts for a leading gutter column.
 import * as React from 'react';
-import { CalEvent, WeekSeg, hhmm, timeMinutes } from '../calendarLogic';
+import { CalEvent, WeekSeg, hhmm, isOccurrence, timeMinutes } from '../calendarLogic';
 import { Category } from './types';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
@@ -49,6 +49,10 @@ export function EventBar({ seg, colOffset, categories, draggingId, enterClass, h
             } : undefined}
             {...hoverProps(ev)}
         >
+            {isOccurrence(ev) && (
+                // Part of a series: dragging/editing detaches this occurrence.
+                <span className="cal-ev-recur" aria-hidden="true">↻</span>
+            )}
             <EventIcon ev={ev} categories={categories} />
             {tm !== null && <span className="cal-mbar-time">{hhmm(tm)}</span>}
             <span className="cal-mbar-title">{ev.title}</span>

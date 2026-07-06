@@ -75,10 +75,29 @@
     opacity: 0.7;
 }
 
+// Subtle "nothing configured" badge next to the title (no events in the dataset).
+.tml-empty-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--tml-muted);
+    background: color-mix(in srgb, var(--tml-muted) 14%, transparent);
+    white-space: nowrap;
+    cursor: help;   // signals the badge carries a "how it works / how to add" tooltip
+}
+
 .tml-export-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 3px 6px;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+    }
 }
 
 .tml-zooms {
@@ -89,6 +108,7 @@
 
 .tml-zoom-btn,
 .tml-nav-btn,
+.tml-live,
 .tml-today {
     font-family: inherit;
     font-size: 12px;
@@ -116,6 +136,38 @@
 .tml-nav {
     display: flex;
     gap: 4px;
+}
+
+// The follow-now ("Live") toggle: armed = filled + a pulsing live dot (the
+// picker's realtime-preset styling).
+.tml-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tml-live--on,
+.tml-live--on:hover {
+    background: var(--tml-accent);
+    border-color: var(--tml-accent);
+    color: var(--tml-accent-text);
+}
+
+.tml-live--on:hover {
+    filter: brightness(1.08);
+}
+
+.tml-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    animation: tml-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tml-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }
 
 // Indeterminate loading bar under the toolbar (config.loading).
@@ -199,6 +251,29 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+// Resource colour/icon accents on the row label (config.resources color/icon),
+// shown like the legend's category items: icon (carrying the colour) or a dot.
+.tml-label-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+
+    svg {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.tml-label-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-right: 6px;
 }
 
 .tml-label--group,
@@ -489,4 +564,33 @@
 
 .tml-hover-desc {
     margin-top: 4px;
+}
+
+// Status badge in the hover popover (calendar's .cal-popover-status, adapted).
+.tml-hover-status {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tml-muted);
+}
+
+// --- micro-interactions / animations ----------------------------------------
+// A freshly-appearing bar / state band fades + scales in (applied for one
+// animation cycle by the enter tracker, then removed). Calendar parity.
+@keyframes tml-bar-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.mustry-timeline .tml-anim-enter {
+    animation: tml-bar-in 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+// Respect users who prefer reduced motion.
+@media (prefers-reduced-motion: reduce) {
+    .mustry-timeline .tml-anim-enter {
+        animation: none !important;
+    }
 }

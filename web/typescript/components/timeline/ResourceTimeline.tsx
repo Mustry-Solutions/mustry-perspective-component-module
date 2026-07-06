@@ -12,13 +12,16 @@ import { CSV_BOM } from '../../shared/csv';
 import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents } from '../../shared/recurrence';
 import { EventIcon, categoryColor, resolveColor, statusClass } from '../../shared/eventStyle';
+import { EnterTracker } from '../../shared/enterAnimation';
+import { emptyMessageText } from '../../shared/labelPacks';
 import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
-    BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineZoom, ZOOM_PRESETS,
-    barGeom, buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs,
-    scaleWidth, timelineEventsToCsv, windowFor, zonedFormat
+    BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
+    barGeom, buildRows, buildTicks, followAnchorMs, followDisarms, followScrollLeft, followTickMs, isConfiguredEmpty,
+    layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, resolveSnapMinutes,
+    scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
@@ -46,7 +49,6 @@ interface RowLayouts {
 interface ResourceTimelineState {
     anchorMs: number;                    // epoch ms of the window start
     hover: TimelineHoverInfo | null;     // bar under the cursor -> detail popover
-    hiddenCats: Set<string>;             // category ids hidden via the legend
     preview: TlPreview | null;           // in-flight gesture ghost / selection
     editor: TlEditor | null;             // built-in editor popover
     mini: MiniNav | null;                // mini month navigator (from the title)
@@ -62,14 +64,17 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private lastOutputSig = '';
     private outputTimer = 0;    // debounces visibleStart/End writes so rapid nav = one query
     private refreshTimer = 0;   // periodic re-render so the now-line ticks
+    private followTimer = 0;    // follow-now (config.followNow): periodic re-anchor on today
     private hoverTimer = 0;
     private gridRef = React.createRef<HTMLDivElement>();
+    private scrollRef = React.createRef<HTMLDivElement>();   // the horizontal scroll container (.tml-scroll)
+    private enter = new EnterTracker();   // enter-animation bookkeeping for newly-appearing ids
 
     private gestures = new TimelineGestureController({
         env: () => ({
             editable: this.props.props.editable,
             selectable: this.props.props.selectable,
-            snapMinutes: ZOOM_PRESETS[this.props.props.zoom].snapMinutes,
+            snapMinutes: resolveSnapMinutes(this.props.props.zoom, this.props.props.snapMinutes),
             scale: this.scale()
         }),
         flags: () => ({
@@ -93,19 +98,36 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         super(props);
         this.state = {
             anchorMs: todayAnchorMs(props.props.timezone),
-            hover: null, hiddenCats: new Set(), preview: null, editor: null, mini: null
+            hover: null, preview: null, editor: null, mini: null
         };
     }
 
     componentDidMount(): void {
+        this.enter.seed(this.allEvents());
         this.syncOutput();
         this.setupRefreshTimer();
+        this.setupFollowTimer();
     }
 
     componentDidUpdate(prevProps: ComponentProps<TimelineProps>): void {
         this.syncOutput();
+        // Skipped mid-drag so a gesture's re-renders can't start animating anything;
+        // fresh ids are picked up on the post-commit update instead.
+        if (!this.gestures.active) {
+            this.enter.detect(this.allEvents(), () => this.forceUpdate());
+        }
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
             this.setupRefreshTimer();
+        }
+        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
+                || prevProps.props.followNow !== this.props.props.followNow) {
+            this.setupFollowTimer();
+        } else if (this.props.props.followNow
+                && (prevProps.props.zoom !== this.props.props.zoom
+                    || prevProps.props.timezone !== this.props.props.timezone)) {
+            // A zoom/timezone change moves the follow anchor (hour zoom pages within
+            // the day) — re-anchor immediately instead of waiting out the next tick.
+            this.tickFollow();
         }
     }
 
@@ -116,9 +138,26 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
         }
+        if (this.followTimer) {
+            window.clearInterval(this.followTimer);
+        }
         this.clearHoverTimer();
+        this.enter.dispose();
         this.gestures.dispose();
         this.miniDismiss.close();
+    }
+
+    /** Both event sources, merged raw (unexpanded) — the enter tracker's id universe. */
+    private allEvents(): TimelineEvent[] {
+        const p = this.props.props;
+        return [...(p.events || []), ...(p.recurringEvents || [])];
+    }
+
+    /** Enter-animation class for a bar/band, keyed on the event's base id. Empty
+     *  while a drag is in flight so the ghost and mid-gesture re-renders never
+     *  animate (the shared tracker returns the calendar's class; mapped to .tml-). */
+    private enterClass(occId: string): string {
+        return !this.gestures.active && this.enter.enterClass(occId) ? ' tml-anim-enter' : '';
     }
 
     /** The visible window (day/week span whole wall-calendar days — DST-safe). */
@@ -135,7 +174,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private layout(scale: TimeScale): { rows: RowItem[]; ticks: TickRows; byRow: Map<string, RowLayouts> } {
         const p = this.props.props;
         const deps: unknown[] = [
-            p.events, p.recurringEvents, p.resources, p.collapsedGroups, this.state.hiddenCats,
+            p.events, p.recurringEvents, p.resources, p.collapsedGroups, p.hiddenCategories,
             scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, p.zoom, p.locale, p.shifts
         ];
         const m = this.layoutMemo;
@@ -177,7 +216,70 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
     }
 
-    /** Publish the visible window (ISO-8601 UTC instants) for windowed query bindings. */
+    // --- follow-now (live) mode ------------------------------------------------
+    /** (Re)start the follow-now timer. Called on mount and whenever config.followNow
+     *  or config.refreshSeconds changes; arming also snaps immediately, so a view
+     *  pre-set to followNow (a wall display) opens live. */
+    private setupFollowTimer(): void {
+        if (this.followTimer) {
+            window.clearInterval(this.followTimer);
+            this.followTimer = 0;
+        }
+        if (this.props.props.followNow) {
+            this.tickFollow();
+            this.followTimer = window.setInterval(() => this.tickFollow(), followTickMs(this.props.props.refreshSeconds));
+        }
+    }
+
+    /** One follow-now tick: re-anchor on "now" the same way the Today button does,
+     *  so the now-line stays in view. No-op (no setState, and therefore no window
+     *  writes) when the anchor is already right; deferred while the editor is open
+     *  or a drag is in flight (same suppression as the now-line refresh). */
+    private tickFollow(): void {
+        if (this.state.editor || this.gestures.active) {
+            return;
+        }
+        const p = this.props.props;
+        const next = followAnchorMs(Date.now(), p.zoom, p.timezone);
+        if (next !== this.state.anchorMs) {
+            this.setState({ anchorMs: next }, () => this.scrollNowIntoView());
+        } else {
+            this.scrollNowIntoView();
+        }
+    }
+
+    /** While follow-now is armed, keep the now-line inside the visible scroll —
+     *  the window is usually wider than the viewport, so a correct window alone
+     *  doesn't put the line on screen. Only scrolls when the line drifted out,
+     *  so armed mode doesn't fight the user while the line is visible. */
+    private scrollNowIntoView(): void {
+        const scroller = this.scrollRef.current;
+        const s = this.scale();
+        const nowMs = Date.now();
+        if (!scroller || nowMs < s.startMs || nowMs >= s.endMs) {
+            return;
+        }
+        const target = followScrollLeft(scroller.scrollLeft, scroller.clientWidth, LABEL_COL_PX, LABEL_COL_PX + msToPx(s, nowMs));
+        if (target !== null) {
+            scroller.scrollLeft = target;
+        }
+    }
+
+    /** Manual navigation takes over from follow-now: write the two-way prop off.
+     *  (Today re-anchors where follow-now would anyway, so it does NOT disarm.) */
+    private disarmFollow(nav: TimelineNav): void {
+        if (this.props.props.followNow && followDisarms(nav)) {
+            this.props.store.props.write('state.followNow', false);
+        }
+    }
+
+    // `config.followNow` is two-way: the toolbar's Live toggle writes it back.
+    private toggleFollowNow = (): void => {
+        this.props.store.props.write('state.followNow', !this.props.props.followNow);
+    };
+
+    /** Publish the visible window (ISO-8601 UTC instants + the raw epoch-ms twins)
+     *  for windowed query bindings. */
     private syncOutput(): void {
         const s = this.scale();
         const sig = `${s.startMs}|${s.endMs}`;
@@ -188,8 +290,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const write = (): void => {
             this.outputTimer = 0;
             const w = this.props.store.props;
-            w.write('output.visibleStart', new Date(s.startMs).toISOString());
-            w.write('output.visibleEnd', new Date(s.endMs).toISOString());
+            const out = windowOutputs(s);
+            w.write('output.visibleStart', out.visibleStart);
+            w.write('output.visibleEnd', out.visibleEnd);
+            w.write('output.visibleStartMs', out.visibleStartMs);
+            w.write('output.visibleEndMs', out.visibleEndMs);
         };
         if (this.outputTimer) {
             window.clearTimeout(this.outputTimer);
@@ -212,7 +317,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const winStart = new Date(ws.y, ws.mo - 1, ws.d - 1);
         const winEnd = new Date(we.y, we.mo - 1, we.d + 2);
         const merged = [...(p.events || []), ...(p.recurringEvents || [])];
-        const hidden = this.state.hiddenCats;
+        const hidden = new Set(this.props.props.hiddenCategories || []);
         return expandEvents(merged, winStart, winEnd, p.timezone)
             .filter((ev) => !(ev.category && hidden.has(ev.category)));
     }
@@ -302,7 +407,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         const cur = this.props.props.collapsedGroups || [];
         const next = cur.indexOf(group) >= 0 ? cur.filter((g) => g !== group) : [...cur, group];
-        this.props.store.props.write('config.collapsedGroups', next);
+        this.props.store.props.write('state.collapsedGroups', next);
     }
 
     /** Apply a released gesture — the controller's commit decision — to the component. */
@@ -401,6 +506,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     // --- navigation ---------------------------------------------------------
     private step(dir: number): void {
+        this.disarmFollow('page');
         this.setState({ anchorMs: pageAnchorMs(this.state.anchorMs, dir, this.props.props.zoom, this.props.props.timezone) });
     }
 
@@ -408,9 +514,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private next = (): void => this.step(1);
     private goToday = (): void => this.setState({ anchorMs: todayAnchorMs(this.props.props.timezone) });
 
-    // `config.zoom` is two-way: the toolbar writes the user's choice back.
+    // `state.zoom` is two-way: the toolbar writes the user's choice back.
     private setZoom(zoom: TimelineZoom): void {
-        this.props.store.props.write('config.zoom', zoom);
+        this.props.store.props.write('state.zoom', zoom);
     }
 
     // --- mini month navigator (popover from the toolbar title) ---------------
@@ -456,6 +562,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const d = parseDate(iso);
         this.closeMini();
         if (d) {
+            this.disarmFollow('miniPick');
             this.setState({ anchorMs: resolveZoned(d, this.props.props.timezone).epochMs });
         }
     }
@@ -510,16 +617,12 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     // --- category legend ----------------------------------------------------
+    // `state.hiddenCategories` is two-way: the prop array is the source of truth,
+    // so a pre-set/bound value filters from first render and toggles write back.
     private toggleCategory(id: string): void {
-        const hiddenCats = new Set(this.state.hiddenCats);
-        if (hiddenCats.has(id)) {
-            hiddenCats.delete(id);
-        } else {
-            hiddenCats.add(id);
-        }
-        this.setState({ hiddenCats }, () => {
-            this.props.store.props.write('output.hiddenCategories', Array.from(this.state.hiddenCats));
-        });
+        const cur = this.props.props.hiddenCategories || [];
+        const next = cur.indexOf(id) >= 0 ? cur.filter((c) => c !== id) : [...cur, id];
+        this.props.store.props.write('state.hiddenCategories', next);
     }
 
     private renderLegend(): React.ReactNode {
@@ -532,7 +635,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 {p.categories.map((c) => (
                     <button
                         type="button" key={c.id}
-                        className={`tml-legend-item${this.state.hiddenCats.has(c.id) ? ' tml-legend-item--off' : ''}`}
+                        className={`tml-legend-item${(this.props.props.hiddenCategories || []).indexOf(c.id) >= 0 ? ' tml-legend-item--off' : ''}`}
                         onClick={() => this.toggleCategory(c.id)}
                     >
                         {c.icon
@@ -546,8 +649,20 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     // --- rendering ----------------------------------------------------------
+    /** A short "how it works / how to add events" hint for the empty-state badge
+     *  tooltip, tailored to whether this timeline actually lets the user create. */
+    private emptyHint(): string {
+        const p = this.props.props;
+        const canCreate = (p.editable && p.builtInEditor) || p.selectable;
+        return [p.labels.emptyHintIntro, canCreate ? p.labels.emptyHintCreate : p.labels.emptyHintBind].join('\n');
+    }
+
     private renderToolbar(): React.ReactNode {
-        const { labels, zoom, shifts } = this.props.props;
+        const { labels, zoom, shifts, followNow } = this.props.props;
+        const p = this.props.props;
+        // No events configured at all (neither source) and not mid-fetch -> the badge.
+        const emptyLabel = isConfiguredEmpty(p.loading, p.events, p.recurringEvents)
+            ? emptyMessageText(p.emptyMessage, labels.noEvents) : '';
         const zooms: Array<{ id: TimelineZoom; label: string }> = [
             { id: 'hour', label: labels.zoomHour },
             { id: 'day', label: labels.zoomDay },
@@ -559,16 +674,21 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
         return (
             <div className="tml-toolbar">
-                <button
-                    type="button"
-                    className={`tml-title tml-title--btn${this.state.mini ? ' is-open' : ''}`}
-                    onClick={this.toggleMini}
-                    aria-haspopup="true"
-                    aria-expanded={!!this.state.mini}
-                >
-                    {title}
-                    <span className="tml-title-caret" aria-hidden="true">▾</span>
-                </button>
+                {p.showMiniNav ? (
+                    <button
+                        type="button"
+                        className={`tml-title tml-title--btn${this.state.mini ? ' is-open' : ''}`}
+                        onClick={this.toggleMini}
+                        aria-haspopup="true"
+                        aria-expanded={!!this.state.mini}
+                    >
+                        {title}
+                        <span className="tml-title-caret" aria-hidden="true">▾</span>
+                    </button>
+                ) : (
+                    <div className="tml-title">{title}</div>
+                )}
+                {emptyLabel && <span className="tml-empty-badge" title={this.emptyHint() || emptyLabel}>{emptyLabel}</span>}
                 <div className="tml-zooms">
                     {zooms.map((z) => (
                         <button
@@ -586,6 +706,15 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             <IconRenderer path="material/get_app" color="var(--tml-accent)" />
                         </button>
                     )}
+                    <button
+                        type="button"
+                        className={`tml-live${followNow ? ' tml-live--on' : ''}`}
+                        onClick={this.toggleFollowNow}
+                        aria-pressed={followNow}
+                    >
+                        {followNow && <span className="tml-live-dot" aria-hidden="true" />}
+                        {labels.followNow}
+                    </button>
                     <button type="button" className="tml-nav-btn" onClick={this.prev} aria-label={labels.previous}>‹</button>
                     <button type="button" className="tml-today" onClick={this.goToday}>{labels.today}</button>
                     <button type="button" className="tml-nav-btn" onClick={this.next} aria-label={labels.next}>›</button>
@@ -640,7 +769,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     return (
                         <div
                             key={`st-${it.event.id || i}`}
-                            className={`tml-band tml-band--state${statusClass(it.event)}`}
+                            className={`tml-band tml-band--state${statusClass(it.event)}${this.enterClass(it.event.id)}`}
                             style={{ ...g, ['--ev' as string]: resolveColor(p.categories, it.event) } as React.CSSProperties}
                             role="button"
                             tabIndex={0}
@@ -678,7 +807,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     return (
                         <div
                             key={`b-${ev.id || i}`}
-                            className={cls.join(' ') + statusClass(ev)}
+                            className={cls.join(' ') + statusClass(ev) + this.enterClass(ev.id)}
                             style={{
                                 left: g.left,
                                 width: g.width,
@@ -744,7 +873,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             <div {...this.props.emit({ classes: p.loading ? ['mustry-timeline', 'tml-loading'] : ['mustry-timeline'] })}>
                 {p.showToolbar && this.renderToolbar()}
                 {p.loading && <div className="tml-loading-bar" aria-hidden="true" />}
-                <div className="tml-scroll" onScroll={this.hideHover}>
+                <div className="tml-scroll" ref={this.scrollRef} onScroll={this.hideHover}>
                     <div className="tml-grid" ref={this.gridRef} style={{ width: LABEL_COL_PX + width }}>
                         <div className="tml-corner" style={{ width: LABEL_COL_PX, height: AXIS_PX }} />
                         <div className="tml-axis" style={{ width, height: AXIS_PX }}>
@@ -778,6 +907,17 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     {row.type === 'group' && (
                                         <span className="tml-group-caret" aria-hidden="true">{row.collapsed ? '▸' : '▾'}</span>
                                     )}
+                                    {/* Resource icon / colour accent, shown like a legend item: the
+                                        icon carries the colour; colour alone renders as a dot. */}
+                                    {row.type === 'resource' && (row.resource!.icon
+                                        ? (
+                                            <span className="tml-label-icon">
+                                                <IconRenderer path={row.resource!.icon} color={row.resource!.color || 'currentColor'} />
+                                            </span>
+                                        )
+                                        : row.resource!.color
+                                            ? <span className="tml-label-dot" style={{ background: row.resource!.color }} />
+                                            : null)}
                                     {row.label}
                                     {row.type === 'group' && row.collapsed && !!row.hiddenCount && (
                                         <span className="tml-group-count">({row.hiddenCount})</span>
@@ -824,6 +964,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         locale={p.locale}
                         timezone={p.timezone}
                         categories={p.categories}
+                        labels={p.labels}
                     />
                 )}
                 {this.state.mini && (

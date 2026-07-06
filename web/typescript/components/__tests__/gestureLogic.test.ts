@@ -1,5 +1,5 @@
 import {
-    cellAt, colAtX, hasMoved, movePreview, resizePreview, createPreview, commitDecision, GestureFlags
+    cellAt, colAtX, hasMoved, movePreview, resizePreview, isNoopResize, createPreview, commitDecision, GestureFlags
 } from '../calendar/gestureLogic';
 import { hourHeightPx, SLOT_PX } from '../calendar/types';
 
@@ -74,15 +74,43 @@ describe('movePreview', () => {
     });
 });
 
-describe('resizePreview', () => {
-    it('extends the end by the delta', () => {
-        expect(resizePreview(540, 600, 30, 1440, 15)).toEqual({ startMin: 540, endMin: 630 });
+describe('resizePreview (end edge)', () => {
+    it('extends the end by the delta, keeping the start put', () => {
+        expect(resizePreview('end', 540, 600, 30, 0, 1440, 15)).toEqual({ startMin: 540, endMin: 630 });
     });
     it('keeps a minimum duration (>= start + snap)', () => {
-        expect(resizePreview(540, 600, -120, 1440, 15)).toEqual({ startMin: 540, endMin: 555 });
+        expect(resizePreview('end', 540, 600, -120, 0, 1440, 15)).toEqual({ startMin: 540, endMin: 555 });
     });
     it('clamps the end to the window', () => {
-        expect(resizePreview(540, 1400, 120, 1440, 15)).toEqual({ startMin: 540, endMin: 1440 });
+        expect(resizePreview('end', 540, 1400, 120, 0, 1440, 15)).toEqual({ startMin: 540, endMin: 1440 });
+    });
+});
+
+describe('resizePreview (start edge)', () => {
+    it('moves the start by the delta, keeping the end put', () => {
+        expect(resizePreview('start', 540, 600, -30, 0, 1440, 15)).toEqual({ startMin: 510, endMin: 600 });
+    });
+    it('keeps a minimum duration (<= end - snap)', () => {
+        expect(resizePreview('start', 540, 600, 120, 0, 1440, 15)).toEqual({ startMin: 585, endMin: 600 });
+    });
+    it('clamps the start to the window', () => {
+        expect(resizePreview('start', 60, 600, -120, 0, 1440, 15)).toEqual({ startMin: 0, endMin: 600 });
+        // custom day window 8:00-18:00
+        expect(resizePreview('start', 540, 600, -120, 480, 1080, 15)).toEqual({ startMin: 480, endMin: 600 });
+    });
+    it('a pre-snapped delta lands on grid positions (snapping matches the end edge)', () => {
+        // the controller snaps deltaMin before calling; a 15-min delta stays 15-min aligned
+        expect(resizePreview('start', 540, 600, -15, 0, 1440, 15)).toEqual({ startMin: 525, endMin: 600 });
+    });
+});
+
+describe('isNoopResize', () => {
+    it('is true when the edge snapped back to the original times', () => {
+        expect(isNoopResize(540, 600, 540, 600)).toBe(true);
+    });
+    it('is false when either edge changed', () => {
+        expect(isNoopResize(540, 600, 525, 600)).toBe(false);   // start moved
+        expect(isNoopResize(540, 600, 540, 630)).toBe(false);   // end moved
     });
 });
 

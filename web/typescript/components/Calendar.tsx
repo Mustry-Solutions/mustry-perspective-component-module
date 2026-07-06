@@ -28,6 +28,14 @@ import {
     eventsToCsv,
     weekDays,
     isoDateTime,
+    followTickMs,
+    followDisarms,
+    followCursorStale,
+    followScrollStale,
+    toggleHiddenCategory,
+    filterHiddenCategories,
+    visibleRangeMs,
+    CalendarNav,
     CalEvent,
     DayCol,
     MonthGrid
@@ -40,10 +48,11 @@ import { CSV_BOM } from '../shared/csv';
 import { resolveColor as styleResolveColor } from '../shared/eventStyle';
 import { expandEvents } from '../shared/recurrence';
 import { mapCalendarProps } from './calendarProps';
-import { CommitKind } from './calendar/gestureLogic';
+import { CommitKind, isNoopResize } from './calendar/gestureLogic';
 import { GestureController } from './calendar/gestureController';
 import { DocDismiss } from '../shared/dismiss';
 import { EnterTracker } from '../shared/enterAnimation';
+import { emptyMessageText } from '../shared/labelPacks';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
     editorSaveSpec, editorDeleteSpec, moveResizeSpec
@@ -72,6 +81,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private hoverTimer = 0;
     private refreshTimer = 0;   // periodic re-render so the now-indicator ticks live
+    private followTimer = 0;    // follow-now (state.followNow): periodic re-anchor on today
     private outputTimer = 0;    // debounces visibleStart/End writes so rapid nav = one query
 
     private enter = new EnterTracker();
@@ -109,7 +119,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         super(props);
         this.state = {
             cursor: todayInZone(props.props.timezone), preview: null, hover: null, editor: null,
-            mini: null, dayPop: null, hiddenCats: new Set(), monthCap: 3
+            mini: null, dayPop: null, monthCap: 3
         };
     }
 
@@ -124,6 +134,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
         this.recomputeMonthCap();
         this.setupRefreshTimer();
+        this.setupFollowTimer();
     }
 
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
@@ -136,6 +147,15 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
             this.setupRefreshTimer();
         }
+        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
+                || prevProps.props.followNow !== this.props.props.followNow) {
+            this.setupFollowTimer();
+        } else if (this.props.props.followNow
+                && prevProps.props.timezone !== this.props.props.timezone) {
+            // A timezone change moves "today" — re-anchor immediately instead of
+            // waiting out the next tick.
+            this.tickFollow();
+        }
     }
 
     componentWillUnmount(): void {
@@ -146,6 +166,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.enter.dispose();
         if (this.refreshTimer) {
             window.clearInterval(this.refreshTimer);
+        }
+        if (this.followTimer) {
+            window.clearInterval(this.followTimer);
         }
         if (this.outputTimer) {
             window.clearTimeout(this.outputTimer);
@@ -173,6 +196,61 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             }, Math.max(1, sec) * 1000);
         }
     }
+
+    // --- follow-now (live) mode ------------------------------------------------
+    /** (Re)start the follow-now timer. Called on mount and whenever state.followNow
+     *  or config.refreshSeconds changes; arming also snaps immediately, so a view
+     *  pre-set to followNow (a wall display) opens live. */
+    private setupFollowTimer(): void {
+        if (this.followTimer) {
+            window.clearInterval(this.followTimer);
+            this.followTimer = 0;
+        }
+        if (this.props.props.followNow) {
+            this.tickFollow();
+            this.followTimer = window.setInterval(() => this.tickFollow(), followTickMs(this.props.props.refreshSeconds));
+        }
+    }
+
+    /** One follow-now tick: re-anchor the cursor on today-in-zone the same way the
+     *  Today button does, re-deriving the visible window for the current view.
+     *  No-op (no setState, and therefore no window writes) while the cursor is
+     *  already on today; deferred while the editor is open or a drag is in flight
+     *  (same suppression as the now-indicator refresh). */
+    private tickFollow(): void {
+        if (this.state.editor || this.gestures.active) {
+            return;
+        }
+        const zToday = todayInZone(this.props.props.timezone);
+        if (followCursorStale(this.state.cursor, zToday)) {
+            this.setState({ cursor: zToday }, () => this.scrollTimeGrid());
+            return;
+        }
+        // Same-day tick: with scrollToNow on, keep the indicator in the visible band
+        // (the grid scrolls vertically, so a current cursor alone doesn't show it).
+        const el = this.scrollRef.current;
+        const p = this.props.props;
+        if (el && p.scrollToNow) {
+            const y = ((nowMinutesInZone(p.timezone) - p.dayStartHour * 60) / 60) * this.hourPx();
+            if (followScrollStale(el.scrollTop, el.clientHeight, y)) {
+                this.scrollTimeGrid();
+            }
+        }
+    }
+
+    /** Manual navigation takes over from follow-now: write the two-way prop off.
+     *  (Today re-anchors where follow-now would anyway, so it does NOT disarm;
+     *  neither do view switches, legend toggles or event edits.) */
+    private disarmFollow(nav: CalendarNav): void {
+        if (this.props.props.followNow && followDisarms(nav)) {
+            this.props.store.props.write('state.followNow', false);
+        }
+    }
+
+    // `state.followNow` is two-way: the toolbar's Live toggle writes it back.
+    private toggleFollowNow = (): void => {
+        this.props.store.props.write('state.followNow', !this.props.props.followNow);
+    };
 
     /** Measure how many event chips fit a month cell and store it (auto-fit → "+N more"). */
     private recomputeMonthCap(): void {
@@ -354,7 +432,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private syncOutput(): void {
         const r = this.visibleRange();
-        const sig = `${this.props.props.view}|${r.start}|${r.end}`;
+        // The same dates as UTC epoch-ms instants of their zone-local midnights, so
+        // epoch/t_stamp queries can bind directly. In the signature too: a timezone
+        // change moves the instants without touching the ISO dates, and must still
+        // trigger exactly one write.
+        const win = visibleRangeMs(r.start, r.end, this.props.props.timezone);
+        const sig = `${this.props.props.view}|${r.start}|${r.end}|${win.startMs}|${win.endMs}`;
         if (sig === this.lastOutputSig) {
             return;
         }
@@ -364,6 +447,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const w = this.props.store.props;
             w.write('output.visibleStart', r.start);
             w.write('output.visibleEnd', r.end);
+            w.write('output.visibleStartMs', win.startMs);
+            w.write('output.visibleEndMs', win.endMs);
         };
         // Debounce so a flurry of prev/next taps coalesces into a single window write
         // (and therefore one bound query), keeping the last range.
@@ -452,7 +537,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 break;
             }
             case 'resize':
-                this.fireSpec(moveResizeSpec('resize', g.ev!, { end: isoDateTime(preview!.dayIso, preview!.endMin) }, tz));
+                if (isNoopResize(g.origStartMin, g.origEndMin, preview!.startMin, preview!.endMin)) {
+                    break;   // snapping pulled the edge back to the original times: not a change
+                }
+                this.fireSpec(moveResizeSpec('resize', g.ev!, g.edge === 'start'
+                    // Start-edge resize moves the start only (the end — possibly on a later day — stays put).
+                    ? { start: isoDateTime(preview!.dayIso, preview!.startMin) }
+                    : { end: isoDateTime(preview!.dayIso, preview!.endMin) }, tz));
                 break;
             case 'selectEditor':
                 this.openEditor(isoDateTime(preview!.dayIso, preview!.startMin), isoDateTime(preview!.dayIso, preview!.endMin), false);
@@ -477,6 +568,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     // --- navigation --------------------------------------------------------
     private step(dir: number): void {
+        this.disarmFollow('page');
         const view = this.props.props.view;
         const cursor = this.state.cursor;
         const next = view === 'month' ? addMonths(cursor, dir)
@@ -489,15 +581,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private next = (): void => this.step(1);
     private goToday = (): void => this.setState({ cursor: todayInZone(this.props.props.timezone) }, () => this.scrollTimeGrid());
 
-    // `config.view` is the single source of truth and is two-way: switching the view
+    // `state.view` is the single source of truth and is two-way: switching the view
     // writes it back so a binding / script can read (and set) the current view.
     private setView(view: CalView): void {
-        this.props.store.props.write('config.view', view);
+        this.props.store.props.write('state.view', view);
     }
 
-    /** Export the loaded events to a CSV file (downloaded client-side). */
+    /** Export the loaded events (windowed + recurring definitions) to a CSV file (downloaded client-side). */
     private exportCsv = (): void => {
-        const csv = eventsToCsv(this.props.props.events || []);
+        const p = this.props.props;
+        const csv = eventsToCsv(p.events || [], p.recurringEvents || []);
         const blob = new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -537,6 +630,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const d = parseDate(iso);
         this.closeMini();
         if (d) {
+            this.disarmFollow('miniPick');
             this.setState({ cursor: d });
         }
     }
@@ -572,17 +666,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     // --- category legend filter -------------------------------------------
-    /** Toggle a category's visibility (legend click) and mirror the hidden set to output. */
+    /** Toggle a category's visibility (legend click). `state.hiddenCategories` is
+     *  two-way and the source of truth: the toggle writes the next array back and
+     *  the re-render applies the filter (pre-set / bound ids hide from first render). */
     private toggleCategory(id: string): void {
-        const hiddenCats = new Set(this.state.hiddenCats);
-        if (hiddenCats.has(id)) {
-            hiddenCats.delete(id);
-        } else {
-            hiddenCats.add(id);
-        }
-        this.setState({ hiddenCats }, () => {
-            this.props.store.props.write('output.hiddenCategories', Array.from(this.state.hiddenCats));
-        });
+        this.props.store.props.write('state.hiddenCategories',
+            toggleHiddenCategory(this.props.props.hiddenCategories || [], id));
     }
 
     private onEventClick = (ev: CalEvent, e: React.MouseEvent): void => {
@@ -630,7 +719,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 events={this.visibleEvents()}
                 locale={this.props.props.locale}
                 categories={this.props.props.categories}
-                emptyMessage={this.props.props.emptyMessage}
+                emptyMessage={this.emptyText()}
                 labels={this.props.props.labels}
                 enterClass={(id) => this.enterClass(id)}
                 hoverProps={(ev) => this.hoverProps(ev)}
@@ -640,6 +729,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     /** No events configured at all (neither source) and not mid-fetch — drives the empty badge. */
+    /** Empty-badge / list-empty text: the schema default follows the locale pack. */
+    private emptyText(): string {
+        const p = this.props.props;
+        return emptyMessageText(p.emptyMessage, p.labels.noEvents);
+    }
+
     private isConfiguredEmpty(): boolean {
         const p = this.props.props;
         return !p.loading && (p.events || []).length === 0 && (p.recurringEvents || []).length === 0;
@@ -661,12 +756,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 showMiniNav={this.props.props.showMiniNav}
                 miniOpen={!!this.state.mini}
                 showExport={this.props.props.showExport}
-                emptyLabel={this.isConfiguredEmpty() ? this.props.props.emptyMessage : ''}
+                emptyLabel={this.isConfiguredEmpty() ? this.emptyText() : ''}
                 emptyHint={this.emptyHint()}
+                followNow={this.props.props.followNow}
                 labels={this.props.props.labels}
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
                 onExport={this.exportCsv}
+                onToggleFollow={this.toggleFollowNow}
                 onPrev={this.prev}
                 onToday={this.goToday}
                 onNext={this.next}
@@ -704,7 +801,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!this.state.hover) {
             return null;
         }
-        return <HoverPopover hover={this.state.hover} locale={this.props.props.locale} categories={this.props.props.categories} />;
+        return <HoverPopover hover={this.state.hover} locale={this.props.props.locale} categories={this.props.props.categories} labels={this.props.props.labels} />;
     }
 
     /** The built-in new-event editor popover (centered modal, portaled to body). */
@@ -735,7 +832,6 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const r = this.visibleRange();
         const s = parseDate(r.start) || todayInZone(tz);
         const e = parseDate(r.end) || todayInZone(tz);
-        const hidden = this.state.hiddenCats;
         // Merge the windowed `events` with the always-loaded `recurringEvents` so a windowed
         // query never drops a series (each binding stays trivially correct).
         const merged = [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
@@ -748,8 +844,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             start: instantToZonedIso(ev.start, tz),
             end: ev.end != null ? instantToZonedIso(ev.end, tz) : undefined
         }));
-        return expandEvents(zoned, s, e, tz)
-            .filter((ev) => !(ev.category && hidden.has(ev.category)));   // legend filter
+        // Legend filter: state.hiddenCategories is the source of truth, so a pre-set
+        // (or bound) value hides those categories from the very first render.
+        return filterHiddenCategories(expandEvents(zoned, s, e, tz), this.props.props.hiddenCategories || []);
     }
 
     private renderTimeGrid(): React.ReactNode {
@@ -763,6 +860,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 dayStartHour={this.props.props.dayStartHour}
                 dayEndHour={this.props.props.dayEndHour}
                 slotMinutes={this.props.props.slotMinutes}
+                shifts={this.props.props.shifts}
                 nowMinutes={nowMinutesInZone(this.props.props.timezone)}
                 preview={this.state.preview}
                 categories={this.props.props.categories}
@@ -773,7 +871,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
                 onStartCreate={(iso, e) => this.gestures.startCreate(iso, e)}
                 onStartMove={(ev, e) => this.gestures.startMove(ev, e)}
-                onStartResize={(ev, e) => this.gestures.startResize(ev, e)}
+                onStartResize={(ev, edge, e) => this.gestures.startResize(ev, edge, e)}
                 onScroll={() => this.hideHover()}
             />
         );
@@ -807,7 +905,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return (
             <Legend
                 categories={this.props.props.categories || []}
-                hiddenCats={this.state.hiddenCats}
+                hiddenCats={new Set(this.props.props.hiddenCategories || [])}
                 onToggle={(id) => this.toggleCategory(id)}
             />
         );

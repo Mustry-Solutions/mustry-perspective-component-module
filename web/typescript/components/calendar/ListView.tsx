@@ -1,7 +1,7 @@
 // Agenda list of the visible window's events, grouped by day.
 import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
-import { CalEvent, DayCol, groupEventsByDay, timeMinutes } from '../calendarLogic';
+import { CalEvent, DayCol, groupEventsByDay, isOccurrence, timeMinutes } from '../calendarLogic';
 import { CalLabels, Category } from './types';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
@@ -42,6 +42,9 @@ export function ListView({ cols, events, locale, categories, emptyMessage, label
                                 <span className="cal-list-time">
                                     {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                 </span>
+                                {isOccurrence(ev) && (
+                                    <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                                )}
                                 <EventIcon ev={ev} categories={categories} />
                                 <span className="cal-list-title">{ev.title}</span>
                             </button>

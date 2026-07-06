@@ -1,7 +1,8 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
-    barGeom, buildRows, buildTicks, layoutRowBands, layoutRowBars, msToPx, pxToMs, scaleWidth,
-    shiftStartMinutes, timelineEventsToCsv
+    barGeom, buildRows, buildTicks, followAnchorMs, followDisarms, followTickMs,
+    isConfiguredEmpty, layoutRowBands, layoutRowBars, msToPx, pxToMs, resolveSnapMinutes,
+    scaleWidth, timelineEventsToCsv, windowOutputs
 } from '../timeline/timelineLogic';
 import { mapTimelineProps } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
@@ -216,15 +217,10 @@ describe('timelineEventsToCsv', () => {
     });
 });
 
+// shiftStartMinutes / parseShifts now live in shared/shifts.ts (adopted from the
+// timeline's internal parser) — unit coverage is in shifts.test.ts; here we keep
+// the timeline-level behaviour that consumes them.
 describe('shift zoom', () => {
-    it('shiftStartMinutes parses HH:mm and rejects junk', () => {
-        expect(shiftStartMinutes('06:00')).toBe(360);
-        expect(shiftStartMinutes('22:30')).toBe(1350);
-        expect(shiftStartMinutes('24:00')).toBeNull();
-        expect(shiftStartMinutes('six')).toBeNull();
-        expect(shiftStartMinutes('')).toBeNull();
-    });
-
     it('shift ticks sit on the configured boundaries, labelled with the shift names', () => {
         const w: TimeScale = { startMs: Date.UTC(2026, 5, 17), endMs: Date.UTC(2026, 5, 18), pxPerHour: 60 };
         const shifts = [
@@ -249,6 +245,39 @@ describe('shift zoom', () => {
     });
 });
 
+describe('resolveSnapMinutes', () => {
+    it('0 keeps each zoom preset\'s built-in snap', () => {
+        expect(resolveSnapMinutes('hour', 0)).toBe(ZOOM_PRESETS.hour.snapMinutes);
+        expect(resolveSnapMinutes('day', 0)).toBe(ZOOM_PRESETS.day.snapMinutes);
+        expect(resolveSnapMinutes('shift', 0)).toBe(ZOOM_PRESETS.shift.snapMinutes);
+        expect(resolveSnapMinutes('week', 0)).toBe(ZOOM_PRESETS.week.snapMinutes);
+    });
+    it('a positive override wins at every zoom', () => {
+        expect(resolveSnapMinutes('hour', 30)).toBe(30);
+        expect(resolveSnapMinutes('week', 30)).toBe(30);
+        expect(resolveSnapMinutes('day', 1)).toBe(1);
+        expect(resolveSnapMinutes('day', 7.5)).toBe(7.5);
+    });
+    it('invalid overrides (negative / NaN / infinite) fall back to the preset', () => {
+        expect(resolveSnapMinutes('day', -15)).toBe(ZOOM_PRESETS.day.snapMinutes);
+        expect(resolveSnapMinutes('day', NaN)).toBe(ZOOM_PRESETS.day.snapMinutes);
+        expect(resolveSnapMinutes('day', Infinity)).toBe(ZOOM_PRESETS.day.snapMinutes);
+    });
+});
+
+describe('windowOutputs', () => {
+    it('emits ISO UTC instants plus their raw epoch-ms twins', () => {
+        const out = windowOutputs(scale);
+        expect(out.visibleStart).toBe('2026-06-17T00:00:00.000Z');
+        expect(out.visibleEnd).toBe('2026-06-18T00:00:00.000Z');
+        expect(out.visibleStartMs).toBe(scale.startMs);
+        expect(out.visibleEndMs).toBe(scale.endMs);
+        // The two representations name the same instants.
+        expect(Date.parse(out.visibleStart)).toBe(out.visibleStartMs);
+        expect(Date.parse(out.visibleEnd)).toBe(out.visibleEndMs);
+    });
+});
+
 describe('barGeom', () => {
     it('floors the rendered width so short bars stay grabbable', () => {
         expect(barGeom(100, 101)).toEqual({ left: 100, width: MIN_BAR_PX, showHandles: false });
@@ -260,7 +289,70 @@ describe('barGeom', () => {
     });
 });
 
+describe('follow-now (live) mode', () => {
+    it('followTickMs: refreshSeconds when > 0, 60s fallback, 1s floor', () => {
+        expect(followTickMs(30)).toBe(30000);
+        expect(followTickMs(1)).toBe(1000);
+        expect(followTickMs(0)).toBe(60000);       // unset -> one minute
+        expect(followTickMs(-5)).toBe(60000);
+        expect(followTickMs(0.2)).toBe(1000);      // clamped to the 1s minimum
+    });
+
+    it("followAnchorMs: day/week anchor on today's zone-local midnight (Today-button parity)", () => {
+        const now = Date.UTC(2026, 5, 17, 14, 30);
+        expect(followAnchorMs(now, 'day', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        expect(followAnchorMs(now, 'week', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        expect(followAnchorMs(now, 'shift', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        // Zone-aware: 02:00Z on the 17th is still the evening of the 16th in Chicago.
+        expect(followAnchorMs(Date.UTC(2026, 5, 17, 2), 'day', 'America/Chicago'))
+            .toBe(Date.UTC(2026, 5, 16, 5));   // 2026-06-16T00:00 CDT
+    });
+
+    it('followAnchorMs: hour zoom pages forward from midnight until the window contains now', () => {
+        // 8h span: pages anchor at 00 / 08 / 16.
+        expect(followAnchorMs(Date.UTC(2026, 5, 17, 3), 'hour', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        expect(followAnchorMs(Date.UTC(2026, 5, 17, 14, 30), 'hour', 'UTC')).toBe(Date.UTC(2026, 5, 17, 8));
+        expect(followAnchorMs(Date.UTC(2026, 5, 17, 23), 'hour', 'UTC')).toBe(Date.UTC(2026, 5, 17, 16));
+        // Exactly on a page boundary: the half-open window starts there.
+        expect(followAnchorMs(Date.UTC(2026, 5, 17, 8), 'hour', 'UTC')).toBe(Date.UTC(2026, 5, 17, 8));
+    });
+
+    it('followDisarms: paging and mini-nav picks disarm; Today / zoom / legend / edits do not', () => {
+        expect(followDisarms('page')).toBe(true);
+        expect(followDisarms('miniPick')).toBe(true);
+        expect(followDisarms('today')).toBe(false);
+        expect(followDisarms('zoom')).toBe(false);
+        expect(followDisarms('legend')).toBe(false);
+        expect(followDisarms('edit')).toBe(false);
+    });
+});
+
+describe('isConfiguredEmpty', () => {
+    const e = [{ id: 'e1' }];
+    it('true only when both sources are empty and not loading', () => {
+        expect(isConfiguredEmpty(false, [], [])).toBe(true);
+        expect(isConfiguredEmpty(false, e, [])).toBe(false);
+        expect(isConfiguredEmpty(false, [], e)).toBe(false);   // a recurring series counts
+        expect(isConfiguredEmpty(true, [], [])).toBe(false);   // loading suppresses the badge
+    });
+    it('tolerates missing arrays', () => {
+        expect(isConfiguredEmpty(false, undefined as unknown as [], null as unknown as [])).toBe(true);
+    });
+});
+
 describe('mapTimelineProps', () => {
+    it('maps followNow (default off) and emptyMessage (default English badge text)', () => {
+        const p = mapTimelineProps(stubReader({}));
+        expect(p.followNow).toBe(false);
+        expect(p.emptyMessage).toBe('No events');
+        expect(p.labels.followNow).toBe('Live');
+        expect(p.labels.emptyHintIntro).toContain('timeline');
+        const q = mapTimelineProps(stubReader({ state: { followNow: true }, config: { emptyMessage: '', locale: 'fr' } }));
+        expect(q.followNow).toBe(true);
+        expect(q.emptyMessage).toBe('');            // explicit empty = badge off
+        expect(q.labels.followNow).toBe('En direct');
+    });
+
     it('applies defaults (day zoom, clamped rowHeight, empty arrays, English labels)', () => {
         const p = mapTimelineProps(stubReader({}));
         expect(p.zoom).toBe('day');
@@ -299,5 +391,73 @@ describe('mapTimelineProps', () => {
         expect(p.labels.today).toBe("Aujourd'hui");   // English default -> pack
         expect(p.labels.zoomDay).toBe('Journée');     // real override wins
         expect(p.labels.zoomWeek).toBe('Semaine');
+    });
+
+    it('labels: hover status badges localize like every other key', () => {
+        const p = mapTimelineProps(stubReader({}));
+        expect(p.labels.statusTentative).toBe('Tentative');
+        expect(p.labels.statusCancelled).toBe('Cancelled');
+        expect(p.labels.statusDone).toBe('Done');
+        const q = mapTimelineProps(stubReader({ config: { locale: 'de', labels: { statusDone: 'Fertig' } } }));
+        expect(q.labels.statusTentative).toBe('Vorläufig');   // pack
+        expect(q.labels.statusDone).toBe('Fertig');           // override wins
+    });
+
+    it('snapMinutes: default 0 (per-zoom snap); positive kept; negative/invalid -> 0', () => {
+        expect(mapTimelineProps(stubReader({})).snapMinutes).toBe(0);
+        expect(mapTimelineProps(stubReader({ config: { snapMinutes: 30 } })).snapMinutes).toBe(30);
+        expect(mapTimelineProps(stubReader({ config: { snapMinutes: 0 } })).snapMinutes).toBe(0);
+        expect(mapTimelineProps(stubReader({ config: { snapMinutes: -10 } })).snapMinutes).toBe(0);
+        expect(mapTimelineProps(stubReader({ config: { snapMinutes: 'coarse' } })).snapMinutes).toBe(0);
+        expect(mapTimelineProps(stubReader({ config: { snapMinutes: NaN } })).snapMinutes).toBe(0);
+    });
+
+    it('shifts parse through shared/shifts with the same malformed-entry filtering as before', () => {
+        const p = mapTimelineProps(stubReader({
+            config: {
+                shifts: [
+                    { label: 'Early', start: '06:00' },
+                    { label: 'Broken', start: '25:00' },   // invalid hour -> dropped
+                    { label: 'NoStart' },                  // missing start -> dropped
+                    null,                                  // null row -> dropped
+                    { start: '14:00' }                     // label coerces to ''
+                ]
+            }
+        }));
+        expect(p.shifts).toEqual([{ label: 'Early', start: '06:00' }, { label: '', start: '14:00' }]);
+        // Valid shifts still enable the 'shift' zoom; without them it falls back to day.
+        expect(mapTimelineProps(stubReader({
+            state: { zoom: 'shift' }, config: { shifts: [{ label: 'E', start: '06:00' }] }
+        })).zoom).toBe('shift');
+        expect(mapTimelineProps(stubReader({
+            config: { zoom: 'shift', shifts: [{ label: 'Broken', start: '99:99' }] }
+        })).zoom).toBe('day');
+    });
+});
+
+describe('followScrollLeft (keep the now-line in the visible scroll)', () => {
+    const { followScrollLeft } = require('../timeline/timelineLogic');
+    const LABEL = 160;
+
+    it('null while the line is comfortably visible', () => {
+        // viewport shows content x 160..1034 (1058 wide, 24px edge margin)
+        expect(followScrollLeft(0, 1058, LABEL, 500)).toBeNull();
+        expect(followScrollLeft(0, 1058, LABEL, 1030)).toBeNull();
+    });
+
+    it('scrolls the line to ~60% of the time viewport when off to the right', () => {
+        const t = followScrollLeft(0, 1058, LABEL, 1490) as number;
+        expect(t).toBeCloseTo(1490 - LABEL - (1058 - LABEL) * 0.6, 5);
+        // and the line is visible at the target
+        expect(followScrollLeft(t, 1058, LABEL, 1490)).toBeNull();
+    });
+
+    it('scrolls back when off to the left, clamped at 0', () => {
+        expect(followScrollLeft(800, 1058, LABEL, 300)).not.toBeNull();
+        expect(followScrollLeft(800, 1058, LABEL, 100)).toBe(0);
+    });
+
+    it('hugging the right edge counts as out (margin)', () => {
+        expect(followScrollLeft(0, 1058, LABEL, 1050)).not.toBeNull();
     });
 });
