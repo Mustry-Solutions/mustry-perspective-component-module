@@ -700,6 +700,7 @@ export interface GridLabels {
     search: string;                   // quick-filter input placeholder
     exportCsv: string;                // export button tooltip / accessible label
     selected: string;                 // selection-count badge, '{n}' = how many
+    columns: string;                  // column-chooser button tooltip / accessible label
 }
 
 export const EN_GRID_LABELS: GridLabels = {
@@ -707,15 +708,16 @@ export const EN_GRID_LABELS: GridLabels = {
     search: 'Search',
     exportCsv: 'Export rows to CSV',
     selected: '{n} selected',
+    columns: 'Columns',
 };
 
 const GRID_PACKS: { [lang: string]: GridLabels } = {
-    fr: { noRows: 'Aucune ligne', search: 'Rechercher', exportCsv: 'Exporter les lignes en CSV', selected: '{n} sélectionnée(s)' },
-    de: { noRows: 'Keine Zeilen', search: 'Suchen', exportCsv: 'Zeilen als CSV exportieren', selected: '{n} ausgewählt' },
-    es: { noRows: 'Sin filas', search: 'Buscar', exportCsv: 'Exportar filas a CSV', selected: '{n} seleccionada(s)' },
-    nl: { noRows: 'Geen rijen', search: 'Zoeken', exportCsv: 'Rijen exporteren naar CSV', selected: '{n} geselecteerd' },
-    it: { noRows: 'Nessuna riga', search: 'Cerca', exportCsv: 'Esporta righe in CSV', selected: '{n} selezionate' },
-    pt: { noRows: 'Sem linhas', search: 'Pesquisar', exportCsv: 'Exportar linhas para CSV', selected: '{n} selecionada(s)' },
+    fr: { noRows: 'Aucune ligne', search: 'Rechercher', exportCsv: 'Exporter les lignes en CSV', selected: '{n} sélectionnée(s)', columns: 'Colonnes' },
+    de: { noRows: 'Keine Zeilen', search: 'Suchen', exportCsv: 'Zeilen als CSV exportieren', selected: '{n} ausgewählt', columns: 'Spalten' },
+    es: { noRows: 'Sin filas', search: 'Buscar', exportCsv: 'Exportar filas a CSV', selected: '{n} seleccionada(s)', columns: 'Columnas' },
+    nl: { noRows: 'Geen rijen', search: 'Zoeken', exportCsv: 'Rijen exporteren naar CSV', selected: '{n} geselecteerd', columns: 'Kolommen' },
+    it: { noRows: 'Nessuna riga', search: 'Cerca', exportCsv: 'Esporta righe in CSV', selected: '{n} selezionate', columns: 'Colonne' },
+    pt: { noRows: 'Sem linhas', search: 'Pesquisar', exportCsv: 'Exportar linhas para CSV', selected: '{n} selecionada(s)', columns: 'Colunas' },
 };
 
 /** The grid label pack for a locale (primary subtag; unknown -> English). */

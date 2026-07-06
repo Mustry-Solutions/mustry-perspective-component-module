@@ -117,8 +117,15 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   **row selection** (`config.rowSelect` none/single/multi with Ctrl-toggle +
   Shift-range over the visible order, ids via `config.idField`, count badge),
   and **CSV export of the current view** (filtered + sorted, BOM +
-  injection-guarded). Column resize/reorder, typed formatting and
-  conditional styling remain from M1; editing lands with M2.
+  injection-guarded).
+- M1 complete — column layout as two-way `state.columnLayout`: **drag a
+  header to reorder**, **drag its edge handle to resize**, **hide/show via
+  the toolbar column chooser** (config.columns stays the authoring truth;
+  the state layers on top, pre-settable/bindable). **Typed columns**
+  (number with locale grouping + fixed decimals, date/datetime localized,
+  boolean check/dash) — the quick filter and CSV match the displayed text.
+  **Conditional cell styling** (per-column rules: equals / gt / lt /
+  contains -> color/background, first match wins). Editing lands with M2.
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with

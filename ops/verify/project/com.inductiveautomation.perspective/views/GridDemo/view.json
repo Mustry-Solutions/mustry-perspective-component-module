@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Data Grid demo (M1) — 2,500 work orders seeded relative to TODAY. Click headers to sort (asc/desc/off), type in the quick filter, click rows to select (Ctrl-toggle / Shift-range), export the current view as CSV. Order column stays frozen when scrolling horizontally.",
+          "text": "Data Grid demo (M1 complete) — sort (click header), quick filter, select rows (Ctrl/Shift), REORDER columns (drag a header), RESIZE (drag a header's right edge), hide/show via the columns button, CSV export. Qty is a formatted number (>900 highlighted), Due a localized date, Priority/Status conditionally colored.",
           "style": {
             "fontSize": "13px"
           }
@@ -139,7 +139,15 @@
                 "field": "qty",
                 "header": "Qty",
                 "width": 70,
-                "align": "right"
+                "align": "right",
+                "type": "number",
+                "decimals": 0,
+                "cellStyles": [
+                  {
+                    "gt": 900,
+                    "background": "#fde68a"
+                  }
+                ]
               },
               {
                 "field": "customer",
@@ -154,18 +162,43 @@
               {
                 "field": "status",
                 "header": "Status",
-                "width": 100
+                "width": 100,
+                "cellStyles": [
+                  {
+                    "equals": "running",
+                    "color": "#16a34a"
+                  },
+                  {
+                    "equals": "on hold",
+                    "color": "#d97706"
+                  },
+                  {
+                    "equals": "done",
+                    "color": "#9ca3af"
+                  }
+                ]
               },
               {
                 "field": "priority",
                 "header": "Priority",
                 "width": 90,
-                "align": "center"
+                "align": "center",
+                "cellStyles": [
+                  {
+                    "equals": "urgent",
+                    "color": "#dc2626"
+                  },
+                  {
+                    "equals": "high",
+                    "color": "#d97706"
+                  }
+                ]
               },
               {
                 "field": "due",
                 "header": "Due",
-                "width": 110
+                "width": 130,
+                "type": "date"
               },
               {
                 "field": "notes",

@@ -1,10 +1,11 @@
 # Editable Data Grid — component plan
 
-**Status (2026-07-06): M0 + M1 core built and live-verified** (virtualized grid
-with sticky header + frozen columns; header-click sort, quick filter,
-multi-select with Ctrl/Shift, CSV export of the view — all two-way via
-`state.*`). Still to come from M1: column resize/reorder/hide, typed
-formatting, conditional styling. Fourth component of the module:
+**Status (2026-07-06): M0 + M1 COMPLETE, live-verified** — virtualized grid
+(sticky header, frozen columns), sort, quick filter, multi-select, CSV
+export, column resize/reorder/hide (drag headers / edge handles / toolbar
+chooser), typed number/date/boolean formatting per locale, conditional
+cell styling — all two-way via `state.*`. Next: M2 (the editing core).
+Fourth component of the module:
 `mustrysolutions.input.datagrid`. Remaining decisions are proposals to settle
 with Sam; change them here first if they change.
 

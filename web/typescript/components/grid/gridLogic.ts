@@ -1,6 +1,18 @@
 // Pure geometry/layout logic for the Data Grid — no DOM, no React, fully unit-tested.
 // Fixed row height is the contract that keeps virtualization exact (see the schema).
 
+export type ColumnType = 'text' | 'number' | 'date' | 'datetime' | 'boolean';
+
+/** One conditional-styling rule; the first matching rule wins. */
+export interface CellStyleRule {
+    equals?: unknown;
+    gt?: number;
+    lt?: number;
+    contains?: string;
+    color?: string;
+    background?: string;
+}
+
 /** One configured column, already validated by gridProps. */
 export interface GridColumn {
     field: string;
@@ -8,6 +20,9 @@ export interface GridColumn {
     width: number;        // px, >= MIN_COL_PX
     pinned: boolean;
     align: 'left' | 'center' | 'right';
+    type: ColumnType;
+    decimals: number;     // number columns: fixed fraction digits (-1 = as-is)
+    cellStyles: CellStyleRule[];
 }
 
 export const MIN_COL_PX = 40;
@@ -141,13 +156,14 @@ export function sortRows<T extends Record<string, unknown>>(rows: T[], sort: Gri
         .map((x) => x.row);
 }
 
-/** Case-insensitive contains across the configured columns. */
-export function quickFilterRows<T extends Record<string, unknown>>(rows: T[], columns: GridColumn[], query: string): T[] {
+/** Case-insensitive contains across the visible columns, matching the DISPLAYED
+ *  text (formatted per column type/locale) — what you see is what you search. */
+export function quickFilterRows<T extends Record<string, unknown>>(rows: T[], columns: GridColumn[], query: string, locale: string = ''): T[] {
     const q = query.trim().toLowerCase();
     if (!q) {
         return rows;
     }
-    return rows.filter((row) => columns.some((c) => cellText(row[c.field]).toLowerCase().indexOf(q) >= 0));
+    return rows.filter((row) => columns.some((c) => formatCell(row[c.field], c, locale).toLowerCase().indexOf(q) >= 0));
 }
 
 export type RowSelectMode = 'none' | 'single' | 'multi';
@@ -178,9 +194,138 @@ export function nextSelection(
     return current.length === 1 && current[0] === clickedId ? [] : [clickedId];
 }
 
-/** CSV of the current view (filtered + sorted), configured columns only. */
-export function gridToCsv<T extends Record<string, unknown>>(columns: GridColumn[], rows: T[], csvCell: (v: string) => string): string {
+/** CSV of the current view (filtered + sorted, visible columns, displayed text). */
+export function gridToCsv<T extends Record<string, unknown>>(columns: GridColumn[], rows: T[], csvCell: (v: string) => string, locale: string = ''): string {
     const head = columns.map((c) => csvCell(c.header || c.field)).join(',');
-    const lines = rows.map((r) => columns.map((c) => csvCell(cellText(r[c.field]))).join(','));
+    const lines = rows.map((r) => columns.map((c) => csvCell(formatCell(r[c.field], c, locale))).join(','));
     return [head, ...lines].join('\r\n') + '\r\n';
+}
+
+// --- M1b: column layout state / typed formatting / conditional styling -----------
+
+/** User adjustments over config.columns, two-way in state.columnLayout. */
+export interface ColumnLayoutState {
+    widths: Record<string, number>;
+    order: string[];
+    hidden: string[];
+}
+
+/** config.columns with the user's layout applied: hidden filtered out, order
+ *  permuted (fields in `order` first, in that order; the rest keep config
+ *  position), widths overridden (clamped). config stays the authoring truth. */
+export function effectiveColumns(columns: GridColumn[], layout: ColumnLayoutState): GridColumn[] {
+    const hidden = new Set(layout.hidden);
+    const visible = columns.filter((c) => !hidden.has(c.field));
+    const pos = (c: GridColumn): number => {
+        const i = layout.order.indexOf(c.field);
+        return i >= 0 ? i : layout.order.length + visible.indexOf(c);
+    };
+    return visible
+        .slice()
+        .sort((a, b) => pos(a) - pos(b))
+        .map((c) => {
+            const w = layout.widths[c.field];
+            return Number.isFinite(w) ? { ...c, width: Math.max(MIN_COL_PX, w) } : c;
+        });
+}
+
+/** The order array after dropping `from` at `to`'s position (over the given
+ *  visible field sequence — persists the FULL sequence so it's unambiguous). */
+export function reorderFields(visibleFields: string[], from: string, to: string): string[] {
+    const seq = visibleFields.slice();
+    const i = seq.indexOf(from);
+    const j = seq.indexOf(to);
+    if (i < 0 || j < 0 || i === j) {
+        return seq;
+    }
+    seq.splice(i, 1);
+    seq.splice(j, 0, from);
+    return seq;
+}
+
+// Formatter caches — creating Intl formatters per cell is wasteful.
+const numFmts = new Map<string, Intl.NumberFormat>();
+const dateFmts = new Map<string, Intl.DateTimeFormat>();
+
+function numFmt(locale: string, decimals: number): Intl.NumberFormat {
+    const k = `${locale}|${decimals}`;
+    let f = numFmts.get(k);
+    if (!f) {
+        f = new Intl.NumberFormat(locale || undefined,
+            decimals >= 0 ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : {});
+        numFmts.set(k, f);
+    }
+    return f;
+}
+
+function dateFmt(locale: string, withTime: boolean): Intl.DateTimeFormat {
+    const k = `${locale}|${withTime}`;
+    let f = dateFmts.get(k);
+    if (!f) {
+        f = new Intl.DateTimeFormat(locale || undefined,
+            withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' });
+        dateFmts.set(k, f);
+    }
+    return f;
+}
+
+/** Parse a cell date: ISO date-only as LOCAL wall date (no TZ shift), anything
+ *  else through Date. Returns null when unparseable. */
+function parseCellDate(value: unknown): Date | null {
+    if (value instanceof Date) {
+        return value;
+    }
+    const s = String(value);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) {
+        return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+/** Display text for a cell, honouring the column type + locale. Falls back to
+ *  the raw text whenever the value doesn't fit the type (never hides data). */
+export function formatCell(value: unknown, col: GridColumn, locale: string): string {
+    if (value === null || value === undefined || value === '') {
+        return '';
+    }
+    switch (col.type) {
+        case 'number': {
+            const n = typeof value === 'number' ? value : Number(value);
+            return Number.isFinite(n) ? numFmt(locale, col.decimals).format(n) : cellText(value);
+        }
+        case 'date':
+        case 'datetime': {
+            const d = parseCellDate(value);
+            return d ? dateFmt(locale, col.type === 'datetime').format(d) : cellText(value);
+        }
+        case 'boolean':
+            return value === true || value === 'true' ? '\u2713' : '\u2014';
+        default:
+            return cellText(value);
+    }
+}
+
+/** The first matching conditional-style rule for a value (null = none). */
+export function matchStyle(value: unknown, rules: CellStyleRule[]): CellStyleRule | null {
+    for (const r of rules) {
+        if (r.equals !== undefined) {
+            if (cellText(value) === cellText(r.equals)) {
+                return r;
+            }
+            continue;
+        }
+        const n = typeof value === 'number' ? value : Number(value);
+        if (r.gt !== undefined || r.lt !== undefined) {
+            if (Number.isFinite(n) && (r.gt === undefined || n > r.gt) && (r.lt === undefined || n < r.lt)) {
+                return r;
+            }
+            continue;
+        }
+        if (r.contains !== undefined && cellText(value).toLowerCase().indexOf(String(r.contains).toLowerCase()) >= 0) {
+            return r;
+        }
+    }
+    return null;
 }

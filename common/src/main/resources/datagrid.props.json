@@ -51,6 +51,55 @@
                 ],
                 "description": "Cell text alignment.",
                 "default": "left"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "number",
+                  "date",
+                  "datetime",
+                  "boolean"
+                ],
+                "description": "Display type: number/date/datetime format per config.locale; boolean renders a check/dash. The quick filter and CSV match the displayed text.",
+                "default": "text"
+              },
+              "decimals": {
+                "type": "number",
+                "description": "Number columns: fixed fraction digits (omit = as-is, max 6)."
+              },
+              "cellStyles": {
+                "type": "array",
+                "description": "Conditional styling; the FIRST matching rule wins. A rule needs one condition (equals / gt / lt / contains) and at least one effect (color / background).",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "equals": {
+                      "description": "Match when the cell value equals this."
+                    },
+                    "gt": {
+                      "type": "number",
+                      "description": "Match when the numeric value is greater than this (combine with lt for a band)."
+                    },
+                    "lt": {
+                      "type": "number",
+                      "description": "Match when the numeric value is less than this."
+                    },
+                    "contains": {
+                      "type": "string",
+                      "description": "Match when the displayed text contains this (case-insensitive)."
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "Text colour to apply."
+                    },
+                    "background": {
+                      "type": "string",
+                      "description": "Cell background to apply."
+                    }
+                  }
+                }
               }
             }
           }
@@ -94,6 +143,10 @@
             "selected": {
               "type": "string",
               "description": "Selection-count badge; '{n}' = how many."
+            },
+            "columns": {
+              "type": "string",
+              "description": "Column-chooser button tooltip + accessible label."
             }
           }
         },
@@ -149,7 +202,12 @@
           "dir": ""
         },
         "quickFilter": "",
-        "selection": []
+        "selection": [],
+        "columnLayout": {
+          "widths": [],
+          "order": [],
+          "hidden": []
+        }
       },
       "properties": {
         "sort": {
@@ -182,6 +240,38 @@
           "type": "array",
           "description": "Selected row ids (config.idField values), in click order for toggles.",
           "default": []
+        },
+        "columnLayout": {
+          "type": "object",
+          "description": "The user's column adjustments (drag headers to reorder, drag the edge handle to resize, the toolbar chooser to hide). config.columns stays the authoring truth; this layers on top.",
+          "properties": {
+            "widths": {
+              "type": "array",
+              "description": "Width overrides: [{field, width}].",
+              "default": [],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "order": {
+              "type": "array",
+              "description": "Visible field order (fields listed here come first, in this order).",
+              "default": []
+            },
+            "hidden": {
+              "type": "array",
+              "description": "Hidden column fields.",
+              "default": []
+            }
+          }
         }
       }
     },

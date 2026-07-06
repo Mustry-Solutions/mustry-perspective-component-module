@@ -33,6 +33,7 @@
 
 // Toolbar: quick filter (left), selection badge + export (right).
 .dg-toolbar {
+    position: relative;   // anchors the column-chooser popover
     flex: 0 0 auto;
     display: flex;
     align-items: center;
@@ -145,6 +146,70 @@
     margin-left: 4px;
     font-size: 8px;
     color: var(--dg-accent);
+}
+
+// Column resize handle: a slim hit area on the header cell's right edge.
+.dg-resize {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 9px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 1;
+
+    &:hover {
+        background: color-mix(in srgb, var(--dg-accent) 30%, transparent);
+    }
+}
+
+.dg-head-cell {
+    position: relative;   // anchors the resize handle
+}
+
+.dg-head-cell--dragging {
+    opacity: 0.5;
+}
+
+.dg-head-cell--dragover {
+    box-shadow: inset 3px 0 0 var(--dg-accent);
+}
+
+// Column chooser popover (from the toolbar columns button).
+.dg-chooser {
+    position: absolute;
+    top: 38px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 160px;
+    max-height: 260px;
+    overflow: auto;
+    padding: 6px;
+    background: var(--dg-bg);
+    border: 1px solid var(--dg-border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.dg-chooser-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border-radius: 5px;
+    cursor: pointer;
+
+    &:hover {
+        background: color-mix(in srgb, var(--dg-accent) 8%, var(--dg-bg));
+    }
+
+    input {
+        accent-color: var(--dg-accent);
+    }
 }
 
 // Full-height canvas so the scrollbar reflects every row; only the windowed

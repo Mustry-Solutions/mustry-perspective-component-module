@@ -6,7 +6,7 @@ import { mapGridProps } from '../grid/gridProps';
 import { stubReader } from './_stubReader';
 
 const col = (field: string, over: Partial<GridColumn> = {}): GridColumn =>
-    ({ field, header: '', width: 100, pinned: false, align: 'left', ...over });
+    ({ field, header: '', width: 100, pinned: false, align: 'left', type: 'text', decimals: -1, cellStyles: [], ...over });
 
 describe('visibleRowRange (row virtualization window)', () => {
     it('windows the visible rows plus overscan', () => {
@@ -181,5 +181,78 @@ describe('gridToCsv', () => {
         const lines = csv.split('\r\n');
         expect(lines[0]).toBe('Order,note');
         expect(lines[1]).toContain("'=SUM(A1)");   // formula-injection guard
+    });
+});
+
+import {
+    CellStyleRule, ColumnLayoutState,
+    effectiveColumns, formatCell, matchStyle, reorderFields
+} from '../grid/gridLogic';
+
+const LAYOUT0: ColumnLayoutState = { widths: {}, order: [], hidden: [] };
+
+describe('effectiveColumns (two-way layout over config)', () => {
+    const cols = [col('a', { width: 100 }), col('b', { width: 100 }), col('c', { width: 100 })];
+
+    it('applies hidden, order and width overrides without touching config', () => {
+        const out = effectiveColumns(cols, { widths: { c: 55 }, order: ['c', 'a'], hidden: ['b'] });
+        expect(out.map((c) => c.field)).toEqual(['c', 'a']);
+        expect(out[0].width).toBe(55);
+        expect(cols[2].width).toBe(100);   // config untouched
+    });
+
+    it('clamps width overrides and keeps unlisted fields in config position', () => {
+        const out = effectiveColumns(cols, { widths: { a: 5 }, order: ['b'], hidden: [] });
+        expect(out.map((c) => c.field)).toEqual(['b', 'a', 'c']);
+        expect(out[1].width).toBe(40);     // MIN_COL_PX
+        expect(effectiveColumns(cols, LAYOUT0)).toEqual(cols);
+    });
+});
+
+describe('reorderFields', () => {
+    it('moves from onto to, over the visible sequence', () => {
+        expect(reorderFields(['a', 'b', 'c', 'd'], 'd', 'b')).toEqual(['a', 'd', 'b', 'c']);
+        expect(reorderFields(['a', 'b', 'c', 'd'], 'a', 'c')).toEqual(['b', 'c', 'a', 'd']);
+        expect(reorderFields(['a', 'b'], 'a', 'missing')).toEqual(['a', 'b']);
+    });
+});
+
+describe('formatCell (typed display text)', () => {
+    it('numbers: locale grouping + fixed decimals; junk falls back to raw', () => {
+        expect(formatCell(1234.5, col('n', { type: 'number', decimals: 2 }), 'en')).toBe('1,234.50');
+        expect(formatCell('1234.5', col('n', { type: 'number', decimals: -1 }), 'en')).toBe('1,234.5');
+        expect(formatCell('n/a', col('n', { type: 'number', decimals: 0 }), 'en')).toBe('n/a');
+    });
+
+    it('dates: ISO date-only stays on its wall date (no TZ shift); junk falls back', () => {
+        expect(formatCell('2026-07-06', col('d', { type: 'date' }), 'en')).toBe('Jul 6, 2026');
+        expect(formatCell('not a date', col('d', { type: 'date' }), 'en')).toBe('not a date');
+    });
+
+    it('booleans render check/dash; empties render blank', () => {
+        expect(formatCell(true, col('b', { type: 'boolean' }), 'en')).toBe('✓');
+        expect(formatCell(false, col('b', { type: 'boolean' }), 'en')).toBe('—');
+        expect(formatCell(null, col('b', { type: 'boolean' }), 'en')).toBe('');
+    });
+});
+
+describe('matchStyle (first matching rule wins)', () => {
+    const rules: CellStyleRule[] = [
+        { equals: 'urgent', color: 'red' },
+        { gt: 900, background: 'gold' },
+        { contains: 'hold', color: 'orange' }
+    ];
+
+    it('equals / numeric band / contains, in rule order', () => {
+        expect(matchStyle('urgent', rules)?.color).toBe('red');
+        expect(matchStyle(950, rules)?.background).toBe('gold');
+        expect(matchStyle('on hold', rules)?.color).toBe('orange');
+        expect(matchStyle('normal', rules)).toBeNull();
+    });
+
+    it('gt+lt combine as a band', () => {
+        const band: CellStyleRule[] = [{ gt: 10, lt: 20, background: 'x' }];
+        expect(matchStyle(15, band)).not.toBeNull();
+        expect(matchStyle(25, band)).toBeNull();
     });
 });
