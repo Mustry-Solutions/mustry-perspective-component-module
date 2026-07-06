@@ -1,0 +1,5 @@
+{
+    "type": "object",
+    "properties": {},
+    "description": "The toolbar add button was clicked. Create the new row yourself (INSERT + rebind data.rows) — the grid never mutates its own data."
+}

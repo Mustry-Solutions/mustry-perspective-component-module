@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "rowId": { "type": "string", "description": "The edited row's id (config.idField value)." },
+        "field": { "type": "string", "description": "The edited column's field." },
+        "oldValue": { "description": "The value before the edit (null when the cell was empty)." },
+        "newValue": { "description": "The validated new value, typed per the column (number columns commit numbers)." },
+        "row": { "type": "object", "description": "The full row with newValue applied — persist it (e.g. a named-query UPDATE keyed on rowId) and rebind data.rows; the grid shows the new value optimistically until the rebind arrives." }
+    }
+}

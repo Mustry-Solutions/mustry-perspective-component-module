@@ -321,3 +321,77 @@
     0% { left: -35%; }
     100% { left: 100%; }
 }
+
+// --- editing (M2) ------------------------------------------------------------
+
+.dg-scroll:focus {
+    outline: none;   // the focused CELL carries the ring instead
+}
+
+.dg-cell--focus {
+    box-shadow: inset 0 0 0 2px var(--dg-accent);
+}
+
+.dg-cell--editable {
+    cursor: cell;
+}
+
+// A committed edit awaiting the author's write-back (data.rows rebind clears it).
+.dg-cell--pending {
+    font-style: italic;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--dg-accent);
+    }
+}
+
+.dg-cell {
+    position: relative;   // anchors the pending dot + the editor
+}
+
+.dg-editor {
+    position: absolute;
+    inset: 1px;
+    width: calc(100% - 2px);
+    padding: 0 6px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--dg-text);
+    background: var(--dg-bg);
+    border: 2px solid var(--dg-accent);
+    border-radius: 4px;
+
+    &:focus {
+        outline: none;
+    }
+
+    &.dg-editor--invalid {
+        border-color: #dc2626;
+        background: color-mix(in srgb, #dc2626 8%, var(--dg-bg));
+    }
+}
+
+.dg-bool {
+    accent-color: var(--dg-accent);
+    width: 15px;
+    height: 15px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.dg-export-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+
+    &:hover {
+        border-color: var(--dg-border);
+        background: var(--dg-bg);
+    }
+}

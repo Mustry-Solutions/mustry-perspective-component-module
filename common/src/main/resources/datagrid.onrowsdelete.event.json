@@ -1,0 +1,7 @@
+{
+    "type": "object",
+    "properties": {
+        "rowIds": { "type": "array", "description": "Ids (config.idField values) of the selected rows to delete." },
+        "rows": { "type": "array", "description": "The full row objects, for handlers that need more than the id." }
+    }
+}

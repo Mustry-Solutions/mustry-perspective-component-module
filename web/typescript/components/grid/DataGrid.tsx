@@ -11,15 +11,22 @@ import { emptyMessageText } from '../../shared/labelPacks';
 import { CSV_BOM, csvCell } from '../../shared/csv';
 import { DocDismiss } from '../../shared/dismiss';
 import {
-    ColumnLayout, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
-    cellText, columnLayout, effectiveColumns, formatCell, gridIsEmpty, gridToCsv,
-    matchStyle, nextSelection, nextSort, quickFilterRows, reorderFields, sortRows,
-    visibleRowRange
+    CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
+    cellText, columnLayout, editDraft, effectiveColumns, formatCell, gridIsEmpty, gridToCsv,
+    matchStyle, nextCell, nextSelection, nextSort, quickFilterRows, reorderFields, sortRows,
+    validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
 
 // Must match DataGrid.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.input.datagrid';
+
+interface EditState {
+    pos: CellPos;
+    field: string;
+    draft: string;
+    error: EditError;
+}
 
 interface DataGridState {
     scrollTop: number;
@@ -33,21 +40,30 @@ interface DataGridState {
     resize: { field: string; width: number } | null;
     drag: { field: string; over: string } | null;
     chooserOpen: boolean;
+    // Editing (M2): the roving focused cell and the open editor.
+    focus: CellPos | null;
+    editing: EditState | null;
+    // Committed-but-not-yet-rebound values, keyed `rowId::field` — the grid never
+    // mutates data.rows; these overlay the display until the author's write-back
+    // rebinds the rows (any data.rows change clears them, calendar semantics).
+    pending: Record<string, unknown>;
 }
 
 type Row = Record<string, unknown>;
 
 /**
- * Virtualized data grid: sticky header, frozen (pinned) columns, fixed row
- * height, one scroll container for both axes (the timeline's proven layout).
- * Interactions are two-way through `state.*` — sort, quickFilter, selection
- * and columnLayout (widths/order/hidden) — so views can pre-set or bind them.
- * Header gestures: click sorts, drag reorders, the edge handle resizes; the
- * toolbar has the quick filter, a column chooser and CSV export of the view.
+ * Virtualized editable data grid: sticky header, frozen (pinned) columns, one
+ * scroll container (the timeline's proven layout). Read-side interactions are
+ * two-way through `state.*` (sort / quickFilter / selection / columnLayout).
+ * Editing is CONTROLLED: an edit fires `onCellEdit` and overlays the value
+ * until the author's write-back rebinds `data.rows` — the grid never mutates
+ * its own data. Keyboard: arrows move the focused cell, Enter/F2/typing edit,
+ * Enter/Tab commit + move, Escape reverts.
  */
 export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState> {
 
     private scrollRef = React.createRef<HTMLDivElement>();
+    private editorRef = React.createRef<HTMLInputElement & HTMLSelectElement>();
     private resizeObs: ResizeObserver | null = null;
     private selectionAnchor = '';   // last plainly-clicked row id (shift-range endpoint)
     private filterTimer = 0;        // debounces the state.quickFilter write while typing
@@ -59,7 +75,8 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         super(props);
         this.state = {
             scrollTop: 0, viewportHeight: 0, filterDraft: null,
-            resize: null, drag: null, chooserOpen: false
+            resize: null, drag: null, chooserOpen: false,
+            focus: null, editing: null, pending: {}
         };
     }
 
@@ -71,9 +88,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         }
     }
 
-    componentDidUpdate(): void {
+    componentDidUpdate(prevProps: ComponentProps<GridProps>): void {
         if (this.state.filterDraft !== null && this.state.filterDraft === this.props.props.quickFilter) {
             this.setState({ filterDraft: null });   // the write echoed back; the prop leads again
+        }
+        if (prevProps.props.rows !== this.props.props.rows && Object.keys(this.state.pending).length) {
+            this.setState({ pending: {} });         // the write-back rebound the rows
         }
     }
 
@@ -100,6 +120,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             this.setState({ scrollTop: el.scrollTop });
         }
     };
+
+    private fireEvent(name: string, payload: object): void {
+        if (this.props.eventsEnabled) {
+            this.props.componentEvents.fireComponentEvent(name, payload);
+        }
+    }
 
     // --- the effective columns + view pipeline, memoized on their inputs -------
     private colsMemo: { deps: unknown[]; cols: GridColumn[] } | null = null;
@@ -136,6 +162,16 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
 
     private rowId(row: Row): string {
         return cellText(row[this.props.props.idField]);
+    }
+
+    /** The cell's current value: a committed-but-unbound edit wins over the prop. */
+    private cellValue(row: Row, field: string): unknown {
+        const k = `${this.rowId(row)}::${field}`;
+        return k in this.state.pending ? this.state.pending[k] : row[field];
+    }
+
+    private colEditable(col: GridColumn): boolean {
+        return this.props.props.editable && col.editable;
     }
 
     // --- two-way state writes -------------------------------------------------
@@ -195,6 +231,165 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         a.download = 'grid-rows.csv';
         a.click();
         URL.revokeObjectURL(a.href);
+    };
+
+    // --- editing ----------------------------------------------------------------
+    private startEdit(pos: CellPos, initial?: string): void {
+        const col = this.effCols()[pos.col];
+        const row = this.viewRows()[pos.row];
+        if (!col || !row || !this.colEditable(col)) {
+            return;
+        }
+        const draft = initial !== undefined ? initial : editDraft(this.cellValue(row, col.field), col);
+        this.setState({ focus: pos, editing: { pos, field: col.field, draft, error: null } },
+            () => this.editorRef.current?.focus());
+    }
+
+    /** Validate + fire + close. Returns false (and stays open) on a validation error. */
+    private commitEdit(): boolean {
+        const ed = this.state.editing;
+        if (!ed) {
+            return true;
+        }
+        const col = this.effCols()[ed.pos.col];
+        const row = this.viewRows()[ed.pos.row];
+        if (!col || !row) {
+            this.setState({ editing: null });
+            return true;
+        }
+        const { value, error } = validateCell(ed.draft, col);
+        if (error) {
+            this.setState({ editing: { ...ed, error } });
+            return false;
+        }
+        const oldValue = this.cellValue(row, col.field);
+        if (cellText(value) !== cellText(oldValue)) {
+            this.fireCellEdit(row, col.field, oldValue, value);
+        }
+        this.setState({ editing: null });
+        return true;
+    }
+
+    private cancelEdit(): void {
+        this.setState({ editing: null }, () => this.scrollRef.current?.focus());
+    }
+
+    private fireCellEdit(row: Row, field: string, oldValue: unknown, newValue: unknown): void {
+        const k = `${this.rowId(row)}::${field}`;
+        this.setState({ pending: { ...this.state.pending, [k]: newValue } });
+        this.fireEvent('onCellEdit', {
+            rowId: this.rowId(row),
+            field,
+            oldValue: oldValue === undefined ? null : oldValue,
+            newValue,
+            row: { ...row, [field]: newValue }
+        });
+    }
+
+    /** A boolean cell's checkbox toggled — commits immediately (no editor). */
+    private toggleBoolean(row: Row, col: GridColumn): void {
+        const cur = this.cellValue(row, col.field);
+        this.fireCellEdit(row, col.field, cur, !(cur === true || cur === 'true'));
+    }
+
+    private errorText(error: EditError, col: GridColumn): string {
+        const L = this.props.props.labels;
+        switch (error) {
+            case 'required': return L.errRequired;
+            case 'number': return L.errNumber;
+            case 'min': return L.errMin.replace('{min}', String(col.min));
+            case 'max': return L.errMax.replace('{max}', String(col.max));
+            case 'pattern': return L.errPattern;
+            case 'option': return L.errOption;
+            default: return '';
+        }
+    }
+
+    // --- keyboard model -----------------------------------------------------------
+    private moveFocus(key: string, shift: boolean): void {
+        const cols = this.effCols();
+        const rows = this.viewRows();
+        const cur = this.state.focus || { row: 0, col: 0 };
+        const pos = nextCell(cur, key === 'Tab' && shift ? 'ShiftTab' : key, rows.length, cols.length);
+        this.setState({ focus: pos }, () => this.scrollCellIntoView(pos));
+    }
+
+    private scrollCellIntoView(pos: CellPos): void {
+        const el = this.scrollRef.current;
+        if (!el) {
+            return;
+        }
+        const p = this.props.props;
+        const headH = 28;
+        const rowTop = headH + pos.row * p.rowHeight;
+        if (rowTop - headH < el.scrollTop) {
+            el.scrollTop = rowTop - headH;
+        } else if (rowTop + p.rowHeight > el.scrollTop + el.clientHeight) {
+            el.scrollTop = rowTop + p.rowHeight - el.clientHeight;
+        }
+        const layout = columnLayout(this.effCols());
+        const all = [...layout.pinned, ...layout.scrolling];
+        const col = all[pos.col];
+        if (col && col.left < 0) {   // scrolling columns only (pinned are always visible)
+            let x = layout.pinnedWidth;
+            for (const lc of layout.scrolling) {
+                if (lc === col) {
+                    break;
+                }
+                x += lc.width;
+            }
+            if (x < el.scrollLeft + layout.pinnedWidth) {
+                el.scrollLeft = x - layout.pinnedWidth;
+            } else if (x + col.width > el.scrollLeft + el.clientWidth) {
+                el.scrollLeft = x + col.width - el.clientWidth;
+            }
+        }
+    }
+
+    private onGridKeyDown = (e: React.KeyboardEvent): void => {
+        if (this.state.editing) {
+            return;   // the editor's own keydown handles it
+        }
+        const nav = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Tab'];
+        if (nav.indexOf(e.key) >= 0) {
+            if (e.key === 'Tab' && !this.state.focus) {
+                return;   // let Tab leave the grid when nothing is focused
+            }
+            e.preventDefault();
+            this.moveFocus(e.key, e.shiftKey);
+            return;
+        }
+        const focus = this.state.focus;
+        if (!focus) {
+            return;
+        }
+        if (e.key === 'Enter' || e.key === 'F2') {
+            e.preventDefault();
+            this.startEdit(focus);
+            return;
+        }
+        // type-to-edit: a printable character replaces the value (Excel muscle memory)
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            this.startEdit(focus, e.key);
+        }
+    };
+
+    private onEditorKeyDown = (e: React.KeyboardEvent): void => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            this.cancelEdit();
+            return;
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            const key = e.key;
+            const shift = e.shiftKey;
+            if (this.commitEdit()) {
+                this.moveFocus(key, shift);
+                this.scrollRef.current?.focus();
+            }
+        }
     };
 
     // --- header gestures: resize handle + drag to reorder ----------------------
@@ -267,25 +462,75 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     }
 
     // --- rendering -------------------------------------------------------------
-    private renderCell(lc: LaidColumn, row: Row, rowHeight: number): React.ReactNode {
+    private renderEditor(col: GridColumn, ed: EditState, rowHeight: number): React.ReactNode {
+        const invalid = ed.error !== null;
+        const common = {
+            ref: this.editorRef as any,
+            className: `dg-editor${invalid ? ' dg-editor--invalid' : ''}`,
+            value: ed.draft,
+            title: invalid ? this.errorText(ed.error, col) : undefined,
+            onKeyDown: this.onEditorKeyDown,
+            onBlur: () => {
+                // blur commits when valid; an invalid draft reverts (never trap focus)
+                if (this.state.editing && !this.commitEdit()) {
+                    this.setState({ editing: null });
+                }
+            },
+            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+                this.setState({ editing: { ...ed, draft: e.target.value, error: null } })
+        };
+        if (col.options.length) {
+            return (
+                <select {...common} style={{ height: rowHeight - 4 }}>
+                    {ed.draft === '' && <option value="" />}
+                    {col.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+            );
+        }
+        const type = col.type === 'date' ? 'date' : col.type === 'datetime' ? 'datetime-local' : 'text';
+        const inputMode = col.type === 'number' ? { inputMode: 'decimal' as const } : {};
+        return <input {...common} type={type} {...inputMode} style={{ height: rowHeight - 4 }} />;
+    }
+
+    private renderCell(lc: LaidColumn, row: Row, pos: CellPos, rowHeight: number): React.ReactNode {
         const { col } = lc;
         const p = this.props.props;
         const pinned = lc.left >= 0;
-        const text = formatCell(row[col.field], col, p.locale);
-        const rule = col.cellStyles.length ? matchStyle(row[col.field], col.cellStyles) : null;
+        const ed = this.state.editing;
+        const isEditing = ed && ed.pos.row === pos.row && ed.pos.col === pos.col;
+        const isFocused = !isEditing && this.state.focus
+            && this.state.focus.row === pos.row && this.state.focus.col === pos.col;
+        const value = this.cellValue(row, col.field);
+        const text = formatCell(value, col, p.locale);
+        const rule = col.cellStyles.length ? matchStyle(value, col.cellStyles) : null;
+        const editable = this.colEditable(col);
+        const pendingKey = `${this.rowId(row)}::${col.field}`;
         return (
             <div
                 key={col.field}
-                className={`dg-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}`}
+                className={`dg-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}`
+                    + `${isFocused ? ' dg-cell--focus' : ''}${editable ? ' dg-cell--editable' : ''}`
+                    + `${pendingKey in this.state.pending ? ' dg-cell--pending' : ''}`}
                 style={{
                     width: lc.width, minWidth: lc.width, lineHeight: `${rowHeight - 1}px`,
                     ...(pinned ? { left: lc.left } : null),
                     ...(rule && rule.color ? { color: rule.color } : null),
                     ...(rule && rule.background ? { background: rule.background } : null)
                 }}
-                title={text || undefined}
+                title={isEditing ? undefined : text || undefined}
+                onClick={() => this.setState({ focus: pos })}
+                onDoubleClick={editable && col.type !== 'boolean' ? () => this.startEdit(pos) : undefined}
             >
-                {text}
+                {isEditing ? this.renderEditor(col, ed as EditState, rowHeight)
+                    : editable && col.type === 'boolean' ? (
+                        <input
+                            type="checkbox"
+                            className="dg-bool"
+                            checked={value === true || value === 'true'}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => this.toggleBoolean(row, col)}
+                        />
+                    ) : text}
             </div>
         );
     }
@@ -340,6 +585,16 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         );
     }
 
+    private deleteSelected = (): void => {
+        const p = this.props.props;
+        const selected = new Set(p.selection);
+        const rows = p.rows.filter((r) => selected.has(this.rowId(r)));
+        if (rows.length) {
+            this.fireEvent('onRowsDelete', { rowIds: rows.map((r) => this.rowId(r)), rows });
+            this.props.store.props.write('state.selection', []);
+        }
+    };
+
     private renderToolbar(view: Row[]): React.ReactNode {
         const p = this.props.props;
         if (!p.showToolbar) {
@@ -360,6 +615,20 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 <span className="dg-toolbar-spring" />
                 {selCount > 0 && (
                     <span className="dg-selected-badge">{p.labels.selected.replace('{n}', String(selCount))}</span>
+                )}
+                {p.allowAdd && (
+                    <button type="button" className="dg-export-btn" title={p.labels.addRow}
+                            aria-label={p.labels.addRow} onClick={() => this.fireEvent('onRowAdd', {})}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" /></svg>
+                    </button>
+                )}
+                {p.allowDelete && (
+                    <button type="button" className="dg-export-btn" disabled={selCount === 0}
+                            title={p.labels.deleteRows.replace('{n}', String(selCount))}
+                            aria-label={p.labels.deleteRows.replace('{n}', String(selCount))}
+                            onClick={this.deleteSelected}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2h4v2H4V6h4l1-2z" /></svg>
+                    </button>
                 )}
                 <button type="button" className="dg-export-btn dg-chooser-btn" title={p.labels.columns}
                         aria-label={p.labels.columns} aria-haspopup="true" aria-expanded={this.state.chooserOpen}
@@ -402,7 +671,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                     style={{ top: i * p.rowHeight, height: p.rowHeight, width: layout.totalWidth }}
                     onClick={(e) => this.clickRow(row, e)}
                 >
-                    {cols.map((lc) => this.renderCell(lc, row, p.rowHeight))}
+                    {cols.map((lc, ci) => this.renderCell(lc, row, { row: i, col: ci }, p.rowHeight))}
                 </div>
             );
         }
@@ -414,7 +683,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 <div
                     className={`dg-scroll${p.loading ? ' dg-loading' : ''}`}
                     ref={this.scrollRef}
+                    tabIndex={0}
                     onScroll={this.onScroll}
+                    onKeyDown={this.onGridKeyDown}
                 >
                     <div className="dg-head" style={{ width: layout.totalWidth }}>
                         {cols.map((lc) => this.renderHeadCell(lc, p.sort))}

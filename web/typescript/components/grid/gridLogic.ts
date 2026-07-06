@@ -14,6 +14,11 @@ export interface CellStyleRule {
 }
 
 /** One configured column, already validated by gridProps. */
+export interface SelectOption {
+    value: string;
+    label: string;
+}
+
 export interface GridColumn {
     field: string;
     header: string;       // '' = fall back to the field name
@@ -23,6 +28,12 @@ export interface GridColumn {
     type: ColumnType;
     decimals: number;     // number columns: fixed fraction digits (-1 = as-is)
     cellStyles: CellStyleRule[];
+    editable: boolean;    // effective only when config.editable is on
+    required: boolean;
+    min?: number;         // number columns
+    max?: number;
+    pattern: string;      // text columns: regex the value must match
+    options: SelectOption[];   // non-empty -> dropdown editor restricted to these
 }
 
 export const MIN_COL_PX = 40;
@@ -328,4 +339,86 @@ export function matchStyle(value: unknown, rules: CellStyleRule[]): CellStyleRul
         }
     }
     return null;
+}
+
+// --- M2: cell editing --------------------------------------------------------------
+
+export type EditError = 'required' | 'number' | 'min' | 'max' | 'pattern' | 'option' | null;
+
+/** Parse + validate an editor draft against its column. Returns the typed value
+ *  to commit and the (localizable) error key — commit only when error is null. */
+export function validateCell(draft: string | boolean, col: GridColumn): { value: unknown; error: EditError } {
+    if (col.type === 'boolean') {
+        return { value: draft === true || draft === 'true', error: null };
+    }
+    const text = String(draft).trim();
+    if (!text) {
+        return col.required ? { value: '', error: 'required' } : { value: '', error: null };
+    }
+    if (col.options.length && col.options.every((o) => o.value !== text)) {
+        return { value: text, error: 'option' };
+    }
+    if (col.type === 'number') {
+        const n = Number(text.replace(',', '.'));   // tolerate a decimal comma
+        if (!Number.isFinite(n)) {
+            return { value: text, error: 'number' };
+        }
+        if (col.min !== undefined && n < col.min) {
+            return { value: n, error: 'min' };
+        }
+        if (col.max !== undefined && n > col.max) {
+            return { value: n, error: 'max' };
+        }
+        return { value: n, error: null };
+    }
+    if (col.pattern) {
+        try {
+            if (!new RegExp(col.pattern).test(text)) {
+                return { value: text, error: 'pattern' };
+            }
+        } catch {
+            // an invalid authored regex never blocks the operator
+        }
+    }
+    return { value: text, error: null };
+}
+
+/** The editor's initial draft for a cell value (raw, not display-formatted —
+ *  you edit the value, not its localized rendering). Dates keep ISO. */
+export function editDraft(value: unknown, col: GridColumn): string {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    if (col.type === 'number' || col.type === 'date' || col.type === 'datetime') {
+        return String(value);
+    }
+    return cellText(value);
+}
+
+export interface CellPos {
+    row: number;    // view-order index
+    col: number;    // effective-columns index
+}
+
+/** The next focused cell for an arrow/Tab/Enter step, clamped to the grid. */
+export function nextCell(pos: CellPos, key: string, rowCount: number, colCount: number): CellPos {
+    let { row, col } = pos;
+    switch (key) {
+        case 'ArrowUp': row -= 1; break;
+        case 'ArrowDown':
+        case 'Enter': row += 1; break;
+        case 'ArrowLeft': col -= 1; break;
+        case 'ArrowRight': col += 1; break;
+        case 'Tab': col += 1; if (col >= colCount) { col = 0; row += 1; } break;
+        case 'ShiftTab': col -= 1; if (col < 0) { col = colCount - 1; row -= 1; } break;
+        case 'PageDown': row += 10; break;
+        case 'PageUp': row -= 10; break;
+        case 'Home': col = 0; break;
+        case 'End': col = colCount - 1; break;
+        default: break;
+    }
+    return {
+        row: Math.max(0, Math.min(rowCount - 1, row)),
+        col: Math.max(0, Math.min(colCount - 1, col))
+    };
 }

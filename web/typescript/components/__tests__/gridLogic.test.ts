@@ -6,7 +6,7 @@ import { mapGridProps } from '../grid/gridProps';
 import { stubReader } from './_stubReader';
 
 const col = (field: string, over: Partial<GridColumn> = {}): GridColumn =>
-    ({ field, header: '', width: 100, pinned: false, align: 'left', type: 'text', decimals: -1, cellStyles: [], ...over });
+    ({ field, header: '', width: 100, pinned: false, align: 'left', type: 'text', decimals: -1, cellStyles: [], editable: true, required: false, pattern: '', options: [], ...over });
 
 describe('visibleRowRange (row virtualization window)', () => {
     it('windows the visible rows plus overscan', () => {
@@ -254,5 +254,55 @@ describe('matchStyle (first matching rule wins)', () => {
         const band: CellStyleRule[] = [{ gt: 10, lt: 20, background: 'x' }];
         expect(matchStyle(15, band)).not.toBeNull();
         expect(matchStyle(25, band)).toBeNull();
+    });
+});
+
+import { editDraft, nextCell, validateCell } from '../grid/gridLogic';
+
+describe('validateCell (parse + validate per column type)', () => {
+    it('numbers: parses (decimal comma too), enforces min/max, types the commit', () => {
+        const qty = col('q', { type: 'number', min: 0, max: 999, required: true });
+        expect(validateCell('42', qty)).toEqual({ value: 42, error: null });
+        expect(validateCell('4,5', qty)).toEqual({ value: 4.5, error: null });
+        expect(validateCell('abc', qty).error).toBe('number');
+        expect(validateCell('-1', qty).error).toBe('min');
+        expect(validateCell('1000', qty).error).toBe('max');
+        expect(validateCell('', qty).error).toBe('required');
+    });
+
+    it('required only blocks empties; optional empties commit as empty', () => {
+        expect(validateCell('', col('t')).error).toBeNull();
+    });
+
+    it('pattern gates text; a broken authored regex never blocks the operator', () => {
+        expect(validateCell('WO-1', col('t', { pattern: '^WO-\\d+$' })).error).toBeNull();
+        expect(validateCell('nope', col('t', { pattern: '^WO-\\d+$' })).error).toBe('pattern');
+        expect(validateCell('x', col('t', { pattern: '[' })).error).toBeNull();
+    });
+
+    it('options restrict the value; booleans always commit a real boolean', () => {
+        const sel = col('s', { options: [{ value: 'a', label: 'A' }] });
+        expect(validateCell('a', sel).error).toBeNull();
+        expect(validateCell('z', sel).error).toBe('option');
+        expect(validateCell('true', col('b', { type: 'boolean' }))).toEqual({ value: true, error: null });
+    });
+});
+
+describe('editDraft', () => {
+    it('edits the RAW value, not the localized rendering', () => {
+        expect(editDraft(1234.5, col('n', { type: 'number' }))).toBe('1234.5');
+        expect(editDraft('2026-07-06', col('d', { type: 'date' }))).toBe('2026-07-06');
+        expect(editDraft(null, col('t'))).toBe('');
+    });
+});
+
+describe('nextCell (keyboard grid navigation)', () => {
+    it('arrows move and clamp; Tab wraps to the next row', () => {
+        expect(nextCell({ row: 0, col: 0 }, 'ArrowUp', 10, 5)).toEqual({ row: 0, col: 0 });
+        expect(nextCell({ row: 3, col: 2 }, 'ArrowDown', 10, 5)).toEqual({ row: 4, col: 2 });
+        expect(nextCell({ row: 3, col: 4 }, 'Tab', 10, 5)).toEqual({ row: 4, col: 0 });
+        expect(nextCell({ row: 4, col: 0 }, 'ShiftTab', 10, 5)).toEqual({ row: 3, col: 4 });
+        expect(nextCell({ row: 9, col: 1 }, 'Enter', 10, 5)).toEqual({ row: 9, col: 1 });
+        expect(nextCell({ row: 0, col: 3 }, 'Home', 10, 5)).toEqual({ row: 0, col: 0 });
     });
 });

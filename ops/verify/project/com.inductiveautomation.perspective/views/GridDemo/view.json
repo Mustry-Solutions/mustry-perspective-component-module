@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Data Grid demo (M1 complete) — sort (click header), quick filter, select rows (Ctrl/Shift), REORDER columns (drag a header), RESIZE (drag a header's right edge), hide/show via the columns button, CSV export. Qty is a formatted number (>900 highlighted), Due a localized date, Priority/Status conditionally colored.",
+          "text": "Data Grid demo (M2) — EDITING: double-click a cell (or Enter/F2/type on the focused cell) to edit; Enter/Tab commit + move, Escape reverts. Qty validates 0-999 required; Line/Status/Priority are dropdowns; Order is locked. + adds a row, the trash deletes selected. Edits persist via onCellEdit write-back. Everything from M0/M1 still applies (sort/filter/select/reorder/resize/hide/CSV).",
           "style": {
             "fontSize": "13px"
           }
@@ -123,7 +123,8 @@
                 "field": "wo",
                 "header": "Order",
                 "width": 110,
-                "pinned": true
+                "pinned": true,
+                "editable": false
               },
               {
                 "field": "product",
@@ -133,7 +134,13 @@
               {
                 "field": "line",
                 "header": "Line",
-                "width": 90
+                "width": 90,
+                "options": [
+                  "Line 1",
+                  "Line 2",
+                  "Line 3",
+                  "Line 4"
+                ]
               },
               {
                 "field": "qty",
@@ -147,7 +154,10 @@
                     "gt": 900,
                     "background": "#fde68a"
                   }
-                ]
+                ],
+                "required": true,
+                "min": 0,
+                "max": 999
               },
               {
                 "field": "customer",
@@ -176,6 +186,13 @@
                     "equals": "done",
                     "color": "#9ca3af"
                   }
+                ],
+                "options": [
+                  "draft",
+                  "released",
+                  "running",
+                  "done",
+                  "on hold"
                 ]
               },
               {
@@ -192,6 +209,12 @@
                     "equals": "high",
                     "color": "#d97706"
                   }
+                ],
+                "options": [
+                  "low",
+                  "normal",
+                  "high",
+                  "urgent"
                 ]
               },
               {
@@ -208,7 +231,10 @@
             ],
             "idField": "wo",
             "rowSelect": "multi",
-            "showExport": true
+            "showExport": true,
+            "editable": true,
+            "allowAdd": true,
+            "allowDelete": true
           },
           "data": {
             "rows": []
@@ -239,6 +265,37 @@
           "y": 50,
           "width": 1068,
           "height": 550
+        },
+        "events": {
+          "component": {
+            "onCellEdit": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Persist a validated cell edit: upsert the full row by id and rebind.\n\trows = [dict(r) for r in self.props.data.rows]\n\tfor i in range(len(rows)):\n\t\tif rows[i].get(\"wo\") == event.rowId:\n\t\t\trows[i] = dict(event.row)\n\t\t\tbreak\n\tself.props.data.rows = rows\n"
+                }
+              }
+            ],
+            "onRowAdd": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Create a new draft work order at the top.\n\trows = [dict(r) for r in self.props.data.rows]\n\tnums = [int(str(r.get(\"wo\", \"WO-0\"))[3:]) for r in rows if str(r.get(\"wo\", \"\")).startswith(\"WO-\")]\n\tnxt = (max(nums) + 1) if nums else 10000\n\trows.insert(0, {\"wo\": \"WO-%05d\" % nxt, \"product\": \"\", \"line\": \"Line 1\", \"qty\": 0,\n\t\t\"customer\": \"\", \"batch\": \"\", \"status\": \"draft\", \"priority\": \"normal\",\n\t\t\"due\": system.date.format(system.date.now(), \"yyyy-MM-dd\"), \"notes\": \"\"})\n\tself.props.data.rows = rows\n"
+                }
+              }
+            ],
+            "onRowsDelete": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Remove the selected rows.\n\tdoomed = set([str(i) for i in event.rowIds])\n\tself.props.data.rows = [dict(r) for r in self.props.data.rows if str(r.get(\"wo\")) not in doomed]\n"
+                }
+              }
+            ]
+          }
         }
       }
     ]

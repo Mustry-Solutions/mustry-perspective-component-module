@@ -1,10 +1,15 @@
 # Editable Data Grid — component plan
 
-**Status (2026-07-06): M0 + M1 COMPLETE, live-verified** — virtualized grid
-(sticky header, frozen columns), sort, quick filter, multi-select, CSV
-export, column resize/reorder/hide (drag headers / edge handles / toolbar
-chooser), typed number/date/boolean formatting per locale, conditional
-cell styling — all two-way via `state.*`. Next: M2 (the editing core).
+**Status (2026-07-06): M0 + M1 + M2 COMPLETE, live-verified** — virtualized
+grid (sticky header, frozen columns), sort/filter/select/CSV, column
+resize/reorder/hide, typed formatting, conditional styling, and the
+EDITING CORE: typed cell editors incl. dropdown-in-cell, declarative
+validation (required/min/max/pattern/options; Escape reverts), the
+controlled onCellEdit/onRowAdd/onRowsDelete write-back events with
+optimistic pending overlay, per-column editability, and the Excel
+keyboard model (arrows, Enter/F2/type-to-edit, Enter/Tab commit+move).
+Next: M3 (batch mode, Excel range paste, aggregates, section grouping)
++ a grid manual-test checklist.
 Fourth component of the module:
 `mustrysolutions.input.datagrid`. Remaining decisions are proposals to settle
 with Sam; change them here first if they change.

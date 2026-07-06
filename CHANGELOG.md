@@ -125,7 +125,25 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   (number with locale grouping + fixed decimals, date/datetime localized,
   boolean check/dash) — the quick filter and CSV match the displayed text.
   **Conditional cell styling** (per-column rules: equals / gt / lt /
-  contains -> color/background, first match wins). Editing lands with M2.
+  contains -> color/background, first match wins).
+- **M2 — the editing core** (the reason this component exists; controlled
+  like the calendar/timeline — the grid never mutates its own data):
+  - Typed cell editors: text, number, date, datetime, and
+    **dropdown-in-cell** (`column.options`) — the native Table's most
+    hacked-around gap. Boolean columns render a live checkbox.
+  - Declarative validation before commit (`required`/`min`/`max`/
+    `pattern`/options): invalid drafts show a red editor + localized
+    message and never fire; Escape reverts; blur commits-or-reverts.
+  - **`onCellEdit`** `{rowId, field, oldValue, newValue, row}` after
+    validation; the value overlays optimistically (italic + dot) until
+    the author's write-back rebinds `data.rows`. `config.editable`
+    master switch + per-column `editable`.
+  - **`onRowAdd`** / **`onRowsDelete`** with toolbar buttons
+    (`config.allowAdd`/`allowDelete`; delete acts on the selection).
+  - **Excel keyboard model**: arrows/PageUp/Down/Home/End move the
+    focused cell (auto-scrolled into view), Enter/F2/type-to-edit open
+    the editor, Enter/Tab commit + move (Shift-Tab left), all localized
+    (8 new label keys x 7 languages).
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with

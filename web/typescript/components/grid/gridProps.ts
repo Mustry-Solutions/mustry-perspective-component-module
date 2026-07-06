@@ -1,7 +1,7 @@
 // Prop-tree -> typed props for the Data Grid (the reducer half of the component).
 import { PropReader } from '../../shared/propReader';
 import { EN_GRID_LABELS, GridLabels, gridLabelBase } from '../../shared/labelPacks';
-import { CellStyleRule, ColumnLayoutState, ColumnType, GridColumn, GridSort, MIN_COL_PX, ROW_H_MIN, ROW_H_MAX, RowSelectMode, SortDir } from './gridLogic';
+import { CellStyleRule, ColumnLayoutState, ColumnType, GridColumn, GridSort, MIN_COL_PX, ROW_H_MIN, ROW_H_MAX, RowSelectMode, SelectOption, SortDir } from './gridLogic';
 
 export interface GridProps {
     columns: GridColumn[];
@@ -9,6 +9,9 @@ export interface GridProps {
     rowHeight: number;
     idField: string;
     rowSelect: RowSelectMode;
+    editable: boolean;
+    allowAdd: boolean;
+    allowDelete: boolean;
     showToolbar: boolean;
     showExport: boolean;
     locale: string;
@@ -51,6 +54,20 @@ function mapColumn(c: any): GridColumn | null {
     const align = c && (c.align === 'center' || c.align === 'right' || c.align === 'left')
         ? c.align : (type === 'number' ? 'right' : 'left');
     const decimals = Number(c && c.decimals);
+    const options: SelectOption[] = ((c && c.options) || [])
+        .map((o: any): SelectOption | null => {
+            if (o === null || o === undefined) {
+                return null;
+            }
+            if (typeof o === 'object') {
+                const value = String(o.value ?? '');
+                return value ? { value, label: String(o.label ?? o.value) } : null;
+            }
+            return { value: String(o), label: String(o) };
+        })
+        .filter((o: SelectOption | null): o is SelectOption => o !== null);
+    const min = Number(c && c.min);
+    const max = Number(c && c.max);
     return {
         field,
         header: String((c && c.header) || ''),
@@ -61,7 +78,13 @@ function mapColumn(c: any): GridColumn | null {
         decimals: Number.isFinite(decimals) && decimals >= 0 ? Math.min(6, decimals) : -1,
         cellStyles: ((c && c.cellStyles) || [])
             .map(mapStyleRule)
-            .filter((r: CellStyleRule | null): r is CellStyleRule => r !== null)
+            .filter((r: CellStyleRule | null): r is CellStyleRule => r !== null),
+        editable: c && c.editable !== undefined ? !!c.editable : true,
+        required: !!(c && c.required),
+        ...(Number.isFinite(min) ? { min } : {}),
+        ...(Number.isFinite(max) ? { max } : {}),
+        pattern: String((c && c.pattern) || ''),
+        options
     };
 }
 
@@ -87,6 +110,9 @@ export function mapGridProps(tree: PropReader): GridProps {
         idField: tree.readString('config.idField', 'id') || 'id',
         rowSelect: ((m) => (m === 'single' || m === 'multi' ? m : 'none'))(
             tree.readString('config.rowSelect', 'none')) as RowSelectMode,
+        editable: tree.readBoolean('config.editable', false),
+        allowAdd: tree.readBoolean('config.allowAdd', false),
+        allowDelete: tree.readBoolean('config.allowDelete', false),
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showExport: tree.readBoolean('config.showExport', false),
         loading: tree.readBoolean('config.loading', false),

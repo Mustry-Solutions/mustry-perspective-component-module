@@ -14,7 +14,10 @@
         "idField": "id",
         "rowSelect": "none",
         "showToolbar": true,
-        "showExport": false
+        "showExport": false,
+        "editable": false,
+        "allowAdd": false,
+        "allowDelete": false
       },
       "properties": {
         "columns": {
@@ -100,6 +103,33 @@
                     }
                   }
                 }
+              },
+              "editable": {
+                "type": "boolean",
+                "description": "Whether this column is editable when config.editable is on.",
+                "default": true
+              },
+              "required": {
+                "type": "boolean",
+                "description": "Validation: an empty value can't be committed.",
+                "default": false
+              },
+              "min": {
+                "type": "number",
+                "description": "Number columns: smallest committable value."
+              },
+              "max": {
+                "type": "number",
+                "description": "Number columns: largest committable value."
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Text columns: regex the committed value must match."
+              },
+              "options": {
+                "type": "array",
+                "description": "Non-empty = dropdown editor restricted to these (strings, or {value, label}).",
+                "default": []
               }
             }
           }
@@ -147,6 +177,38 @@
             "columns": {
               "type": "string",
               "description": "Column-chooser button tooltip + accessible label."
+            },
+            "addRow": {
+              "type": "string",
+              "description": "Toolbar add-row button tooltip."
+            },
+            "deleteRows": {
+              "type": "string",
+              "description": "Toolbar delete tooltip; '{n}' = selected count."
+            },
+            "errRequired": {
+              "type": "string",
+              "description": "Validation: empty required cell."
+            },
+            "errNumber": {
+              "type": "string",
+              "description": "Validation: not a number."
+            },
+            "errMin": {
+              "type": "string",
+              "description": "Validation: below min; '{min}'."
+            },
+            "errMax": {
+              "type": "string",
+              "description": "Validation: above max; '{max}'."
+            },
+            "errPattern": {
+              "type": "string",
+              "description": "Validation: regex mismatch."
+            },
+            "errOption": {
+              "type": "string",
+              "description": "Validation: not one of options."
             }
           }
         },
@@ -173,6 +235,21 @@
         "showExport": {
           "type": "boolean",
           "description": "Toolbar button exporting the CURRENT view (filtered + sorted, configured columns) as CSV.",
+          "default": false
+        },
+        "editable": {
+          "type": "boolean",
+          "description": "Master editing switch: cells of columns with editable != false open typed editors (double-click / Enter / F2 / type). Edits fire onCellEdit; the grid never mutates data.rows.",
+          "default": false
+        },
+        "allowAdd": {
+          "type": "boolean",
+          "description": "Toolbar add-row button (fires onRowAdd; create + rebind yourself).",
+          "default": false
+        },
+        "allowDelete": {
+          "type": "boolean",
+          "description": "Toolbar delete button for the selected rows (fires onRowsDelete).",
           "default": false
         }
       }
