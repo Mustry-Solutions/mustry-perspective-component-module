@@ -1,0 +1,10 @@
+# Deliberately removed/renamed prop-schema keys the guard should not fail on.
+# Format: <schema-basename>:<key-path> — prune acknowledged entries at each
+# release cut so the guard goes back to zero-tolerance.
+#
+# 2026-07-06 state-section harmonization (pre-1.0, no deployments; see CHANGELOG):
+calendar.props.json:config.view
+calendar.props.json:output.hiddenCategories
+resourcetimeline.props.json:config.zoom
+resourcetimeline.props.json:config.collapsedGroups
+resourcetimeline.props.json:output.hiddenCategories

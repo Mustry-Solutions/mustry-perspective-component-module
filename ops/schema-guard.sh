@@ -42,6 +42,14 @@ for schema in "${SCHEMAS[@]}"; do
     removed=$(comm -23 \
         <(git show "$BASE_REF:$schema" | paths_of | sort) \
         <(paths_of < "$schema" | sort))
+    # Deliberate pre-1.0 breakage can be acknowledged, one "<schema-basename>:<path>"
+    # per line, in ops/schema-guard-acknowledged.txt (prune entries at each release).
+    if [[ -n "$removed" && -f ops/schema-guard-acknowledged.txt ]]; then
+        removed=$(comm -23 \
+            <(echo "$removed" | sed "s|^|$(basename "$schema"):|" | sort) \
+            <(grep -v '^#' ops/schema-guard-acknowledged.txt | sort) \
+            | sed "s|^$(basename "$schema"):||")
+    fi
     if [[ -n "$removed" ]]; then
         echo "SCHEMA GUARD: keys removed/renamed in $schema (vs $BASE_REF):" >&2
         echo "$removed" | sed 's/^/  - /' >&2
@@ -52,8 +60,8 @@ done
 if [[ $FAIL -ne 0 ]]; then
     echo "" >&2
     echo "Published prop keys must not be removed or renamed (existing views would" >&2
-    echo "silently reset). Add new keys instead, or if this is intentional pre-1.0" >&2
-    echo "breakage, re-run with an explicit base ref acknowledging it." >&2
+    echo "silently reset). Add new keys instead, or if this is deliberate pre-1.0" >&2
+    echo "breakage, acknowledge each path in ops/schema-guard-acknowledged.txt." >&2
     exit 1
 fi
 echo "schema-guard: OK (no removed keys vs $BASE_REF)"
