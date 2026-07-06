@@ -56,5 +56,9 @@ theming. Suggested libraries noted per item.
 
 The **Calendar / Scheduler** ([`calendar-component-plan.md`](calendar-component-plan.md))
 and the **Resource Timeline** ([`resource-timeline-plan.md`](resource-timeline-plan.md))
-are built and shipping in the module. Leading candidate for the next build:
-the **editable data grid** (largest raw demand of what remains).
+are built and shipping in the module.
+
+**Next build (chosen 2026-07-06): the editable data grid** — see
+[`data-grid-plan.md`](data-grid-plan.md). Research note: AG-Grid **row
+grouping is Enterprise-only**, so the plan wraps AG-Grid Community and
+delivers light section grouping ourselves (timeline pattern).
