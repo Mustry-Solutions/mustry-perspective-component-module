@@ -59,7 +59,14 @@ public class MustrySolutionsPerspectiveComponentsModule {
         g.setColor(new Color(0x53, 0x53, 0x53));
         g.setStroke(new BasicStroke(1.4f));
         String k = id.toLowerCase();
-        if (k.contains("resourcetimeline")) {
+        if (k.contains("datagrid")) {
+            // Table sheet: header band + column/row rules.
+            g.drawRoundRect(2, 3, 12, 11, 2, 2);
+            g.fillRect(2, 3, 12, 3);                              // header band
+            g.drawLine(7, 6, 7, 14);                              // column rules
+            g.drawLine(11, 6, 11, 14);
+            g.drawLine(2, 10, 14, 10);                            // row rule
+        } else if (k.contains("resourcetimeline")) {
             // Rows of staggered bars (a scheduling board / Gantt hint).
             g.drawLine(2, 3, 2, 13);                              // resource column edge
             g.fillRect(4, 3, 7, 3);

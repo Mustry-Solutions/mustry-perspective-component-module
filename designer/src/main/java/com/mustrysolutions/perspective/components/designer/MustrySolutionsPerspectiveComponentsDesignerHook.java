@@ -8,6 +8,7 @@ import com.inductiveautomation.perspective.designer.DesignerComponentRegistry;
 import com.inductiveautomation.perspective.designer.api.PerspectiveDesignerInterface;
 
 import com.mustrysolutions.perspective.components.common.comp.Calendar;
+import com.mustrysolutions.perspective.components.common.comp.DataGrid;
 import com.mustrysolutions.perspective.components.common.comp.DateTimeRangePicker;
 import com.mustrysolutions.perspective.components.common.comp.ResourceTimeline;
 
@@ -29,6 +30,7 @@ public class MustrySolutionsPerspectiveComponentsDesignerHook extends AbstractDe
         log.info("Registering Mustry Solutions Perspective components in the Designer.");
         this.registry.registerComponent(DateTimeRangePicker.DESCRIPTOR);
         this.registry.registerComponent(Calendar.DESCRIPTOR);
+        this.registry.registerComponent(DataGrid.DESCRIPTOR);
         this.registry.registerComponent(ResourceTimeline.DESCRIPTOR);
     }
 
@@ -37,6 +39,7 @@ public class MustrySolutionsPerspectiveComponentsDesignerHook extends AbstractDe
         if (this.registry != null) {
             this.registry.removeComponent(DateTimeRangePicker.COMPONENT_ID);
             this.registry.removeComponent(Calendar.COMPONENT_ID);
+        this.registry.removeComponent(DataGrid.COMPONENT_ID);
             this.registry.removeComponent(ResourceTimeline.COMPONENT_ID);
         }
     }

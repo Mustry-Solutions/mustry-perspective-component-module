@@ -1,0 +1,210 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1100,
+      "height": 620
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Data Grid demo (M0, read-only) — 2,500 work orders seeded relative to TODAY on view load. Scroll vertically (virtualized rows) and horizontally (the Order column stays frozen, header stays put).",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 880,
+          "height": 34
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "theme",
+          "style": {
+            "fontSize": "11px",
+            "color": "#8a8f98",
+            "textAlign": "right"
+          }
+        },
+        "meta": {
+          "name": "theme_caption"
+        },
+        "position": {
+          "x": 904,
+          "y": 16,
+          "width": 44,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "props": {
+          "options": [
+            {
+              "value": "light",
+              "label": "light"
+            },
+            {
+              "value": "light-warm",
+              "label": "light-warm"
+            },
+            {
+              "value": "light-cool",
+              "label": "light-cool"
+            },
+            {
+              "value": "dark",
+              "label": "dark"
+            },
+            {
+              "value": "dark-warm",
+              "label": "dark-warm"
+            },
+            {
+              "value": "dark-cool",
+              "label": "dark-cool"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.props.theme"
+              },
+              "bidirectional": true
+            },
+            "onChange": {
+              "enabled": true,
+              "script": "\tval = currentValue.value if currentValue else None\n\tif val and val != self.session.props.theme:\n\t\tself.session.props.theme = val\n"
+            }
+          }
+        },
+        "meta": {
+          "name": "theme_dropdown"
+        },
+        "position": {
+          "x": 954,
+          "y": 8,
+          "width": 130,
+          "height": 32
+        }
+      },
+      {
+        "type": "mustrysolutions.input.datagrid",
+        "version": 0,
+        "props": {
+          "config": {
+            "rowHeight": 32,
+            "columns": [
+              {
+                "field": "wo",
+                "header": "Order",
+                "width": 110,
+                "pinned": true
+              },
+              {
+                "field": "product",
+                "header": "Product",
+                "width": 150
+              },
+              {
+                "field": "line",
+                "header": "Line",
+                "width": 90
+              },
+              {
+                "field": "qty",
+                "header": "Qty",
+                "width": 70,
+                "align": "right"
+              },
+              {
+                "field": "customer",
+                "header": "Customer",
+                "width": 160
+              },
+              {
+                "field": "batch",
+                "header": "Batch",
+                "width": 120
+              },
+              {
+                "field": "status",
+                "header": "Status",
+                "width": 100
+              },
+              {
+                "field": "priority",
+                "header": "Priority",
+                "width": 90,
+                "align": "center"
+              },
+              {
+                "field": "due",
+                "header": "Due",
+                "width": 110
+              },
+              {
+                "field": "notes",
+                "header": "Notes",
+                "width": 520
+              }
+            ]
+          },
+          "data": {
+            "rows": []
+          }
+        },
+        "propConfig": {
+          "props.data.rows": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(0)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# Evergreen demo data: 2,500 work orders seeded relative to today (now(0) =\n\t# once per view load). Exercises row virtualization and frozen columns.\n\td0 = system.date.midnight(value)\n\tproducts = [\"Widget A\", \"Widget B\", \"Gasket 12mm\", \"Flange XL\", \"Bearing 6204\", \"Valve V2\", \"Seal Kit\", \"Rotor R9\"]\n\tstatuses = [\"draft\", \"released\", \"running\", \"done\", \"on hold\"]\n\tprios = [\"low\", \"normal\", \"high\", \"urgent\"]\n\trows = []\n\tfor i in range(2500):\n\t\tdue = system.date.addDays(d0, i % 30)\n\t\trows.append({\n\t\t\t\"wo\": \"WO-%05d\" % (10000 + i),\n\t\t\t\"product\": products[i % len(products)],\n\t\t\t\"line\": \"Line %d\" % (1 + i % 4),\n\t\t\t\"qty\": 10 + (i * 7) % 990,\n\t\t\t\"customer\": \"Customer %02d\" % (1 + i % 17),\n\t\t\t\"batch\": \"B-%04d\" % (2000 + i // 5),\n\t\t\t\"status\": statuses[i % len(statuses)],\n\t\t\t\"priority\": prios[(i // 3) % len(prios)],\n\t\t\t\"due\": system.date.format(due, \"yyyy-MM-dd\"),\n\t\t\t\"notes\": (\"Rework of %s after QA hold\" % products[(i + 3) % len(products)]) if i % 7 == 0 else \"\"\n\t\t})\n\treturn rows\n"
+                }
+              ]
+            }
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "grid"
+        },
+        "position": {
+          "x": 16,
+          "y": 50,
+          "width": 1068,
+          "height": 550
+        }
+      }
+    ]
+  }
+}

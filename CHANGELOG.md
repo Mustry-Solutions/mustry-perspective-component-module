@@ -100,6 +100,18 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   open, Tab is trapped, and focus returns to the trigger on close (except
   after an outside click, which keeps focus where the user clicked).
 
+### Data Grid (new component, M0 — `mustrysolutions.input.datagrid`)
+- First cut of the fourth component (custom build, no library — see
+  docs/data-grid-plan.md): a read-only virtualized grid. Columns from
+  `config.columns` ({field, header, width, pinned, align}); fixed
+  `config.rowHeight` (the virtualization contract); frozen columns +
+  sticky header via the timeline's one-scroll-container layout; zebra
+  rows, hover, per-column alignment, ellipsis + title tooltips; loading
+  bar + localized empty badge (7-language `labels.noRows`); `--dg-*`
+  theming verified light + dark. ~24 DOM rows regardless of data size
+  (2,500-row demo at `/grid`). Editing (M2) and the T1 interactions
+  (sort/filter/selection) come next per the plan.
+
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with
   script transforms seed the data relative to today on every view load

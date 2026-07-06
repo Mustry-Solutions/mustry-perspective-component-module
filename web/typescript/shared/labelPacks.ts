@@ -693,9 +693,33 @@ export function pickerLabelBase(locale: string): LabelConfig {
     return PICKER_PACKS[primaryLang(locale)] || EN_PICKER_LABELS;
 }
 
+// --- data grid ------------------------------------------------------------------
+
+export interface GridLabels {
+    noRows: string;                   // localized empty-badge text (the emptyMessage default follows it)
+}
+
+export const EN_GRID_LABELS: GridLabels = {
+    noRows: 'No rows',
+};
+
+const GRID_PACKS: { [lang: string]: GridLabels } = {
+    fr: { noRows: 'Aucune ligne' },
+    de: { noRows: 'Keine Zeilen' },
+    es: { noRows: 'Sin filas' },
+    nl: { noRows: 'Geen rijen' },
+    it: { noRows: 'Nessuna riga' },
+    pt: { noRows: 'Sem linhas' },
+};
+
+/** The grid label pack for a locale (primary subtag; unknown -> English). */
+export function gridLabelBase(locale: string): GridLabels {
+    return GRID_PACKS[primaryLang(locale)] || EN_GRID_LABELS;
+}
+
 /** The empty-badge text: the schema default ('No events') counts as "unset" so it
  *  follows the locale pack's noEvents; any other value (including '' = hide the
  *  badge) is an explicit author choice. */
-export function emptyMessageText(configured: string, localizedNoEvents: string): string {
-    return configured === 'No events' ? localizedNoEvents : configured;
+export function emptyMessageText(configured: string, localized: string, englishDefault: string = 'No events'): string {
+    return configured === englishDefault ? localized : configured;
 }

@@ -23,6 +23,7 @@ There is a committed verification harness:
     `/calendar-db` — windowed-binding recipe; `/calendar-empty` — empty-state badge
   - `/timeline` — evergreen timeline demo; `/timeline-db` — windowed-binding
     recipe; `/timeline-empty` — empty-state badge
+  - `/grid` — evergreen data-grid demo (M0: virtualization + frozen columns)
   The evergreen demos regenerate their data on view load (`now(0)` binding +
   script transform in the view.json), so they always show a populated "today".
 

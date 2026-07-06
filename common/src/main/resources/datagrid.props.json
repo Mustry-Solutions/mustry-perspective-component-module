@@ -1,0 +1,104 @@
+{
+  "type": "object",
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Set-and-forget configuration: columns, row geometry, UI text.",
+      "default": {
+        "columns": [],
+        "rowHeight": 32,
+        "locale": "",
+        "loading": false,
+        "emptyMessage": "No rows"
+      },
+      "properties": {
+        "columns": {
+          "type": "array",
+          "description": "The columns, rendered in array order. Each column reads `field` from every row object.",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "Row-object key this column displays. Columns with an empty field are ignored."
+              },
+              "header": {
+                "type": "string",
+                "description": "Header text. Empty = the field name."
+              },
+              "width": {
+                "type": "number",
+                "description": "Column width in px (minimum 40).",
+                "default": 120
+              },
+              "pinned": {
+                "type": "boolean",
+                "description": "Freeze this column at the left edge while the grid scrolls horizontally.",
+                "default": false
+              },
+              "align": {
+                "type": "string",
+                "enum": ["left", "center", "right"],
+                "description": "Cell text alignment.",
+                "default": "left"
+              }
+            }
+          }
+        },
+        "rowHeight": {
+          "type": "number",
+          "description": "Row height in px (clamped 20–80). Fixed row height is what makes row virtualization exact.",
+          "default": 32
+        },
+        "locale": {
+          "type": "string",
+          "description": "BCP-47 locale for built-in UI text (and, later, number/date formatting). Empty = the browser locale.",
+          "default": ""
+        },
+        "loading": {
+          "type": "boolean",
+          "description": "Show the thin loading bar and dim the rows (stale-while-revalidate) — bind to your query's loading state.",
+          "default": false
+        },
+        "emptyMessage": {
+          "type": "string",
+          "description": "Badge text when the grid is configured but has no rows. The default ('No rows') follows the locale packs (labels.noRows); any other text overrides it, and '' hides the badge.",
+          "default": "No rows"
+        },
+        "labels": {
+          "type": "object",
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale (en/fr/de/es/nl/it/pt).",
+          "properties": {
+            "noRows": {
+              "type": "string",
+              "description": "Empty-badge text (the emptyMessage default follows it)."
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The grid's content. The grid never mutates rows — editing (M2) will fire events for the author to persist.",
+      "default": {
+        "rows": []
+      },
+      "properties": {
+        "rows": {
+          "type": "array",
+          "description": "Row objects (client-side model, virtualized rendering; intended for up to ~50k rows). Bind a query returning objects, or transform a dataset.",
+          "default": []
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}

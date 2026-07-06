@@ -16,6 +16,10 @@
       "viewPath": "CalendarEmpty",
       "viewParams": {}
     },
+    "/grid": {
+      "viewPath": "GridDemo",
+      "viewParams": {}
+    },
     "/picker": {
       "viewPath": "Main",
       "viewParams": {}

@@ -1,8 +1,10 @@
 # Editable Data Grid — component plan
 
-**Status (2026-07-06): PLANNING — nothing built.** Fourth component of the
-module: working id `mustrysolutions.input.datagrid`. Decisions below are
-proposals to settle with Sam; change them here first if they change.
+**Status (2026-07-06): M0 built and live-verified** (virtualized read-only grid
+with sticky header + frozen columns at `/grid`; 24 DOM rows for 2,500 data
+rows; light + dark verified). Fourth component of the module:
+`mustrysolutions.input.datagrid`. Remaining decisions are proposals to settle
+with Sam; change them here first if they change.
 
 ## What & why
 

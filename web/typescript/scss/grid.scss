@@ -1,0 +1,159 @@
+// Data Grid styles. Colours come from CSS variables defaulting to the active
+// Perspective theme (same pattern as the calendar/timeline), overridable via a
+// style class / project stylesheet: .mustry-datagrid { --dg-accent: #...; }
+@mixin dg-theme {
+    --dg-accent: var(--callToAction, #0c7bb3);
+    --dg-text: var(--neutral-90, #1f2937);
+    --dg-muted: var(--neutral-60, #6b7280);
+    --dg-border: var(--neutral-30, #d1d5db);
+    --dg-line: var(--neutral-20, #e5e7eb);
+    --dg-bg: var(--neutral-10, #ffffff);
+    --dg-head-bg: var(--neutral-20, #f3f4f6);
+    --dg-row-odd: color-mix(in srgb, var(--dg-muted) 5%, var(--dg-bg));
+}
+
+.mustry-datagrid {
+    @include dg-theme;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    font-size: 13px;
+    color: var(--dg-text);
+    background: var(--dg-bg);
+    border: 1px solid var(--dg-border);
+    border-radius: 6px;
+    overflow: hidden;
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+// One scroll container for both axes; header sticky-top, pinned cells sticky-left.
+.dg-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.dg-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    background: var(--dg-head-bg);
+    border-bottom: 1px solid var(--dg-border);
+}
+
+.dg-head-cell {
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--dg-muted);
+    line-height: 27px;
+    height: 28px;
+    background: var(--dg-head-bg);
+}
+
+// Full-height canvas so the scrollbar reflects every row; only the windowed
+// rows exist in the DOM, absolutely positioned at rowIndex * rowHeight.
+.dg-body {
+    position: relative;
+}
+
+.dg-row {
+    position: absolute;
+    left: 0;
+    display: flex;
+    background: var(--dg-bg);
+    border-bottom: 1px solid var(--dg-line);
+
+    &.dg-row--odd {
+        background: var(--dg-row-odd);
+    }
+
+    &:hover {
+        background: color-mix(in srgb, var(--dg-accent) 7%, var(--dg-bg));
+    }
+}
+
+.dg-cell {
+    flex: 0 0 auto;
+    padding: 0 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-right: 1px solid var(--dg-line);
+}
+
+.dg-cell--center {
+    text-align: center;
+}
+
+.dg-cell--right {
+    text-align: right;
+}
+
+// Frozen columns: sticky against the shared scroll container; rows and header
+// inherit their background so scrolled content passes underneath.
+.dg-cell--pinned {
+    position: sticky;
+    z-index: 1;
+    background: inherit;
+    border-right: 1px solid var(--dg-border);
+}
+
+.dg-head .dg-cell--pinned {
+    z-index: 4;
+}
+
+// Subtle "nothing configured" badge (bottom-left; the grid has no toolbar yet).
+.dg-empty-badge {
+    position: absolute;
+    left: 10px;
+    bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--dg-muted);
+    background: color-mix(in srgb, var(--dg-muted) 14%, transparent);
+    pointer-events: none;
+}
+
+// Loading state: thin indeterminate bar on top, rows dimmed (stale-while-revalidate).
+.dg-loading-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 5;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--dg-accent) 16%, transparent);
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 35%;
+        background: var(--dg-accent);
+        border-radius: 3px;
+        animation: dg-loading-slide 1.1s ease-in-out infinite;
+    }
+}
+
+.dg-scroll.dg-loading {
+    filter: opacity(0.55);
+    pointer-events: none;
+    transition: filter 0.15s ease;
+}
+
+@keyframes dg-loading-slide {
+    0% { left: -35%; }
+    100% { left: 100%; }
+}
