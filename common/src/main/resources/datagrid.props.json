@@ -10,7 +10,11 @@
         "rowHeight": 32,
         "locale": "",
         "loading": false,
-        "emptyMessage": "No rows"
+        "emptyMessage": "No rows",
+        "idField": "id",
+        "rowSelect": "none",
+        "showToolbar": true,
+        "showExport": false
       },
       "properties": {
         "columns": {
@@ -40,7 +44,11 @@
               },
               "align": {
                 "type": "string",
-                "enum": ["left", "center", "right"],
+                "enum": [
+                  "left",
+                  "center",
+                  "right"
+                ],
                 "description": "Cell text alignment.",
                 "default": "left"
               }
@@ -74,8 +82,45 @@
             "noRows": {
               "type": "string",
               "description": "Empty-badge text (the emptyMessage default follows it)."
+            },
+            "search": {
+              "type": "string",
+              "description": "Quick-filter input placeholder."
+            },
+            "exportCsv": {
+              "type": "string",
+              "description": "Tooltip + accessible label of the CSV export button."
+            },
+            "selected": {
+              "type": "string",
+              "description": "Selection-count badge; '{n}' = how many."
             }
           }
+        },
+        "idField": {
+          "type": "string",
+          "description": "Row-object key that uniquely identifies a row (stable identity for selection now, and for the M2 edit write-back).",
+          "default": "id"
+        },
+        "rowSelect": {
+          "type": "string",
+          "enum": [
+            "none",
+            "single",
+            "multi"
+          ],
+          "description": "Row selection: 'multi' supports Ctrl/Cmd-toggle and Shift-range on the visible (filtered + sorted) order. The selected ids live in two-way state.selection.",
+          "default": "none"
+        },
+        "showToolbar": {
+          "type": "boolean",
+          "description": "Show the toolbar (quick filter, selection count, export).",
+          "default": true
+        },
+        "showExport": {
+          "type": "boolean",
+          "description": "Toolbar button exporting the CURRENT view (filtered + sorted, configured columns) as CSV.",
+          "default": false
         }
       }
     },
@@ -90,6 +135,52 @@
         "rows": {
           "type": "array",
           "description": "Row objects (client-side model, virtualized rendering; intended for up to ~50k rows). Bind a query returning objects, or transform a dataset.",
+          "default": []
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way runtime state: the grid writes user interactions back here, and writing values drives it (everything pre-settable/bindable).",
+      "default": {
+        "sort": {
+          "field": "",
+          "dir": ""
+        },
+        "quickFilter": "",
+        "selection": []
+      },
+      "properties": {
+        "sort": {
+          "type": "object",
+          "description": "The active sort (header clicks cycle asc -> desc -> off).",
+          "properties": {
+            "field": {
+              "type": "string",
+              "description": "Sorted column field ('' = unsorted).",
+              "default": ""
+            },
+            "dir": {
+              "type": "string",
+              "enum": [
+                "",
+                "asc",
+                "desc"
+              ],
+              "description": "Sort direction ('' = unsorted).",
+              "default": ""
+            }
+          }
+        },
+        "quickFilter": {
+          "type": "string",
+          "description": "Case-insensitive contains-filter across all configured columns.",
+          "default": ""
+        },
+        "selection": {
+          "type": "array",
+          "description": "Selected row ids (config.idField values), in click order for toggles.",
           "default": []
         }
       }

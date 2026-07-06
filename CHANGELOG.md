@@ -109,8 +109,16 @@ writes user interactions back; everything pre-settable/bindable), **`output`**
   rows, hover, per-column alignment, ellipsis + title tooltips; loading
   bar + localized empty badge (7-language `labels.noRows`); `--dg-*`
   theming verified light + dark. ~24 DOM rows regardless of data size
-  (2,500-row demo at `/grid`). Editing (M2) and the T1 interactions
-  (sort/filter/selection) come next per the plan.
+  (2,500-row demo at `/grid`).
+- M1 core interactions, all two-way via the grid's `state` section:
+  header-click **sorting** (asc/desc/off; type-aware compare, empties last,
+  stable), a toolbar **quick filter** (contains across all columns, match
+  count, local-draft typing so gateway round-trips never eat keystrokes),
+  **row selection** (`config.rowSelect` none/single/multi with Ctrl-toggle +
+  Shift-range over the visible order, ids via `config.idField`, count badge),
+  and **CSV export of the current view** (filtered + sorted, BOM +
+  injection-guarded). Column resize/reorder, typed formatting and
+  conditional styling remain from M1; editing lands with M2.
 
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with

@@ -1,16 +1,23 @@
 // Prop-tree -> typed props for the Data Grid (the reducer half of the component).
 import { PropReader } from '../../shared/propReader';
 import { EN_GRID_LABELS, GridLabels, gridLabelBase } from '../../shared/labelPacks';
-import { GridColumn, MIN_COL_PX, ROW_H_MIN, ROW_H_MAX } from './gridLogic';
+import { GridColumn, GridSort, MIN_COL_PX, ROW_H_MIN, ROW_H_MAX, RowSelectMode, SortDir } from './gridLogic';
 
 export interface GridProps {
     columns: GridColumn[];
     rows: Array<Record<string, unknown>>;
     rowHeight: number;
+    idField: string;
+    rowSelect: RowSelectMode;
+    showToolbar: boolean;
+    showExport: boolean;
     locale: string;
     loading: boolean;
     emptyMessage: string;
     labels: GridLabels;
+    sort: GridSort;
+    quickFilter: string;
+    selection: string[];
 }
 
 function mapColumn(c: any): GridColumn | null {
@@ -48,8 +55,19 @@ export function mapGridProps(tree: PropReader): GridProps {
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, h)) : 32))(
             tree.readNumber('config.rowHeight', 32)),
         locale,
+        idField: tree.readString('config.idField', 'id') || 'id',
+        rowSelect: ((m) => (m === 'single' || m === 'multi' ? m : 'none'))(
+            tree.readString('config.rowSelect', 'none')) as RowSelectMode,
+        showToolbar: tree.readBoolean('config.showToolbar', true),
+        showExport: tree.readBoolean('config.showExport', false),
         loading: tree.readBoolean('config.loading', false),
         emptyMessage: tree.readString('config.emptyMessage', 'No rows'),
-        labels: labels as unknown as GridLabels
+        labels: labels as unknown as GridLabels,
+        sort: {
+            field: tree.readString('state.sort.field', ''),
+            dir: ((d) => (d === 'asc' || d === 'desc' ? d : ''))(tree.readString('state.sort.dir', '')) as SortDir
+        },
+        quickFilter: tree.readString('state.quickFilter', ''),
+        selection: (tree.readArray('state.selection', []) || []).map((v: any) => String(v)).filter((v: string) => v)
     };
 }

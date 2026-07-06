@@ -105,3 +105,81 @@ describe('mapGridProps', () => {
         expect(p.emptyMessage).toBe('No rows');
     });
 });
+
+import {
+    GridSort, compareValues, gridToCsv, nextSelection, nextSort, quickFilterRows, sortRows
+} from '../grid/gridLogic';
+import { csvCell } from '../../shared/csv';
+
+describe('nextSort (header-click cycle)', () => {
+    it('cycles asc -> desc -> off per column, restarts on a new column', () => {
+        const off: GridSort = { field: '', dir: '' };
+        const asc = nextSort(off, 'qty');
+        expect(asc).toEqual({ field: 'qty', dir: 'asc' });
+        const desc = nextSort(asc, 'qty');
+        expect(desc).toEqual({ field: 'qty', dir: 'desc' });
+        expect(nextSort(desc, 'qty')).toEqual({ field: '', dir: '' });
+        expect(nextSort(desc, 'wo')).toEqual({ field: 'wo', dir: 'asc' });
+    });
+});
+
+describe('sortRows / compareValues', () => {
+    const rows = [
+        { n: 10, s: 'b' }, { n: 2, s: 'A' }, { n: null, s: 'c' }, { n: 30, s: '' }
+    ] as Array<Record<string, unknown>>;
+
+    it('sorts numerically (numeric strings too) and textually case-insensitive', () => {
+        expect(sortRows(rows, { field: 'n', dir: 'asc' }).map((r) => r.n)).toEqual([2, 10, 30, null]);
+        expect(sortRows(rows, { field: 's', dir: 'asc' }).map((r) => r.s)).toEqual(['A', 'b', 'c', '']);
+        expect(compareValues('9', '10')).toBeLessThan(0);   // numeric strings compare as numbers
+    });
+
+    it('empties sort last in BOTH directions; input order kept on ties; no mutation', () => {
+        expect(sortRows(rows, { field: 'n', dir: 'desc' }).map((r) => r.n)).toEqual([30, 10, 2, null]);
+        expect(rows[0].n).toBe(10);   // untouched (bound prop)
+        expect(sortRows(rows, { field: '', dir: '' })).toBe(rows);
+    });
+});
+
+describe('quickFilterRows', () => {
+    const cols = [col('a'), col('b')];
+    const rows = [{ a: 'Widget', b: 1 }, { a: 'Gasket', b: 22 }] as Array<Record<string, unknown>>;
+
+    it('contains-matches any configured column, case-insensitive; blank = all', () => {
+        expect(quickFilterRows(rows, cols, 'widg').length).toBe(1);
+        expect(quickFilterRows(rows, cols, '22').length).toBe(1);
+        expect(quickFilterRows(rows, cols, '  ')).toBe(rows);
+        expect(quickFilterRows(rows, cols, 'zzz').length).toBe(0);
+    });
+});
+
+describe('nextSelection', () => {
+    const ids = ['r1', 'r2', 'r3', 'r4', 'r5'];
+
+    it("mode 'none' never selects; 'single' replaces and click-again clears", () => {
+        expect(nextSelection([], 'r1', 'none', { toggle: false, range: false }, ids, '')).toEqual([]);
+        expect(nextSelection([], 'r1', 'single', { toggle: false, range: false }, ids, '')).toEqual(['r1']);
+        expect(nextSelection(['r1'], 'r1', 'single', { toggle: false, range: false }, ids, '')).toEqual([]);
+    });
+
+    it("'multi': plain click replaces, ctrl toggles, shift ranges over the view order", () => {
+        expect(nextSelection(['r1', 'r2'], 'r4', 'multi', { toggle: false, range: false }, ids, 'r1')).toEqual(['r4']);
+        expect(nextSelection(['r1'], 'r3', 'multi', { toggle: true, range: false }, ids, 'r1')).toEqual(['r1', 'r3']);
+        expect(nextSelection(['r1', 'r3'], 'r3', 'multi', { toggle: true, range: false }, ids, 'r1')).toEqual(['r1']);
+        expect(nextSelection(['r4'], 'r2', 'multi', { toggle: false, range: true }, ids, 'r4')).toEqual(['r2', 'r3', 'r4']);
+    });
+
+    it('shift without a valid anchor falls back to a plain click', () => {
+        expect(nextSelection([], 'r2', 'multi', { toggle: false, range: true }, ids, 'gone')).toEqual(['r2']);
+    });
+});
+
+describe('gridToCsv', () => {
+    it('exports headers (falling back to field) + injection-guarded cells, CRLF', () => {
+        const cols = [col('wo', { header: 'Order' }), col('note')];
+        const csv = gridToCsv(cols, [{ wo: 'WO-1', note: '=SUM(A1)' }], csvCell);
+        const lines = csv.split('\r\n');
+        expect(lines[0]).toBe('Order,note');
+        expect(lines[1]).toContain("'=SUM(A1)");   // formula-injection guard
+    });
+});

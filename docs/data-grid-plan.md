@@ -1,8 +1,10 @@
 # Editable Data Grid — component plan
 
-**Status (2026-07-06): M0 built and live-verified** (virtualized read-only grid
-with sticky header + frozen columns at `/grid`; 24 DOM rows for 2,500 data
-rows; light + dark verified). Fourth component of the module:
+**Status (2026-07-06): M0 + M1 core built and live-verified** (virtualized grid
+with sticky header + frozen columns; header-click sort, quick filter,
+multi-select with Ctrl/Shift, CSV export of the view — all two-way via
+`state.*`). Still to come from M1: column resize/reorder/hide, typed
+formatting, conditional styling. Fourth component of the module:
 `mustrysolutions.input.datagrid`. Remaining decisions are proposals to settle
 with Sam; change them here first if they change.
 

@@ -86,3 +86,101 @@ export function cellText(value: unknown): string {
 export function gridIsEmpty(loading: boolean, rows: unknown[]): boolean {
     return !loading && (rows || []).length === 0;
 }
+
+// --- M1: sort / quick filter / selection / CSV -----------------------------------
+
+export type SortDir = 'asc' | 'desc' | '';
+
+export interface GridSort {
+    field: string;
+    dir: SortDir;
+}
+
+/** The next sort after clicking a header: asc -> desc -> off (per column). */
+export function nextSort(current: GridSort, field: string): GridSort {
+    if (current.field !== field || current.dir === '') {
+        return { field, dir: 'asc' };
+    }
+    return current.dir === 'asc' ? { field, dir: 'desc' } : { field: '', dir: '' };
+}
+
+/** Type-aware compare: numbers numerically (numeric strings too), everything
+ *  else case-insensitively as text; null/undefined/'' sort last in both dirs. */
+export function compareValues(a: unknown, b: unknown): number {
+    const aEmpty = a === null || a === undefined || a === '';
+    const bEmpty = b === null || b === undefined || b === '';
+    if (aEmpty || bEmpty) {
+        return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
+    }
+    const an = typeof a === 'number' ? a : Number(a);
+    const bn = typeof b === 'number' ? b : Number(b);
+    if (Number.isFinite(an) && Number.isFinite(bn)) {
+        return an - bn;
+    }
+    return cellText(a).localeCompare(cellText(b), undefined, { sensitivity: 'base' });
+}
+
+/** A sorted copy (stable; the input is never mutated — rows are a bound prop). */
+export function sortRows<T extends Record<string, unknown>>(rows: T[], sort: GridSort): T[] {
+    if (!sort.field || !sort.dir) {
+        return rows;
+    }
+    const sign = sort.dir === 'desc' ? -1 : 1;
+    return rows
+        .map((row, i) => ({ row, i }))
+        .sort((x, y) => {
+            const c = compareValues(x.row[sort.field], y.row[sort.field]);
+            // empties stay last regardless of direction; ties keep input order
+            const xe = x.row[sort.field] === null || x.row[sort.field] === undefined || x.row[sort.field] === '';
+            const ye = y.row[sort.field] === null || y.row[sort.field] === undefined || y.row[sort.field] === '';
+            if (xe !== ye) {
+                return c;
+            }
+            return c !== 0 ? sign * c : x.i - y.i;
+        })
+        .map((x) => x.row);
+}
+
+/** Case-insensitive contains across the configured columns. */
+export function quickFilterRows<T extends Record<string, unknown>>(rows: T[], columns: GridColumn[], query: string): T[] {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+        return rows;
+    }
+    return rows.filter((row) => columns.some((c) => cellText(row[c.field]).toLowerCase().indexOf(q) >= 0));
+}
+
+export type RowSelectMode = 'none' | 'single' | 'multi';
+
+/** The next selection after clicking a row. `orderedIds` is the CURRENT view
+ *  order (filtered + sorted), so shift-ranges match what the user sees; the
+ *  anchor is the previously clicked id (kept by the component). */
+export function nextSelection(
+    current: string[], clickedId: string, mode: RowSelectMode,
+    modifiers: { toggle: boolean; range: boolean }, orderedIds: string[], anchorId: string
+): string[] {
+    if (mode === 'none' || !clickedId) {
+        return current;
+    }
+    if (mode === 'single') {
+        return current.length === 1 && current[0] === clickedId ? [] : [clickedId];
+    }
+    if (modifiers.range && anchorId) {
+        const a = orderedIds.indexOf(anchorId);
+        const b = orderedIds.indexOf(clickedId);
+        if (a >= 0 && b >= 0) {
+            return orderedIds.slice(Math.min(a, b), Math.max(a, b) + 1);
+        }
+    }
+    if (modifiers.toggle) {
+        return current.indexOf(clickedId) >= 0 ? current.filter((id) => id !== clickedId) : [...current, clickedId];
+    }
+    return current.length === 1 && current[0] === clickedId ? [] : [clickedId];
+}
+
+/** CSV of the current view (filtered + sorted), configured columns only. */
+export function gridToCsv<T extends Record<string, unknown>>(columns: GridColumn[], rows: T[], csvCell: (v: string) => string): string {
+    const head = columns.map((c) => csvCell(c.header || c.field)).join(',');
+    const lines = rows.map((r) => columns.map((c) => csvCell(cellText(r[c.field]))).join(','));
+    return [head, ...lines].join('\r\n') + '\r\n';
+}

@@ -697,19 +697,25 @@ export function pickerLabelBase(locale: string): LabelConfig {
 
 export interface GridLabels {
     noRows: string;                   // localized empty-badge text (the emptyMessage default follows it)
+    search: string;                   // quick-filter input placeholder
+    exportCsv: string;                // export button tooltip / accessible label
+    selected: string;                 // selection-count badge, '{n}' = how many
 }
 
 export const EN_GRID_LABELS: GridLabels = {
     noRows: 'No rows',
+    search: 'Search',
+    exportCsv: 'Export rows to CSV',
+    selected: '{n} selected',
 };
 
 const GRID_PACKS: { [lang: string]: GridLabels } = {
-    fr: { noRows: 'Aucune ligne' },
-    de: { noRows: 'Keine Zeilen' },
-    es: { noRows: 'Sin filas' },
-    nl: { noRows: 'Geen rijen' },
-    it: { noRows: 'Nessuna riga' },
-    pt: { noRows: 'Sem linhas' },
+    fr: { noRows: 'Aucune ligne', search: 'Rechercher', exportCsv: 'Exporter les lignes en CSV', selected: '{n} sélectionnée(s)' },
+    de: { noRows: 'Keine Zeilen', search: 'Suchen', exportCsv: 'Zeilen als CSV exportieren', selected: '{n} ausgewählt' },
+    es: { noRows: 'Sin filas', search: 'Buscar', exportCsv: 'Exportar filas a CSV', selected: '{n} seleccionada(s)' },
+    nl: { noRows: 'Geen rijen', search: 'Zoeken', exportCsv: 'Rijen exporteren naar CSV', selected: '{n} geselecteerd' },
+    it: { noRows: 'Nessuna riga', search: 'Cerca', exportCsv: 'Esporta righe in CSV', selected: '{n} selezionate' },
+    pt: { noRows: 'Sem linhas', search: 'Pesquisar', exportCsv: 'Exportar linhas para CSV', selected: '{n} selecionada(s)' },
 };
 
 /** The grid label pack for a locale (primary subtag; unknown -> English). */

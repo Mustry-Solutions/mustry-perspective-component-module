@@ -19,7 +19,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Data Grid demo (M0, read-only) — 2,500 work orders seeded relative to TODAY on view load. Scroll vertically (virtualized rows) and horizontally (the Order column stays frozen, header stays put).",
+          "text": "Data Grid demo (M1) — 2,500 work orders seeded relative to TODAY. Click headers to sort (asc/desc/off), type in the quick filter, click rows to select (Ctrl-toggle / Shift-range), export the current view as CSV. Order column stays frozen when scrolling horizontally.",
           "style": {
             "fontSize": "13px"
           }
@@ -172,7 +172,10 @@
                 "header": "Notes",
                 "width": 520
               }
-            ]
+            ],
+            "idField": "wo",
+            "rowSelect": "multi",
+            "showExport": true
           },
           "data": {
             "rows": []
