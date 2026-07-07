@@ -77,7 +77,35 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       location, fully inside the viewport) that flies to it. The demo's
       "Toggle Pump 3 alarm" button exercises both live.
 
+## Feel + robustness (M4)
+
+- [ ] **Trackpad zoom** is smooth (proportional to the pinch), while a mouse
+      wheel tick still zooms exactly one `config.zoomStep`.
+- [ ] **Flick to glide**: releasing a fast drag keeps the view moving with
+      friction; it decelerates smoothly, stops at pan bounds, and a grab
+      mid-glide (or mid-fly) freezes it in place. The rest position lands in
+      `state.center`.
+- [ ] **Rubber-band**: dragging past the pan bound stretches with resistance
+      and springs back on release; `state` never holds an out-of-bounds
+      value.
+- [ ] **Reduced motion** (OS setting): fly/glide/spring all snap; the pulse
+      ring is static but visible.
+- [ ] **Auto content size** (`contentWidth/Height` 0 — the default): the
+      component adopts the embedded view's own size; fit/home/minimap/POI
+      coordinates all agree with it. Explicit sizes still win.
+- [ ] **No destination flash**: a fly-to (Go to / target write / indicator
+      click) starts from the current position — the target must never blink
+      in before the flight.
+
 ## Verified 2026-07-06 (dev gateway, Chrome)
+
+M4 measured 2026-07-07: micro-delta wheel factor exact to 5 decimals (mouse
+tick still exactly 1.25); glide travelled 1102 px with textbook exponential
+decay (per-250 ms deltas 584/290/128/60/27/13); drag stretched 187 px past
+the bound and settled back exactly onto it; auto size adopted the reported
+2400×1500 (fit 34% unchanged); the fly-to destination flash was caught by a
+MutationObserver trace (target painted at t=4 ms) and is fixed — first DOM
+write is now an interpolated frame.
 
 Everything above except the real-hardware touch pass: fit render 34%,
 embedded click-counter through the transform, wheel 43→53% toward cursor,

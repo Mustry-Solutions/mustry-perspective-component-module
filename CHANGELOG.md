@@ -226,6 +226,29 @@ M3 navigation aids (same cut):
   (387 tests); demo gained POIs, a `state.target` fly button and an alarm
   toggle.
 
+M4 feel + robustness polish (same cut):
+- **Proportional wheel zoom**: the zoom factor now scales with the wheel
+  delta (`wheelZoomFactor`) — a mouse tick is still exactly one
+  `config.zoomStep`, but trackpad pinches (many small deltas) zoom smoothly
+  instead of notching.
+- **Inertia panning**: releasing a flick glides the view out with
+  exponential friction (`dragVelocity`/`glideFrame`, τ = 325 ms); hitting a
+  pan bound stops that axis; the rest position is written once at the end;
+  grabbing mid-glide (or mid-fly) freezes the view where it is.
+- **Rubber-band overpan**: live drags stretch past the pan bounds with
+  iOS-style hyperbolic resistance (`rubberBandCenter`) and spring back to
+  the hard clamp on release; the written state is always the clamped
+  position.
+- **`prefers-reduced-motion`**: fly/glide/spring animations snap and the
+  POI pulse ring holds still (the marker itself stays visible).
+- **Auto content size**: `config.contentWidth/Height` default to **0 =
+  auto** — the component adopts the size the embedded view reports, so the
+  most error-prone config is now optional. Explicit sizes still win.
+- **Fixed:** fly-to painted the DESTINATION for one frame before the
+  flight began (the props write lands synchronously before the first
+  animation frame) — the draft now pins the starting position through the
+  write, so flights start from where the view actually is.
+
 ### Verify harness
 - The three demo views are now **evergreen**: `now(0)` expression bindings with
   script transforms seed the data relative to today on every view load

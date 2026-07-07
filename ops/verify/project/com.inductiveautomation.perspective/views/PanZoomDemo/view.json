@@ -118,8 +118,8 @@
         "props": {
           "config": {
             "viewPath": "SynopticDemo",
-            "contentWidth": 2400,
-            "contentHeight": 1500,
+            "contentWidth": 0,
+            "contentHeight": 0,
             "home": {
               "x": -1,
               "y": -1,

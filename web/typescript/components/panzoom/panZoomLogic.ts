@@ -111,6 +111,80 @@ export function panBy(vp: PzViewport, dxPx: number, dyPx: number): PzViewport {
     };
 }
 
+/** Multiplicative zoom factor for a wheel event. One standard mouse tick
+ *  (|deltaY| ≈ 100 px) is exactly one zoomStep — unchanged mouse behaviour —
+ *  while trackpad pinches (many small deltas, ctrl+wheel in Chromium) zoom
+ *  proportionally and feel smooth. deltaMode 1 = lines (Firefox mice). */
+export function wheelZoomFactor(deltaY: number, deltaMode: number, zoomStep: number): number {
+    const dy = deltaMode === 1 ? deltaY * 33 : deltaY;
+    return Math.pow(zoomStep, -dy / 100);
+}
+
+export interface PzDragSample {
+    t: number;    // ms timestamp
+    x: number;    // viewport px
+    y: number;
+}
+
+/** Pointer velocity (px/ms) over the trailing `windowMs` of drag samples —
+ *  the flick speed at release, for inertia. */
+export function dragVelocity(samples: PzDragSample[], windowMs: number = 100): PzPoint {
+    if (samples.length < 2) {
+        return { x: 0, y: 0 };
+    }
+    const last = samples[samples.length - 1];
+    let first = samples[0];
+    for (const s of samples) {
+        if (last.t - s.t <= windowMs) {
+            first = s;
+            break;
+        }
+    }
+    const dt = last.t - first.t;
+    if (dt <= 0) {
+        return { x: 0, y: 0 };
+    }
+    return { x: (last.x - first.x) / dt, y: (last.y - first.y) / dt };
+}
+
+/** One frame of glide physics: the distance travelled during dtMs of exponential
+ *  velocity decay (time constant tauMs) and the velocity left afterwards.
+ *  Total glide distance from v0 asymptotes to v0 * tauMs. */
+export function glideFrame(v: number, dtMs: number, tauMs: number = 325): { dist: number; v: number } {
+    const decay = Math.exp(-dtMs / tauMs);
+    return { dist: v * tauMs * (1 - decay), v: v * decay };
+}
+
+/** clampCenter with iOS-style rubber-band overshoot for live drags: outside the
+ *  pan bounds the excess is compressed hyperbolically (soft, asymptoting to one
+ *  viewport), so the view tugs past the edge and springs back on release. */
+export function rubberBandCenter(center: PzPoint, zoom: number, contentW: number, contentH: number,
+                                 viewportW: number, viewportH: number, keep: number = 0.25,
+                                 c: number = 0.55): PzPoint {
+    const soft = (over: number, d: number): number => (1 - 1 / ((over * c) / d + 1)) * d;
+    const axis = (v: number, content: number, viewport: number): number => {
+        const d = viewport / zoom;                    // one viewport, in content units
+        const half = d / 2;
+        if (content <= d) {
+            // smaller than the viewport: tug around the centered anchor
+            const anchor = content / 2;
+            const over = v - anchor;
+            return anchor + Math.sign(over) * soft(Math.abs(over), d);
+        }
+        const slack = half * 2 * (1 - keep);
+        const min = half - slack;
+        const max = content - half + slack;
+        if (v < min) {
+            return min - soft(min - v, d);
+        }
+        if (v > max) {
+            return max + soft(v - max, d);
+        }
+        return v;
+    };
+    return { x: axis(center.x, contentW, viewportW), y: axis(center.y, contentH, viewportH) };
+}
+
 /** Two-finger pinch, relative to the GESTURE START: scale by the finger-distance
  *  ratio and keep the content point that began under the fingers' midpoint under
  *  the (possibly moving) midpoint — so a pinch both zooms and pans naturally. */

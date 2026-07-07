@@ -45,8 +45,8 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
             });
             return out;
         })(tree.readArray('config.viewParams', [])),
-        contentWidth: Math.max(1, num('config.contentWidth', 1600)),
-        contentHeight: Math.max(1, num('config.contentHeight', 1200)),
+        contentWidth: Math.max(0, num('config.contentWidth', 0)),    // 0 = auto (embedded view's size)
+        contentHeight: Math.max(0, num('config.contentHeight', 0)),
         minZoom,
         maxZoom,
         zoomStep: Math.min(3, Math.max(1.05, num('config.zoomStep', 1.25))),

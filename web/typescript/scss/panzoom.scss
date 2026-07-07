@@ -190,6 +190,16 @@
     }
 }
 
+// Reduced motion: the flagged-POI marker stays (information preserved) but
+// holds still. Fly/glide/spring animations are disabled in code via matchMedia.
+@media (prefers-reduced-motion: reduce) {
+    .pz-pulse {
+        animation: none;
+        opacity: 0.85;
+        transform: none;
+    }
+}
+
 // Off-screen flagged POI: a clickable chip at the viewport edge, arrow rotated
 // toward the real location; clicking flies there.
 .pz-indicator {

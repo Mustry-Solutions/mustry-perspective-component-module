@@ -21,9 +21,20 @@ alarm state) that pulse when visible and get a clickable edge-indicator
 chip pointing at them when off-screen. All live-verified incl. exact
 minimap jump/drag math and target re-trigger.
 
-Remaining backlog (M4 candidates, from the improvement review): inertia
-panning, semantic zoom (`output.visibleRect` + zoom-param pattern),
-gesture-conflict modes (two-finger-pan / Ctrl+wheel).
+**M4 (2026-07-07): feel + robustness** — proportional trackpad wheel zoom
+(a mouse tick stays exactly one zoomStep), inertia panning (flick glides
+out with exponential friction; grab-to-stop), rubber-band overpan with
+spring-back (writes stay hard-clamped), `prefers-reduced-motion` support
+(animations snap, pulse holds still), and **auto content size**
+(`contentWidth/Height` 0 = adopt the embedded view's reported size — now
+the default). Fixed en route: fly-to flashed the destination for one frame
+before animating.
+
+Remaining backlog (M5 candidates, from the improvement review): semantic
+zoom (`output.visibleRect` + zoom-param pattern), zoom-to-rectangle
+(shift-drag), `limitToFit`, gesture-conflict modes (two-finger-pan /
+Ctrl+wheel), edge-indicator clustering, configurable minimap corner,
+`poi.color`, keyboard navigation (a11y — previously excluded elsewhere).
 
 ## What & why
 

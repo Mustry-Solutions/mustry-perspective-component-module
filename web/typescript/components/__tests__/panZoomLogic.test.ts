@@ -1,7 +1,8 @@
 import {
-    clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, edgeIndicator,
-    fitZoom, flyStep, homeViewport, minimapLayout, minimapViewRect, panBy,
-    pinchViewport, resolveViewport, viewTransform, zoomAt
+    clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, dragVelocity,
+    edgeIndicator, fitZoom, flyStep, glideFrame, homeViewport, minimapLayout,
+    minimapViewRect, panBy, pinchViewport, resolveViewport, rubberBandCenter,
+    viewTransform, wheelZoomFactor, zoomAt
 } from '../panzoom/panZoomLogic';
 
 // content 2000x1200, viewport 800x600 throughout
@@ -102,6 +103,81 @@ describe('pinchViewport', () => {
 
     it('a zero start distance degrades to no zoom change', () => {
         expect(pinchViewport(start, mid0, mid0, 0, 150, VW, VH, 0.1, 8).zoom).toBe(1);
+    });
+});
+
+describe('wheelZoomFactor', () => {
+    it('one mouse tick is exactly one zoomStep, both directions', () => {
+        expect(wheelZoomFactor(-100, 0, 1.25)).toBeCloseTo(1.25, 10);
+        expect(wheelZoomFactor(100, 0, 1.25)).toBeCloseTo(1 / 1.25, 10);
+    });
+
+    it('trackpad micro-deltas zoom proportionally (smooth)', () => {
+        expect(wheelZoomFactor(-10, 0, 1.25)).toBeCloseTo(Math.pow(1.25, 0.1), 10);
+        // 10 micro-events compose to exactly one tick
+        let z = 1;
+        for (let i = 0; i < 10; i++) {
+            z *= wheelZoomFactor(-10, 0, 1.25);
+        }
+        expect(z).toBeCloseTo(1.25, 10);
+    });
+
+    it('line-mode deltas (deltaMode 1) are normalized', () => {
+        expect(wheelZoomFactor(-3, 1, 1.25)).toBeCloseTo(Math.pow(1.25, 0.99), 10);
+    });
+});
+
+describe('dragVelocity / glideFrame', () => {
+    it('velocity comes from the trailing window only', () => {
+        const samples = [
+            { t: 0, x: 0, y: 0 },          // stale (outside the 100ms window)
+            { t: 950, x: 100, y: 40 },
+            { t: 1000, x: 120, y: 50 }
+        ];
+        const v = dragVelocity(samples);
+        expect(v.x).toBeCloseTo(20 / 50, 6);
+        expect(v.y).toBeCloseTo(10 / 50, 6);
+        expect(dragVelocity([{ t: 0, x: 0, y: 0 }])).toEqual({ x: 0, y: 0 });
+        expect(dragVelocity([{ t: 5, x: 0, y: 0 }, { t: 5, x: 9, y: 9 }])).toEqual({ x: 0, y: 0 });
+    });
+
+    it('glide decays exponentially and total distance asymptotes to v*tau', () => {
+        const f = glideFrame(1, 325);                       // one time-constant
+        expect(f.v).toBeCloseTo(Math.exp(-1), 6);
+        expect(f.dist).toBeCloseTo(325 * (1 - Math.exp(-1)), 4);
+        // integrate many frames: total -> v0 * tau
+        let v = 1;
+        let total = 0;
+        for (let i = 0; i < 400; i++) {
+            const s = glideFrame(v, 16);
+            total += s.dist;
+            v = s.v;
+        }
+        expect(total).toBeCloseTo(325, 0);
+    });
+});
+
+describe('rubberBandCenter', () => {
+    it('is the hard clamp inside the bounds', () => {
+        const inside = { x: 1000, y: 600 };
+        expect(rubberBandCenter(inside, 1, CW, CH, VW, VH)).toEqual(inside);
+    });
+
+    it('compresses overshoot monotonically and never exceeds one viewport', () => {
+        // hard bound at zoom 1: min x = -200 (25% keep, 800px viewport)
+        const a = rubberBandCenter({ x: -400, y: 600 }, 1, CW, CH, VW, VH);
+        const b = rubberBandCenter({ x: -900, y: 600 }, 1, CW, CH, VW, VH);
+        expect(a.x).toBeLessThan(-200);                    // does move past the bound...
+        expect(a.x).toBeGreaterThan(-400);                 // ...but compressed
+        expect(b.x).toBeLessThan(a.x);                     // monotonic
+        expect(b.x).toBeGreaterThan(-200 - VW);            // asymptote: one viewport
+    });
+
+    it('small content tugs around its centered anchor', () => {
+        const tug = rubberBandCenter({ x: 1300, y: 900 }, 0.2, CW, CH, VW, VH);
+        expect(tug.x).toBeGreaterThan(CW / 2);             // moved toward the tug...
+        expect(tug.x).toBeLessThan(1300);                  // ...but resisted
+        expect(clampCenter({ x: 1300, y: 900 }, 0.2, CW, CH, VW, VH).x).toBe(CW / 2);
     });
 });
 

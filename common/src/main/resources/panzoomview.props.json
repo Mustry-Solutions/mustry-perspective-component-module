@@ -8,8 +8,8 @@
       "default": {
         "viewPath": "",
         "viewParams": [],
-        "contentWidth": 1600,
-        "contentHeight": 1200,
+        "contentWidth": 0,
+        "contentHeight": 0,
         "minZoom": 0.1,
         "maxZoom": 8,
         "zoomStep": 1.25,
@@ -41,13 +41,13 @@
         },
         "contentWidth": {
           "type": "number",
-          "description": "The embedded view's natural width in px — the coordinate space for center/home and the basis for fit.",
-          "default": 1600
+          "description": "The embedded view's natural width in px — the coordinate space for center/home/pois and the basis for fit. 0 (default) = auto: use the size the embedded view reports.",
+          "default": 0
         },
         "contentHeight": {
           "type": "number",
-          "description": "The embedded view's natural height in px.",
-          "default": 1200
+          "description": "The embedded view's natural height in px. 0 (default) = auto.",
+          "default": 0
         },
         "minZoom": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
         "maxZoom": { "type": "number", "description": "Largest zoom factor.", "default": 8 },

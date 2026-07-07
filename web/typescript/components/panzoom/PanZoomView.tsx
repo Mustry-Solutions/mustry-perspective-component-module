@@ -11,10 +11,11 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { PzLabels, pzLabelBase } from '../../shared/labelPacks';
 import {
-    PzPoi, PzPoint, PzViewport, clampCenter, clampZoom, contentFullyVisible,
-    contentToViewportPt, edgeIndicator, fitZoom, flyStep, homeViewport,
-    minimapLayout, minimapViewRect, panBy, pinchViewport, resolveViewport,
-    viewTransform, zoomAt
+    PzDragSample, PzPoi, PzPoint, PzViewport, clampCenter, clampZoom,
+    contentFullyVisible, contentToViewportPt, dragVelocity, edgeIndicator, fitZoom,
+    flyStep, glideFrame, homeViewport, minimapLayout, minimapViewRect, panBy,
+    pinchViewport, resolveViewport, rubberBandCenter, viewTransform,
+    wheelZoomFactor, zoomAt
 } from './panZoomLogic';
 import { PanZoomProps, mapPanZoomProps } from './pzProps';
 
@@ -29,6 +30,9 @@ interface PanZoomState {
     // the draft clears once the props echo it back (house draft pattern).
     draft: PzViewport | null;
     viewState: string;
+    // the embedded view's reported size, used when config.contentWidth/Height is 0 (auto)
+    measuredW: number;
+    measuredH: number;
 }
 
 /**
@@ -53,12 +57,15 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     // fly-to animation (visual only — the target is already in props)
     private flyRaf = 0;
     private flyTimeout = 0;
+    // inertia glide after a flick
+    private glideRaf = 0;
+    private dragSamples: PzDragSample[] = [];
     private miniRef = React.createRef<HTMLDivElement>();
     private pendingTarget = '';   // state.target pre-set before the first measure
 
     constructor(props: ComponentProps<PanZoomProps>) {
         super(props);
-        this.state = { viewportW: 0, viewportH: 0, draft: null, viewState: '' };
+        this.state = { viewportW: 0, viewportH: 0, draft: null, viewState: '', measuredW: 0, measuredH: 0 };
     }
 
     componentDidMount(): void {
@@ -121,7 +128,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         el?.removeEventListener('pointermove', this.onPointerMove);
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
-        this.cancelFly();
+        this.cancelMotion();
         if (this.resizeObs) {
             this.resizeObs.disconnect();
         }
@@ -147,21 +154,35 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
     }
 
+    /** The effective content size: the configured one, or — when configured 0
+     *  (auto) — the size the embedded view reported (fallback until it does). */
+    private cs(): { w: number; h: number } {
+        const p = this.props.props;
+        return {
+            w: p.contentWidth > 0 ? p.contentWidth : (this.state.measuredW || 1600),
+            h: p.contentHeight > 0 ? p.contentHeight : (this.state.measuredH || 1200)
+        };
+    }
+
     /** The viewport being displayed: the in-flight draft, else the two-way state. */
     private vp(): PzViewport {
         if (this.state.draft) {
             return this.state.draft;
         }
         const p = this.props.props;
-        return resolveViewport(p.zoom, p.center, p.home,
-            p.contentWidth, p.contentHeight, this.state.viewportW, this.state.viewportH,
-            p.minZoom, p.maxZoom);
+        return this.resolveFor(p.zoom, p.center);
     }
 
     private resolveFor(zoom: number, center: PzPoint): PzViewport {
         const p = this.props.props;
-        return resolveViewport(zoom, center, p.home, p.contentWidth, p.contentHeight,
+        const c = this.cs();
+        return resolveViewport(zoom, center, p.home, c.w, c.h,
             this.state.viewportW, this.state.viewportH, p.minZoom, p.maxZoom);
+    }
+
+    private reducedMotion(): boolean {
+        return typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
     // --- fly-to animation ------------------------------------------------------------
@@ -176,6 +197,19 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
     }
 
+    private cancelGlide(): void {
+        if (this.glideRaf) {
+            window.cancelAnimationFrame(this.glideRaf);
+            this.glideRaf = 0;
+        }
+    }
+
+    /** Stop every viewport animation (fly + glide). */
+    private cancelMotion(): void {
+        this.cancelFly();
+        this.cancelGlide();
+    }
+
     /** Animate from what's on screen to the (already-in-props) target. Visual only:
      *  the draft interpolates and then clears so props lead again — no state writes. */
     private startFly(prev: PanZoomProps): void {
@@ -184,11 +218,10 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         this.animateTo(from, this.resolveFor(p.zoom, p.center));
     }
 
-    private animateTo(from: PzViewport, target: PzViewport): void {
-        const p = this.props.props;
-        this.cancelFly();
+    private animateTo(from: PzViewport, target: PzViewport, ms: number = this.props.props.flyToMs): void {
+        this.cancelMotion();
         // rAF doesn't fire in background/hidden tabs — snap there instead of animating
-        if (p.flyToMs <= 0 || this.state.viewportW <= 0 || document.hidden) {
+        if (ms <= 0 || this.state.viewportW <= 0 || document.hidden || this.reducedMotion()) {
             this.setState({ draft: null });
             return;
         }
@@ -198,9 +231,13 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
             this.setState({ draft: null });
             return;
         }
+        // hold the starting position until the first frame — without this, the
+        // render carrying the already-written target props would FLASH the
+        // destination before the flight begins
+        this.setState({ draft: from });
         const t0 = performance.now();
         const step = (now: number): void => {
-            const k = (now - t0) / p.flyToMs;
+            const k = (now - t0) / ms;
             if (k >= 1) {
                 this.flyRaf = 0;
                 this.cancelFly();
@@ -218,19 +255,65 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 this.flyRaf = 0;
                 this.setState({ draft: null });
             }
-        }, p.flyToMs + 250);
+        }, ms + 250);
     }
 
-    /** Show `next` immediately and write it (debounced) to the two-way state. */
-    private applyViewport(next: PzViewport, immediate: boolean = false): void {
-        this.cancelFly();   // a gesture always takes over from an in-flight fly
-        const p = this.props.props;
-        const clamped: PzViewport = {
-            zoom: clampZoom(next.zoom, p.minZoom, p.maxZoom),
-            center: clampCenter(next.center, clampZoom(next.zoom, p.minZoom, p.maxZoom),
-                p.contentWidth, p.contentHeight, this.state.viewportW, this.state.viewportH)
+    /** Glide out a flick with exponential decay; a wall zeroes that axis. The final
+     *  position is written when the glide comes to rest. */
+    private startGlide(vx: number, vy: number): void {
+        if (document.hidden || this.reducedMotion()) {
+            return;
+        }
+        let last = performance.now();
+        const step = (now: number): void => {
+            const dt = Math.min(64, now - last);
+            last = now;
+            const fx = glideFrame(vx, dt);
+            const fy = glideFrame(vy, dt);
+            vx = fx.v;
+            vy = fy.v;
+            const p = this.props.props;
+            const c = this.cs();
+            const cur = this.vp();
+            const un = panBy(cur, fx.dist, fy.dist);
+            const next: PzViewport = {
+                zoom: un.zoom,
+                center: clampCenter(un.center, un.zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
+            };
+            if (Math.abs(next.center.x - un.center.x) > 0.01) {
+                vx = 0;
+            }
+            if (Math.abs(next.center.y - un.center.y) > 0.01) {
+                vy = 0;
+            }
+            this.setState({ draft: next });
+            if (Math.hypot(vx, vy) < 0.02) {
+                this.glideRaf = 0;
+                this.writeState(next);
+                return;
+            }
+            this.glideRaf = window.requestAnimationFrame(step);
         };
-        this.setState({ draft: clamped });
+        this.glideRaf = window.requestAnimationFrame(step);
+    }
+
+    /** Show `next` immediately and write it (debounced) to the two-way state.
+     *  `soft` (live drags) rubber-bands the DRAFT past the pan bounds for feel;
+     *  the write is always the hard-clamped position. */
+    private applyViewport(next: PzViewport, immediate: boolean = false, soft: boolean = false): void {
+        this.cancelMotion();   // a gesture always takes over from an in-flight animation
+        const p = this.props.props;
+        const c = this.cs();
+        const zoom = clampZoom(next.zoom, p.minZoom, p.maxZoom);
+        const clamped: PzViewport = {
+            zoom,
+            center: clampCenter(next.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
+        };
+        this.setState({
+            draft: soft
+                ? { zoom, center: rubberBandCenter(next.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH) }
+                : clamped
+        });
         if (this.writeTimer) {
             window.clearTimeout(this.writeTimer);
         }
@@ -261,13 +344,18 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
      *  target in the same write, and play the flight locally. */
     private flyToPoi(poi: PzPoi): void {
         const p = this.props.props;
+        const c = this.cs();
         const cur = this.vp();
         const zoom = poi.zoom > 0 ? clampZoom(poi.zoom, p.minZoom, p.maxZoom) : cur.zoom;
         const target: PzViewport = {
             zoom,
-            center: clampCenter({ x: poi.x, y: poi.y }, zoom, p.contentWidth, p.contentHeight,
+            center: clampCenter({ x: poi.x, y: poi.y }, zoom, c.w, c.h,
                 this.state.viewportW, this.state.viewportH)
         };
+        // pin the draft to the current position BEFORE the write: the props go to
+        // the target synchronously, and without a draft that render would paint
+        // the destination for a frame (flash) before the animation starts
+        this.setState({ draft: cur });
         this.lastWritten = '';   // force the write even if we're already there
         this.writeState(target);
         this.animateTo(cur, target);
@@ -309,8 +397,15 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
         this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (this.pointers.size === 1) {
+            // grabbing mid-fly/glide freezes the view where it is (and writes it)
+            if (this.flyRaf || this.glideRaf) {
+                const cur = this.vp();
+                this.cancelMotion();
+                this.applyViewport(cur, true);
+            }
             this.panStart = { x: e.clientX, y: e.clientY, vp: this.vp() };
             this.panning = false;
+            this.dragSamples = [{ t: e.timeStamp, x: e.clientX, y: e.clientY }];
         } else if (this.pointers.size === 2) {
             // second finger: the gesture becomes a pinch (capture both immediately —
             // two fingers down is never a click)
@@ -353,7 +448,11 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 el.classList.add('pz-panning');
             }
             if (this.panning) {
-                this.applyViewport(panBy(this.panStart.vp, dx, dy));
+                this.dragSamples.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
+                if (this.dragSamples.length > 8) {
+                    this.dragSamples.shift();
+                }
+                this.applyViewport(panBy(this.panStart.vp, dx, dy), false, true);   // soft: rubber-band past the bounds
             }
         }
     };
@@ -375,6 +474,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     // one finger stays down: continue as a pan from here
                     this.panStart = { x: rest.x, y: rest.y, vp: this.vp() };
                     this.panning = true;
+                    this.dragSamples = [{ t: ev.timeStamp, x: rest.x, y: rest.y }];
                 } else {
                     el.classList.remove('pz-panning');
                     this.suppressNextClick(el);
@@ -384,9 +484,30 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
         if (this.panStart) {
             if (this.panning) {
-                // final position: flush the write and swallow the click this drag made
-                this.applyViewport(panBy(this.panStart.vp,
-                    ev.clientX - this.panStart.x, ev.clientY - this.panStart.y), true);
+                const p = this.props.props;
+                const c = this.cs();
+                const un = panBy(this.panStart.vp,
+                    ev.clientX - this.panStart.x, ev.clientY - this.panStart.y);
+                const zoom = clampZoom(un.zoom, p.minZoom, p.maxZoom);
+                const hard: PzViewport = {
+                    zoom,
+                    center: clampCenter(un.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
+                };
+                const overpanned = Math.abs(hard.center.x - un.center.x) > 0.5
+                    || Math.abs(hard.center.y - un.center.y) > 0.5;
+                this.dragSamples.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
+                const v = dragVelocity(this.dragSamples);
+                this.applyViewport(un, true, overpanned);   // write the hard clamp; keep a soft draft if stretched
+                if (overpanned) {
+                    // spring back from the rubber-banded draft to the hard bound
+                    const soft: PzViewport = {
+                        zoom,
+                        center: rubberBandCenter(un.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
+                    };
+                    this.animateTo(soft, hard, 220);
+                } else if (Math.hypot(v.x, v.y) > 0.25) {
+                    this.startGlide(v.x, v.y);              // flick: glide out with friction
+                }
                 this.suppressNextClick(el);
             }
             this.panStart = null;
@@ -408,7 +529,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         const rect = el.getBoundingClientRect();
         const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         const cur = this.vp();
-        const factor = e.deltaY < 0 ? p.zoomStep : 1 / p.zoomStep;
+        // proportional: a mouse tick is one zoomStep, trackpad pinch deltas are smooth
+        const factor = wheelZoomFactor(e.deltaY, e.deltaMode, p.zoomStep);
         const nextZoom = clampZoom(cur.zoom * factor, p.minZoom, p.maxZoom);
         this.applyViewport(zoomAt(cur, pt, nextZoom, this.state.viewportW, this.state.viewportH));
     };
@@ -439,15 +561,17 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
 
     private goHome = (): void => {
         const p = this.props.props;
-        this.applyViewport(homeViewport(p.home, p.contentWidth, p.contentHeight,
+        const c = this.cs();
+        this.applyViewport(homeViewport(p.home, c.w, c.h,
             this.state.viewportW, this.state.viewportH, p.minZoom, p.maxZoom), true);
     };
 
     private fit = (): void => {
         const p = this.props.props;
-        const zoom = clampZoom(fitZoom(p.contentWidth, p.contentHeight, this.state.viewportW, this.state.viewportH),
+        const c = this.cs();
+        const zoom = clampZoom(fitZoom(c.w, c.h, this.state.viewportW, this.state.viewportH),
             p.minZoom, p.maxZoom);
-        this.applyViewport({ zoom, center: { x: p.contentWidth / 2, y: p.contentHeight / 2 } }, true);
+        this.applyViewport({ zoom, center: { x: c.w / 2, y: c.h / 2 } }, true);
     };
 
     // --- minimap --------------------------------------------------------------------
@@ -481,11 +605,12 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
 
     private renderMinimap(vp: PzViewport): React.ReactNode {
         const p = this.props.props;
+        const c = this.cs();
         if (!p.showMinimap || this.state.viewportW <= 0
-            || contentFullyVisible(vp, p.contentWidth, p.contentHeight, this.state.viewportW, this.state.viewportH)) {
+            || contentFullyVisible(vp, c.w, c.h, this.state.viewportW, this.state.viewportH)) {
             return null;
         }
-        const layout = minimapLayout(p.contentWidth, p.contentHeight, 160, 110);
+        const layout = minimapLayout(c.w, c.h, 160, 110);
         const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
         return (
             <div
@@ -592,6 +717,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         const p = this.props.props;
         const store = this.props.store;
         const client = store.clientStore;
+        const c = this.cs();
+        const auto = p.contentWidth <= 0 || p.contentHeight <= 0;
         const vp = this.vp();
         const t = viewTransform(vp, this.state.viewportW, this.state.viewportH);
         const mountPath = `${store.view.mountPath}.pz${store.addressPath.join('_')}`;
@@ -606,8 +733,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     <div
                         className="pz-content"
                         style={{
-                            width: p.contentWidth,
-                            height: p.contentHeight,
+                            width: c.w,
+                            height: c.h,
                             transform: `translate(${t.tx}px, ${t.ty}px) scale(${t.scale})`
                         }}
                     >
@@ -618,8 +745,15 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                                 mountPath={mountPath}
                                 parent={store}
                                 params={p.viewParams}
-                                useDefaultWidth={false}
-                                useDefaultHeight={false}
+                                useDefaultWidth={auto}
+                                useDefaultHeight={auto}
+                                onViewSizeChange={(size: Size2d) => {
+                                    // config 0 = auto: adopt the embedded view's own size
+                                    if (auto && size && size.width > 0 && size.height > 0
+                                        && (size.width !== this.state.measuredW || size.height !== this.state.measuredH)) {
+                                        this.setState({ measuredW: size.width, measuredH: size.height });
+                                    }
+                                }}
                                 onViewStateChange={(vs: ViewStateType) => {
                                     if (vs !== this.state.viewState) {
                                         this.setState({ viewState: vs });
