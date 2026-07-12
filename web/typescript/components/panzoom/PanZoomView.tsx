@@ -11,13 +11,13 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { PzLabels, pzLabelBase } from '../../shared/labelPacks';
 import {
-    PzDragSample, PzPoi, PzPoint, PzViewport, clampCenter, clampZoom,
-    contentFullyVisible, contentToViewportPt, dragVelocity, edgeIndicator, fitZoom,
+    PzPoi, PzPoint, PzViewport, clampCenter, clampZoom,
+    contentFullyVisible, contentToViewportPt, edgeIndicator, fitZoom,
     flyStep, glideFrame, homeViewport, minimapLayout, minimapViewRect, panBy,
-    pinchViewport, resolveViewport, rubberBandCenter, viewTransform,
-    wheelZoomFactor, zoomAt
+    resolveViewport, rubberBandCenter, viewTransform, zoomAt
 } from './panZoomLogic';
-import { PanZoomProps, mapPanZoomProps } from './pzProps';
+import { PanZoomGestureController } from './panZoomGestureController';
+import { PanZoomProps, mapPanZoomProps } from './panZoomProps';
 
 // Must match PanZoomView.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.panzoomview';
@@ -49,19 +49,33 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     private resizeObs: ResizeObserver | null = null;
     private writeTimer = 0;
     private lastWritten = '';
-    // gesture state (instance-level so one-finger pan hands over to two-finger pinch)
-    private pointers = new Map<number, PzPoint>();
-    private panStart: { x: number; y: number; vp: PzViewport } | null = null;
-    private panning = false;
-    private pinchStart: { mid: PzPoint; dist: number; vp: PzViewport } | null = null;
     // fly-to animation (visual only — the target is already in props)
     private flyRaf = 0;
     private flyTimeout = 0;
     // inertia glide after a flick
     private glideRaf = 0;
-    private dragSamples: PzDragSample[] = [];
     private miniRef = React.createRef<HTMLDivElement>();
     private pendingTarget = '';   // state.target pre-set before the first measure
+
+    // Pan/pinch/wheel/double-click live in the controller; it reads the live
+    // viewport and hands releases back to the animation machinery here.
+    private gestures = new PanZoomGestureController({
+        env: () => {
+            const p = this.props.props;
+            const c = this.cs();
+            return {
+                minZoom: p.minZoom, maxZoom: p.maxZoom, zoomStep: p.zoomStep,
+                wheelZoom: p.wheelZoom, doubleClickZoom: p.doubleClickZoom,
+                contentW: c.w, contentH: c.h,
+                viewportW: this.state.viewportW, viewportH: this.state.viewportH
+            };
+        },
+        vp: () => this.vp(),
+        motionActive: () => !!(this.flyRaf || this.glideRaf),
+        apply: (next, immediate, soft) => this.applyViewport(next, immediate, soft),
+        springBack: (from, to) => this.animateTo(from, to, 220),
+        glide: (vx, vy) => this.startGlide(vx, vy)
+    });
 
     constructor(props: ComponentProps<PanZoomProps>) {
         super(props);
@@ -75,15 +89,9 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
             this.resizeObs = new ResizeObserver(() => this.measure());
             this.resizeObs.observe(el);
         }
-        // React delegates wheel listeners passively, so preventDefault (and with
-        // it, reliable zoom-instead-of-scroll) needs a NATIVE non-passive listener.
-        el?.addEventListener('wheel', this.onWheel, { passive: false });
-        // move attaches natively so pointer capture keeps feeding it during
-        // pan/pinch; up/cancel live on window so a release OUTSIDE the viewport
-        // (pre-capture) still ends the gesture instead of leaking a tracked pointer.
-        el?.addEventListener('pointermove', this.onPointerMove);
-        window.addEventListener('pointerup', this.onPointerUp);
-        window.addEventListener('pointercancel', this.onPointerUp);
+        if (el) {
+            this.gestures.attach(el);   // wheel/move/up/cancel — native, see the controller
+        }
         // a target pre-set before we can measure flies once the size is known
         if (this.props.props.target) {
             this.pendingTarget = this.props.props.target;
@@ -123,11 +131,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     }
 
     componentWillUnmount(): void {
-        const el = this.viewportRef.current;
-        el?.removeEventListener('wheel', this.onWheel);
-        el?.removeEventListener('pointermove', this.onPointerMove);
-        window.removeEventListener('pointerup', this.onPointerUp);
-        window.removeEventListener('pointercancel', this.onPointerUp);
+        this.gestures.dispose();
         this.cancelMotion();
         if (this.resizeObs) {
             this.resizeObs.disconnect();
@@ -361,196 +365,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         this.animateTo(cur, target);
     }
 
-    // --- gestures -----------------------------------------------------------------
-    // One finger/button pans (past a threshold, so clicks inside the embedded view
-    // survive); a second touch upgrades the gesture to a pinch (zoom + pan relative
-    // to the pinch start); lifting back to one finger continues as a pan.
-
-    private midAndDist(): { mid: PzPoint; dist: number } {
-        const pts = Array.from(this.pointers.values());
-        const rect = this.viewportRef.current!.getBoundingClientRect();
-        const mid = {
-            x: (pts[0].x + pts[1].x) / 2 - rect.left,
-            y: (pts[0].y + pts[1].y) / 2 - rect.top
-        };
-        return { mid, dist: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) };
-    }
-
-    /** Swallow the click that a pan/pinch on this element would otherwise produce. */
-    private suppressNextClick(el: HTMLElement): void {
-        el.addEventListener('click', (ce) => {
-            ce.stopPropagation();
-            ce.preventDefault();
-        }, { capture: true, once: true });
-    }
-
-    private onPointerDown = (e: React.PointerEvent): void => {
-        if (e.pointerType === 'mouse' && e.button !== 0) {
-            return;
-        }
-        const el = this.viewportRef.current;
-        if (!el) {
-            return;
-        }
-        if (e.pointerType === 'mouse') {
-            this.pointers.clear();   // a mouse is always a fresh single-pointer gesture
-        }
-        this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        if (this.pointers.size === 1) {
-            // grabbing mid-fly/glide freezes the view where it is (and writes it)
-            if (this.flyRaf || this.glideRaf) {
-                const cur = this.vp();
-                this.cancelMotion();
-                this.applyViewport(cur, true);
-            }
-            this.panStart = { x: e.clientX, y: e.clientY, vp: this.vp() };
-            this.panning = false;
-            this.dragSamples = [{ t: e.timeStamp, x: e.clientX, y: e.clientY }];
-        } else if (this.pointers.size === 2) {
-            // second finger: the gesture becomes a pinch (capture both immediately —
-            // two fingers down is never a click)
-            this.panStart = null;
-            this.pinchStart = { ...this.midAndDist(), vp: this.vp() };
-            this.pointers.forEach((_, id) => {
-                try {
-                    el.setPointerCapture(id);
-                } catch (ignored) { /* pointer may already be gone */ }
-            });
-            el.classList.add('pz-panning');
-        }
-    };
-
-    private onPointerMove = (ev: PointerEvent): void => {
-        if (!this.pointers.has(ev.pointerId)) {
-            return;
-        }
-        this.pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-        const el = this.viewportRef.current;
-        if (!el) {
-            return;
-        }
-        if (this.pinchStart && this.pointers.size >= 2) {
-            const p = this.props.props;
-            const { mid, dist } = this.midAndDist();
-            this.applyViewport(pinchViewport(this.pinchStart.vp, this.pinchStart.mid, mid,
-                this.pinchStart.dist, dist, this.state.viewportW, this.state.viewportH,
-                p.minZoom, p.maxZoom));
-            return;
-        }
-        if (this.panStart) {
-            const dx = ev.clientX - this.panStart.x;
-            const dy = ev.clientY - this.panStart.y;
-            if (!this.panning && Math.hypot(dx, dy) > 5) {
-                this.panning = true;
-                try {
-                    el.setPointerCapture(ev.pointerId);   // only capture once it IS a pan
-                } catch (ignored) { /* ignore */ }
-                el.classList.add('pz-panning');
-            }
-            if (this.panning) {
-                this.dragSamples.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
-                if (this.dragSamples.length > 8) {
-                    this.dragSamples.shift();
-                }
-                this.applyViewport(panBy(this.panStart.vp, dx, dy), false, true);   // soft: rubber-band past the bounds
-            }
-        }
-    };
-
-    private onPointerUp = (ev: PointerEvent): void => {
-        if (!this.pointers.delete(ev.pointerId)) {
-            return;
-        }
-        const el = this.viewportRef.current;
-        if (!el) {
-            return;
-        }
-        if (this.pinchStart) {
-            if (this.pointers.size < 2) {
-                this.pinchStart = null;
-                this.applyViewport(this.vp(), true);   // flush the pinch result
-                const rest = Array.from(this.pointers.values())[0];
-                if (rest) {
-                    // one finger stays down: continue as a pan from here
-                    this.panStart = { x: rest.x, y: rest.y, vp: this.vp() };
-                    this.panning = true;
-                    this.dragSamples = [{ t: ev.timeStamp, x: rest.x, y: rest.y }];
-                } else {
-                    el.classList.remove('pz-panning');
-                    this.suppressNextClick(el);
-                }
-            }
-            return;
-        }
-        if (this.panStart) {
-            if (this.panning) {
-                const p = this.props.props;
-                const c = this.cs();
-                const un = panBy(this.panStart.vp,
-                    ev.clientX - this.panStart.x, ev.clientY - this.panStart.y);
-                const zoom = clampZoom(un.zoom, p.minZoom, p.maxZoom);
-                const hard: PzViewport = {
-                    zoom,
-                    center: clampCenter(un.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
-                };
-                const overpanned = Math.abs(hard.center.x - un.center.x) > 0.5
-                    || Math.abs(hard.center.y - un.center.y) > 0.5;
-                this.dragSamples.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
-                const v = dragVelocity(this.dragSamples);
-                this.applyViewport(un, true, overpanned);   // write the hard clamp; keep a soft draft if stretched
-                if (overpanned) {
-                    // spring back from the rubber-banded draft to the hard bound
-                    const soft: PzViewport = {
-                        zoom,
-                        center: rubberBandCenter(un.center, zoom, c.w, c.h, this.state.viewportW, this.state.viewportH)
-                    };
-                    this.animateTo(soft, hard, 220);
-                } else if (Math.hypot(v.x, v.y) > 0.25) {
-                    this.startGlide(v.x, v.y);              // flick: glide out with friction
-                }
-                this.suppressNextClick(el);
-            }
-            this.panStart = null;
-            this.panning = false;
-            el.classList.remove('pz-panning');
-        }
-    };
-
-    private onWheel = (e: WheelEvent): void => {
-        const p = this.props.props;
-        if (!p.wheelZoom) {
-            return;
-        }
-        e.preventDefault();
-        const el = this.viewportRef.current;
-        if (!el) {
-            return;
-        }
-        const rect = el.getBoundingClientRect();
-        const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        const cur = this.vp();
-        // proportional: a mouse tick is one zoomStep, trackpad pinch deltas are smooth
-        const factor = wheelZoomFactor(e.deltaY, e.deltaMode, p.zoomStep);
-        const nextZoom = clampZoom(cur.zoom * factor, p.minZoom, p.maxZoom);
-        this.applyViewport(zoomAt(cur, pt, nextZoom, this.state.viewportW, this.state.viewportH));
-    };
-
-    private onDoubleClick = (e: React.MouseEvent): void => {
-        const p = this.props.props;
-        if (!p.doubleClickZoom) {
-            return;
-        }
-        const el = this.viewportRef.current;
-        if (!el) {
-            return;
-        }
-        const rect = el.getBoundingClientRect();
-        const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        const cur = this.vp();
-        const nextZoom = clampZoom(cur.zoom * p.zoomStep * p.zoomStep, p.minZoom, p.maxZoom);
-        this.applyViewport(zoomAt(cur, pt, nextZoom, this.state.viewportW, this.state.viewportH), true);
-    };
-
+    // --- controls -----------------------------------------------------------------
     private zoomStepBy(dir: 1 | -1): void {
         const p = this.props.props;
         const cur = this.vp();
@@ -727,8 +542,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 <div
                     className="pz-viewport"
                     ref={this.viewportRef}
-                    onPointerDown={this.onPointerDown}
-                    onDoubleClick={this.onDoubleClick}
+                    onPointerDown={this.gestures.pointerDown}
+                    onDoubleClick={this.gestures.doubleClick}
                 >
                     <div
                         className="pz-content"

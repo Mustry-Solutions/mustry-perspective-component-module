@@ -185,6 +185,38 @@ export function rubberBandCenter(center: PzPoint, zoom: number, contentW: number
     return { x: axis(center.x, contentW, viewportW), y: axis(center.y, contentH, viewportH) };
 }
 
+/** How a pan release resolves — an overpanned drag springs back, a fast enough
+ *  flick glides out, anything else just comes to rest. */
+export interface PzRelease {
+    kind: 'spring' | 'glide' | 'rest';
+    hard: PzViewport;   // the clamped position (always the one written)
+    soft: PzViewport;   // the rubber-banded draft to spring back from (== hard unless 'spring')
+}
+
+/** Resolve the end of a pan drag: `un` is the unclamped drag result at release.
+ *  Overpan is checked first so a flick past the edge springs back instead of
+ *  gliding into the void. Velocity is px/ms (from dragVelocity). */
+export function panRelease(un: PzViewport, velocity: PzPoint,
+                           contentW: number, contentH: number,
+                           viewportW: number, viewportH: number,
+                           minZoom: number, maxZoom: number,
+                           glideMinV: number = 0.25): PzRelease {
+    const zoom = clampZoom(un.zoom, minZoom, maxZoom);
+    const hard: PzViewport = {
+        zoom,
+        center: clampCenter(un.center, zoom, contentW, contentH, viewportW, viewportH)
+    };
+    const overpanned = Math.abs(hard.center.x - un.center.x) > 0.5
+        || Math.abs(hard.center.y - un.center.y) > 0.5;
+    if (overpanned) {
+        return {
+            kind: 'spring', hard,
+            soft: { zoom, center: rubberBandCenter(un.center, zoom, contentW, contentH, viewportW, viewportH) }
+        };
+    }
+    return { kind: Math.hypot(velocity.x, velocity.y) > glideMinV ? 'glide' : 'rest', hard, soft: hard };
+}
+
 /** Two-finger pinch, relative to the GESTURE START: scale by the finger-distance
  *  ratio and keep the content point that began under the fingers' midpoint under
  *  the (possibly moving) midpoint — so a pinch both zooms and pans naturally. */

@@ -1,8 +1,8 @@
 import {
     clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, dragVelocity,
     edgeIndicator, fitZoom, flyStep, glideFrame, homeViewport, minimapLayout,
-    minimapViewRect, panBy, pinchViewport, resolveViewport, rubberBandCenter,
-    viewTransform, wheelZoomFactor, zoomAt
+    minimapViewRect, panBy, panRelease, pinchViewport, resolveViewport,
+    rubberBandCenter, viewTransform, wheelZoomFactor, zoomAt
 } from '../panzoom/panZoomLogic';
 
 // content 2000x1200, viewport 800x600 throughout
@@ -258,5 +258,45 @@ describe('flyStep', () => {
             expect(z).toBeGreaterThanOrEqual(prev);
             prev = z;
         }
+    });
+});
+
+describe('panRelease (drag release decision)', () => {
+    // zoom 1 pan bounds (keep 0.25): x in [-200, 2200], y in [-150, 1350]
+    const still = { x: 0, y: 0 };
+
+    it('comes to rest in bounds with no flick: hard == soft == the release position', () => {
+        const un = { zoom: 1, center: { x: 900, y: 500 } };
+        const rel = panRelease(un, still, CW, CH, VW, VH, 0.1, 4);
+        expect(rel.kind).toBe('rest');
+        expect(rel.hard).toEqual(un);
+        expect(rel.soft).toEqual(rel.hard);
+    });
+
+    it('glides when the release velocity beats the threshold', () => {
+        const un = { zoom: 1, center: { x: 900, y: 500 } };
+        expect(panRelease(un, { x: 0.3, y: 0 }, CW, CH, VW, VH, 0.1, 4).kind).toBe('glide');
+        // hypot(0.1, 0.1) ≈ 0.14 stays under the default 0.25
+        expect(panRelease(un, { x: 0.1, y: 0.1 }, CW, CH, VW, VH, 0.1, 4).kind).toBe('rest');
+    });
+
+    it('springs back when overpanned: hard on the bound, soft rubber-banded between', () => {
+        const un = { zoom: 1, center: { x: -800, y: 500 } };
+        const rel = panRelease(un, still, CW, CH, VW, VH, 0.1, 4);
+        expect(rel.kind).toBe('spring');
+        expect(rel.hard.center.x).toBeCloseTo(-200, 5);       // the pan bound
+        expect(rel.soft.center.x).toBeLessThan(rel.hard.center.x);
+        expect(rel.soft.center.x).toBeGreaterThan(un.center.x);
+        expect(rel.hard.center.y).toBe(500);                  // in-bounds axis untouched
+    });
+
+    it('overpan wins over a flick — no gliding into the void', () => {
+        const un = { zoom: 1, center: { x: -800, y: 500 } };
+        expect(panRelease(un, { x: 2, y: 0 }, CW, CH, VW, VH, 0.1, 4).kind).toBe('spring');
+    });
+
+    it('clamps a wild zoom into hard', () => {
+        const un = { zoom: 100, center: { x: 1000, y: 600 } };
+        expect(panRelease(un, still, CW, CH, VW, VH, 0.1, 4).hard.zoom).toBe(4);
     });
 });
