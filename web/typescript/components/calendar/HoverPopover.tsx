@@ -3,8 +3,8 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { addDays, intlFormat, parseDate } from '../../shared/dateUtils';
-import { isTimed, hhmm, timeMinutes } from '../calendarLogic';
-import { Category, HoverInfo, DEFAULT_DUR_MIN } from './types';
+import { isTimed, hhmm, timeMinutes } from './calendarLogic';
+import { Category, HoverInfo, DEFAULT_DUR_MIN } from './calendarTypes';
 import { resolveColor, eventIcon } from '../../shared/eventStyle';
 import { CalLabels } from '../../shared/labelPacks';
 

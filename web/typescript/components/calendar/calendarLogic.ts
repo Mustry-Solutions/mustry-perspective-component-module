@@ -2,12 +2,12 @@
 // time-grid packing, unit-tested without rendering. Recurrence expansion and
 // month-grid construction live in the shared layer.
 
-import { csvCell } from '../shared/csv';
+import { csvCell } from '../../shared/csv';
 import {
     addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today, toEpochMs
-} from '../shared/dateUtils';
-import { RRule } from '../shared/recurrence';
-import { DayCell, MonthGrid, buildMonthGrid } from '../shared/monthGrid';
+} from '../../shared/dateUtils';
+import { RRule } from '../../shared/recurrence';
+import { DayCell, MonthGrid, buildMonthGrid } from '../../shared/monthGrid';
 
 export type { RRule, DayCell, MonthGrid };
 export { buildMonthGrid };

@@ -5,7 +5,7 @@ import {
     backgroundBandsForDay, followTickMs, followDisarms, followCursorStale,
     toggleHiddenCategory, filterHiddenCategories,
     visibleRangeMs, CalEvent
-} from '../calendarLogic';
+} from '../calendar/calendarLogic';
 import { expandEvents } from '../../shared/recurrence';
 
 const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 is a Monday)
@@ -539,7 +539,7 @@ describe('visibleRangeMs (epoch-ms window outputs)', () => {
 });
 
 describe('followScrollStale (armed + scrollToNow keeps the indicator in view)', () => {
-    const { followScrollStale } = require('../calendarLogic');
+    const { followScrollStale } = require('../calendar/calendarLogic');
 
     it('fresh while the indicator is inside the visible band', () => {
         expect(followScrollStale(0, 600, 300)).toBe(false);

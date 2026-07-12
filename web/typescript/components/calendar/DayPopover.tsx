@@ -2,8 +2,8 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { intlFormat, parseDate, today } from '../../shared/dateUtils';
-import { CalEvent, isOccurrence, timeMinutes } from '../calendarLogic';
-import { CalLabels, Category, DayPop } from './types';
+import { CalEvent, isOccurrence, timeMinutes } from './calendarLogic';
+import { CalLabels, Category, DayPop } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
 interface DayPopoverProps {

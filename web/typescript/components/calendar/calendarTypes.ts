@@ -1,8 +1,8 @@
 // Shared types + layout constants for the Calendar component and its sub-views.
 // Category / CalLabels / ENTER_MS moved to the shared layer; re-exported here so
 // the calendar's files keep one type hub.
-import { CalEvent } from '../calendarLogic';
-import { ResizeEdge } from './gestureLogic';
+import { CalEvent } from './calendarLogic';
+import { ResizeEdge } from './calendarGestureLogic';
 import { Category } from '../../shared/types';
 import { CalLabels } from '../../shared/labelPacks';
 import { ShiftDef } from '../../shared/shifts';

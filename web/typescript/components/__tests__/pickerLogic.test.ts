@@ -4,7 +4,7 @@ import {
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
     computeOutputs, realtimeArmed, realtimeSelection, fillLabel, dayWord, focusTrapTarget,
     PresetContext, PresetDef
-} from '../pickerLogic';
+} from '../picker/pickerLogic';
 
 describe('resolveLayout', () => {
     const base = { width: 800, height: 600, compactBelowWidth: 360, compactBelowHeight: 320, twoMonthsAboveWidth: 720 };

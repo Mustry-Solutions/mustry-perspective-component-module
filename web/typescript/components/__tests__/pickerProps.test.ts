@@ -1,4 +1,4 @@
-import { mapPickerProps } from '../pickerProps';
+import { mapPickerProps } from '../picker/pickerProps';
 import { stubReader } from './_stubReader';
 
 describe('mapPickerProps (datetime picker reducer)', () => {

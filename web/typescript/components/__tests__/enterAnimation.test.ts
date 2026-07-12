@@ -1,6 +1,6 @@
 import { EnterTracker } from '../../shared/enterAnimation';
-import { ENTER_MS } from '../calendar/types';
-import { CalEvent } from '../calendarLogic';
+import { ENTER_MS } from '../calendar/calendarTypes';
+import { CalEvent } from '../calendar/calendarLogic';
 
 const ev = (id: string): CalEvent => ({ id, title: id, start: '2026-06-15T09:00:00' });
 

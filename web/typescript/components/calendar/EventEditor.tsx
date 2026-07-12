@@ -3,8 +3,8 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { intlFormat } from '../../shared/dateUtils';
-import { CalLabels, Category, Editor } from './types';
-import { editorProblem } from './editorLogic';
+import { CalLabels, Category, Editor } from './calendarTypes';
+import { editorProblem } from './calendarEditorLogic';
 import { UNCATEGORIZED_COLOR } from '../../shared/eventStyle';
 
 interface EventEditorProps {

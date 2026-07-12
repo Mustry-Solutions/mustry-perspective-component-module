@@ -1,7 +1,7 @@
 // Category legend (bottom footer). Click an item to show/hide that category's events.
 import * as React from 'react';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { Category } from './types';
+import { Category } from './calendarTypes';
 
 interface LegendProps {
     categories: Category[];

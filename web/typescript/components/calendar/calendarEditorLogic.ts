@@ -3,9 +3,9 @@
 // move / resize decisions (what onChange should carry). Kept perspective-client-
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
-import { CalEvent, RRule } from '../calendarLogic';
+import { CalEvent, RRule } from './calendarLogic';
 import { emitWall, reanchorSeries } from '../../shared/dateUtils';
-import { Editor } from './types';
+import { Editor } from './calendarTypes';
 
 export { reanchorSeries };   // shared with the timeline; re-exported for callers/tests
 

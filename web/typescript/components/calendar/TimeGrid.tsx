@@ -4,9 +4,9 @@ import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
 import {
     CalEvent, DayCol, hhmm, isOccurrence, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
-} from '../calendarLogic';
-import { ResizeEdge } from './gestureLogic';
-import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './types';
+} from './calendarLogic';
+import { ResizeEdge } from './calendarGestureLogic';
+import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 import { ShiftDef, visibleShifts } from '../../shared/shifts';
 import { EventBar } from './EventBar';

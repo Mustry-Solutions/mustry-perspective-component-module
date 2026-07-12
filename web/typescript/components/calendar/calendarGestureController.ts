@@ -1,12 +1,13 @@
 // The week/day drag gesture controller: owns the in-flight gesture, measures the
 // DOM (day-column rects, pointer -> minute mapping), and manages the document
 // pointer listeners. The geometry and the commit decision are pure functions in
-// gestureLogic.ts; state changes and event firing flow back through GestureHost,
-// so this file stays perspective-client-free (but is DOM-facing, hence untested).
+// calendarGestureLogic.ts; state changes and event firing flow back through
+// GestureHost, so this file stays perspective-client-free (but is DOM-facing,
+// hence untested).
 import * as React from 'react';
-import { CalEvent, minuteFromOffset, snapMinutes, timeMinutes } from '../calendarLogic';
-import { DEFAULT_DUR_MIN, Gesture, Preview, hourHeightPx } from './types';
-import { cellAt, CellBound, colAtX, commitDecision, CommitKind, GestureFlags, hasMoved, movePreview, resizePreview, ResizeEdge, createPreview } from './gestureLogic';
+import { CalEvent, minuteFromOffset, snapMinutes, timeMinutes } from './calendarLogic';
+import { DEFAULT_DUR_MIN, Gesture, Preview, hourHeightPx } from './calendarTypes';
+import { cellAt, CellBound, colAtX, commitDecision, CommitKind, GestureFlags, hasMoved, movePreview, resizePreview, ResizeEdge, createPreview } from './calendarGestureLogic';
 
 /** The prop values a gesture reads — fetched per event so mid-gesture prop edits are honoured. */
 export interface GestureEnv {
@@ -28,7 +29,7 @@ export interface GestureHost {
     commit(kind: CommitKind, g: Gesture, preview: Preview | null): void;
 }
 
-export class GestureController {
+export class CalendarGestureController {
     private gesture: Gesture | null = null;
     private colRects: Array<{ day: string; rect: DOMRect }> = [];
     private cellRects: CellBound[] = [];      // month-view day cells (2D hit-testing)

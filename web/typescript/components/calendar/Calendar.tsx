@@ -21,7 +21,7 @@ import {
     instantToZonedIso,
     todayInZone,
     nowMinutesInZone
-} from '../shared/dateUtils';
+} from '../../shared/dateUtils';
 import {
     buildMonthGrid,
     groupEventsByDay,
@@ -43,29 +43,29 @@ import {
 import {
     CalView, Gesture, Editor, Preview,
     CalendarProps, CalendarState, hourHeightPx
-} from './calendar/types';
-import { CSV_BOM } from '../shared/csv';
-import { resolveColor as styleResolveColor } from '../shared/eventStyle';
-import { expandEvents } from '../shared/recurrence';
+} from './calendarTypes';
+import { CSV_BOM } from '../../shared/csv';
+import { resolveColor as styleResolveColor } from '../../shared/eventStyle';
+import { expandEvents } from '../../shared/recurrence';
 import { mapCalendarProps } from './calendarProps';
-import { CommitKind, isNoopResize } from './calendar/gestureLogic';
-import { GestureController } from './calendar/gestureController';
-import { DocDismiss } from '../shared/dismiss';
-import { EnterTracker } from '../shared/enterAnimation';
-import { emptyMessageText } from '../shared/labelPacks';
+import { CommitKind, isNoopResize } from './calendarGestureLogic';
+import { CalendarGestureController } from './calendarGestureController';
+import { DocDismiss } from '../../shared/dismiss';
+import { EnterTracker } from '../../shared/enterAnimation';
+import { emptyMessageText } from '../../shared/labelPacks';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
     editorSaveSpec, editorDeleteSpec, moveResizeSpec
-} from './calendar/editorLogic';
-import { Legend } from './calendar/Legend';
-import { HoverPopover } from './calendar/HoverPopover';
-import { DayPopover } from './calendar/DayPopover';
-import { MiniMonthNav } from '../shared/MiniMonthNav';
-import { EventEditor } from './calendar/EventEditor';
-import { Toolbar } from './calendar/Toolbar';
-import { MonthView } from './calendar/MonthView';
-import { TimeGrid } from './calendar/TimeGrid';
-import { ListView } from './calendar/ListView';
+} from './calendarEditorLogic';
+import { Legend } from './Legend';
+import { HoverPopover } from './HoverPopover';
+import { DayPopover } from './DayPopover';
+import { MiniMonthNav } from '../../shared/MiniMonthNav';
+import { EventEditor } from './EventEditor';
+import { Toolbar } from './Toolbar';
+import { MonthView } from './MonthView';
+import { TimeGrid } from './TimeGrid';
+import { ListView } from './ListView';
 
 // Must match Calendar.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.calendar';
@@ -86,7 +86,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private enter = new EnterTracker();
 
-    private gestures = new GestureController({
+    private gestures = new CalendarGestureController({
         env: () => {
             const p = this.props.props;
             return {

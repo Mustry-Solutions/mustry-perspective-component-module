@@ -1,7 +1,7 @@
 // Calendar toolbar: title (optionally a mini-nav trigger), view switcher, export + nav.
 import * as React from 'react';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { CalLabels, CalView } from './types';
+import { CalLabels, CalView } from './calendarTypes';
 
 const VIEWS: CalView[] = ['month', 'week', 'day', 'list'];
 

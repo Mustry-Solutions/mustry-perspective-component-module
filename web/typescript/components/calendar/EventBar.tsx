@@ -1,8 +1,8 @@
 // One event bar — a column-span segment on a lane row. Shared by the month week-rows
 // and the week/day all-day strip. `colOffset` shifts for a leading gutter column.
 import * as React from 'react';
-import { CalEvent, WeekSeg, hhmm, isOccurrence, timeMinutes } from '../calendarLogic';
-import { Category } from './types';
+import { CalEvent, WeekSeg, hhmm, isOccurrence, timeMinutes } from './calendarLogic';
+import { Category } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
 interface EventBarProps {

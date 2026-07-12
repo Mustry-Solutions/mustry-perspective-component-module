@@ -2,7 +2,7 @@
 // prop mapper (pickerProps.ts) and its tests can run under plain node jest.
 // LabelConfig moved to the shared layer; re-exported here as the picker's type hub.
 import { DisableMode, Granularity, LayoutMode, PresetDef, PresetUnit } from './pickerLogic';
-import { LabelConfig } from '../shared/labelPacks';
+import { LabelConfig } from '../../shared/labelPacks';
 
 export type { LabelConfig };
 

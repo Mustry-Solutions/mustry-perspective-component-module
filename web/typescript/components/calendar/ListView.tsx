@@ -1,8 +1,8 @@
 // Agenda list of the visible window's events, grouped by day.
 import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
-import { CalEvent, DayCol, groupEventsByDay, isOccurrence, timeMinutes } from '../calendarLogic';
-import { CalLabels, Category } from './types';
+import { CalEvent, DayCol, groupEventsByDay, isOccurrence, timeMinutes } from './calendarLogic';
+import { CalLabels, Category } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 
 interface ListViewProps {

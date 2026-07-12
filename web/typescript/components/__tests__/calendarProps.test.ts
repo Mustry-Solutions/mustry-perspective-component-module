@@ -1,4 +1,4 @@
-import { DEFAULT_LABELS, mapCalendarProps } from '../calendarProps';
+import { DEFAULT_LABELS, mapCalendarProps } from '../calendar/calendarProps';
 import { stubReader } from './_stubReader';
 
 describe('mapCalendarProps (calendar reducer)', () => {

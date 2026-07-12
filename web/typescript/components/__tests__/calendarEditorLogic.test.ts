@@ -1,9 +1,9 @@
 import {
     buildRRule, editorDefaults, editorForCreate, editorForEvent, editorProblem,
     editorDeleteSpec, editorSaveSpec, moveResizeSpec, reanchorSeries, toggleAllDayPatch
-} from '../calendar/editorLogic';
-import { Editor } from '../calendar/types';
-import { CalEvent } from '../calendarLogic';
+} from '../calendar/calendarEditorLogic';
+import { Editor } from '../calendar/calendarTypes';
+import { CalEvent } from '../calendar/calendarLogic';
 import { emitWall } from '../../shared/dateUtils';
 
 // All specs are computed in UTC so the emitted offsets are machine-independent.

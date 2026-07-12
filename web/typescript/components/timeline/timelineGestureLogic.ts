@@ -1,7 +1,7 @@
 // Pure logic for the timeline's drag gesture state machine — epoch-space preview
 // geometry, row hit-testing and the commit decision. DOM-free so it can be
 // unit-tested under node jest; the controller measures the DOM, calls these, and
-// applies setState / fires events (same split as the calendar's gestureLogic).
+// applies setState / fires events (same split as the calendar's calendarGestureLogic).
 
 export type TlGestureMode = 'move' | 'resize-start' | 'resize-end' | 'create';
 

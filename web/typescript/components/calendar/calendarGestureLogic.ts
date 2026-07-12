@@ -2,7 +2,7 @@
 // clamping, column hit-testing, move threshold) and the commit decision. Kept
 // perspective-client- and DOM-free so it can be unit-tested under node jest. The
 // controller measures the DOM, calls these, and applies setState / fires events.
-import { GestureMode } from './types';
+import { GestureMode } from './calendarTypes';
 
 /** Horizontal extent of a day column (screen px), used to hit-test the pointer. */
 export interface ColBound {

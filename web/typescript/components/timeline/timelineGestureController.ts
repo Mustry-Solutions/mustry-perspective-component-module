@@ -2,7 +2,7 @@
 // DOM (row-track rects, pointer -> epoch mapping) and manages the document pointer
 // listeners. Geometry and the commit decision are pure functions in
 // timelineGestureLogic.ts; state changes and event firing flow back through the
-// host (the same architecture as the calendar's gestureController).
+// host (the same architecture as the calendar's calendarGestureController).
 import * as React from 'react';
 import { TimeScale, TimelineEvent, pxToMs } from './timelineLogic';
 import {

@@ -1,7 +1,7 @@
 import {
     cellAt, colAtX, hasMoved, movePreview, resizePreview, isNoopResize, createPreview, commitDecision, GestureFlags
-} from '../calendar/gestureLogic';
-import { hourHeightPx, SLOT_PX } from '../calendar/types';
+} from '../calendar/calendarGestureLogic';
+import { hourHeightPx, SLOT_PX } from '../calendar/calendarTypes';
 
 describe('hourHeightPx (grid resolution)', () => {
     it('keeps the base height for coarse grids and grows so fine slots stay grabbable', () => {

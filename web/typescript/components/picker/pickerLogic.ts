@@ -7,7 +7,7 @@
 import {
     addDays, clampSec, combine, daysBetween, fmtDate, maxDate, minDate,
     parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek, today
-} from '../shared/dateUtils';
+} from '../../shared/dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
 export type Granularity = 'day' | 'hour' | 'minute' | 'second';

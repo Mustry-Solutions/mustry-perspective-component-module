@@ -29,7 +29,7 @@ import {
     startOfMonth,
     today,
     weekdayHeaders
-} from '../shared/dateUtils';
+} from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
 import {
     DisableMode,
