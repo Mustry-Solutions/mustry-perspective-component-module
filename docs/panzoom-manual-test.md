@@ -96,6 +96,14 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
 - [ ] **No destination flash**: a fly-to (Go to / target write / indicator
       click) starts from the current position — the target must never blink
       in before the flight.
+- [ ] **Interrupted pan doesn't eat the next tap** (touch): start a one-finger
+      pan and let the system CANCEL it (notification shade pull, palm touch,
+      app switcher) — the very next tap on a control inside the embedded view
+      must register. The click-swallower a pan arms on release is skipped on
+      `pointercancel` and disarmed by the next pointerdown (native capture, so
+      an embedded widget stopping propagation can't defeat it); DOM-level
+      verified synthetically 2026-07-12, ⚠ REAL-DEVICE pass pending — a real
+      touch cancel is exactly the case a desktop can't produce.
 
 ## Verified 2026-07-06 (dev gateway, Chrome)
 

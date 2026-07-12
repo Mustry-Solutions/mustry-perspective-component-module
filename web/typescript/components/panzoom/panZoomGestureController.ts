@@ -45,6 +45,7 @@ export class PanZoomGestureController {
     private panning = false;
     private pinchStart: { mid: PzPoint; dist: number; vp: PzViewport } | null = null;
     private dragSamples: PzDragSample[] = [];
+    private clickSwallower: ((ce: MouseEvent) => void) | null = null;
 
     constructor(private host: PzGestureHost) {}
 
@@ -57,13 +58,18 @@ export class PanZoomGestureController {
     attach(el: HTMLElement): void {
         this.el = el;
         el.addEventListener('wheel', this.onWheel, { passive: false });
+        // capture-phase so it runs even when a child of the embedded view stops
+        // pointerdown propagation before the viewport's React handler would
+        el.addEventListener('pointerdown', this.onNativePointerDown, true);
         el.addEventListener('pointermove', this.onPointerMove);
         window.addEventListener('pointerup', this.onPointerUp);
         window.addEventListener('pointercancel', this.onPointerUp);
     }
 
     dispose(): void {
+        this.disarmClickSwallower();
         this.el?.removeEventListener('wheel', this.onWheel);
+        this.el?.removeEventListener('pointerdown', this.onNativePointerDown, true);
         this.el?.removeEventListener('pointermove', this.onPointerMove);
         window.removeEventListener('pointerup', this.onPointerUp);
         window.removeEventListener('pointercancel', this.onPointerUp);
@@ -80,13 +86,35 @@ export class PanZoomGestureController {
         return { mid, dist: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) };
     }
 
-    /** Swallow the click that a pan/pinch on this element would otherwise produce. */
+    /** Swallow the click that a pan/pinch on this element would otherwise produce.
+     *  The swallower must be disarmed on the next pointerdown: a release via
+     *  pointercancel (or one that escaped capture and landed outside) produces NO
+     *  click, and the leftover once-listener would eat the next legitimate one. */
     private suppressNextClick(el: HTMLElement): void {
-        el.addEventListener('click', (ce) => {
+        this.disarmClickSwallower();
+        const swallow = (ce: MouseEvent): void => {
+            this.clickSwallower = null;
             ce.stopPropagation();
             ce.preventDefault();
-        }, { capture: true, once: true });
+        };
+        this.clickSwallower = swallow;
+        el.addEventListener('click', swallow, { capture: true, once: true });
     }
+
+    private disarmClickSwallower(): void {
+        if (this.clickSwallower) {
+            this.el?.removeEventListener('click', this.clickSwallower, true);
+            this.clickSwallower = null;
+        }
+    }
+
+    /** Any fresh interaction disarms a swallower a completed gesture left armed
+     *  (a pan's own click arrives before any next pointerdown, so this never
+     *  un-swallows the click it was armed for). Native + capture because a child
+     *  of the embedded view may stop pointerdown before the React handler runs. */
+    private onNativePointerDown = (): void => {
+        this.disarmClickSwallower();
+    };
 
     /** React handler for the viewport element's onPointerDown. */
     pointerDown = (e: React.PointerEvent): void => {
@@ -194,7 +222,9 @@ export class PanZoomGestureController {
                     this.dragSamples = [{ t: ev.timeStamp, x: rest.x, y: rest.y }];
                 } else {
                     el.classList.remove('pz-panning');
-                    this.suppressNextClick(el);
+                    if (ev.type !== 'pointercancel') {
+                        this.suppressNextClick(el);   // a canceled pointer never produces a click
+                    }
                 }
             }
             return;
@@ -214,7 +244,9 @@ export class PanZoomGestureController {
                 } else if (rel.kind === 'glide') {
                     this.host.glide(v.x, v.y);                      // flick: glide out with friction
                 }
-                this.suppressNextClick(el);
+                if (ev.type !== 'pointercancel') {
+                    this.suppressNextClick(el);   // a canceled pointer never produces a click
+                }
             }
             this.panStart = null;
             this.panning = false;
