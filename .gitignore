@@ -30,6 +30,8 @@ ops/signing/
 *.ipr
 *.iws
 .vscode/
+# Eclipse/Buildship Java compile output (common/bin, designer/bin, gateway/bin)
+bin/
 
 # --- macOS ---
 .DS_Store
