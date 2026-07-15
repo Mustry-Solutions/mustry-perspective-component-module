@@ -50,6 +50,8 @@ module with no prompt. You only commission again after `teardown.sh --purge`.
 | `teardown.sh --purge` | Also delete the gateway data volume (completely clean slate). |
 | `logs.sh` | Tail the gateway logs (`Ctrl-C` to stop). |
 | `status.sh` | Show container status, health, URL, and the staged `.modl`. |
+| `e2e.sh` | Rebuild + redeploy, then run the Playwright smoke suite (`e2e/`) against the verify project. |
+| `e2e.sh --fresh` | Wipe the gateway and bring it back **fully unattended** (no wizard, fresh 2h trial), then run the suite. What CI runs. |
 
 ## Typical workflow
 
@@ -74,11 +76,12 @@ ops/teardown.sh     # stop when done (keeps state)
   the dev certificate once in the commissioning wizard; it's recorded in the data volume.
   Because the dev cert is reused for every build, later redeploys load without re-prompting.
 
-> **Why not fully hands-off?** Ignition 8.3 deliberately requires accepting a module's
-> certificate. The `ACCEPT_MODULE_CERTS` env var only auto-accepts certs the gateway
-> already trusts, not an arbitrary self-signed dev cert (fully automating that needs a
-> `register-module.sh`-style pre-registration). The one-time wizard acceptance is the
-> simple, supported path.
+> **Hands-off alternative:** Ignition 8.3 records third-party acceptance in
+> `data/modules.json` (`certFingerprint` = SHA-1 of the signing cert). `e2e.sh --fresh`
+> exploits that: it lets a fresh gateway commission headlessly (EULA/admin/edition come
+> from compose env), then stops it, merges the module's entry into the gateway-written
+> `modules.json`, and restarts — no wizard. CI uses this; locally it also gives you a
+> fresh 2h Perspective trial whenever the old one expires.
 
 ## Troubleshooting
 

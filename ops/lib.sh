@@ -8,15 +8,20 @@ OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${OPS_DIR}/.." && pwd)"
 MODULES_DIR="${OPS_DIR}/modules"
 
-# Local self-signed signing material for development (gitignored). The gateway is
-# told to auto-accept this module's certificate (ACCEPT_MODULE_CERTS in compose),
-# so a signed dev build loads with no manual steps. These are throwaway dev creds.
+# Local self-signed signing material for development (gitignored). On a fresh
+# gateway the certificate is accepted either once in the commissioning wizard
+# (setup.sh) or unattended by seeding data/modules.json (accept_staged_module,
+# used by e2e.sh --fresh / CI). These are throwaway dev creds.
 SIGNING_DIR="${OPS_DIR}/signing"
 KEYSTORE_FILE="${SIGNING_DIR}/dev-keystore.p12"
 CERT_FILE="${SIGNING_DIR}/dev-cert.pem"
 CERT_ALIAS="mspc-dev"
 SIGNING_PASS="devpassword"
 SIGNING_DNAME="CN=Mustry Solutions (Dev), O=Mustry Solutions, C=BE"
+
+# Must match MODULE_ID in common/.../MustrySolutionsPerspectiveComponentsModule.java.
+MODULE_ID="com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents"
+CONTAINER_NAME="mspc-ignition"
 
 # Use Java 17 for Gradle (matches the module's toolchain).
 JAVA_17_HOME="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
@@ -127,4 +132,94 @@ wait_for_gateway() {
   done
   warn "Gateway did not report ready after $((tries * 5))s. Check 'ops/logs.sh'."
   return 1
+}
+
+# Stricter: wait until the gateway is RUNNING with no COMMISSIONING/FAULTED
+# detail, i.e. fully commissioned and serving.
+wait_for_commissioned() {
+  local tries="${1:-60}"
+  info "Waiting for the gateway to be commissioned and RUNNING ..."
+  for ((i = 1; i <= tries; i++)); do
+    if [[ "$(curl -fsS "${GATEWAY_URL}/StatusPing" 2>/dev/null)" == '{"state":"RUNNING"}' ]]; then
+      ok "Gateway is commissioned and running."
+      return 0
+    fi
+    sleep 5
+  done
+  err "Gateway did not reach a clean RUNNING state after $((tries * 5))s. Check 'ops/logs.sh'."
+  return 1
+}
+
+# --- fresh-volume fix -------------------------------------------------------
+# Docker creates the verify bind-mount's parent path (data/projects/) as root
+# inside a brand-new volume, and the gateway then faults with "unable to create
+# resource dir: .../projects/.resources". Hand the directory to the ignition
+# user and bounce the gateway once so it starts clean. Idempotent — a no-op
+# restart on an already-correct volume.
+fix_projects_ownership() {
+  if ! "${COMPOSE[@]}" exec -T -u root gateway \
+          stat -c '%U' /usr/local/bin/ignition/data/projects 2>/dev/null | grep -q ignition; then
+    info "Fresh volume: fixing data/projects ownership for the ignition user..."
+    "${COMPOSE[@]}" exec -T -u root gateway \
+        chown ignition:ignition /usr/local/bin/ignition/data/projects
+    "${COMPOSE[@]}" restart gateway
+  fi
+}
+
+# Wait until the gateway has written its module registry (data/modules.json
+# with the built-ins' cert fingerprints). On a fresh volume this happens while
+# the gateway parks in COMMISSIONING over the staged-but-unaccepted module —
+# it's the point where accept_staged_module can safely merge.
+wait_for_modules_registry() {
+  local tries="${1:-60}"
+  info "Waiting for the gateway to write its module registry ..."
+  for ((i = 1; i <= tries; i++)); do
+    if docker exec "${CONTAINER_NAME}" \
+         grep -q certFingerprint /usr/local/bin/ignition/data/modules.json 2>/dev/null; then
+      ok "Module registry present."
+      return 0
+    fi
+    sleep 5
+  done
+  err "Gateway never wrote data/modules.json after $((tries * 5))s. Check 'ops/logs.sh'."
+  return 1
+}
+
+# --- unattended module acceptance ------------------------------------------
+# Pre-accept the staged module's signing certificate on an already-commissioned
+# gateway, with no browser wizard. Ignition 8.3 records third-party acceptance
+# in data/modules.json as {filename, onStartup, certFingerprint(sha1 of the
+# signing cert)}; the gateway treats that file as authoritative, so we merge our
+# entry into the gateway-written file (never replace it — it also carries every
+# built-in module). Requires python3 (same dependency as ops/schema-guard.sh).
+accept_staged_module() {
+  local modl fingerprint tmp
+  modl="$(find "${MODULES_DIR}" -maxdepth 1 -name '*.modl' | head -1)"
+  [[ -n "${modl}" ]] || { err "No staged .modl in ops/modules."; return 1; }
+  fingerprint="$(openssl x509 -in "${CERT_FILE}" -noout -fingerprint -sha1 \
+                   | cut -d= -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+  [[ -n "${fingerprint}" ]] || { err "Could not fingerprint ${CERT_FILE}."; return 1; }
+
+  info "Pre-accepting the module certificate (fingerprint ${fingerprint})..."
+  "${COMPOSE[@]}" stop gateway
+  tmp="$(mktemp -d)"
+  docker cp "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json" "${tmp}/modules.json"
+  MODULE_ID="${MODULE_ID}" MODL_NAME="$(basename "${modl}")" FINGERPRINT="${fingerprint}" \
+  python3 - "${tmp}/modules.json" <<'EOF'
+import json, os, sys
+path = sys.argv[1]
+with open(path) as f:
+    modules = json.load(f)
+modules[os.environ["MODULE_ID"]] = {
+    "filename": f"/external-modules/{os.environ['MODL_NAME']}",
+    "onStartup": "enabled",
+    "certFingerprint": os.environ["FINGERPRINT"],
+}
+with open(path, "w") as f:
+    json.dump(modules, f, indent=2)
+EOF
+  docker cp "${tmp}/modules.json" "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json"
+  rm -rf "${tmp}"
+  "${COMPOSE[@]}" start gateway
+  ok "Module acceptance seeded; gateway restarting."
 }
