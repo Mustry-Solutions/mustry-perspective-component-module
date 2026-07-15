@@ -41,5 +41,11 @@ export async function openRoute(page: Page, route: string, rootSelector: string)
         );
     }
     await expect(root).toBeVisible();
+    // A freshly bootstrapped gateway can drop the session websocket once while
+    // its background services settle; Perspective reconnects on its own. Don't
+    // start interacting until the connection is up — writes would be lost.
+    // NOTE: the ConnectionBanner element is ALWAYS in the DOM (its text passes
+    // toBeVisible even when idle); the `banner-active` class is the real signal.
+    await expect(page.locator('.connection-banner.banner-active')).toHaveCount(0, { timeout: 30_000 });
     return root;
 }
