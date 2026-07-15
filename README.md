@@ -215,7 +215,9 @@ Override the `--tml-*` variables via a style class / project stylesheet: `--tml-
 Requires JDK 17 (`JAVA_HOME`). Node 18.20.4 is downloaded automatically by the build.
 
 ```bash
-# Build the signed-or-unsigned .modl (web bundle + Java)
+# Build the signed-or-unsigned .modl (web bundle + Java).
+# The web bundle is a production webpack build (minified, no source maps);
+# add -PwebDev for an unminified development bundle with source maps.
 ./gradlew build
 
 # Run the TypeScript unit tests (also part of `gradlew check` / `build`)

@@ -15,13 +15,17 @@ node {
     nodeProjectDir.set(file(project.projectDir))
 }
 
-// Run webpack via the package.json "build" script. `npmInstall` is provided by the
+// Run webpack via the package.json scripts. `npmInstall` is provided by the
 // node plugin and installs dependencies from package.json/package-lock.json.
+// Default is the production build (minified, no source maps) so every .modl is
+// ship-quality; pass -PwebDev for the faster unminified build when debugging.
+val webDev = project.hasProperty("webDev")
 val webpack by tasks.registering(NpmTask::class) {
     group = "Ignition Module"
-    description = "Builds the web (React/TypeScript) bundle with webpack."
-    args.set(listOf("run", "build"))
+    description = "Builds the web (React/TypeScript) bundle with webpack (-PwebDev for a development build)."
+    args.set(listOf("run", if (webDev) "build:dev" else "build"))
     dependsOn(tasks.named("npmInstall"))
+    inputs.property("webDev", webDev)
     inputs.dir("typescript")
     inputs.files("package.json", "package-lock.json", "webpack.config.js", "tsconfig.json")
     outputs.dir(projectOutput)
