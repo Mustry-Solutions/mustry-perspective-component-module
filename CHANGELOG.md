@@ -8,6 +8,20 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Build & CI
+- The web bundle is now a **production webpack build** by default: minified JS
+  + CSS, no source maps (JS 508K → 240K, CSS 68K → 55K, `.modl` ~391K → ~110K).
+  `./gradlew build -PwebDev` restores the unminified dev bundle with source maps.
+- New **Playwright e2e smoke suite** (`e2e/`, `ops/e2e.sh`): renders every
+  component route of the verify project in a real Perspective session — mount,
+  key interactions (preset write-back, view switch, group collapse, quick
+  filter, 50k-row virtualization, embedded-view click, fly-to), zero console
+  errors. Runs in CI on every push/PR.
+- **Unattended gateway bring-up** (`ops/e2e.sh --fresh`): headless
+  commissioning + module-cert pre-acceptance by merging the dev cert's SHA-1
+  into `data/modules.json` — no browser wizard. Used by CI; locally it's also
+  the quickest fix for an expired Perspective trial.
+
 Cross-component parity pass: each component's best ideas ported to the others
 where they add real value.
 
