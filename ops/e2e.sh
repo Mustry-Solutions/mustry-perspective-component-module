@@ -46,6 +46,10 @@ case "${MODE}" in
     wait_for_modules_registry 60
     accept_staged_module
     wait_for_commissioned 60
+    # Perspective sessions opened immediately after the acceptance restart can
+    # drop their websocket once while background services settle; give it a
+    # moment so the first test session is stable.
+    sleep 15
     ;;
   deploy)
     "${OPS_DIR}/deploy.sh"
@@ -56,8 +60,17 @@ case "${MODE}" in
 esac
 
 # Sanity: the gateway must serve the component bundle before we spend time
-# booting browser sessions.
-if ! curl -fsS -o /dev/null "${GATEWAY_URL}/res/mustry-components/MustryComponents.js"; then
+# booting browser sessions. Retry — right after a restart StatusPing answers
+# before module startup has mounted the resources.
+bundle_ok=""
+for _ in $(seq 1 12); do
+  if curl -fsS -o /dev/null "${GATEWAY_URL}/res/mustry-components/MustryComponents.js" 2>/dev/null; then
+    bundle_ok=1
+    break
+  fi
+  sleep 5
+done
+if [[ -z "${bundle_ok}" ]]; then
   err "Gateway is up but not serving the module bundle. Is the module installed/accepted?"
   exit 1
 fi

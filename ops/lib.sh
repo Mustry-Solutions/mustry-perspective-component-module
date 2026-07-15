@@ -220,6 +220,11 @@ with open(path, "w") as f:
 EOF
   docker cp "${tmp}/modules.json" "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json"
   rm -rf "${tmp}"
+  # docker cp writes the file as root; the gateway must be able to rewrite its
+  # own registry (it spams AccessDeniedException otherwise). Chown via a helper
+  # container against the same volume — the gateway itself is stopped here.
+  "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
+      -c 'chown ignition:ignition /usr/local/bin/ignition/data/modules.json'
   "${COMPOSE[@]}" start gateway
   ok "Module acceptance seeded; gateway restarting."
 }
