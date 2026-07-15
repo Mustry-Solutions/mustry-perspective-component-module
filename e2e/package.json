@@ -1,0 +1,11 @@
+{
+    "name": "mustry-perspective-components-e2e",
+    "description": "Playwright smoke tests that render every component in a live Perspective session (see ops/e2e.sh).",
+    "private": true,
+    "scripts": {
+        "test": "playwright test"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.54.0"
+    }
+}
