@@ -45,10 +45,10 @@ export function cellAt(cells: CellBound[], x: number, y: number): CellBound | nu
     return null;
 }
 
-/** A gesture counts as a drag once the pointer moves past a small threshold. */
-export function hasMoved(dx: number, dy: number, threshold = 4): boolean {
-    return Math.abs(dx) + Math.abs(dy) > threshold;
-}
+/** A gesture counts as a drag once the pointer moves past a small threshold.
+ *  Lives in the shared drag lifecycle now; re-exported to keep this module the
+ *  calendar's single pure-logic surface (and its tests in one place). */
+export { hasMoved } from '../../shared/dragGestureController';
 
 /** Move: shift the block by `deltaMin`, clamped so it stays fully within the day window. */
 export function movePreview(origStartMin: number, durationMin: number, deltaMin: number, winStart: number, winEnd: number): MinuteRange {

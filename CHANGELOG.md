@@ -22,6 +22,17 @@ deliberate decision, never an accident.
   into `data/modules.json` — no browser wizard. Used by CI; locally it's also
   the quickest fix for an expired Perspective trial.
 
+### Internal
+- **Shared drag-gesture lifecycle** (`shared/dragGestureController.ts`): the
+  calendar and timeline gesture controllers now extend one base owning pointer
+  capture, document listeners, the click-vs-drag threshold (incl. the larger
+  touch threshold), cancel semantics and commit dispatch — previously
+  copy-pasted per component and already drifting (the timeline had re-inlined
+  the movement threshold). Controllers keep only their geometry. No behavior
+  change; covered by new drag/click e2e tests. Pan & zoom deliberately stays
+  separate — its continuous multi-pointer model shares no lifecycle with the
+  preview/commit gestures.
+
 Cross-component parity pass: each component's best ideas ported to the others
 where they add real value.
 

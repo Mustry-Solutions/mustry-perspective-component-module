@@ -1,12 +1,15 @@
-// The timeline's drag gesture controller: owns the in-flight gesture, measures the
-// DOM (row-track rects, pointer -> epoch mapping) and manages the document pointer
-// listeners. Geometry and the commit decision are pure functions in
-// timelineGestureLogic.ts; state changes and event firing flow back through the
-// host (the same architecture as the calendar's calendarGestureController).
+// The timeline's drag gesture controller: contributes the timeline's geometry
+// (row-track rects, pointer -> epoch mapping) on top of the shared drag
+// lifecycle in shared/dragGestureController (pointer capture, document
+// listeners, click-vs-drag threshold, cancel, commit dispatch). Geometry and
+// the commit decision are pure functions in timelineGestureLogic.ts; state
+// changes and event firing flow back through the host (the same architecture
+// as the calendar's calendarGestureController).
 import * as React from 'react';
+import { DragGestureController } from '../../shared/dragGestureController';
 import { TimeScale, TimelineEvent, pxToMs } from './timelineLogic';
 import {
-    MsRange, RowBound, TlCommitKind, TlGestureFlags, TlGestureMode,
+    RowBound, TlCommitKind, TlGestureFlags, TlGestureMode,
     createPreviewMs, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision
 } from './timelineGestureLogic';
 
@@ -49,35 +52,11 @@ export interface TlGestureHost {
     commit(kind: TlCommitKind, g: TlGesture, preview: TlPreview | null): void;
 }
 
-export class TimelineGestureController {
-    private gesture: TlGesture | null = null;
+export class TimelineGestureController extends DragGestureController<TlGesture, TlPreview, TlCommitKind> {
     private rowRects: Array<RowBound & { left: number }> = [];
-    private preview: TlPreview | null = null;   // last preview we set (state mirror)
 
-    constructor(private host: TlGestureHost) {}
-
-    /** Whether a drag is in progress (gates the live-refresh tick). */
-    get active(): boolean {
-        return this.gesture !== null;
-    }
-
-    dispose(): void {
-        this.removeDocListeners();
-    }
-
-    /** Only the primary button starts gestures — a right-click opens the context
-     *  menu, which eats the pointerup and would strand the document listeners.
-     *  Capturing the pointer keeps move/up events flowing during fast drags. */
-    private begin(e: React.PointerEvent): boolean {
-        if (e.button !== 0) {
-            return false;
-        }
-        try {
-            (e.target as Element).setPointerCapture?.(e.pointerId);
-        } catch (err) {
-            // inactive pointer — capture is best-effort
-        }
-        return true;
+    constructor(private host: TlGestureHost) {
+        super(host);
     }
 
     /** Pointer-down on a bar. Always starts a gesture so a plain click resolves to a
@@ -89,11 +68,10 @@ export class TimelineGestureController {
         e.stopPropagation();
         this.host.hideHover();
         this.captureRows();
-        this.gesture = {
+        this.startGesture({
             mode: 'move', ev, startClientX: e.clientX, startClientY: e.clientY,
             origStartMs: startMs, origEndMs: endMs, origResourceId: ev.resourceId, moved: false
-        };
-        this.addDocListeners();
+        });
         if (this.host.env().editable) {
             e.preventDefault();
             this.setPreview({
@@ -111,14 +89,14 @@ export class TimelineGestureController {
         e.stopPropagation();
         this.host.hideHover();
         this.captureRows();
-        this.gesture = {
-            mode: edge === 'start' ? 'resize-start' : 'resize-end',
+        const mode = edge === 'start' ? 'resize-start' : 'resize-end';
+        this.startGesture({
+            mode,
             ev, startClientX: e.clientX, startClientY: e.clientY,
             origStartMs: startMs, origEndMs: endMs, origResourceId: ev.resourceId, moved: false
-        };
-        this.addDocListeners();
+        });
         this.setPreview({
-            mode: this.gesture.mode, eventId: ev.id, title: ev.title, color: this.host.resolveColor(ev),
+            mode, eventId: ev.id, title: ev.title, color: this.host.resolveColor(ev),
             resourceId: ev.resourceId, startMs, endMs
         });
     };
@@ -136,65 +114,15 @@ export class TimelineGestureController {
         }
         const { scale, snapMinutes } = this.host.env();
         const anchorMs = snapMs(pxToMs(scale, e.clientX - row.left), snapMinutes);
-        this.gesture = {
+        this.startGesture({
             mode: 'create', startClientX: e.clientX, startClientY: e.clientY,
             origStartMs: anchorMs, origEndMs: anchorMs, origResourceId: resourceId, moved: false
-        };
-        this.addDocListeners();
-    };
-
-    // --- internals ----------------------------------------------------------
-
-    private setPreview(p: TlPreview | null): void {
-        this.preview = p;
-        this.host.setPreview(p);
-    }
-
-    private captureRows(): void {
-        this.rowRects = [];
-        const root = this.host.gridEl();
-        if (!root) {
-            return;
-        }
-        root.querySelectorAll('.tml-track[data-resource]').forEach((el) => {
-            const r = el.getBoundingClientRect();
-            this.rowRects.push({
-                resourceId: (el as HTMLElement).dataset.resource || '',
-                top: r.top, bottom: r.bottom, left: r.left
-            });
         });
-    }
-
-    private addDocListeners(): void {
-        // Pointer events unify mouse / touch / pen; pointercancel (touch scroll takeover)
-        // aborts the gesture without committing.
-        document.addEventListener('pointermove', this.onDocMove, true);
-        document.addEventListener('pointerup', this.onDocUp, true);
-        document.addEventListener('pointercancel', this.onDocCancel, true);
-    }
-
-    private removeDocListeners(): void {
-        document.removeEventListener('pointermove', this.onDocMove, true);
-        document.removeEventListener('pointerup', this.onDocUp, true);
-        document.removeEventListener('pointercancel', this.onDocCancel, true);
-    }
-
-    private onDocCancel = (): void => {
-        this.removeDocListeners();
-        this.gesture = null;
-        this.setPreview(null);
     };
 
-    private onDocMove = (e: PointerEvent): void => {
-        const g = this.gesture;
-        if (!g) {
-            return;
-        }
-        // A larger threshold on touch avoids a jittery finger turning a tap into a drag.
-        const threshold = e.pointerType === 'touch' ? 10 : 4;
-        if (!g.moved && Math.abs(e.clientX - g.startClientX) + Math.abs(e.clientY - g.startClientY) > threshold) {
-            g.moved = true;
-        }
+    // --- lifecycle hooks (geometry) ------------------------------------------
+
+    protected handleMove(e: PointerEvent, g: TlGesture): void {
         const { editable, selectable, snapMinutes, scale } = this.host.env();
         const deltaMs = ((e.clientX - g.startClientX) / scale.pxPerHour) * 3600000;
         if (g.mode === 'move') {
@@ -225,20 +153,26 @@ export class TimelineGestureController {
             const { startMs, endMs } = createPreviewMs(g.origStartMs, cur, snapMinutes);
             this.setPreview({ mode: 'create', resourceId: g.origResourceId, startMs, endMs });
         }
-    };
+    }
 
-    private onDocUp = (): void => {
-        const g = this.gesture;
-        const preview = this.preview;
-        this.removeDocListeners();
-        this.gesture = null;
-        this.setPreview(null);
-        if (!g) {
+    protected decide(g: TlGesture, preview: TlPreview | null): TlCommitKind | 'none' {
+        return tlCommitDecision(g.mode, g.moved, !!preview, this.host.flags());
+    }
+
+    // --- internals ----------------------------------------------------------
+
+    private captureRows(): void {
+        this.rowRects = [];
+        const root = this.host.gridEl();
+        if (!root) {
             return;
         }
-        const kind = tlCommitDecision(g.mode, g.moved, !!preview, this.host.flags());
-        if (kind !== 'none') {
-            this.host.commit(kind, g, preview);
-        }
-    };
+        root.querySelectorAll('.tml-track[data-resource]').forEach((el) => {
+            const r = el.getBoundingClientRect();
+            this.rowRects.push({
+                resourceId: (el as HTMLElement).dataset.resource || '',
+                top: r.top, bottom: r.bottom, left: r.left
+            });
+        });
+    }
 }
