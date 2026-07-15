@@ -1,11 +1,14 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 // Bundle name — the gateway serves this at /res/mustry-components/MustryComponents.js
 // (and .css). Must line up with BROWSER_RESOURCES in the common Java module class.
 const LibName = 'MustryComponents';
 
-module.exports = {
+// Mode comes from the CLI (--mode production|development, see package.json scripts).
+// Production is what ships in the .modl: minified, no source maps.
+module.exports = (env, argv) => ({
     entry: {
         [LibName]: path.join(__dirname, 'typescript/index.ts')
     },
@@ -18,7 +21,7 @@ module.exports = {
         umdNamedDefine: true,
         clean: true
     },
-    devtool: 'source-map',
+    devtool: argv.mode === 'development' ? 'source-map' : false,
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.jsx', '.css', '.scss']
     },
@@ -42,6 +45,11 @@ module.exports = {
     plugins: [
         new MiniCssExtractPlugin({ filename: `${LibName}.css` })
     ],
+    optimization: {
+        // '...' keeps webpack's default JS minimizer (terser); CssMinimizerPlugin
+        // covers the extracted stylesheet, which production mode alone leaves as-is.
+        minimizer: ['...', new CssMinimizerPlugin()]
+    },
     // These are provided globally by the Perspective runtime, so don't bundle them.
     externals: {
         'react': 'React',
@@ -50,4 +58,4 @@ module.exports = {
         'mobx-react': 'mobxReact',
         '@inductiveautomation/perspective-client': 'PerspectiveClient'
     }
-};
+});
