@@ -429,7 +429,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
         return (
             <div
-                className="pz-minimap"
+                className="mustry-pz-minimap"
                 ref={this.miniRef}
                 aria-label={this.labels().overview}
                 style={{ width: layout.w, height: layout.h }}
@@ -438,11 +438,11 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 {p.pois.map((poi, i) => (
                     <div
                         key={`${poi.name}-${i}`}
-                        className={`pz-mini-poi${poi.flagged ? ' pz-mini-poi--flagged' : ''}`}
+                        className={`mustry-pz-mini-poi${poi.flagged ? ' mustry-pz-mini-poi--flagged' : ''}`}
                         style={{ left: poi.x * layout.scale, top: poi.y * layout.scale }}
                     />
                 ))}
-                <div className="pz-mini-view" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
+                <div className="mustry-pz-mini-view" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
             </div>
         );
     }
@@ -459,13 +459,13 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
             // insets keep the whole chip (max-width 120, translate-centered) inside
             const ind = edgeIndicator(pt, this.state.viewportW, this.state.viewportH, 64, 18);
             if (ind.onScreen) {
-                return <div key={`pz-pulse-${i}`} className="pz-pulse" style={{ left: pt.x, top: pt.y }} />;
+                return <div key={`mustry-pz-pulse-${i}`} className="mustry-pz-pulse" style={{ left: pt.x, top: pt.y }} />;
             }
             return (
                 <button
-                    key={`pz-ind-${i}`}
+                    key={`mustry-pz-ind-${i}`}
                     type="button"
-                    className="pz-indicator"
+                    className="mustry-pz-indicator"
                     style={{ left: ind.x, top: ind.y }}
                     title={poi.name}
                     onClick={() => this.flyToPoi(poi)}
@@ -487,7 +487,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         const L = this.labels();
         return (
             <select
-                className="pz-poi-select"
+                className="mustry-pz-poi-select"
                 value=""
                 aria-label={L.goTo}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -515,7 +515,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
         const L = this.labels();
         return (
-            <div className="pz-controls">
+            <div className="mustry-pz-controls">
                 <button type="button" title={L.zoomIn} aria-label={L.zoomIn} onClick={() => this.zoomStepBy(1)}>+</button>
                 <button type="button" title={L.zoomOut} aria-label={L.zoomOut} onClick={() => this.zoomStepBy(-1)}>−</button>
                 <button type="button" title={L.home} aria-label={L.home} onClick={this.goHome}>
@@ -540,13 +540,13 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         return (
             <div {...this.props.emit({ classes: ['mustry-panzoom'] })}>
                 <div
-                    className="pz-viewport"
+                    className="mustry-pz-viewport"
                     ref={this.viewportRef}
                     onPointerDown={this.gestures.pointerDown}
                     onDoubleClick={this.gestures.doubleClick}
                 >
                     <div
-                        className="pz-content"
+                        className="mustry-pz-content"
                         style={{
                             width: c.w,
                             height: c.h,
@@ -577,14 +577,14 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                                 }}
                             />
                         ) : (
-                            <div className="pz-placeholder">{p.viewPath ? '' : 'config.viewPath'}</div>
+                            <div className="mustry-pz-placeholder">{p.viewPath ? '' : 'config.viewPath'}</div>
                         )}
                     </div>
                     {this.renderPoiOverlays(vp)}
                     {this.renderControls()}
                     {this.renderPoiList()}
                     {this.renderMinimap(vp)}
-                    <div className="pz-zoom-badge">{Math.round(vp.zoom * 100)}%</div>
+                    <div className="mustry-pz-zoom-badge">{Math.round(vp.zoom * 100)}%</div>
                 </div>
             </div>
         );

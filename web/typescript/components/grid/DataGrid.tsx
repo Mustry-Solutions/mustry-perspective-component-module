@@ -72,7 +72,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private filterTimer = 0;        // debounces the state.quickFilter write while typing
     private suppressSort = false;   // a header drag/resize just ended — swallow its click
     private chooserDismiss = new DocDismiss(
-        ['.dg-chooser', '.dg-chooser-btn'], () => this.setState({ chooserOpen: false }));
+        ['.mustry-dg-chooser', '.mustry-dg-chooser-btn'], () => this.setState({ chooserOpen: false }));
 
     constructor(props: ComponentProps<GridProps>) {
         super(props);
@@ -562,7 +562,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         const invalid = ed.error !== null;
         const common = {
             ref: this.editorRef as any,
-            className: `dg-editor${invalid ? ' dg-editor--invalid' : ''}`,
+            className: `mustry-dg-editor${invalid ? ' mustry-dg-editor--invalid' : ''}`,
             value: ed.draft,
             title: invalid ? this.errorText(ed.error, col) : undefined,
             onKeyDown: this.onEditorKeyDown,
@@ -643,9 +643,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         this.chooserDismiss.open();
         const hidden = new Set(p.columnLayout.hidden);
         return (
-            <div className="dg-chooser" role="menu">
+            <div className="mustry-dg-chooser" role="menu">
                 {p.columns.map((c) => (
-                    <label key={c.field} className="dg-chooser-item">
+                    <label key={c.field} className="mustry-dg-chooser-item">
                         <input
                             type="checkbox"
                             checked={!hidden.has(c.field)}
@@ -714,7 +714,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             visible.push(
                 <div
                     key={i}
-                    className={`dg-row${i % 2 ? ' dg-row--odd' : ''}${isSel ? ' dg-row--selected' : ''}${p.rowSelect !== 'none' ? ' dg-row--selectable' : ''}`}
+                    className={`mustry-dg-row${i % 2 ? ' mustry-dg-row--odd' : ''}${isSel ? ' mustry-dg-row--selected' : ''}${p.rowSelect !== 'none' ? ' mustry-dg-row--selectable' : ''}`}
                     style={{ top: i * p.rowHeight, height: p.rowHeight, width: layout.totalWidth }}
                     onClick={(e) => this.clickRow(row, e)}
                 >
@@ -726,29 +726,29 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         return (
             <div {...this.props.emit({ classes: ['mustry-datagrid'] })}>
                 {this.renderToolbar(view)}
-                {p.loading && <div className="dg-loading-bar" aria-hidden="true" />}
+                {p.loading && <div className="mustry-dg-loading-bar" aria-hidden="true" />}
                 <div
-                    className={`dg-scroll${p.loading ? ' dg-loading' : ''}`}
+                    className={`mustry-dg-scroll${p.loading ? ' mustry-dg-loading' : ''}`}
                     ref={this.scrollRef}
                     tabIndex={0}
                     onScroll={this.onScroll}
                     onKeyDown={this.onGridKeyDown}
                     onPaste={this.onPaste}
                 >
-                    <div className="dg-head" style={{ width: layout.totalWidth }}>
+                    <div className="mustry-dg-head" style={{ width: layout.totalWidth }}>
                         {cols.map((lc) => this.renderHeadCell(lc, p.sort))}
                     </div>
-                    <div className="dg-body" style={{ height: view.length * p.rowHeight, width: layout.totalWidth }}>
+                    <div className="mustry-dg-body" style={{ height: view.length * p.rowHeight, width: layout.totalWidth }}>
                         {visible}
                     </div>
                     {cols.some((lc) => lc.col.aggregate) && (
-                        <div className="dg-foot" style={{ width: layout.totalWidth }}>
+                        <div className="mustry-dg-foot" style={{ width: layout.totalWidth }}>
                             {cols.map((lc) => {
                                 const agg = aggregateValue(view, lc.col);
                                 const pinned = lc.left >= 0;
                                 return (
                                     <div key={lc.col.field}
-                                         className={`dg-cell dg-foot-cell dg-cell--${lc.col.align}${pinned ? ' dg-cell--pinned' : ''}`}
+                                         className={`mustry-dg-cell mustry-dg-foot-cell mustry-dg-cell--${lc.col.align}${pinned ? ' mustry-dg-cell--pinned' : ''}`}
                                          style={{ width: lc.width, minWidth: lc.width, ...(pinned ? { left: lc.left } : null) }}
                                          title={lc.col.aggregate || undefined}>
                                         {agg === null ? '' : lc.col.aggregate === 'count'
@@ -759,7 +759,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                         </div>
                     )}
                 </div>
-                {emptyLabel && <div className="dg-empty-badge">{emptyLabel}</div>}
+                {emptyLabel && <div className="mustry-dg-empty-badge">{emptyLabel}</div>}
             </div>
         );
     }

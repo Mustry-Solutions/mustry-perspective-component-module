@@ -7,7 +7,7 @@ test('picker: all layouts render', async ({ page }) => {
     await expect(page.locator('.mustry-datetime-range-picker')).toHaveCount(3);
     await expect(page.locator('.mustry-dtrp-trigger-root')).toBeVisible();
     // Preset rows on the demo instance prove labels/config made it through props.
-    await expect(page.locator('.dtrp-preset').first()).toBeVisible();
+    await expect(page.locator('.mustry-dtrp-preset').first()).toBeVisible();
 });
 
 test('picker: preset click arms the realtime window (two-way state)', async ({ page }) => {

@@ -32,14 +32,14 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
     const wdFmt = intlFormat(locale, { weekday: 'short' });
 
     const dayCell = (cell: DayCell): React.ReactElement => {
-        const cls = ['cal-day'];
-        if (!cell.inMonth) { cls.push('cal-day--other'); }
-        if (cell.isToday) { cls.push('cal-day--today'); }
-        if (cell.isWeekend) { cls.push('cal-day--weekend'); }
-        if (cell.iso === dropDayIso) { cls.push('cal-day--drop'); }
+        const cls = ['mustry-cal-day'];
+        if (!cell.inMonth) { cls.push('mustry-cal-day--other'); }
+        if (cell.isToday) { cls.push('mustry-cal-day--today'); }
+        if (cell.isWeekend) { cls.push('mustry-cal-day--weekend'); }
+        if (cell.iso === dropDayIso) { cls.push('mustry-cal-day--drop'); }
         return (
             <div className={cls.join(' ')} key={cell.iso} data-day={cell.iso} onClick={() => onDayClick(cell.iso)}>
-                <button type="button" className="cal-daynum" onClick={(e) => openDayPop(cell.iso, e)} title={labels.showDayEvents}>
+                <button type="button" className="mustry-cal-daynum" onClick={(e) => openDayPop(cell.iso, e)} title={labels.showDayEvents}>
                     {cell.date.getDate()}
                 </button>
             </div>
@@ -47,11 +47,11 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
     };
 
     return (
-        <div className="cal-body cal-anim-view" key="month" style={{ ['--cal-cols' as keyof React.CSSProperties]: grid.weeks[0].length } as React.CSSProperties}>
-            <div className="cal-weekdays">
-                {grid.weeks[0].map((c) => <div className="cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
+        <div className="mustry-cal-body mustry-cal-anim-view" key="month" style={{ ['--cal-cols' as keyof React.CSSProperties]: grid.weeks[0].length } as React.CSSProperties}>
+            <div className="mustry-cal-weekdays">
+                {grid.weeks[0].map((c) => <div className="mustry-cal-weekday" key={c.iso}>{wdFmt.format(c.date)}</div>)}
             </div>
-            <div className="cal-weeks" ref={weeksRef}>
+            <div className="mustry-cal-weeks" ref={weeksRef}>
                 {grid.weeks.map((week, wi) => {
                     const weekIsos = week.map((c) => c.iso);
                     const segs = layoutWeekSegments(weekIsos, events);
@@ -59,9 +59,9 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
                     const overflow = more.some((n) => n > 0);
                     const moreRow = Math.max(1, monthCap);   // reserved "+N more" row (1-based)
                     return (
-                        <div className="cal-week" key={wi}>
+                        <div className="mustry-cal-week" key={wi}>
                             {week.map(dayCell)}
-                            <div className="cal-week-bars">
+                            <div className="mustry-cal-week-bars">
                                 {visible.map((seg, i) => (
                                     <EventBar
                                         key={seg.event.id || `${i}`}
@@ -73,7 +73,7 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
                                 ))}
                                 {overflow && more.map((n, col) => (n > 0 ? (
                                     <button
-                                        type="button" key={`more-${col}`} className="cal-more cal-more--bar"
+                                        type="button" key={`more-${col}`} className="mustry-cal-more mustry-cal-more--bar"
                                         style={{ gridColumn: `${col + 1} / ${col + 2}`, gridRow: moreRow }}
                                         onClick={(e) => openDayPop(weekIsos[col], e)}
                                     >{labels.more.replace('{n}', String(n))}</button>

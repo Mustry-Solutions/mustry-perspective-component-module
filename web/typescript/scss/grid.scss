@@ -1,7 +1,7 @@
 // Data Grid styles. Colours come from CSS variables defaulting to the active
 // Perspective theme (same pattern as the calendar/timeline), overridable via a
 // style class / project stylesheet: .mustry-datagrid { --dg-accent: #...; }
-@mixin dg-theme {
+@mixin mustry-dg-theme {
     --dg-accent: var(--callToAction, #0c7bb3);
     --dg-text: var(--neutral-90, #1f2937);
     --dg-muted: var(--neutral-60, #6b7280);
@@ -13,7 +13,7 @@
 }
 
 .mustry-datagrid {
-    @include dg-theme;
+    @include mustry-dg-theme;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -32,7 +32,7 @@
 }
 
 // Toolbar: quick filter (left), selection badge + export (right).
-.dg-toolbar {
+.mustry-dg-toolbar {
     position: relative;   // anchors the column-chooser popover
     flex: 0 0 auto;
     display: flex;
@@ -42,7 +42,7 @@
     border-bottom: 1px solid var(--dg-border);
 }
 
-.dg-search {
+.mustry-dg-search {
     width: 200px;
     height: 26px;
     padding: 0 8px;
@@ -63,16 +63,16 @@
     }
 }
 
-.dg-count {
+.mustry-dg-count {
     font-size: 11px;
     color: var(--dg-muted);
 }
 
-.dg-toolbar-spring {
+.mustry-dg-toolbar-spring {
     flex: 1 1 auto;
 }
 
-.dg-selected-badge {
+.mustry-dg-selected-badge {
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 11px;
@@ -81,7 +81,7 @@
     background: color-mix(in srgb, var(--dg-accent) 12%, transparent);
 }
 
-.dg-export-btn {
+.mustry-dg-export-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -106,13 +106,13 @@
 }
 
 // One scroll container for both axes; header sticky-top, pinned cells sticky-left.
-.dg-scroll {
+.mustry-dg-scroll {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
 }
 
-.dg-head {
+.mustry-dg-head {
     position: sticky;
     top: 0;
     z-index: 3;
@@ -121,7 +121,7 @@
     border-bottom: 1px solid var(--dg-border);
 }
 
-.dg-head-cell {
+.mustry-dg-head-cell {
     font-weight: 600;
     font-size: 11px;
     letter-spacing: 0.03em;
@@ -142,14 +142,14 @@
     }
 }
 
-.dg-sort-arrow {
+.mustry-dg-sort-arrow {
     margin-left: 4px;
     font-size: 8px;
     color: var(--dg-accent);
 }
 
 // Column resize handle: a slim hit area on the header cell's right edge.
-.dg-resize {
+.mustry-dg-resize {
     position: absolute;
     top: 0;
     right: -4px;
@@ -163,20 +163,20 @@
     }
 }
 
-.dg-head-cell {
+.mustry-dg-head-cell {
     position: relative;   // anchors the resize handle
 }
 
-.dg-head-cell--dragging {
+.mustry-dg-head-cell--dragging {
     opacity: 0.5;
 }
 
-.dg-head-cell--dragover {
+.mustry-dg-head-cell--dragover {
     box-shadow: inset 3px 0 0 var(--dg-accent);
 }
 
 // Column chooser popover (from the toolbar columns button).
-.dg-chooser {
+.mustry-dg-chooser {
     position: absolute;
     top: 38px;
     right: 10px;
@@ -194,7 +194,7 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
 
-.dg-chooser-item {
+.mustry-dg-chooser-item {
     display: flex;
     align-items: center;
     gap: 7px;
@@ -214,18 +214,18 @@
 
 // Full-height canvas so the scrollbar reflects every row; only the windowed
 // rows exist in the DOM, absolutely positioned at rowIndex * rowHeight.
-.dg-body {
+.mustry-dg-body {
     position: relative;
 }
 
-.dg-row {
+.mustry-dg-row {
     position: absolute;
     left: 0;
     display: flex;
     background: var(--dg-bg);
     border-bottom: 1px solid var(--dg-line);
 
-    &.dg-row--odd {
+    &.mustry-dg-row--odd {
         background: var(--dg-row-odd);
     }
 
@@ -233,18 +233,18 @@
         background: color-mix(in srgb, var(--dg-accent) 7%, var(--dg-bg));
     }
 
-    &.dg-row--selectable {
+    &.mustry-dg-row--selectable {
         cursor: pointer;
         user-select: none;
     }
 
-    &.dg-row--selected,
-    &.dg-row--selected.dg-row--odd {
+    &.mustry-dg-row--selected,
+    &.mustry-dg-row--selected.mustry-dg-row--odd {
         background: color-mix(in srgb, var(--dg-accent) 16%, var(--dg-bg));
     }
 }
 
-.dg-cell {
+.mustry-dg-cell {
     flex: 0 0 auto;
     padding: 0 8px;
     overflow: hidden;
@@ -253,29 +253,29 @@
     border-right: 1px solid var(--dg-line);
 }
 
-.dg-cell--center {
+.mustry-dg-cell--center {
     text-align: center;
 }
 
-.dg-cell--right {
+.mustry-dg-cell--right {
     text-align: right;
 }
 
 // Frozen columns: sticky against the shared scroll container; rows and header
 // inherit their background so scrolled content passes underneath.
-.dg-cell--pinned {
+.mustry-dg-cell--pinned {
     position: sticky;
     z-index: 1;
     background: inherit;
     border-right: 1px solid var(--dg-border);
 }
 
-.dg-head .dg-cell--pinned {
+.mustry-dg-head .mustry-dg-cell--pinned {
     z-index: 4;
 }
 
 // Subtle "nothing configured" badge (bottom-left; the grid has no toolbar yet).
-.dg-empty-badge {
+.mustry-dg-empty-badge {
     position: absolute;
     left: 10px;
     bottom: 8px;
@@ -289,7 +289,7 @@
 }
 
 // Loading state: thin indeterminate bar on top, rows dimmed (stale-while-revalidate).
-.dg-loading-bar {
+.mustry-dg-loading-bar {
     position: absolute;
     top: 0;
     left: 0;
@@ -307,37 +307,37 @@
         width: 35%;
         background: var(--dg-accent);
         border-radius: 3px;
-        animation: dg-loading-slide 1.1s ease-in-out infinite;
+        animation: mustry-dg-loading-slide 1.1s ease-in-out infinite;
     }
 }
 
-.dg-scroll.dg-loading {
+.mustry-dg-scroll.mustry-dg-loading {
     filter: opacity(0.55);
     pointer-events: none;
     transition: filter 0.15s ease;
 }
 
-@keyframes dg-loading-slide {
+@keyframes mustry-dg-loading-slide {
     0% { left: -35%; }
     100% { left: 100%; }
 }
 
 // --- editing (M2) ------------------------------------------------------------
 
-.dg-scroll:focus {
+.mustry-dg-scroll:focus {
     outline: none;   // the focused CELL carries the ring instead
 }
 
-.dg-cell--focus {
+.mustry-dg-cell--focus {
     box-shadow: inset 0 0 0 2px var(--dg-accent);
 }
 
-.dg-cell--editable {
+.mustry-dg-cell--editable {
     cursor: cell;
 }
 
 // A committed edit awaiting the author's write-back (data.rows rebind clears it).
-.dg-cell--pending {
+.mustry-dg-cell--pending {
     font-style: italic;
 
     &::after {
@@ -352,11 +352,11 @@
     }
 }
 
-.dg-cell {
+.mustry-dg-cell {
     position: relative;   // anchors the pending dot + the editor
 }
 
-.dg-editor {
+.mustry-dg-editor {
     position: absolute;
     inset: 1px;
     width: calc(100% - 2px);
@@ -372,13 +372,13 @@
         outline: none;
     }
 
-    &.dg-editor--invalid {
+    &.mustry-dg-editor--invalid {
         border-color: #dc2626;
         background: color-mix(in srgb, #dc2626 8%, var(--dg-bg));
     }
 }
 
-.dg-bool {
+.mustry-dg-bool {
     accent-color: var(--dg-accent);
     width: 15px;
     height: 15px;
@@ -386,7 +386,7 @@
     cursor: pointer;
 }
 
-.dg-export-btn:disabled {
+.mustry-dg-export-btn:disabled {
     opacity: 0.45;
     cursor: default;
 
@@ -398,7 +398,7 @@
 
 // --- batch mode + aggregate footer (M3) -----------------------------------------
 
-.dg-dirty-badge {
+.mustry-dg-dirty-badge {
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 11px;
@@ -407,7 +407,7 @@
     background: color-mix(in srgb, #f59e0b 18%, transparent);
 }
 
-.dg-save-btn {
+.mustry-dg-save-btn {
     height: 26px;
     padding: 0 12px;
     font: inherit;
@@ -425,7 +425,7 @@
 }
 
 // Aggregates over the current view, sticky at the scrollport bottom.
-.dg-foot {
+.mustry-dg-foot {
     position: sticky;
     bottom: 0;
     z-index: 3;
@@ -434,7 +434,7 @@
     border-top: 1px solid var(--dg-border);
 }
 
-.dg-foot-cell {
+.mustry-dg-foot-cell {
     font-weight: 600;
     font-size: 12px;
     line-height: 25px;
@@ -442,6 +442,6 @@
     background: var(--dg-head-bg);
 }
 
-.dg-foot .dg-cell--pinned {
+.mustry-dg-foot .mustry-dg-cell--pinned {
     z-index: 4;
 }

@@ -18,13 +18,13 @@ export function GridHeadCell(p: GridHeadCellProps): React.ReactElement {
     const { col } = p.lc;
     const pinned = p.lc.left >= 0;
     const dir = p.sort.field === col.field ? p.sort.dir : '';
-    const dragCls = p.dragState === 'dragging' ? ' dg-head-cell--dragging'
-        : p.dragState === 'dragover' ? ' dg-head-cell--dragover' : '';
+    const dragCls = p.dragState === 'dragging' ? ' mustry-dg-head-cell--dragging'
+        : p.dragState === 'dragover' ? ' mustry-dg-head-cell--dragover' : '';
     return (
         <button
             type="button"
             data-field={col.field}
-            className={`dg-cell dg-head-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}${dragCls}`}
+            className={`mustry-dg-cell mustry-dg-head-cell mustry-dg-cell--${col.align}${pinned ? ' mustry-dg-cell--pinned' : ''}${dragCls}`}
             style={{ width: p.lc.width, minWidth: p.lc.width, ...(pinned ? { left: p.lc.left } : null) }}
             title={col.header || col.field}
             aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}
@@ -32,8 +32,8 @@ export function GridHeadCell(p: GridHeadCellProps): React.ReactElement {
             onPointerDown={p.onDragStart}
         >
             {col.header || col.field}
-            {dir && <span className="dg-sort-arrow" aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>}
-            <span className="dg-resize" onPointerDown={p.onResizeStart} onClick={(e) => e.stopPropagation()} />
+            {dir && <span className="mustry-dg-sort-arrow" aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>}
+            <span className="mustry-dg-resize" onPointerDown={p.onResizeStart} onClick={(e) => e.stopPropagation()} />
         </button>
     );
 }
@@ -61,9 +61,9 @@ export function GridCell(p: GridCellProps): React.ReactElement {
     const isEditing = p.editor !== null;
     return (
         <div
-            className={`dg-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}`
-                + `${p.isFocused ? ' dg-cell--focus' : ''}${p.editable ? ' dg-cell--editable' : ''}`
-                + `${p.isPending ? ' dg-cell--pending' : ''}`}
+            className={`mustry-dg-cell mustry-dg-cell--${col.align}${pinned ? ' mustry-dg-cell--pinned' : ''}`
+                + `${p.isFocused ? ' mustry-dg-cell--focus' : ''}${p.editable ? ' mustry-dg-cell--editable' : ''}`
+                + `${p.isPending ? ' mustry-dg-cell--pending' : ''}`}
             style={{
                 width: p.lc.width, minWidth: p.lc.width, lineHeight: `${p.rowHeight - 1}px`,
                 ...(pinned ? { left: p.lc.left } : null),
@@ -78,7 +78,7 @@ export function GridCell(p: GridCellProps): React.ReactElement {
                 : p.boolChecked !== null ? (
                     <input
                         type="checkbox"
-                        className="dg-bool"
+                        className="mustry-dg-bool"
                         checked={p.boolChecked}
                         onClick={(e) => e.stopPropagation()}
                         onChange={p.onToggleBoolean}

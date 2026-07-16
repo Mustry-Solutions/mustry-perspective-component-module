@@ -21,11 +21,11 @@ interface EventBarProps {
 export function EventBar({ seg, colOffset, categories, draggingId, enterClass, hoverProps, onEventClick, onStartMove }: EventBarProps): React.ReactElement {
     const ev = seg.event;
     const tm = !ev.allDay && seg.startCol === seg.endCol ? timeMinutes(ev.start) : null;
-    const cls = ['cal-mbar'];
-    if (seg.continuesLeft) { cls.push('cal-mbar--cont-left'); }
-    if (seg.continuesRight) { cls.push('cal-mbar--cont-right'); }
-    if (onStartMove) { cls.push('cal-mbar--draggable'); }
-    if (draggingId && ev.id === draggingId) { cls.push('cal-mbar--dragging'); }
+    const cls = ['mustry-cal-mbar'];
+    if (seg.continuesLeft) { cls.push('mustry-cal-mbar--cont-left'); }
+    if (seg.continuesRight) { cls.push('mustry-cal-mbar--cont-right'); }
+    if (onStartMove) { cls.push('mustry-cal-mbar--draggable'); }
+    if (draggingId && ev.id === draggingId) { cls.push('mustry-cal-mbar--dragging'); }
     const color = resolveColor(categories, ev);
     return (
         <button
@@ -51,11 +51,11 @@ export function EventBar({ seg, colOffset, categories, draggingId, enterClass, h
         >
             {isOccurrence(ev) && (
                 // Part of a series: dragging/editing detaches this occurrence.
-                <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                <span className="mustry-cal-ev-recur" aria-hidden="true">↻</span>
             )}
             <EventIcon ev={ev} categories={categories} />
-            {tm !== null && <span className="cal-mbar-time">{hhmm(tm)}</span>}
-            <span className="cal-mbar-title">{ev.title}</span>
+            {tm !== null && <span className="mustry-cal-mbar-time">{hhmm(tm)}</span>}
+            <span className="mustry-cal-mbar-title">{ev.title}</span>
         </button>
     );
 }

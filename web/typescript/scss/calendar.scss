@@ -1,7 +1,7 @@
 // Calendar component styles. Colours come from CSS variables defaulting to the
 // active Perspective theme (same pattern as the date picker), overridable via a
 // style class / project stylesheet: .mustry-calendar { --cal-accent: #...; }
-@mixin cal-theme {
+@mixin mustry-cal-theme {
     --cal-accent: var(--callToAction, #0c7bb3);
     --cal-accent-text: #ffffff;
     --cal-text: var(--neutral-90, #1f2937);
@@ -15,7 +15,7 @@
 }
 
 .mustry-calendar {
-    @include cal-theme;
+    @include mustry-cal-theme;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@
         box-sizing: border-box;
     }
 
-    .cal-toolbar {
+    .mustry-cal-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -42,13 +42,13 @@
         flex: 0 0 auto;
     }
 
-    .cal-title {
+    .mustry-cal-title {
         font-size: 15px;
         font-weight: 600;
     }
 
     // Subtle "nothing configured" badge next to the title (no events in the dataset).
-    .cal-empty-badge {
+    .mustry-cal-empty-badge {
         margin-left: 10px;
         padding: 2px 8px;
         border-radius: 10px;
@@ -62,7 +62,7 @@
 
     // Loading state (author binds config.loading to their query state): a thin indeterminate
     // bar under the toolbar, and the current events stay visible but dimmed (stale-while-revalidate).
-    .cal-loading-bar {
+    .mustry-cal-loading-bar {
         position: relative;
         flex: 0 0 auto;
         height: 3px;
@@ -77,11 +77,11 @@
             width: 35%;
             background: var(--cal-accent);
             border-radius: 3px;
-            animation: cal-loading-slide 1.1s ease-in-out infinite;
+            animation: mustry-cal-loading-slide 1.1s ease-in-out infinite;
         }
     }
 
-    &.cal-loading .cal-anim-view {
+    &.mustry-cal-loading .mustry-cal-anim-view {
         // filter (not opacity) so it isn't overridden by the view-switch opacity animation.
         filter: opacity(0.55);
         pointer-events: none;
@@ -89,7 +89,7 @@
     }
 
     // The title doubles as the mini-month trigger when showMiniNav is on.
-    .cal-title--btn {
+    .mustry-cal-title--btn {
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -108,25 +108,25 @@
             background: color-mix(in srgb, var(--cal-accent) 9%, var(--cal-bg));
         }
 
-        .cal-title-caret {
+        .mustry-cal-title-caret {
             font-size: 10px;
             color: var(--cal-muted);
             transition: transform 0.18s ease;
         }
 
-        &.is-open .cal-title-caret {
+        &.is-open .mustry-cal-title-caret {
             transform: rotate(180deg);
         }
     }
 
-    .cal-nav {
+    .mustry-cal-nav {
         display: flex;
         align-items: center;
         gap: 4px;
     }
 
     // Export (CSV) toolbar button — an icon button matching the nav buttons.
-    .cal-export-btn {
+    .mustry-cal-export-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -138,9 +138,9 @@
         }
     }
 
-    .cal-nav-btn,
-    .cal-live,
-    .cal-today {
+    .mustry-cal-nav-btn,
+    .mustry-cal-live,
+    .mustry-cal-today {
         font-family: inherit;
         border: 1px solid var(--cal-border);
         background: var(--cal-bg);
@@ -159,22 +159,22 @@
         }
     }
 
-    .cal-nav-btn {
+    .mustry-cal-nav-btn {
         width: 28px;
         height: 28px;
         font-size: 18px;
         line-height: 1;
     }
 
-    .cal-today {
+    .mustry-cal-today {
         height: 28px;
         padding: 0 10px;
         font-size: 12px;
     }
 
     // The follow-now ("Live") toggle: armed = filled + a pulsing live dot (the
-    // timeline's .tml-live styling in calendar dress).
-    .cal-live {
+    // timeline's .mustry-tml-live styling in calendar dress).
+    .mustry-cal-live {
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -183,26 +183,26 @@
         font-size: 12px;
     }
 
-    .cal-live--on,
-    .cal-live--on:hover {
+    .mustry-cal-live--on,
+    .mustry-cal-live--on:hover {
         background: var(--cal-accent);
         border-color: var(--cal-accent);
         color: var(--cal-accent-text);
     }
 
-    .cal-live--on:hover {
+    .mustry-cal-live--on:hover {
         filter: brightness(1.08);
     }
 
-    .cal-live-dot {
+    .mustry-cal-live-dot {
         width: 6px;
         height: 6px;
         border-radius: 999px;
         background: currentColor;
-        animation: cal-live-pulse 2s ease-in-out infinite;
+        animation: mustry-cal-live-pulse 2s ease-in-out infinite;
     }
 
-    .cal-body {
+    .mustry-cal-body {
         flex: 1 1 auto;
         display: flex;
         flex-direction: column;
@@ -210,13 +210,13 @@
         border-top: 1px solid var(--cal-border);
     }
 
-    .cal-weekdays {
+    .mustry-cal-weekdays {
         display: grid;
         grid-template-columns: repeat(var(--cal-cols, 7), 1fr);
         flex: 0 0 auto;
     }
 
-    .cal-weekday {
+    .mustry-cal-weekday {
         padding: 5px 6px;
         font-size: 10px;
         font-weight: 600;
@@ -228,7 +228,7 @@
         border-bottom: 1px solid var(--cal-border);
     }
 
-    .cal-weeks {
+    .mustry-cal-weeks {
         flex: 1 1 auto;
         display: flex;
         flex-direction: column;
@@ -236,8 +236,8 @@
     }
 
     // Each week shares the available height; cells scale with the component height.
-    // `position: relative` anchors the event-bar overlay (.cal-week-bars).
-    .cal-week {
+    // `position: relative` anchors the event-bar overlay (.mustry-cal-week-bars).
+    .mustry-cal-week {
         position: relative;
         flex: 1 1 0;
         display: grid;
@@ -247,7 +247,7 @@
 
     // Event bars overlay the day cells, below the date-number row, aligned to the
     // same columns so multi-day bars span continuously.
-    .cal-week-bars {
+    .mustry-cal-week-bars {
         position: absolute;
         top: 21px;
         left: 0;
@@ -261,7 +261,7 @@
         overflow: hidden;
     }
 
-    .cal-mbar {
+    .mustry-cal-mbar {
         --ev: var(--cal-accent);
         pointer-events: auto;
         min-width: 0;
@@ -294,28 +294,28 @@
         &:active { transform: translateY(0) scale(0.99); }
 
         // Continuation across week boundaries: square the carried edge + flush margin.
-        &.cal-mbar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; margin-left: 0; }
-        &.cal-mbar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: 0; }
+        &.mustry-cal-mbar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; margin-left: 0; }
+        &.mustry-cal-mbar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: 0; }
 
         // Month drag-to-move (config.editable): grab affordance; a touch drag moves
         // the event instead of scrolling (matches the time-grid events).
-        &.cal-mbar--draggable { cursor: grab; touch-action: none; }
-        &.cal-mbar--dragging { opacity: 0.4; }
+        &.mustry-cal-mbar--draggable { cursor: grab; touch-action: none; }
+        &.mustry-cal-mbar--dragging { opacity: 0.4; }
     }
 
-    .cal-mbar-time {
+    .mustry-cal-mbar-time {
         flex: 0 0 auto;
         opacity: 0.85;
         font-variant-numeric: tabular-nums;
     }
 
-    .cal-mbar-title {
+    .mustry-cal-mbar-title {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .cal-day {
+    .mustry-cal-day {
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -332,26 +332,26 @@
         }
     }
 
-    .cal-day--weekend {
+    .mustry-cal-day--weekend {
         background: var(--cal-weekend-bg);
     }
 
-    .cal-day--today {
+    .mustry-cal-day--today {
         background: var(--cal-today);
     }
 
-    .cal-day--other {
+    .mustry-cal-day--other {
         opacity: 0.45;
     }
 
     // Drop target of an in-flight month drag.
-    .cal-day--drop {
+    .mustry-cal-day--drop {
         background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-bg));
         box-shadow: inset 0 0 0 2px var(--cal-accent);
         border-radius: 2px;
     }
 
-    .cal-daynum {
+    .mustry-cal-daynum {
         align-self: flex-end;
         font-family: inherit;
         font-size: 12px;
@@ -370,7 +370,7 @@
         }
     }
 
-    .cal-day--today .cal-daynum {
+    .mustry-cal-day--today .mustry-cal-daynum {
         background: var(--cal-accent);
         color: var(--cal-accent-text);
         min-width: 20px;
@@ -383,8 +383,8 @@
     // Event chip: a soft tint of the event colour, a colour bar on the left, and
     // readable dark-tinted text. Falls back to a solid fill where color-mix is
     // unsupported. The event's colour is passed in as the `--ev` custom property.
-    // (Used in the week/day all-day strip; month events render as .cal-mbar.)
-    .cal-event {
+    // (Used in the week/day all-day strip; month events render as .mustry-cal-mbar.)
+    .mustry-cal-event {
         --ev: var(--cal-accent);
         display: block;
         width: 100%;
@@ -416,7 +416,7 @@
         }
     }
 
-    .cal-more {
+    .mustry-cal-more {
         font-family: inherit;
         font-size: 10px;
         font-weight: 600;
@@ -436,18 +436,18 @@
     }
 
     // "+N more" placed in the week-bar overlay grid (a single column, reserved row).
-    .cal-more--bar {
+    .mustry-cal-more--bar {
         pointer-events: auto;
         margin: 0 3px;
         align-self: center;
     }
 
     // --- view switcher (toolbar) ---
-    .cal-views {
+    .mustry-cal-views {
         display: flex;
     }
 
-    .cal-view-btn {
+    .mustry-cal-view-btn {
         font-family: inherit;
         font-size: 12px;
         padding: 4px 10px;
@@ -461,19 +461,19 @@
         &:last-child { border-radius: 0 6px 6px 0; }
         &:not(:first-child) { border-left: none; }
 
-        &:hover:not(.cal-view-btn--active) {
+        &:hover:not(.mustry-cal-view-btn--active) {
             background: color-mix(in srgb, var(--cal-accent) 8%, var(--cal-bg));
         }
     }
 
-    .cal-view-btn--active {
+    .mustry-cal-view-btn--active {
         background: var(--cal-accent);
         color: var(--cal-accent-text);
         border-color: var(--cal-accent);
     }
 
     // --- week / day time grid ---
-    .cal-tg {
+    .mustry-cal-tg {
         flex: 1 1 auto;
         display: flex;
         flex-direction: column;
@@ -481,18 +481,18 @@
         border-top: 1px solid var(--cal-border);
     }
 
-    .cal-tg-head,
-    .cal-tg-allday,
-    .cal-tg-body {
+    .mustry-cal-tg-head,
+    .mustry-cal-tg-allday,
+    .mustry-cal-tg-body {
         display: grid;
         grid-template-columns: 52px repeat(var(--cal-cols, 7), 1fr);
     }
 
-    .cal-tg-gutter-cell {
+    .mustry-cal-tg-gutter-cell {
         border-right: 1px solid var(--cal-border);
     }
 
-    .cal-tg-dayhead {
+    .mustry-cal-tg-dayhead {
         padding: 5px 6px;
         text-align: center;
         font-size: 12px;
@@ -502,14 +502,14 @@
         border-bottom: 1px solid var(--cal-border);
     }
 
-    .cal-tg-dayhead--today {
+    .mustry-cal-tg-dayhead--today {
         color: var(--cal-accent);
         background: var(--cal-today);
     }
 
     // All-day strip: a lane grid (gutter + day columns) so multi-day events render
     // as continuous spanning bars, stacked on lanes.
-    .cal-tg-allday {
+    .mustry-cal-tg-allday {
         border-bottom: 1px solid var(--cal-border);
         grid-auto-rows: 18px;
         row-gap: 2px;
@@ -519,7 +519,7 @@
         overflow-y: auto;
     }
 
-    .cal-tg-allday-label {
+    .mustry-cal-tg-allday-label {
         grid-column: 1;
         grid-row: 1;
         font-size: 10px;
@@ -529,18 +529,18 @@
         align-self: center;
     }
 
-    .cal-tg-scroll {
+    .mustry-cal-tg-scroll {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
         touch-action: pan-y;   // vertical scroll on touch; events opt out with touch-action: none
     }
 
-    .cal-tg-body {
+    .mustry-cal-tg-body {
         position: relative;
     }
 
-    .cal-tg-hour {
+    .mustry-cal-tg-hour {
         font-size: 10px;
         color: var(--cal-muted);
         text-align: right;
@@ -551,7 +551,7 @@
 
     // Day columns: a relative positioning context with hour grid-lines drawn as a
     // repeating background (line every SLOT_PX, set inline as background-size).
-    .cal-tg-col {
+    .mustry-cal-tg-col {
         position: relative;
         border-left: 1px solid var(--cal-line);
         background-image: linear-gradient(to bottom, var(--cal-line) 1px, transparent 1px);
@@ -560,11 +560,11 @@
         touch-action: pan-y;   // dragging empty time scrolls on touch (a tap creates instead)
     }
 
-    .cal-tg-col--today {
+    .mustry-cal-tg-col--today {
         background-color: var(--cal-today);
     }
 
-    .cal-tg-event {
+    .mustry-cal-tg-event {
         --ev: var(--cal-accent);
         position: absolute;
         box-sizing: border-box;
@@ -599,25 +599,25 @@
     }
 
     // Multi-day timed segments: flatten the continued edge so it reads as carrying on.
-    .cal-tg-event--cont-up {
+    .mustry-cal-tg-event--cont-up {
         border-top-left-radius: 0;
         border-top-right-radius: 0;
         border-top: 2px dashed color-mix(in srgb, var(--ev) 55%, var(--cal-bg));
     }
 
-    .cal-tg-event--cont-down {
+    .mustry-cal-tg-event--cont-down {
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-bottom: 2px dashed color-mix(in srgb, var(--ev) 55%, var(--cal-bg));
     }
 
-    .cal-tg-time {
+    .mustry-cal-tg-time {
         display: block;
         font-size: 10px;
         opacity: 0.85;
     }
 
-    .cal-tg-now {
+    .mustry-cal-tg-now {
         position: absolute;
         left: 0;
         right: 0;
@@ -638,11 +638,11 @@
     }
 
     // --- editing (week/day) ---
-    .cal-tg-event--draggable {
+    .mustry-cal-tg-event--draggable {
         cursor: grab;
     }
 
-    .cal-tg-resize {
+    .mustry-cal-tg-resize {
         position: absolute;
         left: 0;
         right: 0;
@@ -652,16 +652,16 @@
         touch-action: none;   // resize the event instead of scrolling
     }
 
-    .cal-tg-resize--start { top: 0; }
-    .cal-tg-resize--end { bottom: 0; }
+    .mustry-cal-tg-resize--start { top: 0; }
+    .mustry-cal-tg-resize--end { bottom: 0; }
 
     // Bigger resize hit target on touch/coarse-pointer devices (a 6px edge is unusable).
     @media (pointer: coarse) {
-        .cal-tg-resize { height: 18px; }
+        .mustry-cal-tg-resize { height: 18px; }
     }
 
     // The drag/resize ghost and the create selection rectangle.
-    .cal-tg-event--ghost {
+    .mustry-cal-tg-event--ghost {
         background: color-mix(in srgb, var(--ev) 32%, var(--cal-bg));
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
         opacity: 0.96;
@@ -672,7 +672,7 @@
         will-change: top, height;
     }
 
-    .cal-tg-select {
+    .mustry-cal-tg-select {
         position: absolute;
         left: 0;
         right: 3px;
@@ -682,12 +682,12 @@
         pointer-events: none;
         z-index: 5;
         overflow: hidden;
-        animation: cal-fade-in 0.12s ease;
+        animation: mustry-cal-fade-in 0.12s ease;
         transition: top 0.09s ease-out, height 0.09s ease-out;
         will-change: top, height;
     }
 
-    .cal-tg-select-time {
+    .mustry-cal-tg-select-time {
         display: block;
         padding: 2px 6px;
         font-size: 10px;
@@ -697,13 +697,13 @@
 
     // Shift boundaries (config.shifts): a labelled line across the grid at each
     // shift's start time. Behind the events and pointer-transparent — purely visual.
-    .cal-tg-shifts {
+    .mustry-cal-tg-shifts {
         position: absolute;
         inset: 0;
         pointer-events: none;
     }
 
-    .cal-tg-shift {
+    .mustry-cal-tg-shift {
         position: absolute;
         left: 0;
         right: 0;
@@ -713,7 +713,7 @@
 
     // Shift name tucked under its line, just right of the time gutter (52px) so it
     // never collides with an hour label when a shift starts on the hour.
-    .cal-tg-shift-label {
+    .mustry-cal-tg-shift-label {
         position: absolute;
         top: 1px;
         left: 54px;
@@ -730,7 +730,7 @@
     }
 
     // Background (downtime / availability) bands behind the events.
-    .cal-tg-bg {
+    .mustry-cal-tg-bg {
         position: absolute;
         left: 0;
         right: 0;
@@ -741,20 +741,20 @@
     }
 
     // --- list / agenda view ---
-    .cal-list {
+    .mustry-cal-list {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
         border-top: 1px solid var(--cal-border);
     }
 
-    .cal-list-empty {
+    .mustry-cal-list-empty {
         padding: 16px;
         color: var(--cal-muted);
         text-align: center;
     }
 
-    .cal-list-date {
+    .mustry-cal-list-date {
         font-size: 12px;
         font-weight: 600;
         color: var(--cal-muted);
@@ -762,11 +762,11 @@
         border-bottom: 1px solid var(--cal-border);
     }
 
-    .cal-list-date--today {
+    .mustry-cal-list-date--today {
         color: var(--cal-accent);
     }
 
-    .cal-list-event {
+    .mustry-cal-list-event {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -785,28 +785,28 @@
         }
     }
 
-    .cal-list-dot {
+    .mustry-cal-list-dot {
         flex: 0 0 auto;
         width: 10px;
         height: 10px;
         border-radius: 50%;
     }
 
-    .cal-list-time {
+    .mustry-cal-list-time {
         flex: 0 0 auto;
         width: 56px;
         color: var(--cal-muted);
         font-variant-numeric: tabular-nums;
     }
 
-    .cal-list-title {
+    .mustry-cal-list-title {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     // --- category legend (bottom footer) ---
-    .cal-legend {
+    .mustry-cal-legend {
         flex: 0 0 auto;
         display: flex;
         flex-wrap: wrap;
@@ -816,7 +816,7 @@
         border-top: 1px solid var(--cal-border);
     }
 
-    .cal-legend-item {
+    .mustry-cal-legend-item {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -835,12 +835,12 @@
 
         &.is-hidden {
             opacity: 0.45;
-            .cal-legend-label { text-decoration: line-through; }
-            .cal-legend-dot { background: var(--cal-muted) !important; }
+            .mustry-cal-legend-label { text-decoration: line-through; }
+            .mustry-cal-legend-dot { background: var(--cal-muted) !important; }
         }
     }
 
-    .cal-legend-dot {
+    .mustry-cal-legend-dot {
         flex: 0 0 auto;
         width: 11px;
         height: 11px;
@@ -851,8 +851,8 @@
 
 // Hover detail popover — portaled to document.body, so it lives at the top level and
 // pulls in the theme variables itself (same pattern as the date picker's panel).
-.cal-popover {
-    @include cal-theme;
+.mustry-cal-popover {
+    @include mustry-cal-theme;
     position: fixed;
     z-index: 10001;
     box-sizing: border-box;
@@ -865,11 +865,11 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
     pointer-events: none;
     transform-origin: top left;
-    animation: cal-pop-in 0.14s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation: mustry-cal-pop-in 0.14s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 
     * { box-sizing: border-box; }
 
-    .cal-popover-title {
+    .mustry-cal-popover-title {
         display: flex;
         align-items: center;
         gap: 7px;
@@ -878,20 +878,20 @@
         line-height: 1.3;
     }
 
-    .cal-popover-dot {
+    .mustry-cal-popover-dot {
         flex: 0 0 auto;
         width: 9px;
         height: 9px;
         border-radius: 50%;
     }
 
-    .cal-popover-time {
+    .mustry-cal-popover-time {
         margin-top: 3px;
         font-size: 11px;
         color: var(--cal-muted);
     }
 
-    .cal-popover-desc {
+    .mustry-cal-popover-desc {
         margin-top: 6px;
         font-size: 12px;
         line-height: 1.4;
@@ -900,8 +900,8 @@
 }
 
 // Mini-month navigator — portaled to document.body, anchored under the title.
-.cal-mini {
-    @include cal-theme;
+.mustry-cal-mini {
+    @include mustry-cal-theme;
     position: fixed;
     z-index: 10001;
     box-sizing: border-box;
@@ -913,23 +913,23 @@
     border-radius: 10px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
     transform-origin: top left;
-    animation: cal-pop-in 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation: mustry-cal-pop-in 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 
     * { box-sizing: border-box; }
 
-    .cal-mini-head {
+    .mustry-cal-mini-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 6px;
     }
 
-    .cal-mini-title {
+    .mustry-cal-mini-title {
         font-size: 13px;
         font-weight: 600;
     }
 
-    .cal-mini-nav {
+    .mustry-cal-mini-nav {
         width: 24px;
         height: 24px;
         border: none;
@@ -944,20 +944,20 @@
         &:hover { background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-bg)); }
     }
 
-    .cal-mini-grid {
+    .mustry-cal-mini-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 2px;
     }
 
-    .cal-mini-wd {
+    .mustry-cal-mini-wd {
         text-align: center;
         font-size: 10px;
         color: var(--cal-muted);
         padding-bottom: 2px;
     }
 
-    .cal-mini-day {
+    .mustry-cal-mini-day {
         aspect-ratio: 1 / 1;
         display: flex;
         align-items: center;
@@ -976,18 +976,18 @@
     }
 
     // Order matters: range < today < selected so the stronger state wins.
-    .cal-mini-day--other { color: var(--cal-muted); opacity: 0.5; }
-    .cal-mini-day--range { background: color-mix(in srgb, var(--cal-accent) 13%, var(--cal-bg)); }
-    .cal-mini-day--today { font-weight: 700; color: var(--cal-accent); }
-    .cal-mini-day--selected { background: var(--cal-accent); color: var(--cal-accent-text); }
+    .mustry-cal-mini-day--other { color: var(--cal-muted); opacity: 0.5; }
+    .mustry-cal-mini-day--range { background: color-mix(in srgb, var(--cal-accent) 13%, var(--cal-bg)); }
+    .mustry-cal-mini-day--today { font-weight: 700; color: var(--cal-accent); }
+    .mustry-cal-mini-day--selected { background: var(--cal-accent); color: var(--cal-accent-text); }
 
-    .cal-mini-foot {
+    .mustry-cal-mini-foot {
         margin-top: 8px;
         display: flex;
         justify-content: center;
     }
 
-    .cal-mini-today {
+    .mustry-cal-mini-today {
         font-family: inherit;
         font-size: 12px;
         padding: 4px 14px;
@@ -1003,8 +1003,8 @@
 }
 
 // "All events for a day" popover (month view overflow) — portaled to document.body.
-.cal-daypop {
-    @include cal-theme;
+.mustry-cal-daypop {
+    @include mustry-cal-theme;
     position: fixed;
     z-index: 10001;
     box-sizing: border-box;
@@ -1015,30 +1015,30 @@
     border-radius: 10px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
     transform-origin: top left;
-    animation: cal-pop-in 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation: mustry-cal-pop-in 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both;
     overflow: hidden;
 
     * { box-sizing: border-box; }
 
-    .cal-daypop-head {
+    .mustry-cal-daypop-head {
         font-size: 13px;
         font-weight: 600;
         padding: 10px 12px 6px;
     }
 
-    .cal-daypop-list {
+    .mustry-cal-daypop-list {
         max-height: 280px;
         overflow-y: auto;
         padding: 0 6px 8px;
     }
 
-    .cal-daypop-empty {
+    .mustry-cal-daypop-empty {
         padding: 4px 6px 8px;
         font-size: 12px;
         color: var(--cal-muted);
     }
 
-    .cal-daypop-event {
+    .mustry-cal-daypop-event {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -1057,21 +1057,21 @@
         &:hover { background: color-mix(in srgb, var(--cal-accent) 9%, var(--cal-bg)); }
     }
 
-    .cal-daypop-dot {
+    .mustry-cal-daypop-dot {
         flex: 0 0 auto;
         width: 10px;
         height: 10px;
         border-radius: 3px;
     }
 
-    .cal-daypop-time {
+    .mustry-cal-daypop-time {
         flex: 0 0 auto;
         width: 48px;
         color: var(--cal-muted);
         font-variant-numeric: tabular-nums;
     }
 
-    .cal-daypop-title {
+    .mustry-cal-daypop-title {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1079,7 +1079,7 @@
 }
 
 // Built-in new-event editor (centered modal, portaled to document.body).
-.cal-editor-backdrop {
+.mustry-cal-editor-backdrop {
     position: fixed;
     inset: 0;
     z-index: 10002;
@@ -1087,11 +1087,11 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.28);
-    animation: cal-fade-in 0.16s ease;
+    animation: mustry-cal-fade-in 0.16s ease;
 }
 
-.cal-editor {
-    @include cal-theme;
+.mustry-cal-editor {
+    @include mustry-cal-theme;
     box-sizing: border-box;
     width: 340px;
     max-width: calc(100vw - 24px);
@@ -1102,17 +1102,17 @@
     border: 1px solid var(--cal-border);
     border-radius: 10px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
-    animation: cal-pop-in 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation: mustry-cal-pop-in 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 
     * { box-sizing: border-box; }
 
-    .cal-editor-head {
+    .mustry-cal-editor-head {
         font-size: 15px;
         font-weight: 600;
         margin-bottom: 16px;
     }
 
-    .cal-editor-field {
+    .mustry-cal-editor-field {
         display: flex;
         flex-direction: column;
         gap: 5px;
@@ -1147,7 +1147,7 @@
         }
     }
 
-    .cal-editor-check {
+    .mustry-cal-editor-check {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1158,16 +1158,16 @@
     }
 
     // Start/End stack vertically so the native datetime controls always fit the popover.
-    .cal-editor-row {
+    .mustry-cal-editor-row {
         display: flex;
         flex-direction: column;
 
-        .cal-editor-field { flex: 1 1 auto; }
+        .mustry-cal-editor-field { flex: 1 1 auto; }
     }
 
     // Timezone hint under the date fields (datetime-local is browser-local; this names
     // the zone the values are actually interpreted in).
-    .cal-editor-tz {
+    .mustry-cal-editor-tz {
         margin-top: -8px;      // tuck up under End so it reads as a caption of the date row
         margin-bottom: 14px;   // ...then a normal gap before the next field
         font-size: 11px;
@@ -1175,7 +1175,7 @@
     }
 
     // Save-blocking validation hint (end not after start) under the date row.
-    .cal-editor-problem {
+    .mustry-cal-editor-problem {
         margin-top: -8px;
         margin-bottom: 14px;
         font-size: 11px;
@@ -1184,18 +1184,18 @@
     }
 
     // Keep normal flow when the hint directly follows the timezone caption.
-    .cal-editor-tz + .cal-editor-problem {
+    .mustry-cal-editor-tz + .mustry-cal-editor-problem {
         margin-top: -10px;
     }
 
     // Category picker: a colour dot (the category's colour) next to a native select.
-    .cal-editor-catrow {
+    .mustry-cal-editor-catrow {
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .cal-editor-cat-dot {
+    .mustry-cal-editor-cat-dot {
         flex: 0 0 auto;
         width: 12px;
         height: 12px;
@@ -1204,7 +1204,7 @@
     }
 
     // The selected category's icon (in its colour) — same footprint as the dot.
-    .cal-editor-cat-icon {
+    .mustry-cal-editor-cat-icon {
         flex: 0 0 auto;
         display: inline-flex;
         align-items: center;
@@ -1215,7 +1215,7 @@
     }
 
     // Recurring-edit apply-to choice (This event / All events).
-    .cal-editor-scope {
+    .mustry-cal-editor-scope {
         display: flex;
         gap: 18px;
         margin-bottom: 14px;
@@ -1225,7 +1225,7 @@
     }
 
     // Recurrence rule controls, grouped in a light frame.
-    .cal-editor-repeat {
+    .mustry-cal-editor-repeat {
         margin: -4px 0 14px;
         padding: 10px 12px;
         border: 1px solid var(--cal-border);
@@ -1235,9 +1235,9 @@
         gap: 9px;
         font-size: 12px;
 
-        .cal-editor-repeat-line { display: flex; align-items: center; gap: 6px; }
+        .mustry-cal-editor-repeat-line { display: flex; align-items: center; gap: 6px; }
 
-        .cal-editor-ends {
+        .mustry-cal-editor-ends {
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -1245,9 +1245,9 @@
             label { display: inline-flex; align-items: center; gap: 6px; }
         }
 
-        .cal-editor-ends-label { font-weight: 600; letter-spacing: 0.02em; opacity: 0.75; }
+        .mustry-cal-editor-ends-label { font-weight: 600; letter-spacing: 0.02em; opacity: 0.75; }
 
-        .cal-editor-ends-input {
+        .mustry-cal-editor-ends-input {
             font-family: inherit;
             font-size: 12px;
             color: var(--cal-text);
@@ -1260,7 +1260,7 @@
         }
     }
 
-    .cal-editor-num {
+    .mustry-cal-editor-num {
         width: 54px;
         font-family: inherit;
         font-size: 12px;
@@ -1274,9 +1274,9 @@
     }
 
     // Weekly weekday picker (round toggles).
-    .cal-editor-weekdays { display: flex; gap: 4px; }
+    .mustry-cal-editor-weekdays { display: flex; gap: 4px; }
 
-    .cal-wd {
+    .mustry-cal-wd {
         width: 26px;
         height: 26px;
         border-radius: 50%;
@@ -1291,13 +1291,13 @@
         &:hover { border-color: var(--cal-accent); }
     }
 
-    .cal-wd--on {
+    .mustry-cal-wd--on {
         background: var(--cal-accent);
         border-color: var(--cal-accent);
         color: var(--cal-accent-text);
     }
 
-    .cal-editor-select {
+    .mustry-cal-editor-select {
         flex: 1 1 auto;
         font-family: inherit;
         font-size: 13px;
@@ -1315,7 +1315,7 @@
         }
     }
 
-    .cal-editor-actions {
+    .mustry-cal-editor-actions {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -1325,11 +1325,11 @@
     }
 
     // Pushes Cancel/Save to the right while Delete (when editing) stays on the left.
-    .cal-editor-actions-spacer {
+    .mustry-cal-editor-actions-spacer {
         flex: 1 1 auto;
     }
 
-    .cal-editor-btn {
+    .mustry-cal-editor-btn {
         font-family: inherit;
         font-size: 13px;
         padding: 6px 14px;
@@ -1350,7 +1350,7 @@
         }
     }
 
-    .cal-editor-btn--primary {
+    .mustry-cal-editor-btn--primary {
         background: var(--cal-accent);
         border-color: var(--cal-accent);
         color: var(--cal-accent-text);
@@ -1359,7 +1359,7 @@
     }
 
     // Quieter ghost so Save stays the clear primary; Delete stays discoverable.
-    .cal-editor-btn--danger {
+    .mustry-cal-editor-btn--danger {
         color: #e11d48;
         border-color: transparent;
         background: transparent;
@@ -1370,7 +1370,7 @@
 
 // --- category icons + event status (top-level so portaled popovers match) ---
 // Small inline icon (Ignition IconRenderer outputs an <svg>).
-.cal-ev-icon {
+.mustry-cal-ev-icon {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -1382,11 +1382,11 @@
     }
 }
 
-.cal-legend-icon svg { width: 14px; height: 14px; }
+.mustry-cal-legend-icon svg { width: 14px; height: 14px; }
 
 // Recurring-occurrence marker (id "base::date") on chips / bars / rows — dragging
 // or editing one detaches it from its series. (Top-level so portaled popovers match.)
-.cal-ev-recur {
+.mustry-cal-ev-recur {
     flex: 0 0 auto;
     font-size: 10px;
     line-height: 1;
@@ -1394,27 +1394,27 @@
 }
 
 // The timed chip isn't a flex row (title text flows inline), so space the marker by hand.
-.mustry-calendar .cal-tg-event .cal-ev-recur {
+.mustry-calendar .mustry-cal-tg-event .mustry-cal-ev-recur {
     margin-right: 3px;
 }
 
 // Event status modifiers.
-.cal-ev--done,
-.cal-ev--cancelled {
+.mustry-cal-ev--done,
+.mustry-cal-ev--cancelled {
     text-decoration: line-through;
 }
 
-.cal-ev--done { opacity: 0.6; }
-.cal-ev--cancelled { opacity: 0.55; }
+.mustry-cal-ev--done { opacity: 0.6; }
+.mustry-cal-ev--cancelled { opacity: 0.55; }
 
-.cal-ev--tentative {
+.mustry-cal-ev--tentative {
     opacity: 0.9;
     font-style: italic;
 }
 
 // Striped fill for tentative chips/bars (not list/popover rows).
-.mustry-calendar .cal-mbar.cal-ev--tentative,
-.mustry-calendar .cal-tg-event.cal-ev--tentative {
+.mustry-calendar .mustry-cal-mbar.mustry-cal-ev--tentative,
+.mustry-calendar .mustry-cal-tg-event.mustry-cal-ev--tentative {
     position: relative;
     font-style: normal;
 
@@ -1433,7 +1433,7 @@
 }
 
 // Status badge in the hover popover.
-.cal-popover-status {
+.mustry-cal-popover-status {
     margin-left: auto;
     font-size: 10px;
     font-weight: 600;
@@ -1443,53 +1443,53 @@
 }
 
 // --- micro-interactions / animations ----------------------------------------
-@keyframes cal-event-in {
+@keyframes mustry-cal-event-in {
     from { opacity: 0; transform: scale(0.9); }
     to   { opacity: 1; transform: scale(1); }
 }
 
-@keyframes cal-view-in {
+@keyframes mustry-cal-view-in {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes cal-pop-in {
+@keyframes mustry-cal-pop-in {
     from { opacity: 0; transform: scale(0.96) translateY(4px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes cal-fade-in {
+@keyframes mustry-cal-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
 
-@keyframes cal-loading-slide {
+@keyframes mustry-cal-loading-slide {
     0%   { left: -35%; }
     100% { left: 100%; }
 }
 
-@keyframes cal-live-pulse {
+@keyframes mustry-cal-live-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
 }
 
 // A freshly-created event fades + scales in (applied for one cycle, then removed).
-.mustry-calendar .cal-anim-enter {
-    animation: cal-event-in 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+.mustry-calendar .mustry-cal-anim-enter {
+    animation: mustry-cal-event-in 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 // The active view gently fades up when you switch month / week / day / list.
-.mustry-calendar .cal-anim-view {
-    animation: cal-view-in 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+.mustry-calendar .mustry-cal-anim-view {
+    animation: mustry-cal-view-in 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 // Respect users who prefer reduced motion — drop every transition/animation we add.
 @media (prefers-reduced-motion: reduce) {
     .mustry-calendar, .mustry-calendar *,
-    .cal-popover, .cal-popover *,
-    .cal-mini, .cal-mini *,
-    .cal-daypop, .cal-daypop *,
-    .cal-editor-backdrop, .cal-editor, .cal-editor * {
+    .mustry-cal-popover, .mustry-cal-popover *,
+    .mustry-cal-mini, .mustry-cal-mini *,
+    .mustry-cal-daypop, .mustry-cal-daypop *,
+    .mustry-cal-editor-backdrop, .mustry-cal-editor, .mustry-cal-editor * {
         animation: none !important;
         transition: none !important;
     }
@@ -1499,10 +1499,10 @@
 // A clear accent ring on the event surfaces; Enter/Space activates them like a
 // click (a keyboard can't drag — activation opens the editor / fires the event).
 .mustry-calendar {
-    .cal-mbar:focus-visible,
-    .cal-tg-event:focus-visible,
-    .cal-daynum:focus-visible,
-    .cal-more:focus-visible {
+    .mustry-cal-mbar:focus-visible,
+    .mustry-cal-tg-event:focus-visible,
+    .mustry-cal-daynum:focus-visible,
+    .mustry-cal-more:focus-visible {
         outline: 2px solid var(--cal-accent);
         outline-offset: 1px;
         z-index: 2;

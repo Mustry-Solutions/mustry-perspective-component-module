@@ -878,7 +878,7 @@ export class DateTimeRangePicker
     /** The floating calendar panel for popover mode (portaled to escape clipping). */
     private renderPanel(): React.ReactNode {
         const mode = this.popoverLayout();
-        const classes = [...this.surfaceClasses(mode), 'dtrp-popover-panel'];
+        const classes = [...this.surfaceClasses(mode), 'mustry-dtrp-popover-panel'];
         const style: React.CSSProperties = {
             top: this.state.panelTop,
             left: this.state.panelLeft,

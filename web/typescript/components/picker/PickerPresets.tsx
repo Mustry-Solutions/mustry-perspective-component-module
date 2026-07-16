@@ -19,7 +19,7 @@ export function PickerPresets(p: PickerPresetsProps): React.ReactElement | null 
         return null;
     }
     return (
-        <div className="dtrp-presets">
+        <div className="mustry-dtrp-presets">
             {items.map((it, i) => {
                 const conflict = p.conflict(it);
                 const live = p.isLive(it);
@@ -27,13 +27,13 @@ export function PickerPresets(p: PickerPresetsProps): React.ReactElement | null 
                     <button
                         key={`${it.label}-${i}`}
                         type="button"
-                        className={live ? 'dtrp-preset dtrp-preset--live' : 'dtrp-preset'}
+                        className={live ? 'mustry-dtrp-preset mustry-dtrp-preset--live' : 'mustry-dtrp-preset'}
                         disabled={!p.enabled || !!conflict}
                         aria-disabled={!p.enabled || !!conflict}
                         title={conflict || undefined}
                         onClick={() => p.onApply(it)}
                     >
-                        {live && <span className="dtrp-live-dot" aria-hidden="true" />}
+                        {live && <span className="mustry-dtrp-live-dot" aria-hidden="true" />}
                         {p.label(it)}
                     </button>
                 );

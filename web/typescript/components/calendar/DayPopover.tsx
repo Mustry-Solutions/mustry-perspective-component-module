@@ -23,28 +23,28 @@ export function DayPopover({ dayPop, events, locale, categories, labels, onActiv
     const left = Math.max(6, Math.min(dayPop.rect.left, window.innerWidth - W - 6));
     const top = Math.max(6, Math.min(dayPop.rect.top, window.innerHeight - 320));
     return ReactDOM.createPortal(
-        <div className="cal-daypop" style={{ top, left, width: W }} onMouseDown={(e) => e.stopPropagation()}>
-            <div className="cal-daypop-head">{headFmt.format(d)}</div>
-            <div className="cal-daypop-list">
+        <div className="mustry-cal-daypop" style={{ top, left, width: W }} onMouseDown={(e) => e.stopPropagation()}>
+            <div className="mustry-cal-daypop-head">{headFmt.format(d)}</div>
+            <div className="mustry-cal-daypop-list">
                 {events.length === 0 ? (
-                    <div className="cal-daypop-empty">{labels.noEvents}</div>
+                    <div className="mustry-cal-daypop-empty">{labels.noEvents}</div>
                 ) : events.map((ev, i) => {
                     const tm = timeMinutes(ev.start);
                     return (
                         <button
-                            type="button" key={ev.id || i} className={`cal-daypop-event${statusClass(ev)}`}
+                            type="button" key={ev.id || i} className={`mustry-cal-daypop-event${statusClass(ev)}`}
                             onClick={(e) => onActivate(ev, e)}
                             title={ev.title}
                         >
-                            <span className="cal-daypop-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
-                            <span className="cal-daypop-time">
+                            <span className="mustry-cal-daypop-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
+                            <span className="mustry-cal-daypop-time">
                                 {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                             </span>
                             {isOccurrence(ev) && (
-                                <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                                <span className="mustry-cal-ev-recur" aria-hidden="true">↻</span>
                             )}
                             <EventIcon ev={ev} categories={categories} />
-                            <span className="cal-daypop-title">{ev.title}</span>
+                            <span className="mustry-cal-daypop-title">{ev.title}</span>
                         </button>
                     );
                 })}

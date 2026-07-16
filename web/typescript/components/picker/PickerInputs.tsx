@@ -17,9 +17,9 @@ interface PickerTimeFieldsProps {
 
 export function PickerTimeFields(p: PickerTimeFieldsProps): React.ReactElement {
     return (
-        <div className="dtrp-times">
-            <label className="dtrp-time-field">
-                <span className="dtrp-time-label">{p.labels.startTime}</span>
+        <div className="mustry-dtrp-times">
+            <label className="mustry-dtrp-time-field">
+                <span className="mustry-dtrp-time-label">{p.labels.startTime}</span>
                 <input
                     type="time"
                     step={p.stepSeconds}
@@ -28,8 +28,8 @@ export function PickerTimeFields(p: PickerTimeFieldsProps): React.ReactElement {
                     onChange={p.onStartTime}
                 />
             </label>
-            <label className="dtrp-time-field">
-                <span className="dtrp-time-label">{p.labels.endTime}</span>
+            <label className="mustry-dtrp-time-field">
+                <span className="mustry-dtrp-time-label">{p.labels.endTime}</span>
                 <input
                     type="time"
                     step={p.stepSeconds}
@@ -59,8 +59,8 @@ interface PickerCompactFieldsProps {
 export function PickerCompactFields(p: PickerCompactFieldsProps): React.ReactElement {
     return (
         <>
-            <label className="dtrp-compact-field">
-                <span className="dtrp-compact-label">{p.labels.startDate}</span>
+            <label className="mustry-dtrp-compact-field">
+                <span className="mustry-dtrp-compact-label">{p.labels.startDate}</span>
                 <input
                     type="date"
                     value={p.startDate}
@@ -70,8 +70,8 @@ export function PickerCompactFields(p: PickerCompactFieldsProps): React.ReactEle
                     onChange={p.onStartDate}
                 />
             </label>
-            <label className="dtrp-compact-field">
-                <span className="dtrp-compact-label">{p.labels.endDate}</span>
+            <label className="mustry-dtrp-compact-field">
+                <span className="mustry-dtrp-compact-label">{p.labels.endDate}</span>
                 <input
                     type="date"
                     value={p.endDate}
@@ -105,7 +105,7 @@ export function PickerHint(p: PickerHintProps): React.ReactElement | null {
     } else {
         text = logic.fillLabel(labels.hintMax, { n: maxSpanDays, days: logic.dayWord(maxSpanDays, labels) });
     }
-    return <div className="dtrp-hint">{text}</div>;
+    return <div className="mustry-dtrp-hint">{text}</div>;
 }
 
 interface PickerFooterProps {
@@ -119,10 +119,10 @@ interface PickerFooterProps {
 /** Duration text + Clear, shared by the full and compact layouts. */
 export function PickerFooter(p: PickerFooterProps): React.ReactElement {
     return (
-        <div className="dtrp-footer">
-            <span className="dtrp-duration">{p.label}</span>
+        <div className="mustry-dtrp-footer">
+            <span className="mustry-dtrp-duration">{p.label}</span>
             {p.showClear && (
-                <button type="button" className="dtrp-clear" disabled={!p.enabled} onClick={p.onClear}>
+                <button type="button" className="mustry-dtrp-clear" disabled={!p.enabled} onClick={p.onClear}>
                     {p.clearLabel}
                 </button>
             )}

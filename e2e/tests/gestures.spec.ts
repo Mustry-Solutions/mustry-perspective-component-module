@@ -7,7 +7,7 @@ import { test, expect, openRoute } from './helpers';
 
 test('calendar: dragging a chip commits a move (and does not open the editor)', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
-    const chip = page.locator('.cal-tg-event', { hasText: 'Pump A service' });
+    const chip = page.locator('.mustry-cal-tg-event', { hasText: 'Pump A service' });
     await expect(chip).toBeVisible();
     const before = (await chip.textContent()) ?? '';
 
@@ -25,22 +25,22 @@ test('calendar: dragging a chip commits a move (and does not open the editor)', 
     await page.mouse.up();
 
     // Committed move: same title, different time text; no editor.
-    await expect(page.locator('.cal-editor')).toHaveCount(0);
+    await expect(page.locator('.mustry-cal-editor')).toHaveCount(0);
     await expect(chip).toBeVisible();
     await expect.poll(async () => (await chip.textContent()) ?? '').not.toBe(before);
 });
 
 test('calendar: a plain click on a chip opens the editor (click-vs-drag threshold)', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
-    await page.locator('.cal-tg-event', { hasText: 'Pump A service' }).click();
-    await expect(page.locator('.cal-editor')).toBeVisible();
+    await page.locator('.mustry-cal-tg-event', { hasText: 'Pump A service' }).click();
+    await expect(page.locator('.mustry-cal-editor')).toBeVisible();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(page.locator('.cal-editor')).toHaveCount(0);
+    await expect(page.locator('.mustry-cal-editor')).toHaveCount(0);
 });
 
 test('timeline: dragging a bar commits a horizontal move', async ({ page }) => {
     await openRoute(page, '/timeline', '.mustry-timeline');
-    const bar = page.locator('.tml-bar', { hasText: 'Batch 4711' });
+    const bar = page.locator('.mustry-tml-bar', { hasText: 'Batch 4711' });
     await expect(bar).toBeVisible();
     await bar.scrollIntoViewIfNeeded();
     const before = (await bar.boundingBox())!;
@@ -51,7 +51,7 @@ test('timeline: dragging a bar commits a horizontal move', async ({ page }) => {
     await page.mouse.move(before.x + before.width / 2 + 120, before.y + before.height / 2, { steps: 8 });
     await page.mouse.up();
 
-    await expect(page.locator('.cal-editor')).toHaveCount(0);
+    await expect(page.locator('.mustry-cal-editor')).toHaveCount(0);
     await expect(bar).toBeVisible();
     await expect
         .poll(async () => (await bar.boundingBox())!.x, { message: 'bar should have moved right' })
@@ -60,8 +60,8 @@ test('timeline: dragging a bar commits a horizontal move', async ({ page }) => {
 
 test('timeline: a plain click on a bar opens the editor', async ({ page }) => {
     await openRoute(page, '/timeline', '.mustry-timeline');
-    await page.locator('.tml-bar', { hasText: 'Batch 4711' }).click();
-    await expect(page.locator('.cal-editor')).toBeVisible();
+    await page.locator('.mustry-tml-bar', { hasText: 'Batch 4711' }).click();
+    await expect(page.locator('.mustry-cal-editor')).toBeVisible();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(page.locator('.cal-editor')).toHaveCount(0);
+    await expect(page.locator('.mustry-cal-editor')).toHaveCount(0);
 });

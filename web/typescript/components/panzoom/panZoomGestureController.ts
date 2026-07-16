@@ -147,7 +147,7 @@ export class PanZoomGestureController {
                     el.setPointerCapture(id);
                 } catch (ignored) { /* pointer may already be gone */ }
             });
-            el.classList.add('pz-panning');
+            el.classList.add('mustry-pz-panning');
         }
     };
 
@@ -190,7 +190,7 @@ export class PanZoomGestureController {
                 try {
                     el.setPointerCapture(ev.pointerId);   // only capture once it IS a pan
                 } catch (ignored) { /* ignore */ }
-                el.classList.add('pz-panning');
+                el.classList.add('mustry-pz-panning');
             }
             if (this.panning) {
                 this.dragSamples.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY });
@@ -221,7 +221,7 @@ export class PanZoomGestureController {
                     this.panning = true;
                     this.dragSamples = [{ t: ev.timeStamp, x: rest.x, y: rest.y }];
                 } else {
-                    el.classList.remove('pz-panning');
+                    el.classList.remove('mustry-pz-panning');
                     if (ev.type !== 'pointercancel') {
                         this.suppressNextClick(el);   // a canceled pointer never produces a click
                     }
@@ -250,7 +250,7 @@ export class PanZoomGestureController {
             }
             this.panStart = null;
             this.panning = false;
-            el.classList.remove('pz-panning');
+            el.classList.remove('mustry-pz-panning');
         }
     };
 

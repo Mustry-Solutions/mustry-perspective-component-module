@@ -16,16 +16,16 @@ export function TimelineLegend(p: TimelineLegendProps): React.ReactElement | nul
         return null;
     }
     return (
-        <div className="tml-legend">
+        <div className="mustry-tml-legend">
             {p.categories.map((c) => (
                 <button
                     type="button" key={c.id}
-                    className={`tml-legend-item${(p.hiddenCategories || []).indexOf(c.id) >= 0 ? ' tml-legend-item--off' : ''}`}
+                    className={`mustry-tml-legend-item${(p.hiddenCategories || []).indexOf(c.id) >= 0 ? ' mustry-tml-legend-item--off' : ''}`}
                     onClick={() => p.onToggle(c.id)}
                 >
                     {c.icon
-                        ? <span className="tml-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
-                        : <span className="tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />}
+                        ? <span className="mustry-tml-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
+                        : <span className="mustry-tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />}
                     {c.label}
                 </button>
             ))}

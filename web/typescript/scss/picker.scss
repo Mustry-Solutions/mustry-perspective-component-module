@@ -4,7 +4,7 @@
 // hard fallback. Override any of these via a Perspective style class on the
 // component or a rule in the project stylesheet, e.g.
 //   .mustry-datetime-range-picker { --dtrp-accent: #2e7d32; }
-@mixin dtrp-theme {
+@mixin mustry-dtrp-theme {
     --dtrp-accent: var(--callToAction, #0a66c2);
     --dtrp-accent-text: var(--callToActionForeground, #ffffff);
     --dtrp-range: var(--neutral-20, #d6e6f7);
@@ -15,7 +15,7 @@
 }
 
 .mustry-datetime-range-picker {
-    @include dtrp-theme;
+    @include mustry-dtrp-theme;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -42,13 +42,13 @@
         box-sizing: border-box;
     }
 
-    .dtrp-presets {
+    .mustry-dtrp-presets {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
     }
 
-    .dtrp-preset {
+    .mustry-dtrp-preset {
         border: 1px solid var(--dtrp-border);
         background: var(--dtrp-bg);
         border-radius: 14px;
@@ -70,8 +70,8 @@
         // The armed realtime preset: filled + a pulsing "live" dot. The hover rule
         // must restate the fill — the generic :hover (light background) otherwise
         // outranks this class and washes out the accent-text label.
-        &.dtrp-preset--live,
-        &.dtrp-preset--live:hover:not(:disabled) {
+        &.mustry-dtrp-preset--live,
+        &.mustry-dtrp-preset--live:hover:not(:disabled) {
             background: var(--dtrp-accent);
             border-color: var(--dtrp-accent);
             color: var(--dtrp-accent-text);
@@ -80,44 +80,44 @@
             gap: 5px;
         }
 
-        &.dtrp-preset--live:hover:not(:disabled) {
+        &.mustry-dtrp-preset--live:hover:not(:disabled) {
             filter: brightness(1.08);
         }
     }
 
-    .dtrp-live-dot {
+    .mustry-dtrp-live-dot {
         width: 6px;
         height: 6px;
         border-radius: 999px;
         background: currentColor;
-        animation: dtrp-live-pulse 2s ease-in-out infinite;
+        animation: mustry-dtrp-live-pulse 2s ease-in-out infinite;
     }
 
-    @keyframes dtrp-live-pulse {
+    @keyframes mustry-dtrp-live-pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.35; }
     }
 
-    .dtrp-hint {
+    .mustry-dtrp-hint {
         font-size: 11px;
         color: var(--dtrp-muted);
         font-style: italic;
     }
 
-    .dtrp-header {
+    .mustry-dtrp-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
 
     // One or two centered month labels between the nav arrows.
-    .dtrp-months {
+    .mustry-dtrp-months {
         flex: 1 1 auto;
         display: flex;
         min-width: 0;
     }
 
-    .dtrp-month {
+    .mustry-dtrp-month {
         flex: 1 1 0;
         text-align: center;
         font-weight: 600;
@@ -125,7 +125,7 @@
     }
 
     // Row of one or two month calendars; wraps to stacked if too narrow.
-    .dtrp-calendars {
+    .mustry-dtrp-calendars {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -133,7 +133,7 @@
         min-height: 0;
     }
 
-    .dtrp-calendar {
+    .mustry-dtrp-calendar {
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -142,7 +142,7 @@
         min-height: 0;
     }
 
-    .dtrp-nav {
+    .mustry-dtrp-nav {
         border: none;
         background: transparent;
         font-size: 20px;
@@ -163,8 +163,8 @@
         }
     }
 
-    .dtrp-weekdays,
-    .dtrp-grid {
+    .mustry-dtrp-weekdays,
+    .mustry-dtrp-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 2px;
@@ -172,20 +172,20 @@
 
     // The grid takes the remaining vertical space; its rows divide that space
     // evenly so day cells scale with the component's height instead of its width.
-    .dtrp-grid {
+    .mustry-dtrp-grid {
         flex: 1 1 auto;
         min-height: 0;
         grid-auto-rows: 1fr;
     }
 
-    .dtrp-weekday {
+    .mustry-dtrp-weekday {
         text-align: center;
         font-size: 11px;
         color: var(--dtrp-muted);
         padding: 2px 0;
     }
 
-    .dtrp-cell {
+    .mustry-dtrp-cell {
         border: none;
         background: transparent;
         // Height comes from the grid row (grid-auto-rows: 1fr), not from width,
@@ -204,12 +204,12 @@
         }
     }
 
-    .dtrp-cell--empty {
+    .mustry-dtrp-cell--empty {
         visibility: hidden;
         cursor: default;
     }
 
-    .dtrp-cell--disabled {
+    .mustry-dtrp-cell--disabled {
         color: var(--dtrp-muted);
         cursor: not-allowed;
         text-decoration: line-through;
@@ -219,43 +219,43 @@
         }
     }
 
-    .dtrp-cell--today {
+    .mustry-dtrp-cell--today {
         font-weight: 600;
         box-shadow: inset 0 0 0 1px var(--dtrp-accent);
     }
 
     // The in-range band: square corners so endpoints visually connect it.
-    .dtrp-cell--inrange {
+    .mustry-dtrp-cell--inrange {
         background: var(--dtrp-range);
         border-radius: 0;
     }
 
-    .dtrp-cell--start,
-    .dtrp-cell--end,
-    .dtrp-cell--single {
+    .mustry-dtrp-cell--start,
+    .mustry-dtrp-cell--end,
+    .mustry-dtrp-cell--single {
         background: var(--dtrp-accent);
         color: var(--dtrp-accent-text);
         font-weight: 600;
     }
 
-    .dtrp-cell--start {
+    .mustry-dtrp-cell--start {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
     }
 
-    .dtrp-cell--end {
+    .mustry-dtrp-cell--end {
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
     }
 
-    .dtrp-times {
+    .mustry-dtrp-times {
         display: flex;
         flex-wrap: wrap;   // stack the two time fields when too narrow
         gap: 8px;
         margin-top: 4px;
     }
 
-    .dtrp-time-field {
+    .mustry-dtrp-time-field {
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -274,7 +274,7 @@
         }
     }
 
-    .dtrp-footer {
+    .mustry-dtrp-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -282,11 +282,11 @@
         font-size: 13px;
     }
 
-    .dtrp-duration {
+    .mustry-dtrp-duration {
         font-weight: 600;
     }
 
-    .dtrp-clear {
+    .mustry-dtrp-clear {
         border: 1px solid var(--dtrp-border);
         background: var(--dtrp-bg);
         border-radius: 6px;
@@ -311,7 +311,7 @@
         justify-content: center;
         overflow: auto;
 
-        .dtrp-compact-field {
+        .mustry-dtrp-compact-field {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -335,7 +335,7 @@
             }
         }
 
-        .dtrp-times {
+        .mustry-dtrp-times {
             margin-top: 0;
         }
     }
@@ -343,7 +343,7 @@
 
 // --- popover mode: trigger field + floating panel ---------------------------
 .mustry-dtrp-trigger-root {
-    @include dtrp-theme;
+    @include mustry-dtrp-theme;
     display: inline-flex;
     width: 100%;
     height: 100%;
@@ -358,7 +358,7 @@
         cursor: not-allowed;
     }
 
-    .dtrp-trigger {
+    .mustry-dtrp-trigger {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -388,41 +388,41 @@
 
         // Focused or open: accent border + a soft ring (reusing the range tint).
         &:focus-visible,
-        &.dtrp-trigger--open {
+        &.mustry-dtrp-trigger--open {
             outline: none;
             border-color: var(--dtrp-accent);
             box-shadow: 0 0 0 3px var(--dtrp-range);
         }
 
-        &:hover:not(:disabled) .dtrp-trigger-icon,
-        &.dtrp-trigger--open .dtrp-trigger-icon {
+        &:hover:not(:disabled) .mustry-dtrp-trigger-icon,
+        &.mustry-dtrp-trigger--open .mustry-dtrp-trigger-icon {
             color: var(--dtrp-accent);
         }
 
-        &.dtrp-trigger--open .dtrp-trigger-caret {
+        &.mustry-dtrp-trigger--open .mustry-dtrp-trigger-caret {
             transform: rotate(180deg);
             color: var(--dtrp-accent);
         }
     }
 
-    .dtrp-trigger-text {
+    .mustry-dtrp-trigger-text {
         flex: 1 1 auto;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .dtrp-trigger-text--placeholder {
+    .mustry-dtrp-trigger-text--placeholder {
         color: var(--dtrp-muted);
     }
 
-    .dtrp-trigger-icon {
+    .mustry-dtrp-trigger-icon {
         flex: 0 0 auto;
         color: var(--dtrp-muted);
         transition: color 0.15s ease;
     }
 
-    .dtrp-trigger-caret {
+    .mustry-dtrp-trigger-caret {
         flex: 0 0 auto;
         color: var(--dtrp-muted);
         transition: transform 0.15s ease, color 0.15s ease;
@@ -431,7 +431,7 @@
 
 // The portaled floating calendar panel. It also carries .mustry-datetime-range-picker
 // (for styling + theme vars); these rules win by coming later in the source.
-.dtrp-popover-panel {
+.mustry-dtrp-popover-panel {
     position: fixed;
     z-index: 10000;
     height: auto;
@@ -439,7 +439,7 @@
 
     // Content-sized (no fixed container height to stretch into), so give the grid
     // fixed-height rows instead of flex-filling.
-    .dtrp-grid {
+    .mustry-dtrp-grid {
         flex: 0 0 auto;
         grid-auto-rows: 34px;
     }

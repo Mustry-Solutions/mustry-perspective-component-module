@@ -48,18 +48,18 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
         onUpdate({ repeatByweekday: set });
     };
     return ReactDOM.createPortal(
-        <div className="cal-editor-backdrop" onPointerDown={onCancel}>
+        <div className="mustry-cal-editor-backdrop" onPointerDown={onCancel}>
             <div
-                className="cal-editor"
+                className="mustry-cal-editor"
                 role="dialog"
                 aria-modal="true"
                 aria-label={isEdit ? labels.editEvent : labels.newEvent}
                 onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === 'Escape') { onCancel(); } }}
             >
-                <div className="cal-editor-head">{isEdit ? labels.editEvent : labels.newEvent}</div>
+                <div className="mustry-cal-editor-head">{isEdit ? labels.editEvent : labels.newEvent}</div>
                 {editingOccurrence && (
-                    <div className="cal-editor-scope">
+                    <div className="mustry-cal-editor-scope">
                         <label>
                             <input type="radio" checked={ed.scope === 'occurrence'} onChange={() => onUpdate({ scope: 'occurrence' })} />
                             <span>{labels.thisEvent}</span>
@@ -70,38 +70,38 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                         </label>
                     </div>
                 )}
-                <label className="cal-editor-field">
+                <label className="mustry-cal-editor-field">
                     <span>{labels.title}</span>
                     <input
                         type="text" autoFocus value={ed.title} placeholder={labels.eventTitle}
                         onChange={(e) => onUpdate({ title: e.target.value })}
                     />
                 </label>
-                <label className="cal-editor-check">
+                <label className="mustry-cal-editor-check">
                     <input type="checkbox" checked={ed.allDay} onChange={(e) => onToggleAllDay(e.target.checked)} />
                     <span>{labels.allDay}</span>
                 </label>
-                <div className="cal-editor-row">
-                    <label className="cal-editor-field">
+                <div className="mustry-cal-editor-row">
+                    <label className="mustry-cal-editor-field">
                         <span>{labels.start}</span>
                         <input type={dtType} value={ed.start} onChange={(e) => onUpdate({ start: e.target.value })} />
                     </label>
-                    <label className="cal-editor-field">
+                    <label className="mustry-cal-editor-field">
                         <span>{labels.end}</span>
                         <input type={dtType} value={ed.end} onChange={(e) => onUpdate({ end: e.target.value })} />
                     </label>
                 </div>
                 {!ed.allDay && timezone && (
-                    <div className="cal-editor-tz">{labels.timesIn.replace('{tz}', timezone)}</div>
+                    <div className="mustry-cal-editor-tz">{labels.timesIn.replace('{tz}', timezone)}</div>
                 )}
                 {problem === 'range' && (
-                    <div className="cal-editor-problem">{labels.invalidRange}</div>
+                    <div className="mustry-cal-editor-problem">{labels.invalidRange}</div>
                 )}
                 {showRepeat && (
-                    <label className="cal-editor-field">
+                    <label className="mustry-cal-editor-field">
                         <span>{labels.repeat}</span>
                         <select
-                            className="cal-editor-select"
+                            className="mustry-cal-editor-select"
                             value={ed.repeatFreq}
                             onChange={(e) => onUpdate({ repeatFreq: e.target.value as Editor['repeatFreq'] })}
                         >
@@ -114,29 +114,29 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                     </label>
                 )}
                 {showRepeat && ed.repeatFreq && (
-                    <div className="cal-editor-repeat">
-                        <div className="cal-editor-repeat-line">
+                    <div className="mustry-cal-editor-repeat">
+                        <div className="mustry-cal-editor-repeat-line">
                             <span>{labels.every}</span>
                             <input
-                                type="number" min={1} className="cal-editor-num"
+                                type="number" min={1} className="mustry-cal-editor-num"
                                 value={ed.repeatInterval}
                                 onChange={(e) => onUpdate({ repeatInterval: Math.max(1, parseInt(e.target.value, 10) || 1) })}
                             />
                             <span>{unitLabel[ed.repeatFreq]}</span>
                         </div>
                         {ed.repeatFreq === 'weekly' && (
-                            <div className="cal-editor-weekdays">
+                            <div className="mustry-cal-editor-weekdays">
                                 {WD.map((lbl, i) => (
                                     <button
                                         type="button" key={i}
-                                        className={'cal-wd' + (ed.repeatByweekday.indexOf(i) >= 0 ? ' cal-wd--on' : '')}
+                                        className={'mustry-cal-wd' + (ed.repeatByweekday.indexOf(i) >= 0 ? ' mustry-cal-wd--on' : '')}
                                         onClick={() => toggleWd(i)}
                                     >{lbl}</button>
                                 ))}
                             </div>
                         )}
-                        <div className="cal-editor-ends">
-                            <span className="cal-editor-ends-label">{labels.ends}</span>
+                        <div className="mustry-cal-editor-ends">
+                            <span className="mustry-cal-editor-ends-label">{labels.ends}</span>
                             <label>
                                 <input type="radio" checked={ed.repeatEndMode === 'never'} onChange={() => onUpdate({ repeatEndMode: 'never' })} />
                                 <span>{labels.never}</span>
@@ -145,7 +145,7 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                                 <input type="radio" checked={ed.repeatEndMode === 'until'} onChange={() => onUpdate({ repeatEndMode: 'until' })} />
                                 <span>{labels.on}</span>
                                 <input
-                                    type="date" className="cal-editor-ends-input" value={ed.repeatUntil}
+                                    type="date" className="mustry-cal-editor-ends-input" value={ed.repeatUntil}
                                     onChange={(e) => onUpdate({ repeatUntil: e.target.value, repeatEndMode: 'until' })}
                                 />
                             </label>
@@ -153,7 +153,7 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                                 <input type="radio" checked={ed.repeatEndMode === 'count'} onChange={() => onUpdate({ repeatEndMode: 'count' })} />
                                 <span>{labels.after}</span>
                                 <input
-                                    type="number" min={1} className="cal-editor-num"
+                                    type="number" min={1} className="mustry-cal-editor-num"
                                     value={ed.repeatCount}
                                     onChange={(e) => onUpdate({ repeatCount: Math.max(1, parseInt(e.target.value, 10) || 1), repeatEndMode: 'count' })}
                                 />
@@ -163,18 +163,18 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                     </div>
                 )}
                 {(categories || []).length > 0 && (
-                    <label className="cal-editor-field">
+                    <label className="mustry-cal-editor-field">
                         <span>{labels.category}</span>
-                        <div className="cal-editor-catrow">
+                        <div className="mustry-cal-editor-catrow">
                             {selCat && selCat.icon ? (
-                                <span className="cal-editor-cat-icon">
+                                <span className="mustry-cal-editor-cat-icon">
                                     <IconRenderer path={selCat.icon} color={catColor} />
                                 </span>
                             ) : (
-                                <span className="cal-editor-cat-dot" style={{ background: catColor }} />
+                                <span className="mustry-cal-editor-cat-dot" style={{ background: catColor }} />
                             )}
                             <select
-                                className="cal-editor-select"
+                                className="mustry-cal-editor-select"
                                 value={ed.category}
                                 onChange={(e) => onUpdate({ category: e.target.value })}
                             >
@@ -186,18 +186,18 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                         </div>
                     </label>
                 )}
-                <label className="cal-editor-field">
+                <label className="mustry-cal-editor-field">
                     <span>{labels.notes}</span>
                     <textarea rows={2} value={ed.description} onChange={(e) => onUpdate({ description: e.target.value })} />
                 </label>
-                <div className="cal-editor-actions">
+                <div className="mustry-cal-editor-actions">
                     {isEdit && (
-                        <button type="button" className="cal-editor-btn cal-editor-btn--danger" onClick={onDelete}>{labels.delete}</button>
+                        <button type="button" className="mustry-cal-editor-btn mustry-cal-editor-btn--danger" onClick={onDelete}>{labels.delete}</button>
                     )}
-                    <span className="cal-editor-actions-spacer" />
-                    <button type="button" className="cal-editor-btn" onClick={onCancel}>{labels.cancel}</button>
+                    <span className="mustry-cal-editor-actions-spacer" />
+                    <button type="button" className="mustry-cal-editor-btn" onClick={onCancel}>{labels.cancel}</button>
                     <button
-                        type="button" className="cal-editor-btn cal-editor-btn--primary"
+                        type="button" className="mustry-cal-editor-btn mustry-cal-editor-btn--primary"
                         disabled={problem !== null} onClick={onSave}
                     >{isEdit ? labels.save : labels.create}</button>
                 </div>

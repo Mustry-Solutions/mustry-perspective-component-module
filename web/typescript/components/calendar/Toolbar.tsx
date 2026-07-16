@@ -30,52 +30,52 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
         onToggleMini, onSetView, onExport, onToggleFollow, onPrev, onToday, onNext
     } = props;
     return (
-        <div className="cal-toolbar">
+        <div className="mustry-cal-toolbar">
             {showMiniNav ? (
                 <button
                     type="button"
-                    className={`cal-title cal-title--btn${miniOpen ? ' is-open' : ''}`}
+                    className={`mustry-cal-title mustry-cal-title--btn${miniOpen ? ' is-open' : ''}`}
                     onClick={onToggleMini}
                     aria-haspopup="true"
                     aria-expanded={miniOpen}
                 >
                     {title}
-                    <span className="cal-title-caret" aria-hidden="true">▾</span>
+                    <span className="mustry-cal-title-caret" aria-hidden="true">▾</span>
                 </button>
             ) : (
-                <div className="cal-title">{title}</div>
+                <div className="mustry-cal-title">{title}</div>
             )}
-            {emptyLabel && <span className="cal-empty-badge" title={emptyHint || emptyLabel}>{emptyLabel}</span>}
-            <div className="cal-views">
+            {emptyLabel && <span className="mustry-cal-empty-badge" title={emptyHint || emptyLabel}>{emptyLabel}</span>}
+            <div className="mustry-cal-views">
                 {VIEWS.map((v) => (
                     <button
                         type="button"
                         key={v}
-                        className={`cal-view-btn${view === v ? ' cal-view-btn--active' : ''}`}
+                        className={`mustry-cal-view-btn${view === v ? ' mustry-cal-view-btn--active' : ''}`}
                         onClick={() => onSetView(v)}
                     >
                         {labels[v]}
                     </button>
                 ))}
             </div>
-            <div className="cal-nav">
+            <div className="mustry-cal-nav">
                 {showExport && (
-                    <button type="button" className="cal-nav-btn cal-export-btn" onClick={onExport} title={labels.exportCsv} aria-label={labels.exportCsv}>
+                    <button type="button" className="mustry-cal-nav-btn mustry-cal-export-btn" onClick={onExport} title={labels.exportCsv} aria-label={labels.exportCsv}>
                         <IconRenderer path="material/get_app" color="var(--cal-accent)" />
                     </button>
                 )}
                 <button
                     type="button"
-                    className={`cal-live${followNow ? ' cal-live--on' : ''}`}
+                    className={`mustry-cal-live${followNow ? ' mustry-cal-live--on' : ''}`}
                     onClick={onToggleFollow}
                     aria-pressed={followNow}
                 >
-                    {followNow && <span className="cal-live-dot" aria-hidden="true" />}
+                    {followNow && <span className="mustry-cal-live-dot" aria-hidden="true" />}
                     {labels.followNow}
                 </button>
-                <button type="button" className="cal-nav-btn" onClick={onPrev} aria-label={labels.previous}>‹</button>
-                <button type="button" className="cal-today" onClick={onToday}>{labels.today}</button>
-                <button type="button" className="cal-nav-btn" onClick={onNext} aria-label={labels.next}>›</button>
+                <button type="button" className="mustry-cal-nav-btn" onClick={onPrev} aria-label={labels.previous}>‹</button>
+                <button type="button" className="mustry-cal-today" onClick={onToday}>{labels.today}</button>
+                <button type="button" className="mustry-cal-nav-btn" onClick={onNext} aria-label={labels.next}>›</button>
             </div>
         </div>
     );

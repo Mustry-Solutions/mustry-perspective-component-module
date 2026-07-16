@@ -17,14 +17,14 @@ describe('EnterTracker', () => {
         const t = new EnterTracker();
         t.seed([ev('a')]);
         expect(t.enterClass('a')).toBe('');
-        expect(t.enterClass('b')).toBe(' cal-anim-enter');
+        expect(t.enterClass('b')).toBe(' mustry-cal-anim-enter');
     });
 
     it('matches a recurring occurrence to its base id ("base::date")', () => {
         const t = new EnterTracker();
         t.seed([ev('a')]);
         expect(t.enterClass('a::2026-06-17')).toBe('');
-        expect(t.enterClass('b::2026-06-17')).toBe(' cal-anim-enter');
+        expect(t.enterClass('b::2026-06-17')).toBe(' mustry-cal-anim-enter');
     });
 
     it('a fresh id settles after the enter animation has played', () => {
@@ -32,7 +32,7 @@ describe('EnterTracker', () => {
         t.seed([]);
         const onSettled = jest.fn();
         t.detect([ev('n')], onSettled);
-        expect(t.enterClass('n')).toBe(' cal-anim-enter');   // still animating
+        expect(t.enterClass('n')).toBe(' mustry-cal-anim-enter');   // still animating
         jest.advanceTimersByTime(ENTER_MS);
         expect(onSettled).toHaveBeenCalledTimes(1);          // re-render to drop the class
         expect(t.enterClass('n')).toBe('');                  // settled

@@ -40,7 +40,7 @@ export class EnterTracker {
      *  (recurring occurrences "base::date" match their base). */
     enterClass(occId: string): string {
         const base = (occId || '').split('::')[0];
-        return this.mounted && !!base && !this.seen.has(base) ? ' cal-anim-enter' : '';
+        return this.mounted && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
     }
 
     dispose(): void {

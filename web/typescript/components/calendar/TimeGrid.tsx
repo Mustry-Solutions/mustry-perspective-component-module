@@ -76,34 +76,34 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
         const timeLabel = `${hhmm(preview.startMin)} – ${hhmm(preview.endMin)}`;
         if (preview.mode === 'create') {
             return (
-                <div className="cal-tg-select" style={{ top, height }}>
-                    <span className="cal-tg-select-time">{timeLabel}</span>
+                <div className="mustry-cal-tg-select" style={{ top, height }}>
+                    <span className="mustry-cal-tg-select-time">{timeLabel}</span>
                 </div>
             );
         }
         return (
             <div
-                className="cal-tg-event cal-tg-event--ghost"
+                className="mustry-cal-tg-event mustry-cal-tg-event--ghost"
                 style={{ top, height, left: 0, width: 'calc(100% - 3px)', ...(preview.color ? { ['--ev' as string]: preview.color } : {}) } as React.CSSProperties}
             >
                 {preview.title || ''}
-                <span className="cal-tg-time">{timeLabel}</span>
+                <span className="mustry-cal-tg-time">{timeLabel}</span>
             </div>
         );
     };
 
     return (
-        <div className="cal-tg cal-anim-view" key={view}>
-            <div className="cal-tg-head" style={colStyle}>
-                <div className="cal-tg-gutter-cell" />
+        <div className="mustry-cal-tg mustry-cal-anim-view" key={view}>
+            <div className="mustry-cal-tg-head" style={colStyle}>
+                <div className="mustry-cal-tg-gutter-cell" />
                 {cols.map((c) => (
-                    <div className={`cal-tg-dayhead${c.isToday ? ' cal-tg-dayhead--today' : ''}`} key={c.iso}>
+                    <div className={`mustry-cal-tg-dayhead${c.isToday ? ' mustry-cal-tg-dayhead--today' : ''}`} key={c.iso}>
                         {headFmt.format(c.date)}
                     </div>
                 ))}
             </div>
-            <div className="cal-tg-allday" style={colStyle}>
-                <div className="cal-tg-gutter-cell cal-tg-allday-label">{labels.allDayTime}</div>
+            <div className="mustry-cal-tg-allday" style={colStyle}>
+                <div className="mustry-cal-tg-gutter-cell mustry-cal-tg-allday-label">{labels.allDayTime}</div>
                 {layoutWeekSegments(cols.map((c) => c.iso), events.filter((e) => e.allDay)).map((seg, i) => (
                     <EventBar
                         key={seg.event.id || `ad-${i}`}
@@ -112,18 +112,18 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                     />
                 ))}
             </div>
-            <div className="cal-tg-scroll" ref={scrollRef} onScroll={onScroll}>
-                <div className="cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
-                    <div className="cal-tg-gutter">
+            <div className="mustry-cal-tg-scroll" ref={scrollRef} onScroll={onScroll}>
+                <div className="mustry-cal-tg-body" style={{ ...colStyle, height: gridHeight }}>
+                    <div className="mustry-cal-tg-gutter">
                         {hours.map((h) => (
-                            <div className="cal-tg-hour" key={h} style={{ height: hourPx }}>
+                            <div className="mustry-cal-tg-hour" key={h} style={{ height: hourPx }}>
                                 <span>{hourFmt.format(new Date(2000, 0, 1, h, 0))}</span>
                             </div>
                         ))}
                     </div>
                     {cols.map((c) => (
                         <div
-                            className={`cal-tg-col${c.isToday ? ' cal-tg-col--today' : ''}`}
+                            className={`mustry-cal-tg-col${c.isToday ? ' mustry-cal-tg-col--today' : ''}`}
                             key={c.iso}
                             data-day={c.iso}
                             style={colBg}
@@ -131,7 +131,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                         >
                             {backgroundBandsForDay(bgEvents, c.iso, winStart, winEnd).map((b, i) => (
                                 <div
-                                    className="cal-tg-bg"
+                                    className="mustry-cal-tg-bg"
                                     key={b.id || `bg${i}`}
                                     style={{
                                         top: ((b.startMin - winStart) / 60) * hourPx,
@@ -148,10 +148,10 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                 const top = ((it.startMin - winStart) / 60) * hourPx;
                                 const height = ((it.endMin - it.startMin) / 60) * hourPx;
                                 const movable = editable && !it.continuesUp && !it.continuesDown;
-                                const cls = ['cal-tg-event'];
-                                if (movable) { cls.push('cal-tg-event--draggable'); }
-                                if (it.continuesUp) { cls.push('cal-tg-event--cont-up'); }
-                                if (it.continuesDown) { cls.push('cal-tg-event--cont-down'); }
+                                const cls = ['mustry-cal-tg-event'];
+                                if (movable) { cls.push('mustry-cal-tg-event--draggable'); }
+                                if (it.continuesUp) { cls.push('mustry-cal-tg-event--cont-up'); }
+                                if (it.continuesDown) { cls.push('mustry-cal-tg-event--cont-down'); }
                                 const color = resolveColor(categories, ev);
                                 return (
                                     <button
@@ -178,42 +178,42 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                     >
                                         {editable && !it.continuesUp && height >= 24 && (
                                             // Kept off short chips so the handles don't swallow the move surface.
-                                            <div className="cal-tg-resize cal-tg-resize--start" onPointerDown={(e) => onStartResize(ev, 'start', e)} />
+                                            <div className="mustry-cal-tg-resize mustry-cal-tg-resize--start" onPointerDown={(e) => onStartResize(ev, 'start', e)} />
                                         )}
                                         {isOccurrence(ev) && (
                                             // Part of a series: dragging/editing detaches this occurrence.
-                                            <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                                            <span className="mustry-cal-ev-recur" aria-hidden="true">↻</span>
                                         )}
                                         <EventIcon ev={ev} categories={categories} />
                                         {ev.title}
                                         {height >= 34 && !it.continuesUp && (
-                                            <span className="cal-tg-time">
+                                            <span className="mustry-cal-tg-time">
                                                 {hhmm(it.startMin)}{it.continuesDown ? ' →' : `–${hhmm(it.endMin)}`}
                                             </span>
                                         )}
                                         {editable && !it.continuesDown && (
-                                            <div className="cal-tg-resize cal-tg-resize--end" onPointerDown={(e) => onStartResize(ev, 'end', e)} />
+                                            <div className="mustry-cal-tg-resize mustry-cal-tg-resize--end" onPointerDown={(e) => onStartResize(ev, 'end', e)} />
                                         )}
                                     </button>
                                 );
                             })}
                             {renderPreview(c.iso)}
                             {c.isToday && nowMin >= winStart && nowMin <= winEnd && (
-                                <div className="cal-tg-now" style={{ top: ((nowMin - winStart) / 60) * hourPx }} />
+                                <div className="mustry-cal-tg-now" style={{ top: ((nowMin - winStart) / 60) * hourPx }} />
                             )}
                         </div>
                     ))}
                     {shiftMarks.length > 0 && (
                         // Behind the events (they carry z-index) and pointer-transparent, so
                         // the lines never intercept clicks or drags.
-                        <div className="cal-tg-shifts" aria-hidden="true">
+                        <div className="mustry-cal-tg-shifts" aria-hidden="true">
                             {shiftMarks.map((s, i) => (
                                 <div
-                                    className="cal-tg-shift"
+                                    className="mustry-cal-tg-shift"
                                     key={`${s.label}-${s.min}-${i}`}
                                     style={{ top: ((s.min - winStart) / 60) * hourPx }}
                                 >
-                                    <span className="cal-tg-shift-label">{s.label}</span>
+                                    <span className="mustry-cal-tg-shift-label">{s.label}</span>
                                 </div>
                             ))}
                         </div>

@@ -110,10 +110,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
 
     private miniDismiss = new DocDismiss(
         // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
-        ['.cal-mini', '.cal-title--btn'], () => this.closeMini());
+        ['.mustry-cal-mini', '.mustry-cal-title--btn'], () => this.closeMini());
     private dayPopDismiss = new DocDismiss(
         // Clicks inside the popover, or on a trigger (date number / "+N more"), manage themselves.
-        ['.cal-daypop', '.cal-daynum', '.cal-more'], () => this.closeDayPop());
+        ['.mustry-cal-daypop', '.mustry-cal-daynum', '.mustry-cal-more'], () => this.closeDayPop());
 
     constructor(props: ComponentProps<CalendarProps>) {
         super(props);
@@ -258,13 +258,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             return;
         }
         const weeks = this.weeksRef.current;
-        const dayEl = weeks ? weeks.querySelector('.cal-day') as HTMLElement | null : null;
+        const dayEl = weeks ? weeks.querySelector('.mustry-cal-day') as HTMLElement | null : null;
         if (!dayEl) {
             return;
         }
-        const chip = weeks!.querySelector('.cal-mbar') as HTMLElement | null;
+        const chip = weeks!.querySelector('.mustry-cal-mbar') as HTMLElement | null;
         const chipRow = (chip ? chip.getBoundingClientRect().height : 18) + 2;   // bar + gap
-        const numEl = dayEl.querySelector('.cal-daynum') as HTMLElement | null;
+        const numEl = dayEl.querySelector('.mustry-cal-daynum') as HTMLElement | null;
         const numH = numEl ? numEl.getBoundingClientRect().height : 18;
         // clientHeight = content + padding; subtract vertical padding, the date row, and the row gap.
         const avail = dayEl.clientHeight - 6 - numH - 2;
@@ -645,7 +645,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     // --- month-view "all events for a day" popover ------------------------
     private openDayPop(iso: string, e: React.MouseEvent): void {
         e.stopPropagation();   // don't let the cell's create-click fire too
-        const cell = (e.currentTarget as HTMLElement).closest('.cal-day') as HTMLElement | null;
+        const cell = (e.currentTarget as HTMLElement).closest('.mustry-cal-day') as HTMLElement | null;
         const r = (cell || (e.currentTarget as HTMLElement)).getBoundingClientRect();
         this.hideHover();
         this.setState({ dayPop: { iso, rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right } } });
@@ -932,9 +932,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     render(): React.ReactNode {
         const { showToolbar, loading } = this.props.props;
         return (
-            <div {...this.props.emit({ classes: loading ? ['mustry-calendar', 'cal-loading'] : ['mustry-calendar'] })} ref={this.rootRef}>
+            <div {...this.props.emit({ classes: loading ? ['mustry-calendar', 'mustry-cal-loading'] : ['mustry-calendar'] })} ref={this.rootRef}>
                 {showToolbar && this.renderToolbar()}
-                {loading && <div className="cal-loading-bar" aria-hidden="true" />}
+                {loading && <div className="mustry-cal-loading-bar" aria-hidden="true" />}
                 {this.props.props.view === 'month' ? this.renderMonth()
                     : this.props.props.view === 'list' ? this.renderList()
                         : this.renderTimeGrid()}

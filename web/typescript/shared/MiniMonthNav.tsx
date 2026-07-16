@@ -1,6 +1,6 @@
 // Mini month navigator — a compact month grid in a popover anchored under a
 // component's title button. Shared by the calendar and the resource timeline;
-// styles are the top-level .cal-mini classes.
+// styles are the top-level .mustry-cal-mini classes.
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from './dateUtils';
@@ -37,20 +37,20 @@ export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
     const MINI_W = 236;
     const left = Math.max(6, Math.min(mini.rect.left, window.innerWidth - MINI_W - 6));
     return ReactDOM.createPortal(
-        <div className="cal-mini" style={{ top: mini.rect.bottom + 6, left, width: MINI_W }} onMouseDown={(e) => e.stopPropagation()}>
-            <div className="cal-mini-head">
-                <button type="button" className="cal-mini-nav" onClick={() => onStep(-1)} aria-label={labels.previousMonth}>‹</button>
-                <span className="cal-mini-title">{monthLabel(mini.month, locale)}</span>
-                <button type="button" className="cal-mini-nav" onClick={() => onStep(1)} aria-label={labels.nextMonth}>›</button>
+        <div className="mustry-cal-mini" style={{ top: mini.rect.bottom + 6, left, width: MINI_W }} onMouseDown={(e) => e.stopPropagation()}>
+            <div className="mustry-cal-mini-head">
+                <button type="button" className="mustry-cal-mini-nav" onClick={() => onStep(-1)} aria-label={labels.previousMonth}>‹</button>
+                <span className="mustry-cal-mini-title">{monthLabel(mini.month, locale)}</span>
+                <button type="button" className="mustry-cal-mini-nav" onClick={() => onStep(1)} aria-label={labels.nextMonth}>›</button>
             </div>
-            <div className="cal-mini-grid">
-                {grid.weeks[0].map((c) => <div className="cal-mini-wd" key={`wd-${c.iso}`}>{wdFmt.format(c.date)}</div>)}
+            <div className="mustry-cal-mini-grid">
+                {grid.weeks[0].map((c) => <div className="mustry-cal-mini-wd" key={`wd-${c.iso}`}>{wdFmt.format(c.date)}</div>)}
                 {grid.weeks.flat().map((c) => {
-                    const cls = ['cal-mini-day'];
-                    if (!c.inMonth) { cls.push('cal-mini-day--other'); }
-                    if (showRange && c.iso >= range.start && c.iso < range.end) { cls.push('cal-mini-day--range'); }
-                    if (c.isToday) { cls.push('cal-mini-day--today'); }
-                    if (c.iso === cursorIso) { cls.push('cal-mini-day--selected'); }
+                    const cls = ['mustry-cal-mini-day'];
+                    if (!c.inMonth) { cls.push('mustry-cal-mini-day--other'); }
+                    if (showRange && c.iso >= range.start && c.iso < range.end) { cls.push('mustry-cal-mini-day--range'); }
+                    if (c.isToday) { cls.push('mustry-cal-mini-day--today'); }
+                    if (c.iso === cursorIso) { cls.push('mustry-cal-mini-day--selected'); }
                     return (
                         <button type="button" key={c.iso} className={cls.join(' ')} onClick={() => onPick(c.iso)}>
                             {c.date.getDate()}
@@ -58,8 +58,8 @@ export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
                     );
                 })}
             </div>
-            <div className="cal-mini-foot">
-                <button type="button" className="cal-mini-today" onClick={() => onPick(fmtDate(today()))}>{labels.today}</button>
+            <div className="mustry-cal-mini-foot">
+                <button type="button" className="mustry-cal-mini-today" onClick={() => onPick(fmtDate(today()))}>{labels.today}</button>
             </div>
         </div>,
         document.body

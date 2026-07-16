@@ -45,7 +45,7 @@ export interface TlGestureEnv {
 export interface TlGestureHost {
     env(): TlGestureEnv;
     flags(): TlGestureFlags;
-    gridEl(): HTMLElement | null;                       // the .tml-grid (row rects live inside)
+    gridEl(): HTMLElement | null;                       // the .mustry-tml-grid (row rects live inside)
     resolveColor(ev: TimelineEvent): string | undefined;
     hideHover(): void;
     setPreview(p: TlPreview | null): void;
@@ -167,7 +167,7 @@ export class TimelineGestureController extends DragGestureController<TlGesture, 
         if (!root) {
             return;
         }
-        root.querySelectorAll('.tml-track[data-resource]').forEach((el) => {
+        root.querySelectorAll('.mustry-tml-track[data-resource]').forEach((el) => {
             const r = el.getBoundingClientRect();
             this.rowRects.push({
                 resourceId: (el as HTMLElement).dataset.resource || '',

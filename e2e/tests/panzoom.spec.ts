@@ -2,7 +2,7 @@ import { test, expect, openRoute } from './helpers';
 
 test('panzoom: embeds the synoptic and shows the zoom badge', async ({ page }) => {
     await openRoute(page, '/panzoom', '.mustry-panzoom');
-    await expect(page.locator('.pz-zoom-badge')).toHaveText(/%$/);
+    await expect(page.locator('.mustry-pz-zoom-badge')).toHaveText(/%$/);
     await expect(page.getByText('PLANT FLOOR — SYNOPTIC DEMO', { exact: false })).toBeVisible();
 });
 
@@ -18,5 +18,5 @@ test('panzoom: scripted fly-to lands on the POI zoom', async ({ page }) => {
     await openRoute(page, '/panzoom', '.mustry-panzoom');
     await page.getByRole('button', { name: 'Fly to Pump 3' }).click();
     // The fly-to animation eases in log space and settles at 150%.
-    await expect(page.locator('.pz-zoom-badge')).toHaveText('150%', { timeout: 10_000 });
+    await expect(page.locator('.mustry-pz-zoom-badge')).toHaveText('150%', { timeout: 10_000 });
 });

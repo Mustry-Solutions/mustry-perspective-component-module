@@ -37,9 +37,9 @@ export function eventIcon(categories: Category[], ev: Styleable): string | undef
 /** Status modifier class for an event chip ('' for normal/unset). */
 export function statusClass(ev: Styleable): string {
     switch (ev.status) {
-        case 'tentative': return ' cal-ev--tentative';
-        case 'cancelled': return ' cal-ev--cancelled';
-        case 'done': return ' cal-ev--done';
+        case 'tentative': return ' mustry-cal-ev--tentative';
+        case 'cancelled': return ' mustry-cal-ev--cancelled';
+        case 'done': return ' mustry-cal-ev--done';
         default: return '';
     }
 }
@@ -51,7 +51,7 @@ export function EventIcon({ ev, categories }: { ev: Styleable; categories: Categ
         return null;
     }
     return (
-        <span className="cal-ev-icon">
+        <span className="mustry-cal-ev-icon">
             <IconRenderer path={icon} color={resolveColor(categories, ev) || 'currentColor'} />
         </span>
     );

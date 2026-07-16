@@ -18,5 +18,5 @@ test('calendar: view switch to Month re-renders', async ({ page }) => {
 
 test('calendar: empty state shows the badge', async ({ page }) => {
     await openRoute(page, '/calendar-empty', '.mustry-calendar');
-    await expect(page.locator('.cal-empty-badge')).toBeVisible();
+    await expect(page.locator('.mustry-cal-empty-badge')).toBeVisible();
 });

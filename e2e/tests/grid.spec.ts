@@ -5,7 +5,7 @@ test('grid: renders rows, headers and the aggregate footer', async ({ page }) =>
     await expect(page.getByText('WO-10000', { exact: true })).toBeVisible();
     // Headers render uppercase via CSS text-transform; the accessible name is "Order".
     await expect(page.getByRole('button', { name: 'Order', exact: true })).toBeVisible();
-    await expect(page.locator('.dg-foot')).toBeVisible();
+    await expect(page.locator('.mustry-dg-foot')).toBeVisible();
 });
 
 test('grid: quick filter narrows the view', async ({ page }) => {
@@ -23,5 +23,5 @@ test('grid stress: 50k rows virtualize', async ({ page }) => {
     await openRoute(page, '/grid-stress', '.mustry-datagrid');
     // The stress generator numbers rows from WO-100000 (see GridStress/view.json).
     await expect(page.getByText('WO-100000', { exact: true })).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('.dg-foot')).toBeVisible();
+    await expect(page.locator('.mustry-dg-foot')).toBeVisible();
 });

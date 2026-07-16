@@ -38,18 +38,18 @@ export function TimelineHover({ hover, locale, timezone, categories, labels }: T
         : ev.status === 'cancelled' ? labels.statusCancelled
             : ev.status === 'done' ? labels.statusDone : '';
     return ReactDOM.createPortal(
-        <div className="tml-hover" style={{ top, left, width: W }}>
-            <div className="tml-hover-title">
-                <span className="tml-hover-dot" style={{ background: color || 'var(--tml-accent)' }} />
+        <div className="mustry-tml-hover" style={{ top, left, width: W }}>
+            <div className="mustry-tml-hover-title">
+                <span className="mustry-tml-hover-dot" style={{ background: color || 'var(--tml-accent)' }} />
                 <EventIcon ev={ev} categories={categories} />
-                <span className="tml-hover-name">{ev.title}</span>
-                {statusLabel ? <span className="tml-hover-status">{statusLabel}</span> : null}
+                <span className="mustry-tml-hover-name">{ev.title}</span>
+                {statusLabel ? <span className="mustry-tml-hover-status">{statusLabel}</span> : null}
             </div>
-            <div className="tml-hover-line">{hover.resourceLabel}</div>
-            <div className="tml-hover-line">
+            <div className="mustry-tml-hover-line">{hover.resourceLabel}</div>
+            <div className="mustry-tml-hover-line">
                 {fmt.format(new Date(hover.startMs))} – {fmt.format(new Date(hover.endMs))}
             </div>
-            {ev.description && <div className="tml-hover-desc">{ev.description}</div>}
+            {ev.description && <div className="mustry-tml-hover-desc">{ev.description}</div>}
         </div>,
         document.body
     );

@@ -25,28 +25,28 @@ export function ListView({ cols, events, locale, categories, emptyMessage, label
         .map((c) => ({ c, evs: byDay[c.iso] || [] }))
         .filter((r) => r.evs.length > 0);
     return (
-        <div className="cal-list cal-anim-view" key="list">
-            {rows.length === 0 && <div className="cal-list-empty">{emptyMessage || labels.noEvents}</div>}
+        <div className="mustry-cal-list mustry-cal-anim-view" key="list">
+            {rows.length === 0 && <div className="mustry-cal-list-empty">{emptyMessage || labels.noEvents}</div>}
             {rows.map(({ c, evs }) => (
-                <div className="cal-list-day" key={c.iso}>
-                    <div className={`cal-list-date${c.isToday ? ' cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>
+                <div className="mustry-cal-list-day" key={c.iso}>
+                    <div className={`mustry-cal-list-date${c.isToday ? ' mustry-cal-list-date--today' : ''}`}>{dayFmt.format(c.date)}</div>
                     {evs.map((ev, i) => {
                         const tm = timeMinutes(ev.start);
                         return (
                             <button
-                                type="button" className={`cal-list-event${statusClass(ev)}${enterClass(ev.id || '')}`} key={ev.id || i}
+                                type="button" className={`mustry-cal-list-event${statusClass(ev)}${enterClass(ev.id || '')}`} key={ev.id || i}
                                 onClick={(e) => onEventClick(ev, e)}
                                 {...hoverProps(ev)}
                             >
-                                <span className="cal-list-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
-                                <span className="cal-list-time">
+                                <span className="mustry-cal-list-dot" style={{ background: resolveColor(categories, ev) || 'var(--cal-accent)' }} />
+                                <span className="mustry-cal-list-time">
                                     {tm === null ? labels.allDayTime : timeFmt.format(new Date(2000, 0, 1, Math.floor(tm / 60), tm % 60))}
                                 </span>
                                 {isOccurrence(ev) && (
-                                    <span className="cal-ev-recur" aria-hidden="true">↻</span>
+                                    <span className="mustry-cal-ev-recur" aria-hidden="true">↻</span>
                                 )}
                                 <EventIcon ev={ev} categories={categories} />
-                                <span className="cal-list-title">{ev.title}</span>
+                                <span className="mustry-cal-list-title">{ev.title}</span>
                             </button>
                         );
                     })}

@@ -39,7 +39,7 @@ import { RowLayouts, TimelineTrack } from './TimelineTrack';
 export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
 
 const LABEL_COL_PX = 160;
-const AXIS_PX = 42;        // two 21px tick rows (matches .tml-axis-row)
+const AXIS_PX = 42;        // two 21px tick rows (matches .mustry-tml-axis-row)
 const GROUP_ROW_PX = 22;
 
 interface ResourceTimelineState {
@@ -63,7 +63,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private followTimer = 0;    // follow-now (config.followNow): periodic re-anchor on today
     private hoverTimer = 0;
     private gridRef = React.createRef<HTMLDivElement>();
-    private scrollRef = React.createRef<HTMLDivElement>();   // the horizontal scroll container (.tml-scroll)
+    private scrollRef = React.createRef<HTMLDivElement>();   // the horizontal scroll container (.mustry-tml-scroll)
     private enter = new EnterTracker();   // enter-animation bookkeeping for newly-appearing ids
 
     private gestures = new TimelineGestureController({
@@ -88,7 +88,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     private miniDismiss = new DocDismiss(
         // Clicks inside the popover, or on the title toggle (which handles itself), don't close.
-        ['.cal-mini', '.tml-title--btn'], () => this.closeMini());
+        ['.mustry-cal-mini', '.mustry-tml-title--btn'], () => this.closeMini());
 
     constructor(props: ComponentProps<TimelineProps>) {
         super(props);
@@ -151,9 +151,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     /** Enter-animation class for a bar/band, keyed on the event's base id. Empty
      *  while a drag is in flight so the ghost and mid-gesture re-renders never
-     *  animate (the shared tracker returns the calendar's class; mapped to .tml-). */
+     *  animate (the shared tracker returns the calendar's class; mapped to .mustry-tml-). */
     private enterClass = (occId: string): string => {
-        return !this.gestures.active && this.enter.enterClass(occId) ? ' tml-anim-enter' : '';
+        return !this.gestures.active && this.enter.enterClass(occId) ? ' mustry-tml-anim-enter' : '';
     }
 
     /** The visible window (day/week span whole wall-calendar days — DST-safe). */
@@ -716,28 +716,28 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const nowVisible = nowMs >= scale.startMs && nowMs < scale.endMs;
         const rowH = p.rowHeight;
         return (
-            <div {...this.props.emit({ classes: p.loading ? ['mustry-timeline', 'tml-loading'] : ['mustry-timeline'] })}>
+            <div {...this.props.emit({ classes: p.loading ? ['mustry-timeline', 'mustry-tml-loading'] : ['mustry-timeline'] })}>
                 {p.showToolbar && this.renderToolbar()}
-                {p.loading && <div className="tml-loading-bar" aria-hidden="true" />}
-                <div className="tml-scroll" ref={this.scrollRef} onScroll={this.hideHover}>
-                    <div className="tml-grid" ref={this.gridRef} style={{ width: LABEL_COL_PX + width }}>
-                        <div className="tml-corner" style={{ width: LABEL_COL_PX, height: AXIS_PX }} />
-                        <div className="tml-axis" style={{ width, height: AXIS_PX }}>
-                            <div className="tml-axis-row tml-axis-upper">
+                {p.loading && <div className="mustry-tml-loading-bar" aria-hidden="true" />}
+                <div className="mustry-tml-scroll" ref={this.scrollRef} onScroll={this.hideHover}>
+                    <div className="mustry-tml-grid" ref={this.gridRef} style={{ width: LABEL_COL_PX + width }}>
+                        <div className="mustry-tml-corner" style={{ width: LABEL_COL_PX, height: AXIS_PX }} />
+                        <div className="mustry-tml-axis" style={{ width, height: AXIS_PX }}>
+                            <div className="mustry-tml-axis-row mustry-tml-axis-upper">
                                 {ticks.upper.map((t) => (
-                                    <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
+                                    <span key={t.ms} className="mustry-tml-tick" style={{ left: t.px }}>{t.label}</span>
                                 ))}
                             </div>
-                            <div className="tml-axis-row tml-axis-lower">
+                            <div className="mustry-tml-axis-row mustry-tml-axis-lower">
                                 {ticks.lower.map((t) => (
-                                    <span key={t.ms} className="tml-tick" style={{ left: t.px }}>{t.label}</span>
+                                    <span key={t.ms} className="mustry-tml-tick" style={{ left: t.px }}>{t.label}</span>
                                 ))}
                             </div>
                         </div>
                         {rows.map((row) => (
                             <React.Fragment key={row.key}>
                                 <div
-                                    className={row.type === 'group' ? 'tml-label tml-label--group' : 'tml-label'}
+                                    className={row.type === 'group' ? 'mustry-tml-label mustry-tml-label--group' : 'mustry-tml-label'}
                                     style={{ width: LABEL_COL_PX, height: row.type === 'group' ? GROUP_ROW_PX : rowH }}
                                     onClick={() => this.onResourceClick(row)}
                                     role={row.type === 'group' ? 'button' : undefined}
@@ -751,26 +751,26 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                                     } : undefined}
                                 >
                                     {row.type === 'group' && (
-                                        <span className="tml-group-caret" aria-hidden="true">{row.collapsed ? '▸' : '▾'}</span>
+                                        <span className="mustry-tml-group-caret" aria-hidden="true">{row.collapsed ? '▸' : '▾'}</span>
                                     )}
                                     {/* Resource icon / colour accent, shown like a legend item: the
                                         icon carries the colour; colour alone renders as a dot. */}
                                     {row.type === 'resource' && (row.resource!.icon
                                         ? (
-                                            <span className="tml-label-icon">
+                                            <span className="mustry-tml-label-icon">
                                                 <IconRenderer path={row.resource!.icon} color={row.resource!.color || 'currentColor'} />
                                             </span>
                                         )
                                         : row.resource!.color
-                                            ? <span className="tml-label-dot" style={{ background: row.resource!.color }} />
+                                            ? <span className="mustry-tml-label-dot" style={{ background: row.resource!.color }} />
                                             : null)}
                                     {row.label}
                                     {row.type === 'group' && row.collapsed && !!row.hiddenCount && (
-                                        <span className="tml-group-count">({row.hiddenCount})</span>
+                                        <span className="mustry-tml-group-count">({row.hiddenCount})</span>
                                     )}
                                 </div>
                                 <div
-                                    className={row.type === 'group' ? 'tml-track tml-track--group' : 'tml-track'}
+                                    className={row.type === 'group' ? 'mustry-tml-track mustry-tml-track--group' : 'mustry-tml-track'}
                                     data-resource={row.type === 'resource' ? row.resource!.id : undefined}
                                     style={{
                                         width,
@@ -788,16 +788,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             </React.Fragment>
                         ))}
                         {rows.length === 0 && (
-                            <div className="tml-empty" style={{ width: LABEL_COL_PX }}>{p.labels.noResources}</div>
+                            <div className="mustry-tml-empty" style={{ width: LABEL_COL_PX }}>{p.labels.noResources}</div>
                         )}
                         {/* One full-height gridline per lower tick — always aligned with the
                             axis, even across 23/25h DST days (unlike a fixed-step background). */}
                         {ticks.lower.map((t) => (
-                            <div key={`gl-${t.ms}`} className="tml-gridcol" style={{ left: LABEL_COL_PX + t.px, top: AXIS_PX }} />
+                            <div key={`gl-${t.ms}`} className="mustry-tml-gridcol" style={{ left: LABEL_COL_PX + t.px, top: AXIS_PX }} />
                         ))}
                         {nowVisible && (
                             <div
-                                className="tml-now"
+                                className="mustry-tml-now"
                                 style={{ left: LABEL_COL_PX + msToPx(scale, nowMs), top: AXIS_PX }}
                             />
                         )}

@@ -14,22 +14,22 @@ export function Legend({ categories, hiddenCats, onToggle }: LegendProps): React
         return null;
     }
     return (
-        <div className="cal-legend" role="group" aria-label="Categories">
+        <div className="mustry-cal-legend" role="group" aria-label="Categories">
             {categories.map((c) => {
                 const hidden = hiddenCats.has(c.id);
                 return (
                     <button
                         type="button"
                         key={c.id}
-                        className={`cal-legend-item${hidden ? ' is-hidden' : ''}`}
+                        className={`mustry-cal-legend-item${hidden ? ' is-hidden' : ''}`}
                         onClick={() => onToggle(c.id)}
                         aria-pressed={!hidden}
                         title={hidden ? `Show ${c.label}` : `Hide ${c.label}`}
                     >
                         {c.icon
-                            ? <span className="cal-ev-icon cal-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
-                            : <span className="cal-legend-dot" style={{ background: c.color }} />}
-                        <span className="cal-legend-label">{c.label}</span>
+                            ? <span className="mustry-cal-ev-icon mustry-cal-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
+                            : <span className="mustry-cal-legend-dot" style={{ background: c.color }} />}
+                        <span className="mustry-cal-legend-label">{c.label}</span>
                     </button>
                 );
             })}

@@ -1,5 +1,5 @@
 // Pan & Zoom View styles (theme pattern shared with the other components).
-@mixin pz-theme {
+@mixin mustry-pz-theme {
     --pz-accent: var(--callToAction, #0c7bb3);
     --pz-text: var(--neutral-90, #1f2937);
     --pz-muted: var(--neutral-60, #6b7280);
@@ -10,7 +10,7 @@
 }
 
 .mustry-panzoom {
-    @include pz-theme;
+    @include mustry-pz-theme;
     display: flex;
     min-width: 0;
     min-height: 0;
@@ -23,7 +23,7 @@
     }
 }
 
-.pz-viewport {
+.mustry-pz-viewport {
     position: relative;
     flex: 1 1 auto;
     overflow: hidden;
@@ -31,12 +31,12 @@
     touch-action: none;     // pointer events own the gestures
     cursor: grab;
 
-    &.pz-panning {
+    &.mustry-pz-panning {
         cursor: grabbing;
     }
 }
 
-.pz-content {
+.mustry-pz-content {
     position: absolute;
     top: 0;
     left: 0;
@@ -45,7 +45,7 @@
     box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
 }
 
-.pz-placeholder {
+.mustry-pz-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -54,7 +54,7 @@
     color: var(--pz-muted);
 }
 
-.pz-controls {
+.mustry-pz-controls {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -90,7 +90,7 @@
     }
 }
 
-.pz-zoom-badge {
+.mustry-pz-zoom-badge {
     position: absolute;
     left: 10px;
     bottom: 8px;
@@ -105,7 +105,7 @@
     pointer-events: none;
 }
 
-.pz-poi-select {
+.mustry-pz-poi-select {
     position: absolute;
     top: 10px;
     left: 10px;
@@ -125,7 +125,7 @@
     }
 }
 
-.pz-minimap {
+.mustry-pz-minimap {
     position: absolute;
     right: 10px;
     bottom: 8px;
@@ -139,14 +139,14 @@
     touch-action: none;
 }
 
-.pz-mini-view {
+.mustry-pz-mini-view {
     position: absolute;
     border: 1px solid var(--pz-accent);
     background: color-mix(in srgb, var(--pz-accent) 15%, transparent);
     pointer-events: none;
 }
 
-.pz-mini-poi {
+.mustry-pz-mini-poi {
     position: absolute;
     width: 5px;
     height: 5px;
@@ -161,7 +161,7 @@
 }
 
 // Flagged POI currently in view: a fixed-size ring pulsing at its location.
-.pz-pulse {
+.mustry-pz-pulse {
     position: absolute;
     width: 26px;
     height: 26px;
@@ -170,10 +170,10 @@
     border-radius: 50%;
     pointer-events: none;   // never blocks clicks into the embedded view
     z-index: 4;
-    animation: pz-pulse-anim 1.4s ease-out infinite;
+    animation: mustry-pz-pulse-anim 1.4s ease-out infinite;
 }
 
-@keyframes pz-pulse-anim {
+@keyframes mustry-pz-pulse-anim {
     0% {
         transform: scale(0.55);
         opacity: 0.9;
@@ -193,7 +193,7 @@
 // Reduced motion: the flagged-POI marker stays (information preserved) but
 // holds still. Fly/glide/spring animations are disabled in code via matchMedia.
 @media (prefers-reduced-motion: reduce) {
-    .pz-pulse {
+    .mustry-pz-pulse {
         animation: none;
         opacity: 0.85;
         transform: none;
@@ -202,7 +202,7 @@
 
 // Off-screen flagged POI: a clickable chip at the viewport edge, arrow rotated
 // toward the real location; clicking flies there.
-.pz-indicator {
+.mustry-pz-indicator {
     position: absolute;
     transform: translate(-50%, -50%);
     z-index: 7;

@@ -55,16 +55,16 @@ export function HoverPopover({ hover, locale, categories, labels }: HoverPopover
     const icon = eventIcon(categories, ev);
     const color = resolveColor(categories, ev);
     return ReactDOM.createPortal(
-        <div className="cal-popover" style={{ top, left, width }}>
-            <div className="cal-popover-title">
+        <div className="mustry-cal-popover" style={{ top, left, width }}>
+            <div className="mustry-cal-popover-title">
                 {icon
-                    ? <span className="cal-ev-icon"><IconRenderer path={icon} color={color || 'currentColor'} /></span>
-                    : <span className="cal-popover-dot" style={{ background: color || 'var(--cal-accent)' }} />}
-                <span className="cal-popover-name">{ev.title}</span>
-                {statusLabel ? <span className="cal-popover-status">{statusLabel}</span> : null}
+                    ? <span className="mustry-cal-ev-icon"><IconRenderer path={icon} color={color || 'currentColor'} /></span>
+                    : <span className="mustry-cal-popover-dot" style={{ background: color || 'var(--cal-accent)' }} />}
+                <span className="mustry-cal-popover-name">{ev.title}</span>
+                {statusLabel ? <span className="mustry-cal-popover-status">{statusLabel}</span> : null}
             </div>
-            <div className="cal-popover-time">{timeStr}</div>
-            {ev.description ? <div className="cal-popover-desc">{ev.description}</div> : null}
+            <div className="mustry-cal-popover-time">{timeStr}</div>
+            {ev.description ? <div className="mustry-cal-popover-desc">{ev.description}</div> : null}
         </div>,
         document.body
     );

@@ -198,7 +198,7 @@ export class CalendarGestureController extends DragGestureController<Gesture, Pr
         if (!root) {
             return;
         }
-        root.querySelectorAll('.cal-tg-col').forEach((el) => {
+        root.querySelectorAll('.mustry-cal-tg-col').forEach((el) => {
             this.colRects.push({ day: (el as HTMLElement).dataset.day || '', rect: el.getBoundingClientRect() });
         });
     }
@@ -209,7 +209,7 @@ export class CalendarGestureController extends DragGestureController<Gesture, Pr
         if (!root) {
             return;
         }
-        root.querySelectorAll('.cal-day').forEach((el) => {
+        root.querySelectorAll('.mustry-cal-day').forEach((el) => {
             const r = el.getBoundingClientRect();
             this.cellRects.push({ day: (el as HTMLElement).dataset.day || '', left: r.left, right: r.right, top: r.top, bottom: r.bottom });
         });

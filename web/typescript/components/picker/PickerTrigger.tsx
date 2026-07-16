@@ -12,10 +12,10 @@ interface PickerTriggerProps {
 }
 
 export function PickerTrigger(p: PickerTriggerProps): React.ReactElement {
-    const triggerClasses = p.open ? 'dtrp-trigger dtrp-trigger--open' : 'dtrp-trigger';
+    const triggerClasses = p.open ? 'mustry-dtrp-trigger mustry-dtrp-trigger--open' : 'mustry-dtrp-trigger';
     const textClasses = p.isPlaceholder
-        ? 'dtrp-trigger-text dtrp-trigger-text--placeholder'
-        : 'dtrp-trigger-text';
+        ? 'mustry-dtrp-trigger-text mustry-dtrp-trigger-text--placeholder'
+        : 'mustry-dtrp-trigger-text';
     return (
         <button
             type="button"
@@ -27,7 +27,7 @@ export function PickerTrigger(p: PickerTriggerProps): React.ReactElement {
             onClick={p.onToggle}
         >
             <svg
-                className="dtrp-trigger-icon"
+                className="mustry-dtrp-trigger-icon"
                 width="16" height="16" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" strokeWidth="2"
                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -39,7 +39,7 @@ export function PickerTrigger(p: PickerTriggerProps): React.ReactElement {
             </svg>
             <span className={textClasses}>{p.text}</span>
             <svg
-                className="dtrp-trigger-caret"
+                className="mustry-dtrp-trigger-caret"
                 width="13" height="13" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" strokeWidth="2"
                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"

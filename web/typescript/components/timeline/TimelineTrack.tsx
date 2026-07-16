@@ -43,17 +43,17 @@ function renderPreview(p: TimelineTrackProps): React.ReactNode {
     const left = msToPx(p.scale, Math.max(preview.startMs, p.scale.startMs));
     const width = Math.max(2, msToPx(p.scale, Math.min(preview.endMs, p.scale.endMs)) - left);
     if (preview.mode === 'create') {
-        return <div className="tml-select" style={{ left, width }} />;
+        return <div className="mustry-tml-select" style={{ left, width }} />;
     }
     return (
         <div
-            className="tml-bar tml-bar--ghost"
+            className="mustry-tml-bar mustry-tml-bar--ghost"
             style={{
                 left, width, top: 3, height: p.rowHeight - 8,
                 ...(preview.color ? { ['--ev' as string]: preview.color } : {})
             } as React.CSSProperties}
         >
-            <span className="tml-bar-title">{preview.title || ''}</span>
+            <span className="mustry-tml-bar-title">{preview.title || ''}</span>
         </div>
     );
 }
@@ -69,7 +69,7 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
         <>
             {bands.map((it, i) => (
                 <div
-                    key={`bg-${it.event.id || i}`} className="tml-band tml-band--bg"
+                    key={`bg-${it.event.id || i}`} className="mustry-tml-band mustry-tml-band--bg"
                     style={{ ...geom(it), background: resolveColor(categories, it.event) || undefined }}
                 />
             ))}
@@ -78,7 +78,7 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                 return (
                     <div
                         key={`st-${it.event.id || i}`}
-                        className={`tml-band tml-band--state${statusClass(it.event)}${p.enterClass(it.event.id)}`}
+                        className={`mustry-tml-band mustry-tml-band--state${statusClass(it.event)}${p.enterClass(it.event.id)}`}
                         style={{ ...g, ['--ev' as string]: resolveColor(categories, it.event) } as React.CSSProperties}
                         role="button"
                         tabIndex={0}
@@ -93,7 +93,7 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                             }
                         }}
                     >
-                        {g.width > 48 && <span className="tml-band-label">{it.event.title}</span>}
+                        {g.width > 48 && <span className="mustry-tml-band-label">{it.event.title}</span>}
                     </div>
                 );
             })}
@@ -107,10 +107,10 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                 const g = barGeom(px(it.startMs), px(it.endMs));
                 const laneH = barArea / it.lanes;
                 const movable = p.movable(ev);
-                const cls = ['tml-bar'];
-                if (movable) { cls.push('tml-bar--movable'); }
-                if (it.continuesLeft) { cls.push('tml-bar--cont-left'); }
-                if (it.continuesRight) { cls.push('tml-bar--cont-right'); }
+                const cls = ['mustry-tml-bar'];
+                if (movable) { cls.push('mustry-tml-bar--movable'); }
+                if (it.continuesLeft) { cls.push('mustry-tml-bar--cont-left'); }
+                if (it.continuesRight) { cls.push('mustry-tml-bar--cont-right'); }
                 const color = resolveColor(categories, ev);
                 const extent = p.eventExtent(ev);
                 return (
@@ -146,19 +146,19 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                     >
                         {movable && g.showHandles && !it.continuesLeft && (
                             <div
-                                className="tml-resize tml-resize--start"
+                                className="mustry-tml-resize mustry-tml-resize--start"
                                 onPointerDown={(e) => p.onStartResize('start', ev, extent.startMs, extent.endMs, e)}
                             />
                         )}
                         {p.isOccurrence(ev) && (
                             // Part of a series: dragging/editing detaches this occurrence.
-                            <span className="tml-bar-recur" aria-hidden="true">↻</span>
+                            <span className="mustry-tml-bar-recur" aria-hidden="true">↻</span>
                         )}
                         <EventIcon ev={ev} categories={categories} />
-                        <span className="tml-bar-title">{ev.title}</span>
+                        <span className="mustry-tml-bar-title">{ev.title}</span>
                         {movable && g.showHandles && !it.continuesRight && (
                             <div
-                                className="tml-resize tml-resize--end"
+                                className="mustry-tml-resize mustry-tml-resize--end"
                                 onPointerDown={(e) => p.onStartResize('end', ev, extent.startMs, extent.endMs, e)}
                             />
                         )}

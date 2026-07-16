@@ -23,6 +23,12 @@ deliberate decision, never an accident.
   the quickest fix for an expired Perspective trial.
 
 ### Internal
+- **CSS classes namespaced**: every `.cal-`/`.tml-`/`.dg-`/`.pz-`/`.dtrp-`
+  class is now `mustry-`-prefixed (845 renames), eliminating collision risk
+  with other third-party modules' global styles on a shared Perspective page.
+  The documented theming CSS *variables* (`--cal-*`, `--tml-*`, …) are
+  unchanged. Class names were never a documented API; anyone who targeted
+  them in a project stylesheet must add the `mustry-` prefix.
 - **Build modernized**: Gradle 7.6 → 8.14.3 (zero deprecations),
   `io.ia.sdk.modl` 0.4.0 → 0.5.0, node-gradle plugin 3.5.1 → 7.1.0,
   `settings.gradle` → Kotlin DSL (dropping the meaningless root include),
