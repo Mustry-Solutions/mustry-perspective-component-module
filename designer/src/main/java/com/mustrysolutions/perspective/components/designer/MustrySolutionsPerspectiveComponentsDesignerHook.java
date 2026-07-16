@@ -7,11 +7,7 @@ import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.perspective.designer.DesignerComponentRegistry;
 import com.inductiveautomation.perspective.designer.api.PerspectiveDesignerInterface;
 
-import com.mustrysolutions.perspective.components.common.comp.Calendar;
-import com.mustrysolutions.perspective.components.common.comp.DataGrid;
-import com.mustrysolutions.perspective.components.common.comp.PanZoomView;
-import com.mustrysolutions.perspective.components.common.comp.DateTimeRangePicker;
-import com.mustrysolutions.perspective.components.common.comp.ResourceTimeline;
+import com.mustrysolutions.perspective.components.common.comp.Components;
 
 /**
  * Designer-scope hook. Registers this module's components so they appear in the
@@ -29,21 +25,13 @@ public class MustrySolutionsPerspectiveComponentsDesignerHook extends AbstractDe
         PerspectiveDesignerInterface pdi = PerspectiveDesignerInterface.get(context);
         this.registry = pdi.getDesignerComponentRegistry();
         log.info("Registering Mustry Solutions Perspective components in the Designer.");
-        this.registry.registerComponent(DateTimeRangePicker.DESCRIPTOR);
-        this.registry.registerComponent(Calendar.DESCRIPTOR);
-        this.registry.registerComponent(DataGrid.DESCRIPTOR);
-            this.registry.registerComponent(PanZoomView.DESCRIPTOR);
-        this.registry.registerComponent(ResourceTimeline.DESCRIPTOR);
+        Components.ALL.forEach(this.registry::registerComponent);
     }
 
     @Override
     public void shutdown() {
         if (this.registry != null) {
-            this.registry.removeComponent(DateTimeRangePicker.COMPONENT_ID);
-            this.registry.removeComponent(Calendar.COMPONENT_ID);
-        this.registry.removeComponent(DataGrid.COMPONENT_ID);
-            this.registry.removeComponent(PanZoomView.COMPONENT_ID);
-            this.registry.removeComponent(ResourceTimeline.COMPONENT_ID);
+            Components.ALL.forEach(d -> this.registry.removeComponent(d.id()));
         }
     }
 }

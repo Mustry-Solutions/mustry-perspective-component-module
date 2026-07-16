@@ -1,20 +1,14 @@
 package com.mustrysolutions.perspective.components.common.comp;
 
-import java.awt.image.BufferedImage;
+import static com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule.descriptor;
+import static com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule.event;
+
 import java.util.List;
 
-import javax.swing.ImageIcon;
-
-import com.inductiveautomation.ignition.common.jsonschema.JsonSchema;
 import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
-import com.inductiveautomation.perspective.common.api.ComponentDescriptorImpl;
-import com.inductiveautomation.perspective.common.api.ComponentEventDescriptor;
-
-import com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule;
 
 /**
- * Describes the Resource Timeline component to the Java-side registry so the
- * gateway and designer know about it and where to find its front-end (JS/CSS).
+ * Describes the Resource Timeline component to the Java-side registry.
  *
  * <p>The {@link #COMPONENT_ID} here MUST exactly match the {@code COMPONENT_TYPE}
  * declared in the matching TypeScript component (web/typescript/components/timeline).
@@ -24,53 +18,22 @@ public class ResourceTimeline {
     /** Unique component id — must match the front-end ComponentMeta.getComponentType(). */
     public static final String COMPONENT_ID = "mustrysolutions.display.resourcetimeline";
 
-    /** Props schema (types, descriptions) loaded from the common resources. */
-    public static final JsonSchema SCHEMA = JsonSchema.parse(
-        ResourceTimeline.class.getResourceAsStream("/resourcetimeline.props.json"));
-
-    public static final JsonSchema ON_CHANGE_SCHEMA = JsonSchema.parse(
-        ResourceTimeline.class.getResourceAsStream("/timeline.onchange.event.json"));
-
-    public static final JsonSchema ON_EVENT_CLICK_SCHEMA = JsonSchema.parse(
-        ResourceTimeline.class.getResourceAsStream("/timeline.oneventclick.event.json"));
-
-    public static final JsonSchema ON_SELECT_SCHEMA = JsonSchema.parse(
-        ResourceTimeline.class.getResourceAsStream("/timeline.onselect.event.json"));
-
-    public static final JsonSchema ON_RESOURCE_CLICK_SCHEMA = JsonSchema.parse(
-        ResourceTimeline.class.getResourceAsStream("/timeline.onresourceclick.event.json"));
-
-    /** Palette/browser icon + drag thumbnail (drawn, not bundled). */
-    private static final BufferedImage ICON = MustrySolutionsPerspectiveComponentsModule.paletteIcon(COMPONENT_ID);
-
-    /** The descriptor registered with Perspective's component registries. */
-    public static final ComponentDescriptor DESCRIPTOR = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
-        .setPaletteCategory(MustrySolutionsPerspectiveComponentsModule.COMPONENT_CATEGORY)
-        .setId(COMPONENT_ID)
-        .setModuleId(MustrySolutionsPerspectiveComponentsModule.MODULE_ID)
-        .setSchema(SCHEMA)
-        .setName("Resource Timeline")
-        .setIcon(new ImageIcon(ICON))
-        .addPaletteEntry("", "Resource Timeline",
-            "A scheduling board: resources as rows on a zoomable horizontal time axis.", ICON, null)
-        .setDefaultMetaName("resourceTimeline")
-        .setEvents(List.of(
-            new ComponentEventDescriptor(
-                "onChange",
+    /** The descriptor registered with Perspective's component registries (see {@link Components#ALL}). */
+    public static final ComponentDescriptor DESCRIPTOR = descriptor(
+        COMPONENT_ID, "Resource Timeline", "resourceTimeline",
+        "A scheduling board: resources as rows on a zoomable horizontal time axis.",
+        "/resourcetimeline.props.json",
+        List.of(
+            event("onChange",
                 "Fires for every data mutation (create / edit / delete / move / resize) with the resulting event.",
-                ON_CHANGE_SCHEMA),
-            new ComponentEventDescriptor(
-                "onEventClick",
+                "/timeline.onchange.event.json"),
+            event("onEventClick",
                 "Fires when an event bar is clicked.",
-                ON_EVENT_CLICK_SCHEMA),
-            new ComponentEventDescriptor(
-                "onSelect",
+                "/timeline.oneventclick.event.json"),
+            event("onSelect",
                 "Fires when an empty span is dragged out on a row.",
-                ON_SELECT_SCHEMA),
-            new ComponentEventDescriptor(
-                "onResourceClick",
+                "/timeline.onselect.event.json"),
+            event("onResourceClick",
                 "Fires when a resource row label is clicked.",
-                ON_RESOURCE_CLICK_SCHEMA)))
-        .setResources(MustrySolutionsPerspectiveComponentsModule.BROWSER_RESOURCES)
-        .build();
+                "/timeline.onresourceclick.event.json")));
 }

@@ -5,9 +5,16 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.Set;
 
+import javax.swing.ImageIcon;
+
+import com.inductiveautomation.ignition.common.jsonschema.JsonSchema;
 import com.inductiveautomation.perspective.common.api.BrowserResource;
+import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
+import com.inductiveautomation.perspective.common.api.ComponentDescriptorImpl;
+import com.inductiveautomation.perspective.common.api.ComponentEventDescriptor;
 
 /**
  * Central location for module- and component-wide constants shared across the
@@ -42,6 +49,42 @@ public class MustrySolutionsPerspectiveComponentsModule {
             BrowserResource.ResourceType.CSS
         )
     );
+
+    /** Parse a JSON schema bundled in the common resources (props or event payloads). */
+    public static JsonSchema schema(String resourcePath) {
+        return JsonSchema.parse(
+            MustrySolutionsPerspectiveComponentsModule.class.getResourceAsStream(resourcePath));
+    }
+
+    /** A component event whose payload schema lives in the common resources. */
+    public static ComponentEventDescriptor event(String name, String description, String schemaResource) {
+        return new ComponentEventDescriptor(name, description, schema(schemaResource));
+    }
+
+    /**
+     * The one place a component descriptor is assembled. Every component gets the
+     * same category, module id, browser resources, drawn icon and palette-entry
+     * shape — per-component code supplies only what actually differs. Keeps the
+     * five descriptors structurally identical by construction.
+     */
+    public static ComponentDescriptor descriptor(String id, String name, String metaName,
+            String paletteDescription, String schemaResource, List<ComponentEventDescriptor> events) {
+        BufferedImage icon = paletteIcon(id);
+        ComponentDescriptorImpl.ComponentBuilder builder = ComponentDescriptorImpl.ComponentBuilder.newBuilder()
+            .setPaletteCategory(COMPONENT_CATEGORY)
+            .setId(id)
+            .setModuleId(MODULE_ID)
+            .setSchema(schema(schemaResource))
+            .setName(name)
+            .setIcon(new ImageIcon(icon))
+            .addPaletteEntry("", name, paletteDescription, icon, null)
+            .setDefaultMetaName(metaName)
+            .setResources(BROWSER_RESOURCES);
+        if (events != null && !events.isEmpty()) {
+            builder.setEvents(events);
+        }
+        return builder.build();
+    }
 
     /**
      * Builds a small (16x16) palette icon for a component by drawing a simple glyph
