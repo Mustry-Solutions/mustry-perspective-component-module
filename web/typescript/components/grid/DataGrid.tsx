@@ -18,6 +18,8 @@ import {
     validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
+import { GridCell, GridHeadCell } from './GridCells';
+import { GridToolbar } from './GridToolbar';
 
 // Must match DataGrid.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.input.datagrid';
@@ -589,69 +591,46 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private renderCell(lc: LaidColumn, row: Row, pos: CellPos, rowHeight: number): React.ReactNode {
         const { col } = lc;
         const p = this.props.props;
-        const pinned = lc.left >= 0;
         const ed = this.state.editing;
-        const isEditing = ed && ed.pos.row === pos.row && ed.pos.col === pos.col;
-        const isFocused = !isEditing && this.state.focus
-            && this.state.focus.row === pos.row && this.state.focus.col === pos.col;
+        const isEditing = !!(ed && ed.pos.row === pos.row && ed.pos.col === pos.col);
+        const isFocused = !!(!isEditing && this.state.focus
+            && this.state.focus.row === pos.row && this.state.focus.col === pos.col);
         const value = this.cellValue(row, col.field);
-        const text = formatCell(value, col, p.locale);
-        const rule = col.cellStyles.length ? matchStyle(value, col.cellStyles) : null;
         const editable = this.colEditable(col);
-        const pendingKey = `${this.rowId(row)}::${col.field}`;
+        const boolEditable = editable && col.type === 'boolean';
         return (
-            <div
+            <GridCell
                 key={col.field}
-                className={`dg-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}`
-                    + `${isFocused ? ' dg-cell--focus' : ''}${editable ? ' dg-cell--editable' : ''}`
-                    + `${pendingKey in this.state.pending ? ' dg-cell--pending' : ''}`}
-                style={{
-                    width: lc.width, minWidth: lc.width, lineHeight: `${rowHeight - 1}px`,
-                    ...(pinned ? { left: lc.left } : null),
-                    ...(rule && rule.color ? { color: rule.color } : null),
-                    ...(rule && rule.background ? { background: rule.background } : null)
-                }}
-                title={isEditing ? undefined : text || undefined}
-                onClick={() => this.setState({ focus: pos })}
-                onDoubleClick={editable && col.type !== 'boolean' ? () => this.startEdit(pos) : undefined}
-            >
-                {isEditing ? this.renderEditor(col, ed as EditState, rowHeight)
-                    : editable && col.type === 'boolean' ? (
-                        <input
-                            type="checkbox"
-                            className="dg-bool"
-                            checked={value === true || value === 'true'}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={() => this.toggleBoolean(row, col)}
-                        />
-                    ) : text}
-            </div>
+                lc={lc}
+                rowHeight={rowHeight}
+                text={formatCell(value, col, p.locale)}
+                styleRule={col.cellStyles.length ? matchStyle(value, col.cellStyles) : null}
+                editable={editable}
+                isFocused={isFocused}
+                isPending={`${this.rowId(row)}::${col.field}` in this.state.pending}
+                editor={isEditing ? this.renderEditor(col, ed as EditState, rowHeight) : null}
+                boolChecked={!isEditing && boolEditable ? (value === true || value === 'true') : null}
+                onFocus={() => this.setState({ focus: pos })}
+                onStartEdit={editable && col.type !== 'boolean' ? () => this.startEdit(pos) : undefined}
+                onToggleBoolean={() => this.toggleBoolean(row, col)}
+            />
         );
     }
 
     private renderHeadCell(lc: LaidColumn, sort: GridSort): React.ReactNode {
         const { col } = lc;
-        const pinned = lc.left >= 0;
-        const dir = sort.field === col.field ? sort.dir : '';
         const d = this.state.drag;
-        const dragCls = d && d.field === col.field ? ' dg-head-cell--dragging'
-            : d && d.over === col.field ? ' dg-head-cell--dragover' : '';
         return (
-            <button
-                type="button"
+            <GridHeadCell
                 key={col.field}
-                data-field={col.field}
-                className={`dg-cell dg-head-cell dg-cell--${col.align}${pinned ? ' dg-cell--pinned' : ''}${dragCls}`}
-                style={{ width: lc.width, minWidth: lc.width, ...(pinned ? { left: lc.left } : null) }}
-                title={col.header || col.field}
-                aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}
-                onClick={() => this.setSort(col.field)}
-                onPointerDown={(e) => this.startHeaderDrag(col, e)}
-            >
-                {col.header || col.field}
-                {dir && <span className="dg-sort-arrow" aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>}
-                <span className="dg-resize" onPointerDown={(e) => this.startResize(col, e)} onClick={(e) => e.stopPropagation()} />
-            </button>
+                lc={lc}
+                sort={sort}
+                dragState={d && d.field === col.field ? 'dragging'
+                    : d && d.over === col.field ? 'dragover' : null}
+                onSort={() => this.setSort(col.field)}
+                onDragStart={(e) => this.startHeaderDrag(col, e)}
+                onResizeStart={(e) => this.startResize(col, e)}
+            />
         );
     }
 
@@ -694,64 +673,27 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (!p.showToolbar) {
             return null;
         }
-        const selCount = p.selection.length;
-        const dirty = Object.keys(this.state.pending).length;
         return (
-            <div className="dg-toolbar">
-                <input
-                    type="text"
-                    className="dg-search"
-                    value={this.effectiveFilter()}
-                    placeholder={p.labels.search}
-                    aria-label={p.labels.search}
-                    onChange={this.setQuickFilter}
-                />
-                {this.effectiveFilter() && <span className="dg-count">{view.length}</span>}
-                <span className="dg-toolbar-spring" />
-                {selCount > 0 && (
-                    <span className="dg-selected-badge">{p.labels.selected.replace('{n}', String(selCount))}</span>
-                )}
-                {p.editMode === 'batch' && dirty > 0 && (
-                    <>
-                        <span className="dg-dirty-badge">{p.labels.unsaved.replace('{n}', String(dirty))}</span>
-                        <button type="button" className="dg-save-btn" onClick={this.saveBatch}>{p.labels.save}</button>
-                        <button type="button" className="dg-export-btn dg-discard-btn" title={p.labels.discard}
-                                aria-label={p.labels.discard} onClick={this.discardBatch}>
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4L12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z" /></svg>
-                        </button>
-                    </>
-                )}
-                {p.allowAdd && (
-                    <button type="button" className="dg-export-btn" title={p.labels.addRow}
-                            aria-label={p.labels.addRow} onClick={() => this.fireEvent('onRowAdd', {})}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" /></svg>
-                    </button>
-                )}
-                {p.allowDelete && (
-                    <button type="button" className="dg-export-btn" disabled={selCount === 0}
-                            title={p.labels.deleteRows.replace('{n}', String(selCount))}
-                            aria-label={p.labels.deleteRows.replace('{n}', String(selCount))}
-                            onClick={this.deleteSelected}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2h4v2H4V6h4l1-2z" /></svg>
-                    </button>
-                )}
-                <button type="button" className="dg-export-btn dg-chooser-btn" title={p.labels.columns}
-                        aria-label={p.labels.columns} aria-haspopup="true" aria-expanded={this.state.chooserOpen}
-                        onClick={() => this.setState({ chooserOpen: !this.state.chooserOpen })}>
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 5h4v14H4zM10 5h4v14h-4zM16 5h4v14h-4z" />
-                    </svg>
-                </button>
-                {p.showExport && (
-                    <button type="button" className="dg-export-btn" title={p.labels.exportCsv}
-                            aria-label={p.labels.exportCsv} onClick={this.exportCsv}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                        </svg>
-                    </button>
-                )}
-                {this.renderChooser()}
-            </div>
+            <GridToolbar
+                labels={p.labels}
+                filter={this.effectiveFilter()}
+                matchCount={view.length}
+                selCount={p.selection.length}
+                dirtyCount={Object.keys(this.state.pending).length}
+                batchMode={p.editMode === 'batch'}
+                allowAdd={p.allowAdd}
+                allowDelete={p.allowDelete}
+                showExport={p.showExport}
+                chooserOpen={this.state.chooserOpen}
+                chooser={this.renderChooser()}
+                onFilter={this.setQuickFilter}
+                onSaveBatch={this.saveBatch}
+                onDiscardBatch={this.discardBatch}
+                onAddRow={() => this.fireEvent('onRowAdd', {})}
+                onDeleteSelected={this.deleteSelected}
+                onToggleChooser={() => this.setState({ chooserOpen: !this.state.chooserOpen })}
+                onExportCsv={this.exportCsv}
+            />
         );
     }
 
