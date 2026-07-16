@@ -772,7 +772,9 @@ export class DataGridMeta implements ComponentMeta {
     }
 
     getViewComponent(): PComponent {
-        return DataGrid;
+        // PComponent is typed over PlainObject props; getPropsReducer below is
+        // what actually guarantees the shape this class receives.
+        return DataGrid as unknown as PComponent;
     }
 
     getDefaultSize(): Size2d {

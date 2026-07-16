@@ -959,7 +959,9 @@ export class DateTimeRangePickerMeta implements ComponentMeta {
     }
 
     getViewComponent(): PComponent {
-        return DateTimeRangePicker;
+        // PComponent is typed over PlainObject props; getPropsReducer below is
+        // what actually guarantees the shape this class receives.
+        return DateTimeRangePicker as unknown as PComponent;
     }
 
     getDefaultSize(): Size2d {

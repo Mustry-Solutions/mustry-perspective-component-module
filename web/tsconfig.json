@@ -7,14 +7,14 @@
         "jsx": "react",
         "module": "commonjs",
         "moduleResolution": "node",
-        "noImplicitAny": true,
-        "noImplicitReturns": false,
+        "strict": true,
+        "noImplicitReturns": true,
         "skipLibCheck": true,
         "types": ["react", "react-dom"],
         "sourceMap": true,
         "strictNullChecks": true,
-        "target": "es6",
-        "lib": ["es6", "es2017", "dom"]
+        "target": "es2019",
+        "lib": ["es2019", "dom"]
     },
     "include": [
         "./typescript/**/*.ts",

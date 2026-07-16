@@ -955,7 +955,9 @@ export class CalendarMeta implements ComponentMeta {
     }
 
     getViewComponent(): PComponent {
-        return Calendar;
+        // PComponent is typed over PlainObject props; getPropsReducer below is
+        // what actually guarantees the shape this class receives.
+        return Calendar as unknown as PComponent;
     }
 
     getDefaultSize(): Size2d {

@@ -598,7 +598,9 @@ export class PanZoomViewMeta implements ComponentMeta {
     }
 
     getViewComponent(): PComponent {
-        return PanZoomView;
+        // PComponent is typed over PlainObject props; getPropsReducer below is
+        // what actually guarantees the shape this class receives.
+        return PanZoomView as unknown as PComponent;
     }
 
     getDefaultSize(): Size2d {

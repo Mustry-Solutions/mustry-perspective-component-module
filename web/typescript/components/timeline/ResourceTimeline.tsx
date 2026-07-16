@@ -852,7 +852,9 @@ export class ResourceTimelineMeta implements ComponentMeta {
     }
 
     getViewComponent(): PComponent {
-        return ResourceTimeline;
+        // PComponent is typed over PlainObject props; getPropsReducer below is
+        // what actually guarantees the shape this class receives.
+        return ResourceTimeline as unknown as PComponent;
     }
 
     getDefaultSize(): Size2d {

@@ -23,6 +23,19 @@ deliberate decision, never an accident.
   the quickest fix for an expired Perspective trial.
 
 ### Internal
+- **Build modernized**: Gradle 7.6 → 8.14.3 (zero deprecations),
+  `io.ia.sdk.modl` 0.4.0 → 0.5.0, node-gradle plugin 3.5.1 → 7.1.0,
+  `settings.gradle` → Kotlin DSL (dropping the meaningless root include),
+  deprecated `$buildDir` → `layout.buildDirectory`, and the `:web` cross-project
+  task mutation removed. The web bundle's double scope declaration resolved:
+  `modlImplementation(project(":web"))` in the gateway is the load-bearing one
+  (verified: `projectScopes` alone drops the jar from module.xml), so the
+  redundant `projectScopes` entry is gone.
+- **TypeScript full `strict`** (adds strictFunctionTypes/BindCallApply/
+  PropertyInitialization/noImplicitThis over the previous partial flags), plus
+  `noImplicitReturns` and target es6 → es2019. Only five errors surfaced — all
+  the Perspective `PComponent`/`PlainObject` boundary variance, now explicit
+  casts at `getViewComponent()` with the props reducer as the runtime guarantee.
 - **One Java component registry** (`comp/Components.ALL`): both hooks iterate a
   single list for register/remove, and descriptor assembly moved into one
   factory — the per-scope hand-maintained lists (and their drift) are gone.
