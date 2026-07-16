@@ -2,7 +2,7 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven {
-            url = "https://nexus.inductiveautomation.com/repository/public" 
+            url = uri("https://nexus.inductiveautomation.com/repository/public")
         }
     }
 }
@@ -13,14 +13,13 @@ dependencyResolutionManagement {
     repositories {
         // enable resolving dependencies from the inductive automation artifact repository
         maven {
-            url "https://nexus.inductiveautomation.com/repository/public"
+            url = uri("https://nexus.inductiveautomation.com/repository/public")
         }
         mavenCentral()
     }
 }
 
 include(
-":",
     ":common",
     ":gateway",
     ":designer",

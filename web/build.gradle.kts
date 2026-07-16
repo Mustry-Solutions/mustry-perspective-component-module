@@ -2,11 +2,11 @@ import com.github.gradle.node.npm.task.NpmTask
 
 plugins {
     java
-    id("com.github.node-gradle.node") version "3.5.1"
+    id("com.github.node-gradle.node") version "7.1.0"
 }
 
 // Where webpack writes the built bundle; this whole dir becomes module resources.
-val projectOutput: String by extra("$buildDir/generated-resources")
+val projectOutput: Provider<Directory> = layout.buildDirectory.dir("generated-resources")
 
 node {
     // A pinned Node is downloaded for the build, independent of any system Node.
@@ -47,11 +47,6 @@ tasks.named("check") {
 }
 
 tasks.named("processResources") {
-    dependsOn(webpack)
-}
-
-// Ensure the gateway scope's resources include the freshly built bundle.
-project(":gateway").tasks.named("processResources").configure {
     dependsOn(webpack)
 }
 

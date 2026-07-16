@@ -8,7 +8,7 @@
  */
 
 plugins {
-    id("io.ia.sdk.modl") version("0.4.0")
+    id("io.ia.sdk.modl") version("0.5.0")
 }
 
 val sdk_version by extra("8.3.6")
@@ -53,8 +53,7 @@ ignitionModule {
     projectScopes.putAll(mapOf(
         ":common" to "GD",
         ":designer" to "D",
-        ":gateway" to "G",
-        ":web" to "G"
+        ":gateway" to "G"
     ))
 
     /*
