@@ -23,6 +23,17 @@ deliberate decision, never an accident.
   the quickest fix for an expired Perspective trial.
 
 ### Internal
+- **One Java component registry** (`comp/Components.ALL`): both hooks iterate a
+  single list for register/remove, and descriptor assembly moved into one
+  factory — the per-scope hand-maintained lists (and their drift) are gone.
+- **Uniform props-schema strictness**: every schema root and section now
+  rejects unknown keys (`additionalProperties: false`), matching the picker's
+  standard; the resourcetimeline also gained the `style` section the other
+  components already declared.
+- **God components decomposed** following the calendar's pattern: picker
+  (1120→972 + CalendarPane/Presets/Inputs/Trigger), timeline (1019→863 +
+  Toolbar/Legend/Track), grid (843→741 + Toolbar/Cells); `labelPacks.ts`
+  (789) became a barrel over per-component modules in `shared/labels/`.
 - **Shared drag-gesture lifecycle** (`shared/dragGestureController.ts`): the
   calendar and timeline gesture controllers now extend one base owning pointer
   capture, document listeners, the click-vs-drag threshold (incl. the larger
