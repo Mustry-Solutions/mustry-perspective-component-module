@@ -14,21 +14,17 @@ import {
     addMonths,
     combine,
     daysBetween,
-    daysInMonth,
-    firstCellOffset,
     fmtDate,
     hmsToSec,
     maxDate,
     minDate,
-    monthLabel,
     parseDate,
     sameDay,
     secondsOfDay,
     secToHms,
     startOfDay,
     startOfMonth,
-    today,
-    weekdayHeaders
+    today
 } from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
 import {
@@ -43,6 +39,10 @@ import {
 } from './pickerLogic';
 import { DateTimeRangePickerProps, DisplayMode, WeekStart } from './pickerTypes';
 import { mapPickerProps } from './pickerProps';
+import { DayState, PickerCalendarPane } from './PickerCalendarPane';
+import { PickerPresets } from './PickerPresets';
+import { PickerCompactFields, PickerFooter, PickerHint, PickerTimeFields } from './PickerInputs';
+import { PickerTrigger } from './PickerTrigger';
 
 // Must match DateTimeRangePicker.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.input.datetimerangepicker';
@@ -58,8 +58,6 @@ interface DateTimeRangePickerState {
     panelLeft: number;
     panelWidth: number;
 }
-
-type DayState = 'empty' | 'disabled' | 'today' | 'default' | 'start' | 'end' | 'inrange' | 'single';
 
 export class DateTimeRangePicker
     extends Component<ComponentProps<DateTimeRangePickerProps>, DateTimeRangePickerState> {
@@ -413,7 +411,7 @@ export class DateTimeRangePicker
     }
 
     /** Human-readable reason a day is disabled (used as the cell tooltip). '' if selectable. */
-    private disabledReason(day: Date): string {
+    private disabledReason = (day: Date): string => {
         const { labels } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
@@ -508,7 +506,7 @@ export class DateTimeRangePicker
     }
 
     /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
-    private presetConflict(p: PresetDef): string {
+    private presetConflict = (p: PresetDef): string => {
         const props = this.props.props;
         return logic.presetConflict(p, {
             ...this.presetCtx(),
@@ -547,7 +545,7 @@ export class DateTimeRangePicker
     };
 
     /** Adapt a rolling preset's label to its direction ("Last ..." -> "Next ..." forward). */
-    private presetLabel(p: PresetDef): string {
+    private presetLabel = (p: PresetDef): string => {
         if (p.type === 'rolling' && this.props.props.disableDates === 'past') {
             return p.label.replace(/\bLast\b/i, 'Next');
         }
@@ -690,7 +688,7 @@ export class DateTimeRangePicker
     }
 
     // --- rendering -------------------------------------------------------
-    private dayState(day: Date): DayState {
+    private dayState = (day: Date): DayState => {
         if (this.dayBlocked(day)) {
             return 'disabled';
         }
@@ -729,38 +727,6 @@ export class DateTimeRangePicker
         return 'default';
     }
 
-    private renderGrid(monthStart: Date): React.ReactNode {
-        const { weekStart, enabled } = this.props.props;
-        const offset = firstCellOffset(monthStart, weekStart === 'monday');
-        const count = daysInMonth(monthStart);
-
-        const cells: React.ReactNode[] = [];
-        for (let i = 0; i < offset; i++) {
-            cells.push(<div key={`blank-${fmtDate(monthStart)}-${i}`} className="dtrp-cell dtrp-cell--empty" />);
-        }
-        for (let d = 1; d <= count; d++) {
-            const day = addDays(monthStart, d - 1);
-            const st = this.dayState(day);
-            const disabled = st === 'disabled';
-            cells.push(
-                <button
-                    key={fmtDate(day)}
-                    type="button"
-                    className={`dtrp-cell dtrp-cell--${st}`}
-                    disabled={!enabled || disabled}
-                    aria-disabled={!enabled || disabled}
-                    aria-label={fmtDate(day)}
-                    title={disabled ? this.disabledReason(day) : fmtDate(day)}
-                    onClick={() => this.onDayClick(day)}
-                    onMouseEnter={() => this.onDayHover(day)}
-                >
-                    {d}
-                </button>
-            );
-        }
-        return cells;
-    }
-
     /** Duration text + Clear, shared by the full and compact layouts. */
     private renderFooter(): React.ReactNode {
         const { enabled, showClear, labels } = this.props.props;
@@ -768,66 +734,38 @@ export class DateTimeRangePicker
         const out = this.computeOutputs();
         const label = !hasRange ? labels.selectRange : (out.isValid ? out.durationLabel : labels.invalidRange);
         return (
-            <div className="dtrp-footer">
-                <span className="dtrp-duration">{label}</span>
-                {showClear && (
-                    <button type="button" className="dtrp-clear" disabled={!enabled} onClick={this.clear}>
-                        {labels.clear}
-                    </button>
-                )}
-            </div>
+            <PickerFooter
+                label={label}
+                showClear={showClear}
+                enabled={enabled}
+                clearLabel={labels.clear}
+                onClear={this.clear}
+            />
         );
     }
 
     private renderPresets(): React.ReactNode {
-        const { showPresets, presets, enabled } = this.props.props;
-        const items = (presets || []).filter((p) => p && p.label);
-        if (!showPresets || items.length === 0) {
+        const p = this.props.props;
+        if (!p.showPresets) {
             return null;
         }
-        const props = this.props.props;
         const armed = this.realtimeArmed();
         return (
-            <div className="dtrp-presets">
-                {items.map((p, i) => {
-                    const conflict = this.presetConflict(p);
-                    // The armed rolling preset stays highlighted while its window ticks live.
-                    const live = armed && p.type === 'rolling'
-                        && p.amount === props.rollingAmount && p.unit === props.rollingUnit;
-                    return (
-                        <button
-                            key={`${p.label}-${i}`}
-                            type="button"
-                            className={live ? 'dtrp-preset dtrp-preset--live' : 'dtrp-preset'}
-                            disabled={!enabled || !!conflict}
-                            aria-disabled={!enabled || !!conflict}
-                            title={conflict || undefined}
-                            onClick={() => this.applyPreset(p)}
-                        >
-                            {live && <span className="dtrp-live-dot" aria-hidden="true" />}
-                            {this.presetLabel(p)}
-                        </button>
-                    );
-                })}
-            </div>
+            <PickerPresets
+                presets={p.presets || []}
+                enabled={p.enabled}
+                isLive={(it) => armed && it.type === 'rolling'
+                    && it.amount === p.rollingAmount && it.unit === p.rollingUnit}
+                conflict={this.presetConflict}
+                label={this.presetLabel}
+                onApply={this.applyPreset}
+            />
         );
     }
 
-    /** Upfront note about the active span constraint, so users know why days disable. */
     private renderHint(): React.ReactNode {
         const { minSpanDays, maxSpanDays, labels } = this.props.props;
-        if (minSpanDays <= 0 && maxSpanDays <= 0) {
-            return null;
-        }
-        let text: string;
-        if (minSpanDays > 0 && maxSpanDays > 0) {
-            text = logic.fillLabel(labels.hintRange, { min: minSpanDays, max: maxSpanDays });
-        } else if (minSpanDays > 0) {
-            text = logic.fillLabel(labels.hintMin, { n: minSpanDays, days: logic.dayWord(minSpanDays, labels) });
-        } else {
-            text = logic.fillLabel(labels.hintMax, { n: maxSpanDays, days: logic.dayWord(maxSpanDays, labels) });
-        }
-        return <div className="dtrp-hint">{text}</div>;
+        return <PickerHint minSpanDays={minSpanDays} maxSpanDays={maxSpanDays} labels={labels} />;
     }
 
     private renderTimes(): React.ReactNode {
@@ -835,89 +773,43 @@ export class DateTimeRangePicker
             return null;   // whole-day mode: no time-of-day selection
         }
         const { startTimeSec, endTimeSec, enabled, labels } = this.props.props;
-        const step = this.stepSeconds();
         return (
-            <div className="dtrp-times">
-                <label className="dtrp-time-field">
-                    <span className="dtrp-time-label">{labels.startTime}</span>
-                    <input
-                        type="time"
-                        step={step}
-                        disabled={!enabled}
-                        value={this.timeInputValue(startTimeSec)}
-                        onChange={this.onStartTime}
-                    />
-                </label>
-                <label className="dtrp-time-field">
-                    <span className="dtrp-time-label">{labels.endTime}</span>
-                    <input
-                        type="time"
-                        step={step}
-                        disabled={!enabled}
-                        value={this.timeInputValue(endTimeSec)}
-                        onChange={this.onEndTime}
-                    />
-                </label>
-            </div>
-        );
-    }
-
-    /** A single month: weekday header row + day grid. */
-    private renderCalendar(monthStart: Date): React.ReactNode {
-        const { weekStart, locale } = this.props.props;
-        return (
-            <div className="dtrp-calendar">
-                <div className="dtrp-weekdays">
-                    {weekdayHeaders(weekStart === 'monday', locale).map((w) => (
-                        <div key={`${fmtDate(monthStart)}-${w}`} className="dtrp-weekday">{w}</div>
-                    ))}
-                </div>
-                <div className="dtrp-grid">
-                    {this.renderGrid(monthStart)}
-                </div>
-            </div>
+            <PickerTimeFields
+                startValue={this.timeInputValue(startTimeSec)}
+                endValue={this.timeInputValue(endTimeSec)}
+                stepSeconds={this.stepSeconds()}
+                enabled={enabled}
+                labels={labels}
+                onStartTime={this.onStartTime}
+                onEndTime={this.onEndTime}
+            />
         );
     }
 
     /** Full calendar layout: one month, or two side by side when twoMonths. */
     private renderFull(twoMonths: boolean): React.ReactNode {
-        const { enabled, labels } = this.props.props;
-        const m1 = startOfMonth(this.state.viewMonth);
-        const m2 = addMonths(this.state.viewMonth, 1);
+        const p = this.props.props;
         return (
             <>
                 {this.renderPresets()}
                 {this.renderHint()}
-                <div className="dtrp-header">
-                    <button
-                        type="button"
-                        className="dtrp-nav"
-                        onClick={this.prevMonth}
-                        disabled={!enabled || !this.canPrev()}
-                        aria-label={labels.previousMonth}
-                    >
-                        ‹
-                    </button>
-                    <div className="dtrp-months">
-                        <span className="dtrp-month">{monthLabel(m1, this.props.props.locale)}</span>
-                        {twoMonths && <span className="dtrp-month">{monthLabel(m2, this.props.props.locale)}</span>}
-                    </div>
-                    <button
-                        type="button"
-                        className="dtrp-nav"
-                        onClick={this.nextMonth}
-                        disabled={!enabled || !this.canNext()}
-                        aria-label={labels.nextMonth}
-                    >
-                        ›
-                    </button>
-                </div>
-
-                <div className="dtrp-calendars" onMouseLeave={this.clearHover}>
-                    {this.renderCalendar(m1)}
-                    {twoMonths && this.renderCalendar(m2)}
-                </div>
-
+                <PickerCalendarPane
+                    viewMonth={this.state.viewMonth}
+                    twoMonths={twoMonths}
+                    weekStart={p.weekStart}
+                    locale={p.locale}
+                    enabled={p.enabled}
+                    labels={p.labels}
+                    canPrev={this.canPrev()}
+                    canNext={this.canNext()}
+                    onPrevMonth={this.prevMonth}
+                    onNextMonth={this.nextMonth}
+                    dayState={this.dayState}
+                    disabledReason={this.disabledReason}
+                    onDayClick={this.onDayClick}
+                    onDayHover={this.onDayHover}
+                    onCalendarsLeave={this.clearHover}
+                />
                 {this.renderTimes()}
                 {this.renderFooter()}
             </>
@@ -929,8 +821,6 @@ export class DateTimeRangePicker
         const { startDate, endDate, minSpanDays, maxSpanDays, enabled, labels } = this.props.props;
         const min = this.effMin();
         const max = this.effMax();
-        const dmin = min ? fmtDate(min) : undefined;
-        const dmax = max ? fmtDate(max) : undefined;
 
         // Constrain the end date by start + min/max-day span (within the date bounds).
         const startD = parseDate(startDate);
@@ -944,35 +834,23 @@ export class DateTimeRangePicker
                 endMaxD = endMaxD ? minDate(endMaxD, hi) : hi;
             }
         }
-        const endDmin = endMinD ? fmtDate(endMinD) : undefined;
-        const endDmax = endMaxD ? fmtDate(endMaxD) : undefined;
 
         return (
             <>
                 {this.renderPresets()}
                 {this.renderHint()}
-                <label className="dtrp-compact-field">
-                    <span className="dtrp-compact-label">{labels.startDate}</span>
-                    <input
-                        type="date"
-                        value={startDate}
-                        min={dmin}
-                        max={dmax}
-                        disabled={!enabled}
-                        onChange={this.onStartDateInput}
-                    />
-                </label>
-                <label className="dtrp-compact-field">
-                    <span className="dtrp-compact-label">{labels.endDate}</span>
-                    <input
-                        type="date"
-                        value={endDate}
-                        min={endDmin}
-                        max={endDmax}
-                        disabled={!enabled}
-                        onChange={this.onEndDateInput}
-                    />
-                </label>
+                <PickerCompactFields
+                    startDate={startDate}
+                    endDate={endDate}
+                    startMin={min ? fmtDate(min) : undefined}
+                    startMax={max ? fmtDate(max) : undefined}
+                    endMin={endMinD ? fmtDate(endMinD) : undefined}
+                    endMax={endMaxD ? fmtDate(endMaxD) : undefined}
+                    enabled={enabled}
+                    labels={labels}
+                    onStartDate={this.onStartDateInput}
+                    onEndDate={this.onEndDateInput}
+                />
                 {this.renderTimes()}
                 {this.renderFooter()}
             </>
@@ -1029,42 +907,16 @@ export class DateTimeRangePicker
         if (!enabled) {
             rootClasses.push('is-disabled');
         }
-        const triggerClasses = open ? 'dtrp-trigger dtrp-trigger--open' : 'dtrp-trigger';
-        const textClasses = hasValue
-            ? 'dtrp-trigger-text'
-            : 'dtrp-trigger-text dtrp-trigger-text--placeholder';
         return (
             <div {...this.props.emit({ classes: rootClasses })}>
-                <button
-                    type="button"
-                    className={triggerClasses}
-                    ref={this.setTriggerEl}
-                    disabled={!enabled}
-                    aria-haspopup="dialog"
-                    aria-expanded={open}
-                    onClick={this.togglePanel}
-                >
-                    <svg
-                        className="dtrp-trigger-icon"
-                        width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" strokeWidth="2"
-                        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                    >
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <line x1="3" y1="9" x2="21" y2="9" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                    </svg>
-                    <span className={textClasses}>{this.formatTrigger()}</span>
-                    <svg
-                        className="dtrp-trigger-caret"
-                        width="13" height="13" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" strokeWidth="2"
-                        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                    >
-                        <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                </button>
+                <PickerTrigger
+                    open={open}
+                    enabled={enabled}
+                    text={this.formatTrigger()}
+                    isPlaceholder={!hasValue}
+                    setTriggerEl={this.setTriggerEl}
+                    onToggle={this.togglePanel}
+                />
                 {open && ReactDOM.createPortal(this.renderPanel(), document.body)}
             </div>
         );
