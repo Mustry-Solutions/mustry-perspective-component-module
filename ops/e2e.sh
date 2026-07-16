@@ -34,10 +34,8 @@ case "${MODE}" in
     info "Recreating the gateway from a fresh volume (unattended)..."
     "${COMPOSE[@]}" down -v
     "${COMPOSE[@]}" up -d
-    # Give the container a moment to exist before exec'ing into it.
-    sleep 5
-    fix_projects_ownership
-    # First boot: EULA/admin/edition commission headlessly from compose env,
+    # First boot: EULA/admin/edition commission headlessly from compose env
+    # (the compose init service pre-owns data/projects for the bind mount),
     # but the staged module is unaccepted, so the gateway parks in
     # COMMISSIONING (never clean RUNNING). Wait for it to respond and write
     # its module registry, then seed the acceptance and restart — that

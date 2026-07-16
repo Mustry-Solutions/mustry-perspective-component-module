@@ -76,6 +76,12 @@ ops/teardown.sh     # stop when done (keeps state)
   the dev certificate once in the commissioning wizard; it's recorded in the data volume.
   Because the dev cert is reused for every build, later redeploys load without re-prompting.
 
+> **Designer saves land in your working tree.** The verify project is a
+> two-way bind mount: saving in the Designer rewrites the committed JSON under
+> `ops/verify/project/` directly. Review those diffs like any other change —
+> CI's e2e job renders every route from the committed tree, so a broken save
+> can't reach main unnoticed.
+
 > **Hands-off alternative:** Ignition 8.3 records third-party acceptance in
 > `data/modules.json` (`certFingerprint` = SHA-1 of the signing cert). `e2e.sh --fresh`
 > exploits that: it lets a fresh gateway commission headlessly (EULA/admin/edition come

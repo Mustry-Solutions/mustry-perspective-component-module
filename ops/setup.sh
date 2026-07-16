@@ -15,9 +15,6 @@ info "Starting the Ignition gateway container..."
 # it during first-time commissioning.
 "${COMPOSE[@]}" up -d
 
-# Fresh-volume ownership fix (see lib.sh).
-fix_projects_ownership
-
 wait_for_gateway 60 || true
 
 echo

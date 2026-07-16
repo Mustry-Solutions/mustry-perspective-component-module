@@ -150,22 +150,6 @@ wait_for_commissioned() {
   return 1
 }
 
-# --- fresh-volume fix -------------------------------------------------------
-# Docker creates the verify bind-mount's parent path (data/projects/) as root
-# inside a brand-new volume, and the gateway then faults with "unable to create
-# resource dir: .../projects/.resources". Hand the directory to the ignition
-# user and bounce the gateway once so it starts clean. Idempotent — a no-op
-# restart on an already-correct volume.
-fix_projects_ownership() {
-  if ! "${COMPOSE[@]}" exec -T -u root gateway \
-          stat -c '%U' /usr/local/bin/ignition/data/projects 2>/dev/null | grep -q ignition; then
-    info "Fresh volume: fixing data/projects ownership for the ignition user..."
-    "${COMPOSE[@]}" exec -T -u root gateway \
-        chown ignition:ignition /usr/local/bin/ignition/data/projects
-    "${COMPOSE[@]}" restart gateway
-  fi
-}
-
 # Wait until the gateway has written its module registry (data/modules.json
 # with the built-ins' cert fingerprints). On a fresh volume this happens while
 # the gateway parks in COMMISSIONING over the staged-but-unaccepted module —

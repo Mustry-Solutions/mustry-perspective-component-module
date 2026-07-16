@@ -10,9 +10,29 @@
 # Drive it with the scripts in ./ops (setup.sh / deploy.sh / teardown.sh / ...).
 
 services:
+  # One-shot volume prep: on a brand-new volume Docker would create the verify
+  # bind-mount's parent (data/projects/) as root and the gateway then faults
+  # with "unable to create resource dir". Hand the directory to the ignition
+  # user BEFORE the gateway ever starts (user resolved by name inside the
+  # image, so an image upgrade changing the uid keeps working). Idempotent.
+  init:
+    image: inductiveautomation/ignition:8.3.6
+    user: root
+    entrypoint:
+      - sh
+      - -c
+      - mkdir -p /usr/local/bin/ignition/data/projects
+        && chown ignition:ignition /usr/local/bin/ignition/data/projects
+    volumes:
+      - gateway-data:/usr/local/bin/ignition/data
+    restart: "no"
+
   gateway:
     image: inductiveautomation/ignition:8.3.6
     container_name: mspc-ignition
+    depends_on:
+      init:
+        condition: service_completed_successfully
     ports:
       # Host port is configurable via .env (GATEWAY_HTTP_PORT/GATEWAY_HTTPS_PORT).
       # The gateway always listens on 8088/8043 INSIDE the container.
@@ -51,7 +71,10 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
-    restart: unless-stopped
+    # Deliberately no restart policy: a disposable dev gateway should not
+    # resurrect itself (and reclaim its ports) on every Docker/laptop boot.
+    # Bring it back explicitly with ops/deploy.sh or `docker compose start`.
+    restart: "no"
 
 volumes:
   gateway-data:
