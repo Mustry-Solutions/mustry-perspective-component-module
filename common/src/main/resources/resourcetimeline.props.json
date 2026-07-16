@@ -1,8 +1,11 @@
 {
   "type": "object",
+  "additionalProperties": false,
+  "required": [],
   "properties": {
     "config": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Behaviour & appearance.",
       "properties": {
         "showToolbar": {
@@ -386,6 +389,7 @@
     },
     "data": {
       "type": "object",
+      "additionalProperties": false,
       "description": "The controlled event data. The timeline never mutates it — editing gestures fire onChange and your handler writes back.",
       "properties": {
         "events": {
@@ -408,6 +412,7 @@
     },
     "state": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Two-way runtime state: the component writes the user's choices back here, and every key can be pre-set (or bound) to drive the view.",
       "default": {
         "zoom": "day",
@@ -452,6 +457,7 @@
     },
     "output": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Read-only, derived.",
       "properties": {
         "visibleStart": {
@@ -474,6 +480,12 @@
           "default": 0,
           "description": "End of the visible window as raw epoch milliseconds (exclusive, read-only) — for binding epoch/t_stamp queries directly."
         }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
       }
     }
   }
