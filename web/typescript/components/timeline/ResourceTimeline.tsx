@@ -11,7 +11,7 @@ import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { CSV_BOM } from '../../shared/csv';
 import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents } from '../../shared/recurrence';
-import { EventIcon, categoryColor, resolveColor, statusClass } from '../../shared/eventStyle';
+import { resolveColor } from '../../shared/eventStyle';
 import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
 import { DocDismiss } from '../../shared/dismiss';
@@ -19,7 +19,7 @@ import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
-    barGeom, buildRows, buildTicks, followAnchorMs, followDisarms, followScrollLeft, followTickMs, isConfiguredEmpty,
+    buildRows, buildTicks, followAnchorMs, followDisarms, followScrollLeft, followTickMs, isConfiguredEmpty,
     layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, resolveSnapMinutes,
     scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
 } from './timelineLogic';
@@ -31,6 +31,9 @@ import {
     TlChangeSpec, TlEditor, tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlMoveResizeSpec, tlSaveSpec
 } from './timelineEditorLogic';
 import { TimelineEditor } from './TimelineEditor';
+import { TimelineToolbar } from './TimelineToolbar';
+import { TimelineLegend } from './TimelineLegend';
+import { RowLayouts, TimelineTrack } from './TimelineTrack';
 
 // Must match ResourceTimeline.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
@@ -38,13 +41,6 @@ export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
 const LABEL_COL_PX = 160;
 const AXIS_PX = 42;        // two 21px tick rows (matches .tml-axis-row)
 const GROUP_ROW_PX = 22;
-
-/** One resource row's laid-out content. */
-interface RowLayouts {
-    bands: BarLayout[];
-    states: BarLayout[];
-    bars: BarLayout[];
-}
 
 interface ResourceTimelineState {
     anchorMs: number;                    // epoch ms of the window start
@@ -156,7 +152,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     /** Enter-animation class for a bar/band, keyed on the event's base id. Empty
      *  while a drag is in flight so the ghost and mid-gesture re-renders never
      *  animate (the shared tracker returns the calendar's class; mapped to .tml-). */
-    private enterClass(occId: string): string {
+    private enterClass = (occId: string): string => {
         return !this.gestures.active && this.enter.enterClass(occId) ? ' tml-anim-enter' : '';
     }
 
@@ -335,11 +331,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     /** A recurring occurrence (id "base::date"): draggable/editable like the
      *  calendar's — touching one detaches it into an override + series EXDATE. */
-    private isOccurrence(ev: TimelineEvent): boolean {
+    private isOccurrence = (ev: TimelineEvent): boolean => {
         return (ev.id || '').indexOf('::') >= 0;
     }
 
-    private movable(ev: TimelineEvent): boolean {
+    private movable = (ev: TimelineEvent): boolean => {
         return this.props.props.editable && ev.display !== 'background';
     }
 
@@ -350,7 +346,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     /** An event's real (unclamped) extent, with the same no-end rules as the layout. */
-    private eventExtent(ev: TimelineEvent): { startMs: number; endMs: number } {
+    private eventExtent = (ev: TimelineEvent): { startMs: number; endMs: number } => {
         const tz = this.props.props.timezone;
         const s = this.scale();
         const startMs = toEpochMs(ev.start, tz) ?? s.startMs;
@@ -515,7 +511,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private goToday = (): void => this.setState({ anchorMs: todayAnchorMs(this.props.props.timezone) });
 
     // `state.zoom` is two-way: the toolbar writes the user's choice back.
-    private setZoom(zoom: TimelineZoom): void {
+    private setZoom = (zoom: TimelineZoom): void => {
         this.props.store.props.write('state.zoom', zoom);
     }
 
@@ -604,7 +600,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
     };
 
-    private onBarHover(it: BarLayout, resourceLabel: string, e: React.MouseEvent): void {
+    private onBarHover = (it: BarLayout, resourceLabel: string, e: React.MouseEvent): void => {
         if (this.gestures.active) {
             return;   // no detail popovers while a drag is in flight
         }
@@ -619,7 +615,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     // --- category legend ----------------------------------------------------
     // `state.hiddenCategories` is two-way: the prop array is the source of truth,
     // so a pre-set/bound value filters from first render and toggles write back.
-    private toggleCategory(id: string): void {
+    private toggleCategory = (id: string): void => {
         const cur = this.props.props.hiddenCategories || [];
         const next = cur.indexOf(id) >= 0 ? cur.filter((c) => c !== id) : [...cur, id];
         this.props.store.props.write('state.hiddenCategories', next);
@@ -627,24 +623,15 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     private renderLegend(): React.ReactNode {
         const p = this.props.props;
-        if (!p.showLegend || !(p.categories || []).length) {
+        if (!p.showLegend) {
             return null;
         }
         return (
-            <div className="tml-legend">
-                {p.categories.map((c) => (
-                    <button
-                        type="button" key={c.id}
-                        className={`tml-legend-item${(this.props.props.hiddenCategories || []).indexOf(c.id) >= 0 ? ' tml-legend-item--off' : ''}`}
-                        onClick={() => this.toggleCategory(c.id)}
-                    >
-                        {c.icon
-                            ? <span className="tml-legend-icon"><IconRenderer path={c.icon} color={c.color} /></span>
-                            : <span className="tml-legend-dot" style={{ background: categoryColor(p.categories, c.id) }} />}
-                        {c.label}
-                    </button>
-                ))}
-            </div>
+            <TimelineLegend
+                categories={p.categories || []}
+                hiddenCategories={p.hiddenCategories || []}
+                onToggle={this.toggleCategory}
+            />
         );
     }
 
@@ -673,191 +660,50 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const title = zonedFormat(this.props.props.locale, this.props.props.timezone,
             { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
         return (
-            <div className="tml-toolbar">
-                {p.showMiniNav ? (
-                    <button
-                        type="button"
-                        className={`tml-title tml-title--btn${this.state.mini ? ' is-open' : ''}`}
-                        onClick={this.toggleMini}
-                        aria-haspopup="true"
-                        aria-expanded={!!this.state.mini}
-                    >
-                        {title}
-                        <span className="tml-title-caret" aria-hidden="true">▾</span>
-                    </button>
-                ) : (
-                    <div className="tml-title">{title}</div>
-                )}
-                {emptyLabel && <span className="tml-empty-badge" title={this.emptyHint() || emptyLabel}>{emptyLabel}</span>}
-                <div className="tml-zooms">
-                    {zooms.map((z) => (
-                        <button
-                            type="button" key={z.id}
-                            className={`tml-zoom-btn${zoom === z.id ? ' tml-zoom-btn--active' : ''}`}
-                            onClick={() => this.setZoom(z.id)}
-                        >
-                            {z.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="tml-nav">
-                    {this.props.props.showExport && (
-                        <button type="button" className="tml-nav-btn tml-export-btn" onClick={this.exportCsv} title={labels.exportCsv} aria-label={labels.exportCsv}>
-                            <IconRenderer path="material/get_app" color="var(--tml-accent)" />
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        className={`tml-live${followNow ? ' tml-live--on' : ''}`}
-                        onClick={this.toggleFollowNow}
-                        aria-pressed={followNow}
-                    >
-                        {followNow && <span className="tml-live-dot" aria-hidden="true" />}
-                        {labels.followNow}
-                    </button>
-                    <button type="button" className="tml-nav-btn" onClick={this.prev} aria-label={labels.previous}>‹</button>
-                    <button type="button" className="tml-today" onClick={this.goToday}>{labels.today}</button>
-                    <button type="button" className="tml-nav-btn" onClick={this.next} aria-label={labels.next}>›</button>
-                </div>
-            </div>
-        );
-    }
-
-    /** The in-flight gesture's ghost bar / selection rectangle on one row. */
-    private renderPreview(row: RowItem, scale: TimeScale): React.ReactNode {
-        const preview = this.state.preview;
-        if (!preview || preview.resourceId !== row.resource!.id) {
-            return null;
-        }
-        const left = msToPx(scale, Math.max(preview.startMs, scale.startMs));
-        const width = Math.max(2, msToPx(scale, Math.min(preview.endMs, scale.endMs)) - left);
-        if (preview.mode === 'create') {
-            return <div className="tml-select" style={{ left, width }} />;
-        }
-        return (
-            <div
-                className="tml-bar tml-bar--ghost"
-                style={{
-                    left, width, top: 3, height: this.props.props.rowHeight - 8,
-                    ...(preview.color ? { ['--ev' as string]: preview.color } : {})
-                } as React.CSSProperties}
-            >
-                <span className="tml-bar-title">{preview.title || ''}</span>
-            </div>
+            <TimelineToolbar
+                title={title}
+                labels={labels}
+                zoom={zoom}
+                zooms={zooms}
+                followNow={followNow}
+                showMiniNav={p.showMiniNav}
+                miniOpen={!!this.state.mini}
+                showExport={p.showExport}
+                emptyLabel={emptyLabel}
+                emptyHint={this.emptyHint()}
+                onToggleMini={this.toggleMini}
+                onSetZoom={this.setZoom}
+                onExportCsv={this.exportCsv}
+                onToggleFollowNow={this.toggleFollowNow}
+                onPrev={this.prev}
+                onToday={this.goToday}
+                onNext={this.next}
+            />
         );
     }
 
     /** One resource row's track: background bands, state bands, then lane-packed bars. */
     private renderTrack(row: RowItem, lay: RowLayouts, scale: TimeScale): React.ReactNode {
         const p = this.props.props;
-        const rowH = p.rowHeight;
-        const preview = this.state.preview;
-        const px = (ms: number) => msToPx(scale, ms);
-        const geom = (it: BarLayout) => ({ left: px(it.startMs), width: Math.max(2, px(it.endMs) - px(it.startMs)) });
-        const { bands, states, bars } = lay;
-        const barArea = rowH - 6;   // 3px vertical inset
         return (
-            <>
-                {bands.map((it, i) => (
-                    <div
-                        key={`bg-${it.event.id || i}`} className="tml-band tml-band--bg"
-                        style={{ ...geom(it), background: resolveColor(p.categories, it.event) || undefined }}
-                    />
-                ))}
-                {states.map((it, i) => {
-                    const g = geom(it);
-                    return (
-                        <div
-                            key={`st-${it.event.id || i}`}
-                            className={`tml-band tml-band--state${statusClass(it.event)}${this.enterClass(it.event.id)}`}
-                            style={{ ...g, ['--ev' as string]: resolveColor(p.categories, it.event) } as React.CSSProperties}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`${it.event.title || ''} — ${row.label}`}
-                            onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
-                            onMouseLeave={this.hideHover}
-                            onClick={() => this.fireEvent('onEventClick', this.eventPayload(it.event))}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    this.fireEvent('onEventClick', this.eventPayload(it.event));
-                                }
-                            }}
-                        >
-                            {g.width > 48 && <span className="tml-band-label">{it.event.title}</span>}
-                        </div>
-                    );
-                })}
-                {bars.map((it, i) => {
-                    const ev = it.event;
-                    if (preview && preview.mode !== 'create' && preview.eventId === ev.id) {
-                        return null;   // hidden while dragging; the ghost is shown instead
-                    }
-                    // Floor the width so short jobs stay grabbable; drop the edge
-                    // handles when they'd swallow the whole bar (move/click only).
-                    const g = barGeom(px(it.startMs), px(it.endMs));
-                    const laneH = barArea / it.lanes;
-                    const movable = this.movable(ev);
-                    const cls = ['tml-bar'];
-                    if (movable) { cls.push('tml-bar--movable'); }
-                    if (it.continuesLeft) { cls.push('tml-bar--cont-left'); }
-                    if (it.continuesRight) { cls.push('tml-bar--cont-right'); }
-                    const color = resolveColor(p.categories, ev);
-                    const extent = this.eventExtent(ev);
-                    return (
-                        <div
-                            key={`b-${ev.id || i}`}
-                            className={cls.join(' ') + statusClass(ev) + this.enterClass(ev.id)}
-                            style={{
-                                left: g.left,
-                                width: g.width,
-                                top: 3 + it.lane * laneH,
-                                height: Math.max(10, laneH - 2),
-                                ...(color ? { ['--ev' as string]: color } : {})
-                            } as React.CSSProperties}
-                            title={ev.title}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`${ev.title || ''} — ${row.label}`}
-                            onPointerDown={movable
-                                ? (e) => this.gestures.startMove(ev, extent.startMs, extent.endMs, e)
-                                : undefined}
-                            onClick={movable ? undefined : () => this.onBarClick(ev)}
-                            // Keyboard: gestures hang off pointerdown, so Enter/Space
-                            // opens the bar directly (a keyboard can't drag).
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    this.onBarClick(ev);
-                                }
-                            }}
-                            onMouseEnter={(e) => this.onBarHover(it, row.label, e)}
-                            onMouseLeave={this.hideHover}
-                        >
-                            {movable && g.showHandles && !it.continuesLeft && (
-                                <div
-                                    className="tml-resize tml-resize--start"
-                                    onPointerDown={(e) => this.gestures.startResize('start', ev, extent.startMs, extent.endMs, e)}
-                                />
-                            )}
-                            {this.isOccurrence(ev) && (
-                                // Part of a series: dragging/editing detaches this occurrence.
-                                <span className="tml-bar-recur" aria-hidden="true">↻</span>
-                            )}
-                            <EventIcon ev={ev} categories={p.categories} />
-                            <span className="tml-bar-title">{ev.title}</span>
-                            {movable && g.showHandles && !it.continuesRight && (
-                                <div
-                                    className="tml-resize tml-resize--end"
-                                    onPointerDown={(e) => this.gestures.startResize('end', ev, extent.startMs, extent.endMs, e)}
-                                />
-                            )}
-                        </div>
-                    );
-                })}
-                {this.renderPreview(row, scale)}
-            </>
+            <TimelineTrack
+                row={row}
+                lay={lay}
+                scale={scale}
+                rowHeight={p.rowHeight}
+                categories={p.categories}
+                preview={this.state.preview}
+                movable={this.movable}
+                eventExtent={this.eventExtent}
+                isOccurrence={this.isOccurrence}
+                enterClass={this.enterClass}
+                onBarHover={this.onBarHover}
+                onHoverEnd={this.hideHover}
+                onBarClick={this.onBarClick}
+                onBandClick={(ev) => this.fireEvent('onEventClick', this.eventPayload(ev))}
+                onStartMove={this.gestures.startMove}
+                onStartResize={this.gestures.startResize}
+            />
         );
     }
 
