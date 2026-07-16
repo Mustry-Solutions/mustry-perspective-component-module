@@ -1,8 +1,8 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It currently ships three components — a **Date/Time Range Picker**, a **Calendar / Scheduler** and a **Resource Timeline** (scheduling board) — with more to follow.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships five components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid** and a **Pan & Zoom View**.
 
-- **Module ID:** `com.mustrysolutions.perspective.components`
+- **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
 
 ---
@@ -169,7 +169,7 @@ Override the `--cal-*` CSS variables via a style class / project stylesheet: `--
 
 ## Resource Timeline
 
-A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.display.resourcetimeline`. Design doc: [`docs/resource-timeline-plan.md`](docs/resource-timeline-plan.md).
+A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.display.resourcetimeline`.
 
 ### Features
 
@@ -197,16 +197,69 @@ Override the `--tml-*` variables via a style class / project stylesheet: `--tml-
 
 ---
 
+## Data Grid
+
+An editable virtualized data grid. Component id `mustrysolutions.input.datagrid`.
+
+### Features
+
+- **Virtualized rendering** — fixed `config.rowHeight` makes row windowing exact; the client-side model is intended for up to ~50k rows (see `/grid-stress` in the verify project). Sticky header, one scroll container, **frozen (pinned) columns**.
+- **Columns** (`config.columns`, rendered in array order) — each reads `field` from every row: `header`, `type` (`text`/`number`/`boolean`/`date`/`datetime`), `align`, `width`, `pin`, typed `format`, dropdown `options`, per-column `editable`, declarative validation (`required`/`min`/`max`/`pattern`) and **conditional styling** (`cellStyles` rules matched on the value).
+- **Column gestures, two-way** — drag a header to reorder, drag its edge handle to resize, hide/show via the toolbar column chooser; the user's adjustments persist in `state.columnLayout`.
+- **Read interactions, two-way** — `state.sort` (header click cycles asc → desc → off), `state.quickFilter` (case-insensitive contains across configured columns; instant local echo while the prop write round-trips), `state.selection` (`config.rowSelect`: `none` / `single` / `multi`, with Ctrl/Cmd-toggle and Shift-range over the *visible* view). CSV export of the current view (filtered + sorted, configured columns).
+- **Controlled editing** (`config.editable` + per-column `editable`) — double-click/Enter/F2/typing opens a **typed editor** (text, decimal, date, datetime-local, dropdown-in-cell; booleans render as live checkboxes). Validation runs before commit; Escape reverts. The grid **never mutates `data.rows`**: a commit fires `onCellEdit` (old/new value + full row) and overlays the value as *pending* until your write-back rebinds the rows.
+- **Batch mode** (`config.editMode: 'batch'`) — edits accumulate as dirty cells (italic + dot + "{n} unsaved" badge, `output.dirtyCount`); **Save fires one `onBatchSave`** with every dirty cell and each changed row, Discard reverts them all.
+- **Excel range paste** — paste a TSV range from a spreadsheet onto the focused cell; each landing cell validates individually.
+- **Aggregate footers** — per-column `aggregate` summarised over the current view.
+- **Keyboard model** — arrows move the focused cell, Enter/Tab commit + move, Escape reverts.
+- **Add / delete rows** — toolbar buttons (`config.allowAdd` / `config.allowDelete`) fire `onRowAdd` / `onRowsDelete`; you create/delete and rebind.
+- Empty-state badge (`config.emptyMessage`), loading bar (`config.loading`), localization (same 7 languages via `config.locale` + `config.labels` overrides).
+
+### How editing works
+
+Same philosophy as the calendar/timeline: **controlled, read-from-data**. Committed edits overlay the display (`pending`) and clear as soon as any `data.rows` change arrives — your `onCellEdit`/`onBatchSave` script persists and rebinds; the demo at `/grid` in the verify project ships a complete write-back script for both modes.
+
+### Theming
+
+Override the `--dg-*` variables via a style class / project stylesheet: `--dg-accent`, `--dg-text`, `--dg-muted`, `--dg-border`, `--dg-line`, `--dg-bg`, `--dg-head-bg`, `--dg-row-odd`.
+
+> Manual test checklist: [`docs/grid-manual-test.md`](docs/grid-manual-test.md).
+
+---
+
+## Pan & Zoom View
+
+Embeds any Perspective view and navigates it like a map. Component id `mustrysolutions.display.panzoomview`.
+
+### Features
+
+- **Embed any view** — `config.viewPath` + `config.viewParams` (`[{name, value}]`); the embedded view stays **fully interactive** (clicks inside it survive pan/zoom gestures). `output.viewState` reports `loading` / `valid` / `notFound` / `error` / `access-denied`.
+- **Map-feel navigation** — drag to pan with inertia glide on release, iOS-style rubber-band overpan with spring-back at the bounds, wheel zoom toward the cursor (`config.wheelZoom`, proportional for trackpad pinches), double-click zoom (`config.doubleClickZoom`), **pinch zoom on touch** (one finger hands over to two and back), and +/−/home/fit controls with `config.locale` tooltips (`config.showControls`).
+- **Scriptable viewport, two-way** — `state.zoom` / `state.center` (content coordinates): write either from a script or binding and the viewport **animates there** over `config.flyToMs` (log-space easing). `config.home` is the reset target and initial position; zoom is clamped to `config.minZoom`/`maxZoom`.
+- **POIs** (`data.pois`) — named fly-to targets: write a name to `state.target` to fly there (the component clears it back to `''`), or pick from the **"Go to…" dropdown** (`config.showPoiList`). Off-screen POIs show **edge indicators**; clicking one flies to it.
+- **Minimap** (`config.showMinimap`) — corner overview with a draggable view rectangle and POI dots; hides itself while the whole content fits.
+- **Auto content size** — `config.contentWidth`/`contentHeight` set the coordinate space; `0` (default) measures the embedded view automatically.
+
+### Theming
+
+Override the `--pz-*` variables via a style class / project stylesheet: `--pz-accent`, `--pz-alert`, `--pz-text`, `--pz-muted`, `--pz-border`, `--pz-bg`, `--pz-canvas`.
+
+> Manual test checklist: [`docs/panzoom-manual-test.md`](docs/panzoom-manual-test.md).
+
+---
+
 ## Project layout
 
 | Path | Scope |
 |---|---|
-| `common/` | Component descriptor + the props/event JSON schemas (`src/main/resources`). |
+| `common/` | Component descriptors (one `Components.ALL` registry) + the props/event JSON schemas (`src/main/resources`). |
 | `gateway/` | Gateway hook (registers components, mounts web resources). |
 | `designer/` | Designer hook (registers components in the Designer). |
-| `web/` | React/TypeScript front-end + styles, built by webpack. |
+| `web/` | React/TypeScript front-end + styles, built by webpack (production bundle by default). |
+| `e2e/` | Playwright smoke suite rendering every component in a live session — run via `ops/e2e.sh`. |
 | `ops/` | Local dev gateway (Docker) + scripts — see [`ops/README.md`](ops/README.md). |
-| `ops/verify/` | Live browser-verification harness — see [`ops/verify/README.md`](ops/verify/README.md). |
+| `ops/verify/` | Committed Perspective "verify" project (demo views per component) — see [`ops/verify/README.md`](ops/verify/README.md). |
+| `docs/` | Manual-test checklists (deep gesture/touch flows the e2e suite doesn't automate). |
 
 ---
 

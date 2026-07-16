@@ -11,8 +11,8 @@ import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
  * Describes the (editable) Data Grid component to the Java-side registry.
  *
  * <p>Editing is controlled: onCellEdit/onRowAdd/onRowsDelete fire for the
- * author to persist — the grid never mutates its own data (see
- * docs/data-grid-plan.md).
+ * author to persist — the grid never mutates its own data (see the Data Grid
+ * section of the README).
  *
  * <p>The {@link #COMPONENT_ID} here MUST exactly match the {@code COMPONENT_TYPE}
  * declared in the matching TypeScript component (web/typescript/components/grid).
