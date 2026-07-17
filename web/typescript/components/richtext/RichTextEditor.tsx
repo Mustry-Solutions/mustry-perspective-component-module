@@ -19,6 +19,8 @@ interface RichTextEditorState {
     dirty: boolean;
     linkOpen: boolean;
     linkValue: string;
+    imageOpen: boolean;
+    imageValue: string;
     /** Bumped on selection changes so the toolbar re-reads active states. */
     toolbarTick: number;
 }
@@ -44,7 +46,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
 
     constructor(props: ComponentProps<RichTextProps>) {
         super(props);
-        this.state = { dirty: false, linkOpen: false, linkValue: '', toolbarTick: 0 };
+        this.state = { dirty: false, linkOpen: false, linkValue: '', imageOpen: false, imageValue: '', toolbarTick: 0 };
     }
 
     componentDidMount(): void {
@@ -61,7 +63,8 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         const q = prev.props;
         // Schema-shaping props changed: rebuild the editor around the current doc.
         if (JSON.stringify(p.features) !== JSON.stringify(q.features)
-            || p.mode !== q.mode || p.placeholder !== q.placeholder) {
+            || p.mode !== q.mode || p.placeholder !== q.placeholder
+            || p.charLimit !== q.charLimit || p.maxImageKb !== q.maxImageKb) {
             const keep = this.state.dirty && this.ctrl ? this.ctrl.getHTML() : p.content;
             this.disposeEditor();
             this.createEditor(keep);
@@ -103,6 +106,8 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             editable: this.editable(),
             placeholder: p.placeholder,
             features: p.features,
+            charLimit: p.charLimit,
+            maxImageKb: p.maxImageKb,
             onUpdate: this.onUserEdit,
             onSelectionChange: this.onSelectionChange
         });
@@ -140,6 +145,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         w.write('output.isDirty', dirty);
         w.write('output.plainText', plain);
         w.write('output.wordCount', words);
+        w.write('output.charCount', this.ctrl ? this.ctrl.charCount() : plain.length);
     }
 
     private onUserEdit = (): void => {
@@ -161,7 +167,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         const c = this.ctrl;
         const sig = [
             'bold', 'italic', 'underline', 'strike', 'paragraph',
-            'bulletList', 'orderedList', 'link'
+            'bulletList', 'orderedList', 'link', 'table'
         ].map((n) => (c.isActive(n) ? '1' : '0')).join('')
             + [1, 2, 3].map((n) => (c.isActive('heading', { level: n }) ? '1' : '0')).join('');
         if (sig !== this.lastToolbarSig) {
@@ -177,7 +183,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         const html = this.ctrl.getHTML();
         const plain = plainTextOf(html);
         this.lastSaved = html;
-        this.setState({ dirty: false, linkOpen: false });
+        this.setState({ dirty: false, linkOpen: false, imageOpen: false });
         this.syncOutputs(html, false);
         this.fireEvent('onSave', { content: html, plainText: plain, wordCount: wordCountOf(plain) });
     };
@@ -188,7 +194,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         }
         this.ctrl.setContent(this.props.props.content);
         this.lastSaved = null;
-        this.setState({ dirty: false, linkOpen: false });
+        this.setState({ dirty: false, linkOpen: false, imageOpen: false });
         this.syncOutputs(this.props.props.content, false);
     };
 
@@ -212,6 +218,17 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             this.ctrl.setLink(null);
         }
         this.setState({ linkOpen: false });
+    };
+
+    private imageToggle = (): void => {
+        this.setState({ imageOpen: !this.state.imageOpen, imageValue: '' });
+    };
+
+    private imageApply = (): void => {
+        if (this.ctrl && this.state.imageValue) {
+            this.ctrl.setImage(this.state.imageValue);
+        }
+        this.setState({ imageOpen: false });
     };
 
     render() {
@@ -240,6 +257,11 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
                         onLinkChange={(v) => this.setState({ linkValue: v })}
                         onLinkApply={this.linkApply}
                         onLinkRemove={this.linkRemove}
+                        imageOpen={this.state.imageOpen}
+                        imageValue={this.state.imageValue}
+                        onImageToggle={this.imageToggle}
+                        onImageChange={(v) => this.setState({ imageValue: v })}
+                        onImageApply={this.imageApply}
                         onSave={this.save}
                         onDiscard={this.discard}
                     />

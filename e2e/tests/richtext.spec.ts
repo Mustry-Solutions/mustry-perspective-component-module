@@ -35,8 +35,9 @@ test('richtext: typing dirties, Save writes back, display updates', async ({ pag
 test('richtext: toolbar formatting produces real markup end-to-end', async ({ page }) => {
     await openRoute(page, '/rte', '.mustry-rte');
     const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
-    await editor.click();
-    await page.keyboard.press('ControlOrMeta+a');
+    // Select the intro paragraph (triple click — Perspective's session-level
+    // keyboard handling intercepts select-all, so Ctrl/Cmd+A is unreliable here).
+    await editor.getByText('read before starting').click({ clickCount: 3 });
     await page.locator('.mustry-rte-btn[aria-label="Italic"]').click();
     await expect(page.locator('.mustry-rte-btn[aria-label="Italic"]')).toHaveAttribute('aria-pressed', 'true');
 
@@ -54,4 +55,36 @@ test('richtext: discard reverts the draft', async ({ page }) => {
     await page.locator('.mustry-rte-discard-btn').click();
     await expect(page.locator('.mustry-rte-dirty-badge')).toHaveCount(0);
     await expect(editor).not.toContainText('TEMPORARY');
+});
+
+test('richtext: insert table, edit it, and see it in the display instance', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.click();
+    await page.locator('.mustry-rte-btn[aria-label="Table"]').click();
+    // Cursor lands inside the new table: the contextual buttons appear.
+    await expect(page.locator('.mustry-rte-btn[aria-label="Add row"]')).toBeVisible();
+    await editor.pressSequentially('Step');
+    await page.locator('.mustry-rte-btn[aria-label="Add row"]').click();
+
+    await page.locator('.mustry-rte-save-btn').click();
+    const displayTable = page.locator('.mustry-rte--display table');
+    await expect(displayTable).toBeVisible();
+    await expect(displayTable.locator('tr')).toHaveCount(4);   // 3 inserted (incl. header) + 1 added
+    await expect(displayTable).toContainText('Step');
+});
+
+test('richtext: image by URL renders in both instances', async ({ page }) => {
+    const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.click();
+    await page.locator('.mustry-rte-btn[aria-label="Image"]').click();
+    await page.locator('.mustry-rte-imageinput').fill(PIXEL);
+    await page.locator('.mustry-rte-linkrow .mustry-rte-save-btn').click();
+    await expect(page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror img')).toBeVisible();
+
+    // The main Save button (the linkrow one is gone once the popover closes).
+    await page.locator('.mustry-rte-toolbar > .mustry-rte-save-btn').click();
+    await expect(page.locator('.mustry-rte--display img')).toBeVisible();
 });

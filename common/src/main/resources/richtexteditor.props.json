@@ -10,7 +10,10 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["edit", "display"],
+          "enum": [
+            "edit",
+            "display"
+          ],
           "default": "edit",
           "description": "'edit' = WYSIWYG editor with toolbar and Save. 'display' = read-only rendering of the same sanitized document (links clickable) — the safe way to show rich content."
         },
@@ -39,14 +42,50 @@
           "additionalProperties": false,
           "description": "Formatting allowlist: a disabled feature disappears from the toolbar AND from the document schema (pasted/bound markup using it is dropped).",
           "properties": {
-            "bold": { "type": "boolean", "default": true },
-            "italic": { "type": "boolean", "default": true },
-            "underline": { "type": "boolean", "default": true },
-            "strike": { "type": "boolean", "default": true },
-            "headings": { "type": "boolean", "default": true, "description": "Headings H1-H3." },
-            "bulletList": { "type": "boolean", "default": true },
-            "orderedList": { "type": "boolean", "default": true },
-            "link": { "type": "boolean", "default": true, "description": "Hyperlinks (http/https/mailto/tel only; other schemes are rejected)." }
+            "bold": {
+              "type": "boolean",
+              "default": true
+            },
+            "italic": {
+              "type": "boolean",
+              "default": true
+            },
+            "underline": {
+              "type": "boolean",
+              "default": true
+            },
+            "strike": {
+              "type": "boolean",
+              "default": true
+            },
+            "headings": {
+              "type": "boolean",
+              "default": true,
+              "description": "Headings H1-H3."
+            },
+            "bulletList": {
+              "type": "boolean",
+              "default": true
+            },
+            "orderedList": {
+              "type": "boolean",
+              "default": true
+            },
+            "link": {
+              "type": "boolean",
+              "default": true,
+              "description": "Hyperlinks (http/https/mailto/tel only; other schemes are rejected)."
+            },
+            "table": {
+              "type": "boolean",
+              "default": true,
+              "description": "Tables (insert 3x3 with header row; add row/column and delete from the toolbar while inside one)."
+            },
+            "image": {
+              "type": "boolean",
+              "default": true,
+              "description": "Images by URL (http/https/relative) or pasted as size-capped data URIs."
+            }
           }
         },
         "labels": {
@@ -54,22 +93,103 @@
           "additionalProperties": false,
           "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale (en/fr/de/es/nl/it/pt).",
           "properties": {
-            "bold": { "type": "string", "description": "Toolbar tooltip." },
-            "italic": { "type": "string", "description": "Toolbar tooltip." },
-            "underline": { "type": "string", "description": "Toolbar tooltip." },
-            "strike": { "type": "string", "description": "Toolbar tooltip." },
-            "paragraph": { "type": "string", "description": "Toolbar tooltip." },
-            "heading": { "type": "string", "description": "Toolbar tooltip, '{n}' = level." },
-            "bulletList": { "type": "string", "description": "Toolbar tooltip." },
-            "orderedList": { "type": "string", "description": "Toolbar tooltip." },
-            "link": { "type": "string", "description": "Toolbar tooltip." },
-            "linkPlaceholder": { "type": "string", "description": "Link popover input placeholder." },
-            "apply": { "type": "string", "description": "Link popover apply button." },
-            "removeLink": { "type": "string", "description": "Link popover remove button." },
-            "save": { "type": "string", "description": "Save button." },
-            "discard": { "type": "string", "description": "Discard button tooltip." },
-            "unsaved": { "type": "string", "description": "Dirty badge text." }
+            "bold": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "italic": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "underline": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "strike": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "paragraph": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "heading": {
+              "type": "string",
+              "description": "Toolbar tooltip, '{n}' = level."
+            },
+            "bulletList": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "orderedList": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "link": {
+              "type": "string",
+              "description": "Toolbar tooltip."
+            },
+            "linkPlaceholder": {
+              "type": "string",
+              "description": "Link popover input placeholder."
+            },
+            "apply": {
+              "type": "string",
+              "description": "Link popover apply button."
+            },
+            "removeLink": {
+              "type": "string",
+              "description": "Link popover remove button."
+            },
+            "save": {
+              "type": "string",
+              "description": "Save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Discard button tooltip."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Dirty badge text."
+            },
+            "table": {
+              "type": "string",
+              "description": "Insert-table button tooltip."
+            },
+            "addRow": {
+              "type": "string",
+              "description": "Add-row button (inside a table)."
+            },
+            "addColumn": {
+              "type": "string",
+              "description": "Add-column button (inside a table)."
+            },
+            "deleteTable": {
+              "type": "string",
+              "description": "Delete-table button."
+            },
+            "image": {
+              "type": "string",
+              "description": "Image button tooltip."
+            },
+            "imagePlaceholder": {
+              "type": "string",
+              "description": "Image popover input placeholder."
+            }
           }
+        },
+        "charLimit": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Maximum characters (0 = unlimited). Enforced while typing/pasting."
+        },
+        "maxImageKb": {
+          "type": "number",
+          "default": 256,
+          "minimum": 1,
+          "description": "Maximum size (KB) of a PASTED image embedded as a data URI; larger pastes are dropped. Images by URL are unaffected."
         }
       }
     },
@@ -104,6 +224,11 @@
           "type": "number",
           "default": 0,
           "description": "Word count of the plain-text mirror."
+        },
+        "charCount": {
+          "type": "number",
+          "default": 0,
+          "description": "Character count of the (saved/bound) document. Pair with config.charLimit."
         }
       }
     },

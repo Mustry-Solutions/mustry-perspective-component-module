@@ -14,6 +14,8 @@ export interface RichTextProps {
     locale: string;
     labels: RteLabels;
     features: RteFeatures;
+    charLimit: number;
+    maxImageKb: number;
     content: string;
 }
 
@@ -40,6 +42,8 @@ export function mapRteProps(tree: PropertyTree): RichTextProps {
         locale,
         labels: labels as unknown as RteLabels,
         features: features as unknown as RteFeatures,
+        charLimit: tree.readNumber('config.charLimit', 0),
+        maxImageKb: tree.readNumber('config.maxImageKb', 256),
         content: tree.readString('data.content', '')
     };
 }

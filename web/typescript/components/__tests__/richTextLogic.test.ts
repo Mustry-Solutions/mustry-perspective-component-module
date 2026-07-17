@@ -69,3 +69,25 @@ describe('fillLabel', () => {
         expect(fillLabel('{a} and {b}', { a: 'x' })).toBe('x and {b}');
     });
 });
+
+describe('sanitizeImageSrc', () => {
+    const { sanitizeImageSrc, dataUriKb } = require('../richtext/richTextLogic');
+
+    it('allows data:image URIs, http(s) and relative', () => {
+        expect(sanitizeImageSrc('data:image/png;base64,iVBORw0KGgo=')).toBe('data:image/png;base64,iVBORw0KGgo=');
+        expect(sanitizeImageSrc('https://example.com/a.png')).toBe('https://example.com/a.png');
+        expect(sanitizeImageSrc('/res/mustry-components/logo.png')).toBe('/res/mustry-components/logo.png');
+    });
+
+    it('rejects non-image data URIs and script schemes', () => {
+        expect(sanitizeImageSrc('data:text/html,<script>1</script>')).toBeNull();
+        expect(sanitizeImageSrc('javascript:alert(1)')).toBeNull();
+        expect(sanitizeImageSrc('')).toBeNull();
+    });
+
+    it('measures data URI payload size in KB', () => {
+        const kb = dataUriKb('data:image/png;base64,' + 'A'.repeat(4096));
+        expect(kb).toBeCloseTo(3, 0);   // 4096 base64 chars ~ 3072 bytes
+        expect(dataUriKb('no-comma')).toBeGreaterThan(0);
+    });
+});

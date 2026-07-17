@@ -18,6 +18,11 @@ interface RteToolbarProps {
     onLinkChange: (v: string) => void;
     onLinkApply: () => void;
     onLinkRemove: () => void;
+    imageOpen: boolean;
+    imageValue: string;
+    onImageToggle: () => void;
+    onImageChange: (v: string) => void;
+    onImageApply: () => void;
     onSave: () => void;
     onDiscard: () => void;
 }
@@ -105,6 +110,26 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
                     </Btn>
                 </>
             )}
+            {features.table && (
+                <>
+                    <span className="mustry-rte-sep" />
+                    <Btn label={labels.table} active={p.isActive('table')} disabled={!enabled} onClick={cmd('insertTable')}>
+                        ⊞
+                    </Btn>
+                    {p.isActive('table') && (
+                        <>
+                            <Btn label={labels.addRow} active={false} disabled={!enabled} onClick={cmd('addRow')}>+↓</Btn>
+                            <Btn label={labels.addColumn} active={false} disabled={!enabled} onClick={cmd('addColumn')}>+→</Btn>
+                            <Btn label={labels.deleteTable} active={false} disabled={!enabled} onClick={cmd('deleteTable')}>⊟</Btn>
+                        </>
+                    )}
+                </>
+            )}
+            {features.image && (
+                <Btn label={labels.image} active={p.imageOpen} disabled={!enabled} onClick={p.onImageToggle}>
+                    🖼
+                </Btn>
+            )}
 
             <span className="mustry-rte-spring" />
             {p.dirty && <span className="mustry-rte-dirty-badge">{labels.unsaved}</span>}
@@ -141,6 +166,22 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
                     />
                     <button type="button" className="mustry-rte-save-btn" onClick={p.onLinkApply}>{labels.apply}</button>
                     <button type="button" className="mustry-rte-btn" onClick={p.onLinkRemove}>{labels.removeLink}</button>
+                </div>
+            )}
+            {p.imageOpen && (
+                <div className="mustry-rte-linkrow">
+                    <input
+                        type="text"
+                        className="mustry-rte-linkinput mustry-rte-imageinput"
+                        placeholder={labels.imagePlaceholder}
+                        value={p.imageValue}
+                        onChange={(e) => p.onImageChange(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); p.onImageApply(); }
+                            if (e.key === 'Escape') { e.preventDefault(); p.onImageToggle(); }
+                        }}
+                    />
+                    <button type="button" className="mustry-rte-save-btn" onClick={p.onImageApply}>{labels.apply}</button>
                 </div>
             )}
         </div>

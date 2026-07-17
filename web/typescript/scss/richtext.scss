@@ -183,4 +183,44 @@
         pointer-events: none;
         color: var(--rte-muted);
     }
+
+    table {
+        border-collapse: collapse;
+        margin: 0 0 0.6em;
+        width: 100%;
+        table-layout: fixed;
+
+        th, td {
+            border: 1px solid var(--rte-border);
+            padding: 4px 8px;
+            vertical-align: top;
+            text-align: left;
+            position: relative;
+        }
+
+        th {
+            background: var(--rte-toolbar-bg);
+            font-weight: 600;
+        }
+
+        // ProseMirror cell-selection highlight.
+        .selectedCell::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: color-mix(in srgb, var(--rte-accent) 15%, transparent);
+            pointer-events: none;
+        }
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 0 0.5em;
+
+        &.ProseMirror-selectednode {
+            outline: 2px solid var(--rte-accent);
+        }
+    }
 }

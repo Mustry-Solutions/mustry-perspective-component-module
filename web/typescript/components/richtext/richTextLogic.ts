@@ -12,11 +12,14 @@ export interface RteFeatures {
     bulletList: boolean;
     orderedList: boolean;
     link: boolean;
+    table: boolean;
+    image: boolean;
 }
 
 export const ALL_FEATURES: RteFeatures = {
     bold: true, italic: true, underline: true, strike: true,
-    headings: true, bulletList: true, orderedList: true, link: true
+    headings: true, bulletList: true, orderedList: true, link: true,
+    table: true, image: true
 };
 
 /**
@@ -47,6 +50,29 @@ export function sanitizeUrl(raw: string | null | undefined): string | null {
     }
     const ok = ['http', 'https', 'mailto', 'tel'];
     return ok.indexOf(scheme[1].toLowerCase()) >= 0 ? url : null;
+}
+
+/**
+ * Image sources additionally allow data:image/* — pasted images are embedded
+ * as data URIs (size-capped by config.maxImageKb). Everything else follows the
+ * link rules.
+ */
+export function sanitizeImageSrc(raw: string | null | undefined): string | null {
+    if (!raw) {
+        return null;
+    }
+    const url = raw.trim();
+    if (/^data:image\//i.test(url)) {
+        return url;
+    }
+    return sanitizeUrl(url);
+}
+
+/** data-URI size in KB (base64 expands ~4/3, so decode-adjust). */
+export function dataUriKb(dataUri: string): number {
+    const i = dataUri.indexOf(',');
+    const body = i >= 0 ? dataUri.length - i - 1 : dataUri.length;
+    return (body * 3) / 4 / 1024;
 }
 
 /** Minimal entity decoding for the plain-text mirror (the common five + nbsp). */
