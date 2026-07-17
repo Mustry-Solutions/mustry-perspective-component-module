@@ -259,6 +259,9 @@ True WYSIWYG editing — and safe read-only display — of rich text: operator i
 - **Sanitization is the schema** — only allowlisted node/mark types can exist in the document: unknown markup (scripts, event handlers) is dropped on parse, link hrefs pass a protocol allowlist (`http/https/mailto/tel`; `javascript:`/`data:` rejected), image sources additionally allow `data:image/*`.
 - **Formatting allowlist** (`config.features`) — bold/italic/underline/strike, H1–H3, bullet/numbered lists, links, **tables** (insert 3×3 with header; contextual add-row/add-column/delete while inside one), **images** (by URL, or pasted as data URIs capped by `config.maxImageKb`), **checklists**. A disabled feature disappears from the toolbar *and* the schema.
 - **Interactive checklists in display mode** — operators check off steps of the displayed procedure; each toggle fires **`onTaskToggle`** (same payload as `onSave`) so one write-back script keeps the state.
+- **Undo/redo** — toolbar buttons (touch-friendly) plus Ctrl+Z/Ctrl+Y; bound-content arrivals are history-exempt, so undo can never blank the document.
+- **Image library picker** — bind `data.imageLibrary` (`[{label, src}]`) to offer a dropdown of known images; gateway Image Management paths (`/system/images/...`) work directly and stay session-authenticated.
+- **Font allowlist** (`config.fonts`, default off) — list the families operators may apply (e.g. a monospace for part numbers); display mode always renders saved fonts.
 - `config.charLimit` (0 = unlimited) enforced while typing; `config.placeholder`; localization (same 7 languages + `config.labels` overrides); print stylesheet (toolbar and chrome drop out).
 - **Outputs**: `output.isDirty`, `output.plainText` (for DB search/indexing), `output.wordCount`, `output.charCount` — updated on save/rebind, not per keystroke.
 

@@ -110,6 +110,17 @@
     color: var(--rte-muted);
 }
 
+.mustry-rte-select {
+    height: 26px;
+    padding: 0 4px;
+    border: 1px solid var(--rte-border);
+    border-radius: 4px;
+    background: var(--rte-bg);
+    color: var(--rte-text);
+    font-size: 12px;
+    max-width: 140px;
+}
+
 // Link popover: a full-width row that drops below the toolbar.
 .mustry-rte-linkrow {
     flex-basis: 100%;

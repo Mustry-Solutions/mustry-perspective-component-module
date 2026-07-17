@@ -16,7 +16,9 @@ export interface RichTextProps {
     features: RteFeatures;
     charLimit: number;
     maxImageKb: number;
+    fonts: string[];
     content: string;
+    imageLibrary: Array<{ label: string; src: string }>;
 }
 
 export function mapRteProps(tree: PropertyTree): RichTextProps {
@@ -44,6 +46,14 @@ export function mapRteProps(tree: PropertyTree): RichTextProps {
         features: features as unknown as RteFeatures,
         charLimit: tree.readNumber('config.charLimit', 0),
         maxImageKb: tree.readNumber('config.maxImageKb', 256),
-        content: tree.readString('data.content', '')
+        fonts: (tree.readArray('config.fonts', []) || [])
+            .map((f: unknown) => String(f ?? '').trim()).filter((f: string) => f.length > 0),
+        content: tree.readString('data.content', ''),
+        imageLibrary: (tree.readArray('data.imageLibrary', []) || [])
+            .map((e: unknown) => {
+                const o = (e || {}) as { label?: unknown; src?: unknown };
+                return { label: String(o.label ?? ''), src: String(o.src ?? '') };
+            })
+            .filter((e: { label: string; src: string }) => e.src.length > 0)
     };
 }

@@ -47,7 +47,23 @@
     "props": {
      "config": {
       "mode": "edit",
-      "placeholder": "Write the procedure\u2026"
+      "placeholder": "Write the procedure\u2026",
+      "fonts": [
+       "Georgia",
+       "Courier New"
+      ]
+     },
+     "data": {
+      "imageLibrary": [
+       {
+        "label": "Demo pixel",
+        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+       },
+       {
+        "label": "Gateway logo (Image Management)",
+        "src": "/system/images/Builtin/icons/16/help2.png"
+       }
+      ]
      }
     },
     "custom": {},
@@ -144,6 +160,84 @@
        }
       ]
      }
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "theme",
+     "style": {
+      "fontSize": "11px",
+      "color": "#8a8f98",
+      "textAlign": "right"
+     }
+    },
+    "meta": {
+     "name": "theme_caption"
+    },
+    "position": {
+     "x": 924,
+     "y": 18,
+     "width": 44,
+     "height": 16
+    }
+   },
+   {
+    "type": "ia.input.dropdown",
+    "version": 0,
+    "props": {
+     "options": [
+      {
+       "value": "light",
+       "label": "light"
+      },
+      {
+       "value": "light-warm",
+       "label": "light-warm"
+      },
+      {
+       "value": "light-cool",
+       "label": "light-cool"
+      },
+      {
+       "value": "dark",
+       "label": "dark"
+      },
+      {
+       "value": "dark-warm",
+       "label": "dark-warm"
+      },
+      {
+       "value": "dark-cool",
+       "label": "dark-cool"
+      }
+     ],
+     "allowClear": false
+    },
+    "propConfig": {
+     "props.value": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "session.props.theme"
+       },
+       "bidirectional": true
+      },
+      "onChange": {
+       "enabled": true,
+       "script": "\tval = currentValue.value if currentValue else None\n\tif val and val != self.session.props.theme:\n\t\tself.session.props.theme = val\n"
+      }
+     }
+    },
+    "meta": {
+     "name": "theme_dropdown"
+    },
+    "position": {
+     "x": 972,
+     "y": 12,
+     "width": 104,
+     "height": 28
     }
    }
   ]

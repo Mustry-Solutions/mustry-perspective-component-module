@@ -18,6 +18,8 @@ import CharacterCount from '@tiptap/extension-character-count';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Node as PMNode } from '@tiptap/pm/model';
+import TextStyle from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
 import { RteFeatures, dataUriKb, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
 
 export interface RteControllerOpts {
@@ -30,6 +32,8 @@ export interface RteControllerOpts {
     charLimit: number;
     /** Max embedded (pasted) image size in KB; larger pastes are dropped. */
     maxImageKb: number;
+    /** Font families operators may pick; empty = font feature off. */
+    fonts: string[];
     /** Document changed by user input (typing, toolbar commands) — in a
      *  read-only editor this only happens via checklist toggles. */
     onUpdate: () => void;
@@ -101,6 +105,9 @@ export class RichTextController {
                         }
                     })
                 ] : []),
+                // The font allowlist is an EDITING constraint; a read-only
+                // display renders whatever fonts the saved document carries.
+                ...((opts.fonts.length || !opts.editable) ? [TextStyle, FontFamily] : []),
                 ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit })] : []),
                 ...(opts.editable && opts.placeholder
                     ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
@@ -145,9 +152,17 @@ export class RichTextController {
         return this.editor.getHTML();
     }
 
-    /** Replace the document (external/bound content — no user-update event). */
+    /** Replace the document (external/bound content — no user-update event, and
+     *  NOT undoable: without the history opt-out, the binding's arrival becomes
+     *  an undo step and Ctrl-Z could blank the document). */
     setContent(html: string): void {
-        this.editor.commands.setContent(html, false);
+        this.editor.chain()
+            .command(({ tr }) => {
+                tr.setMeta('addToHistory', false);
+                return true;
+            })
+            .setContent(html, false)
+            .run();
     }
 
     setEditable(editable: boolean): void {
@@ -175,6 +190,31 @@ export class RichTextController {
             case 'addRow': c.addRowAfter().run(); break;
             case 'addColumn': c.addColumnAfter().run(); break;
             case 'deleteTable': c.deleteTable().run(); break;
+            case 'undo': c.undo().run(); break;
+            case 'redo': c.redo().run(); break;
+        }
+    }
+
+    canUndo(): boolean {
+        return this.editor.can().undo();
+    }
+
+    canRedo(): boolean {
+        return this.editor.can().redo();
+    }
+
+    /** The selection's font family ('' = theme default). */
+    currentFont(): string {
+        return (this.editor.getAttributes('textStyle').fontFamily as string) || '';
+    }
+
+    /** Apply a font family to the selection; '' returns to the theme default. */
+    setFont(family: string): void {
+        const c = this.editor.chain().focus();
+        if (family) {
+            c.setFontFamily(family).run();
+        } else {
+            c.unsetFontFamily().run();
         }
     }
 

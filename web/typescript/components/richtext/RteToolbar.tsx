@@ -10,6 +10,13 @@ interface RteToolbarProps {
     features: RteFeatures;
     enabled: boolean;
     dirty: boolean;
+    canUndo: boolean;
+    canRedo: boolean;
+    fonts: string[];
+    currentFont: string;
+    onFont: (family: string) => void;
+    imageLibrary: Array<{ label: string; src: string }>;
+    onImagePick: (src: string) => void;
     isActive: (name: string, attrs?: Record<string, unknown>) => boolean;
     onCommand: (cmd: string, arg?: number) => void;
     linkOpen: boolean;
@@ -52,6 +59,13 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
     const cmd = (name: string, arg?: number) => () => p.onCommand(name, arg);
     return (
         <div className="mustry-rte-toolbar">
+            <Btn label={labels.undo} active={false} disabled={!enabled || !p.canUndo} onClick={cmd('undo')}>
+                ↶
+            </Btn>
+            <Btn label={labels.redo} active={false} disabled={!enabled || !p.canRedo} onClick={cmd('redo')}>
+                ↷
+            </Btn>
+            <span className="mustry-rte-sep" />
             {features.bold && (
                 <Btn label={labels.bold} active={p.isActive('bold')} disabled={!enabled} onClick={cmd('bold')}>
                     <strong>B</strong>
@@ -71,6 +85,20 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
                 <Btn label={labels.strike} active={p.isActive('strike')} disabled={!enabled} onClick={cmd('strike')}>
                     <span style={{ textDecoration: 'line-through' }}>S</span>
                 </Btn>
+            )}
+            {p.fonts.length > 0 && (
+                <select
+                    className="mustry-rte-select"
+                    title={labels.font}
+                    aria-label={labels.font}
+                    disabled={!enabled}
+                    value={p.currentFont}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onChange={(e) => p.onFont(e.target.value)}
+                >
+                    <option value="">{labels.fontDefault}</option>
+                    {p.fonts.map((f) => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+                </select>
             )}
             {features.headings && (
                 <>
@@ -175,6 +203,19 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
             )}
             {p.imageOpen && (
                 <div className="mustry-rte-linkrow">
+                    {p.imageLibrary.length > 0 && (
+                        <select
+                            className="mustry-rte-select mustry-rte-imagepick"
+                            aria-label={labels.image}
+                            value=""
+                            onChange={(e) => e.target.value && p.onImagePick(e.target.value)}
+                        >
+                            <option value="">{labels.image}…</option>
+                            {p.imageLibrary.map((it, i) => (
+                                <option key={`${it.src}-${i}`} value={it.src}>{it.label || it.src}</option>
+                            ))}
+                        </select>
+                    )}
                     <input
                         type="text"
                         className="mustry-rte-linkinput mustry-rte-imageinput"

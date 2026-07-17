@@ -18,8 +18,13 @@ mounts imperatively, gesture-controller style). Controlled write-back
 feature-flagged formatting (headings/lists/links/tables/images/
 checklists), interactive display-mode checklists (`onTaskToggle`),
 char limit, plainText/wordCount/charCount outputs, 7-language labels,
-`--rte-*` theming, print stylesheet. Demo at `/rte`; 7 e2e tests + pure
-logic jest suites. Bundle grows 245K→656K minified (~180K gz) — first
+`--rte-*` theming, print stylesheet. Undo/redo toolbar
+buttons (bound content is history-exempt — Ctrl-Z can never blank the
+document), an image-library picker fed by bound `data.imageLibrary`
+(gateway Image Management paths like `/system/images/...` work
+directly), and a `config.fonts` allowlist font picker (display mode
+always renders saved fonts). Demo at `/rte` incl. theme toggle; 10 e2e
+tests + pure logic jest suites. Bundle grows 245K→656K minified (~180K gz) — first
 runtime dependency, trim pass noted for later.
 
 ### Build & CI

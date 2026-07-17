@@ -64,7 +64,8 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         // Schema-shaping props changed: rebuild the editor around the current doc.
         if (JSON.stringify(p.features) !== JSON.stringify(q.features)
             || p.mode !== q.mode || p.placeholder !== q.placeholder
-            || p.charLimit !== q.charLimit || p.maxImageKb !== q.maxImageKb) {
+            || p.charLimit !== q.charLimit || p.maxImageKb !== q.maxImageKb
+            || JSON.stringify(p.fonts) !== JSON.stringify(q.fonts)) {
             const keep = this.state.dirty && this.ctrl ? this.ctrl.getHTML() : p.content;
             this.disposeEditor();
             this.createEditor(keep);
@@ -108,6 +109,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             features: p.features,
             charLimit: p.charLimit,
             maxImageKb: p.maxImageKb,
+            fonts: p.fonts,
             onUpdate: this.onUserEdit,
             onSelectionChange: this.onSelectionChange
         });
@@ -182,7 +184,9 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             'bulletList', 'orderedList', 'link', 'table'
         ].map((n) => (c.isActive(n) ? '1' : '0')).join('')
             + (c.isActive('taskList') ? '1' : '0')
-            + [1, 2, 3].map((n) => (c.isActive('heading', { level: n }) ? '1' : '0')).join('');
+            + [1, 2, 3].map((n) => (c.isActive('heading', { level: n }) ? '1' : '0')).join('')
+            + (c.canUndo() ? '1' : '0') + (c.canRedo() ? '1' : '0')
+            + '|' + c.currentFont();
         if (sig !== this.lastToolbarSig) {
             this.lastToolbarSig = sig;
             this.setState({ toolbarTick: this.state.toolbarTick + 1 });
@@ -237,6 +241,13 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         this.setState({ imageOpen: !this.state.imageOpen, imageValue: '' });
     };
 
+    private imagePick = (src: string): void => {
+        if (this.ctrl && src) {
+            this.ctrl.setImage(src);
+        }
+        this.setState({ imageOpen: false });
+    };
+
     private imageApply = (): void => {
         if (this.ctrl && this.state.imageValue) {
             this.ctrl.setImage(this.state.imageValue);
@@ -262,6 +273,13 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
                         features={p.features}
                         enabled={p.enabled}
                         dirty={this.state.dirty}
+                        canUndo={this.ctrl ? this.ctrl.canUndo() : false}
+                        canRedo={this.ctrl ? this.ctrl.canRedo() : false}
+                        fonts={p.fonts}
+                        currentFont={this.ctrl ? this.ctrl.currentFont() : ''}
+                        onFont={(f) => this.ctrl && this.ctrl.setFont(f)}
+                        imageLibrary={p.imageLibrary}
+                        onImagePick={this.imagePick}
                         isActive={(name, attrs) => (this.ctrl ? this.ctrl.isActive(name, attrs) : false)}
                         onCommand={(cmd, arg) => this.ctrl && this.ctrl.command(cmd, arg)}
                         linkOpen={this.state.linkOpen}

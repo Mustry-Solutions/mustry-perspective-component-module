@@ -102,3 +102,45 @@ test('richtext: display-mode checklist toggle fires write-back (onTaskToggle)', 
     await expect(page.locator('.mustry-rte:not(.mustry-rte--display) input[type="checkbox"]').first())
         .toBeChecked();
 });
+
+test('richtext: undo button reverts typing, redo restores it', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    const undoBtn = page.locator('.mustry-rte-btn[aria-label="Undo"]');
+    await expect(undoBtn).toBeDisabled();
+
+    await editor.click();
+    await editor.pressSequentially('UNDOME');
+    await expect(undoBtn).toBeEnabled();
+    // TipTap groups rapid keystrokes into one history step per pause; click
+    // until the word is gone (bounded).
+    for (let i = 0; i < 10 && (await editor.textContent())?.includes('UNDOME'); i++) {
+        await undoBtn.click();
+    }
+    await expect(editor).not.toContainText('UNDOME');
+
+    const redoBtn = page.locator('.mustry-rte-btn[aria-label="Redo"]');
+    await expect(redoBtn).toBeEnabled();
+    await redoBtn.click();
+    await expect(editor).toContainText('UNDOME');
+});
+
+test('richtext: image library picker inserts a known image', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.click();
+    await page.locator('.mustry-rte-btn[aria-label="Image"]').click();
+    await page.locator('.mustry-rte-imagepick').selectOption({ label: 'Demo pixel' });
+    await expect(editor.locator('img')).toBeVisible();
+});
+
+test('richtext: font picker applies an allowlisted family end-to-end', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.getByText('read before starting').click({ clickCount: 3 });
+    await page.locator('.mustry-rte-toolbar > .mustry-rte-select').selectOption('Courier New');
+
+    await page.locator('.mustry-rte-toolbar > .mustry-rte-save-btn').click();
+    const styled = page.locator('.mustry-rte--display [style*="Courier New"]').first();
+    await expect(styled).toBeVisible();
+});

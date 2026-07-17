@@ -185,6 +185,22 @@
             "checklist": {
               "type": "string",
               "description": "Checklist button tooltip."
+            },
+            "undo": {
+              "type": "string",
+              "description": "Undo button tooltip."
+            },
+            "redo": {
+              "type": "string",
+              "description": "Redo button tooltip."
+            },
+            "font": {
+              "type": "string",
+              "description": "Font picker tooltip."
+            },
+            "fontDefault": {
+              "type": "string",
+              "description": "Font picker's theme-default entry."
             }
           }
         },
@@ -199,6 +215,14 @@
           "default": 256,
           "minimum": 1,
           "description": "Maximum size (KB) of a PASTED image embedded as a data URI; larger pastes are dropped. Images by URL are unaffected."
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Font families operators may apply to selected text (e.g. a monospace for part numbers). Empty (default) = no font picker; text always follows the theme. Entries must be families available in the session (theme @font-face or system fonts).",
+          "items": {
+            "type": "string"
+          },
+          "default": []
         }
       }
     },
@@ -211,6 +235,14 @@
           "type": "string",
           "default": "",
           "description": "The document as HTML — the source of truth (bind to a DB column via a named query). Parsed through the feature-constrained schema, so disallowed markup is dropped. Edits stay a local draft until Save fires onSave; write the payload's content back here to complete the round-trip."
+        },
+        "imageLibrary": {
+          "type": "array",
+          "description": "Optional picker entries for the image popover: [{label, src}]. Bind it to whatever lists your images — e.g. gateway Image Management paths like '/system/images/logo.png' (served session-authenticated), WebDev endpoints, or external URLs.",
+          "items": {
+            "type": "object"
+          },
+          "default": []
         }
       }
     },

@@ -29,6 +29,10 @@ export interface RteLabels {
     deleteTable: string;
     image: string;
     imagePlaceholder: string;         // the image popover's input placeholder
+    undo: string;
+    redo: string;
+    font: string;                     // font picker tooltip
+    fontDefault: string;              // font picker: theme-default entry
     save: string;
     discard: string;
     unsaved: string;                  // dirty badge
@@ -41,6 +45,7 @@ export const EN_RTE_LABELS: RteLabels = {
     link: 'Link', linkPlaceholder: 'https://…', apply: 'Apply', removeLink: 'Remove link',
     table: 'Table', addRow: 'Add row', addColumn: 'Add column', deleteTable: 'Delete table',
     image: 'Image', imagePlaceholder: 'https://… (image URL)',
+    undo: 'Undo', redo: 'Redo', font: 'Font', fontDefault: 'Default',
     save: 'Save', discard: 'Discard', unsaved: 'Unsaved changes'
 };
 
@@ -53,6 +58,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Lien', linkPlaceholder: 'https://…', apply: 'Appliquer', removeLink: 'Supprimer le lien',
         table: 'Tableau', addRow: 'Ajouter une ligne', addColumn: 'Ajouter une colonne', deleteTable: 'Supprimer le tableau',
         image: 'Image', imagePlaceholder: "https://… (URL de l'image)",
+        undo: 'Annuler', redo: 'Rétablir', font: 'Police', fontDefault: 'Par défaut',
         save: 'Enregistrer', discard: 'Annuler', unsaved: 'Modifications non enregistrées'
     },
     de: {
@@ -62,6 +68,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Übernehmen', removeLink: 'Link entfernen',
         table: 'Tabelle', addRow: 'Zeile hinzufügen', addColumn: 'Spalte hinzufügen', deleteTable: 'Tabelle löschen',
         image: 'Bild', imagePlaceholder: 'https://… (Bild-URL)',
+        undo: 'Rückgängig', redo: 'Wiederholen', font: 'Schriftart', fontDefault: 'Standard',
         save: 'Speichern', discard: 'Verwerfen', unsaved: 'Ungespeicherte Änderungen'
     },
     es: {
@@ -71,6 +78,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Enlace', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Quitar enlace',
         table: 'Tabla', addRow: 'Añadir fila', addColumn: 'Añadir columna', deleteTable: 'Eliminar tabla',
         image: 'Imagen', imagePlaceholder: 'https://… (URL de la imagen)',
+        undo: 'Deshacer', redo: 'Rehacer', font: 'Fuente', fontDefault: 'Predeterminada',
         save: 'Guardar', discard: 'Descartar', unsaved: 'Cambios sin guardar'
     },
     nl: {
@@ -80,6 +88,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Toepassen', removeLink: 'Link verwijderen',
         table: 'Tabel', addRow: 'Rij toevoegen', addColumn: 'Kolom toevoegen', deleteTable: 'Tabel verwijderen',
         image: 'Afbeelding', imagePlaceholder: 'https://… (afbeeldings-URL)',
+        undo: 'Ongedaan maken', redo: 'Opnieuw', font: 'Lettertype', fontDefault: 'Standaard',
         save: 'Opslaan', discard: 'Verwerpen', unsaved: 'Niet-opgeslagen wijzigingen'
     },
     it: {
@@ -89,6 +98,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Applica', removeLink: 'Rimuovi link',
         table: 'Tabella', addRow: 'Aggiungi riga', addColumn: 'Aggiungi colonna', deleteTable: 'Elimina tabella',
         image: 'Immagine', imagePlaceholder: 'https://… (URL immagine)',
+        undo: 'Annulla', redo: 'Ripristina', font: 'Carattere', fontDefault: 'Predefinito',
         save: 'Salva', discard: 'Annulla', unsaved: 'Modifiche non salvate'
     },
     pt: {
@@ -98,6 +108,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Remover link',
         table: 'Tabela', addRow: 'Adicionar linha', addColumn: 'Adicionar coluna', deleteTable: 'Excluir tabela',
         image: 'Imagem', imagePlaceholder: 'https://… (URL da imagem)',
+        undo: 'Desfazer', redo: 'Refazer', font: 'Fonte', fontDefault: 'Padrão',
         save: 'Salvar', discard: 'Descartar', unsaved: 'Alterações não salvas'
     }
 };
