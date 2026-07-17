@@ -1,0 +1,138 @@
+{
+ "custom": {
+  "doc": "<h2>Pump P-101 weekly check</h2><p>Sample procedure \u2014 <strong>read before starting</strong>.</p><ul><li>Isolate the pump</li><li>Check the seal for leaks</li></ul>"
+ },
+ "propConfig": {
+  "custom.doc": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1100,
+   "height": 760
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Rich Text Editor demo \u2014 the top instance EDITS (toolbar, dirty badge, Save fires onSave which writes back to the shared view.custom.doc); the bottom instance DISPLAYS the same bound content read-only. Type, format, Save \u2014 the display updates.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 1060,
+     "height": 40
+    }
+   },
+   {
+    "type": "mustrysolutions.input.richtexteditor",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "edit",
+      "placeholder": "Write the procedure\u2026"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.data.content": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.doc"
+       }
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Persist the saved document; the binding round-trips it back into\n\t# data.content, which clears the editor's dirty state.\n\tself.view.custom.doc = event.content"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "rteEdit"
+    },
+    "position": {
+     "x": 16,
+     "y": 56,
+     "width": 1060,
+     "height": 340
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Display mode (same bound content):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "displayCaption"
+    },
+    "position": {
+     "x": 16,
+     "y": 406,
+     "width": 1060,
+     "height": 22
+    }
+   },
+   {
+    "type": "mustrysolutions.input.richtexteditor",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "display"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.data.content": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.doc"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "rteDisplay"
+    },
+    "position": {
+     "x": 16,
+     "y": 432,
+     "width": 1060,
+     "height": 300
+    }
+   }
+  ]
+ }
+}

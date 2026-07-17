@@ -1,0 +1,117 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Behaviour & appearance.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["edit", "display"],
+          "default": "edit",
+          "description": "'edit' = WYSIWYG editor with toolbar and Save. 'display' = read-only rendering of the same sanitized document (links clickable) — the safe way to show rich content."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Master interactivity switch (edit mode)."
+        },
+        "showToolbar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the formatting toolbar in edit mode."
+        },
+        "placeholder": {
+          "type": "string",
+          "default": "",
+          "description": "Hint shown in an empty editor."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "BCP-47 locale for built-in UI text (en/fr/de/es/nl/it/pt built in). Empty = English."
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Formatting allowlist: a disabled feature disappears from the toolbar AND from the document schema (pasted/bound markup using it is dropped).",
+          "properties": {
+            "bold": { "type": "boolean", "default": true },
+            "italic": { "type": "boolean", "default": true },
+            "underline": { "type": "boolean", "default": true },
+            "strike": { "type": "boolean", "default": true },
+            "headings": { "type": "boolean", "default": true, "description": "Headings H1-H3." },
+            "bulletList": { "type": "boolean", "default": true },
+            "orderedList": { "type": "boolean", "default": true },
+            "link": { "type": "boolean", "default": true, "description": "Hyperlinks (http/https/mailto/tel only; other schemes are rejected)." }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale (en/fr/de/es/nl/it/pt).",
+          "properties": {
+            "bold": { "type": "string", "description": "Toolbar tooltip." },
+            "italic": { "type": "string", "description": "Toolbar tooltip." },
+            "underline": { "type": "string", "description": "Toolbar tooltip." },
+            "strike": { "type": "string", "description": "Toolbar tooltip." },
+            "paragraph": { "type": "string", "description": "Toolbar tooltip." },
+            "heading": { "type": "string", "description": "Toolbar tooltip, '{n}' = level." },
+            "bulletList": { "type": "string", "description": "Toolbar tooltip." },
+            "orderedList": { "type": "string", "description": "Toolbar tooltip." },
+            "link": { "type": "string", "description": "Toolbar tooltip." },
+            "linkPlaceholder": { "type": "string", "description": "Link popover input placeholder." },
+            "apply": { "type": "string", "description": "Link popover apply button." },
+            "removeLink": { "type": "string", "description": "Link popover remove button." },
+            "save": { "type": "string", "description": "Save button." },
+            "discard": { "type": "string", "description": "Discard button tooltip." },
+            "unsaved": { "type": "string", "description": "Dirty badge text." }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bound content.",
+      "properties": {
+        "content": {
+          "type": "string",
+          "default": "",
+          "description": "The document as HTML — the source of truth (bind to a DB column via a named query). Parsed through the feature-constrained schema, so disallowed markup is dropped. Edits stay a local draft until Save fires onSave; write the payload's content back here to complete the round-trip."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values.",
+      "properties": {
+        "isDirty": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while the editor holds unsaved local edits."
+        },
+        "plainText": {
+          "type": "string",
+          "default": "",
+          "description": "Plain-text mirror of the (saved/bound) document — for search/indexing. Updates on save and bound-content changes, not per keystroke."
+        },
+        "wordCount": {
+          "type": "number",
+          "default": 0,
+          "description": "Word count of the plain-text mirror."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}

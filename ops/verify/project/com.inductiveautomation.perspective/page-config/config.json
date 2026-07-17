@@ -43,6 +43,10 @@
     "/timeline-empty": {
       "viewPath": "TimelineEmpty",
       "viewParams": {}
+    },
+    "/rte": {
+      "viewPath": "RteDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

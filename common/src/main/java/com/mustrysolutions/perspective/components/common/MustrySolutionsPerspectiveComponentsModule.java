@@ -102,7 +102,15 @@ public class MustrySolutionsPerspectiveComponentsModule {
         g.setColor(new Color(0x53, 0x53, 0x53));
         g.setStroke(new BasicStroke(1.4f));
         String k = id.toLowerCase();
-        if (k.contains("panzoomview")) {
+        if (k.contains("richtexteditor")) {
+            // Text lines with a bold lead line (a styled document).
+            g.drawRoundRect(2, 2, 12, 12, 2, 2);
+            g.setStroke(new BasicStroke(2.2f));
+            g.drawLine(5, 6, 11, 6);                              // bold heading line
+            g.setStroke(new BasicStroke(1.2f));
+            g.drawLine(5, 9, 12, 9);                              // body lines
+            g.drawLine(5, 11, 10, 11);
+        } else if (k.contains("panzoomview")) {
             // Magnifier over a sheet corner (pan/zoom hint).
             g.drawRoundRect(2, 2, 9, 9, 2, 2);                    // content sheet
             g.drawOval(6, 6, 7, 7);                               // lens

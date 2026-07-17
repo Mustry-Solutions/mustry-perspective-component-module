@@ -22,5 +22,6 @@ public final class Components {
         Calendar.DESCRIPTOR,
         DataGrid.DESCRIPTOR,
         PanZoomView.DESCRIPTOR,
-        ResourceTimeline.DESCRIPTOR);
+        ResourceTimeline.DESCRIPTOR,
+        RichTextEditor.DESCRIPTOR);
 }

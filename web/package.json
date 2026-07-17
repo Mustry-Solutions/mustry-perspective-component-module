@@ -10,6 +10,11 @@
     },
     "dependencies": {
         "@inductiveautomation/perspective-client": "^2.3.7",
+        "@tiptap/core": "^2.27.2",
+        "@tiptap/extension-link": "^2.27.2",
+        "@tiptap/extension-placeholder": "^2.27.2",
+        "@tiptap/extension-underline": "^2.27.2",
+        "@tiptap/starter-kit": "^2.27.2",
         "react": "16.14.0",
         "react-dom": "16.14.0"
     },

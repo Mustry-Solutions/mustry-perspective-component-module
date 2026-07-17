@@ -13,3 +13,4 @@ export * from './labels/picker';
 export * from './labels/timeline';
 export * from './labels/grid';
 export * from './labels/panzoom';
+export * from './labels/richtext';

@@ -1,0 +1,186 @@
+// Rich Text Editor — themeable via CSS variables (defaults track the active
+// Perspective theme where a var exists). Override the --rte-* vars from a
+// style class / project stylesheet.
+.mustry-rte {
+    --rte-accent: var(--callToAction, #0a66c2);
+    --rte-accent-text: var(--callToActionContrast, #ffffff);
+    --rte-text: var(--neutral-90, #1f2933);
+    --rte-muted: var(--neutral-60, #7b8794);
+    --rte-border: var(--neutral-30, #cbd2d9);
+    --rte-bg: var(--neutral-10, #ffffff);
+    --rte-toolbar-bg: var(--neutral-20, #f5f7fa);
+
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rte-border);
+    border-radius: 6px;
+    background: var(--rte-bg);
+    color: var(--rte-text);
+    font-size: 14px;
+    overflow: hidden;
+
+    &.is-disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+}
+
+// Display mode: chrome-free rendering surface (border off, bg transparent).
+.mustry-rte--display {
+    border-color: transparent;
+    background: transparent;
+}
+
+// --- toolbar ---------------------------------------------------------------
+.mustry-rte-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--rte-border);
+    background: var(--rte-toolbar-bg);
+    position: relative;
+}
+
+.mustry-rte-btn {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--rte-text);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--rte-accent) 12%, transparent);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.mustry-rte-btn--active {
+    background: color-mix(in srgb, var(--rte-accent) 18%, transparent);
+    border-color: var(--rte-accent);
+    color: var(--rte-accent);
+}
+
+.mustry-rte-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--rte-border);
+}
+
+.mustry-rte-spring {
+    flex: 1;
+}
+
+.mustry-rte-dirty-badge {
+    color: var(--rte-muted);
+    font-size: 12px;
+    font-style: italic;
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.mustry-rte-save-btn {
+    height: 26px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    background: var(--rte-accent);
+    color: var(--rte-accent-text);
+    font-size: 13px;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.mustry-rte-discard-btn {
+    color: var(--rte-muted);
+}
+
+// Link popover: a full-width row that drops below the toolbar.
+.mustry-rte-linkrow {
+    flex-basis: 100%;
+    display: flex;
+    gap: 6px;
+    padding-top: 4px;
+}
+
+.mustry-rte-linkinput {
+    flex: 1;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--rte-border);
+    border-radius: 4px;
+    background: var(--rte-bg);
+    color: var(--rte-text);
+    font-size: 13px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--rte-accent);
+    }
+}
+
+// --- content ---------------------------------------------------------------
+.mustry-rte-content {
+    flex: 1;
+    overflow-y: auto;
+    // TipTap mounts its .ProseMirror editable inside this host.
+    > div {
+        height: 100%;
+    }
+}
+
+.mustry-rte .ProseMirror {
+    min-height: 100%;
+    padding: 10px 12px;
+    outline: none;
+    box-sizing: border-box;
+
+    p {
+        margin: 0 0 0.5em;
+    }
+
+    h1, h2, h3 {
+        margin: 0.6em 0 0.3em;
+        line-height: 1.25;
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+    h1 { font-size: 1.5em; }
+    h2 { font-size: 1.25em; }
+    h3 { font-size: 1.1em; }
+
+    ul, ol {
+        margin: 0 0 0.5em;
+        padding-left: 1.4em;
+    }
+
+    a {
+        color: var(--rte-accent);
+        text-decoration: underline;
+    }
+
+    // TipTap placeholder (edit mode, empty document).
+    p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
+        color: var(--rte-muted);
+    }
+}
