@@ -18,6 +18,7 @@ export interface RteLabels {
     heading: string;                  // '{n}' = heading level
     bulletList: string;
     orderedList: string;
+    checklist: string;
     link: string;
     linkPlaceholder: string;          // the link popover's input placeholder
     apply: string;                    // link popover: apply button
@@ -36,7 +37,7 @@ export interface RteLabels {
 export const EN_RTE_LABELS: RteLabels = {
     bold: 'Bold', italic: 'Italic', underline: 'Underline', strike: 'Strikethrough',
     paragraph: 'Paragraph', heading: 'Heading {n}',
-    bulletList: 'Bulleted list', orderedList: 'Numbered list',
+    bulletList: 'Bulleted list', orderedList: 'Numbered list', checklist: 'Checklist',
     link: 'Link', linkPlaceholder: 'https://…', apply: 'Apply', removeLink: 'Remove link',
     table: 'Table', addRow: 'Add row', addColumn: 'Add column', deleteTable: 'Delete table',
     image: 'Image', imagePlaceholder: 'https://… (image URL)',
@@ -48,7 +49,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     fr: {
         bold: 'Gras', italic: 'Italique', underline: 'Souligné', strike: 'Barré',
         paragraph: 'Paragraphe', heading: 'Titre {n}',
-        bulletList: 'Liste à puces', orderedList: 'Liste numérotée',
+        bulletList: 'Liste à puces', orderedList: 'Liste numérotée', checklist: 'Liste de contrôle',
         link: 'Lien', linkPlaceholder: 'https://…', apply: 'Appliquer', removeLink: 'Supprimer le lien',
         table: 'Tableau', addRow: 'Ajouter une ligne', addColumn: 'Ajouter une colonne', deleteTable: 'Supprimer le tableau',
         image: 'Image', imagePlaceholder: "https://… (URL de l'image)",
@@ -57,7 +58,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     de: {
         bold: 'Fett', italic: 'Kursiv', underline: 'Unterstrichen', strike: 'Durchgestrichen',
         paragraph: 'Absatz', heading: 'Überschrift {n}',
-        bulletList: 'Aufzählung', orderedList: 'Nummerierte Liste',
+        bulletList: 'Aufzählung', orderedList: 'Nummerierte Liste', checklist: 'Checkliste',
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Übernehmen', removeLink: 'Link entfernen',
         table: 'Tabelle', addRow: 'Zeile hinzufügen', addColumn: 'Spalte hinzufügen', deleteTable: 'Tabelle löschen',
         image: 'Bild', imagePlaceholder: 'https://… (Bild-URL)',
@@ -66,7 +67,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     es: {
         bold: 'Negrita', italic: 'Cursiva', underline: 'Subrayado', strike: 'Tachado',
         paragraph: 'Párrafo', heading: 'Título {n}',
-        bulletList: 'Lista con viñetas', orderedList: 'Lista numerada',
+        bulletList: 'Lista con viñetas', orderedList: 'Lista numerada', checklist: 'Lista de verificación',
         link: 'Enlace', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Quitar enlace',
         table: 'Tabla', addRow: 'Añadir fila', addColumn: 'Añadir columna', deleteTable: 'Eliminar tabla',
         image: 'Imagen', imagePlaceholder: 'https://… (URL de la imagen)',
@@ -75,7 +76,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     nl: {
         bold: 'Vet', italic: 'Cursief', underline: 'Onderstreept', strike: 'Doorgestreept',
         paragraph: 'Alinea', heading: 'Kop {n}',
-        bulletList: 'Opsommingslijst', orderedList: 'Genummerde lijst',
+        bulletList: 'Opsommingslijst', orderedList: 'Genummerde lijst', checklist: 'Checklist',
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Toepassen', removeLink: 'Link verwijderen',
         table: 'Tabel', addRow: 'Rij toevoegen', addColumn: 'Kolom toevoegen', deleteTable: 'Tabel verwijderen',
         image: 'Afbeelding', imagePlaceholder: 'https://… (afbeeldings-URL)',
@@ -84,7 +85,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     it: {
         bold: 'Grassetto', italic: 'Corsivo', underline: 'Sottolineato', strike: 'Barrato',
         paragraph: 'Paragrafo', heading: 'Titolo {n}',
-        bulletList: 'Elenco puntato', orderedList: 'Elenco numerato',
+        bulletList: 'Elenco puntato', orderedList: 'Elenco numerato', checklist: 'Lista di controllo',
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Applica', removeLink: 'Rimuovi link',
         table: 'Tabella', addRow: 'Aggiungi riga', addColumn: 'Aggiungi colonna', deleteTable: 'Elimina tabella',
         image: 'Immagine', imagePlaceholder: 'https://… (URL immagine)',
@@ -93,7 +94,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
     pt: {
         bold: 'Negrito', italic: 'Itálico', underline: 'Sublinhado', strike: 'Tachado',
         paragraph: 'Parágrafo', heading: 'Título {n}',
-        bulletList: 'Lista com marcadores', orderedList: 'Lista numerada',
+        bulletList: 'Lista com marcadores', orderedList: 'Lista numerada', checklist: 'Lista de verificação',
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Remover link',
         table: 'Tabela', addRow: 'Adicionar linha', addColumn: 'Adicionar coluna', deleteTable: 'Excluir tabela',
         image: 'Imagem', imagePlaceholder: 'https://… (URL da imagem)',

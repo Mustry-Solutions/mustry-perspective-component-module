@@ -28,5 +28,8 @@ public class RichTextEditor {
         List.of(
             event("onSave",
                 "Fires when the user saves their edits. Payload: { content (sanitized HTML), plainText, wordCount }. Persist content and rebind data.content — the editor clears its dirty state when the saved content round-trips.",
-                "/richtexteditor.onsave.event.json")));
+                "/richtexteditor.onsave.event.json"),
+            event("onTaskToggle",
+                "DISPLAY mode: fires when an operator toggles a checklist checkbox. Payload matches onSave — persist content and rebind data.content to keep the checked state.",
+                "/richtexteditor.ontasktoggle.event.json")));
 }

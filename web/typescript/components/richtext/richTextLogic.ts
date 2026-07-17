@@ -14,12 +14,13 @@ export interface RteFeatures {
     link: boolean;
     table: boolean;
     image: boolean;
+    checklist: boolean;
 }
 
 export const ALL_FEATURES: RteFeatures = {
     bold: true, italic: true, underline: true, strike: true,
     headings: true, bulletList: true, orderedList: true, link: true,
-    table: true, image: true
+    table: true, image: true, checklist: true
 };
 
 /**

@@ -102,6 +102,11 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
                     1.
                 </Btn>
             )}
+            {features.checklist && (
+                <Btn label={labels.checklist} active={p.isActive('taskList')} disabled={!enabled} onClick={cmd('checklist')}>
+                    ☑
+                </Btn>
+            )}
             {features.link && (
                 <>
                     <span className="mustry-rte-sep" />

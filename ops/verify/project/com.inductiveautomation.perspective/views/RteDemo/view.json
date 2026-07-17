@@ -1,6 +1,6 @@
 {
  "custom": {
-  "doc": "<h2>Pump P-101 weekly check</h2><p>Sample procedure \u2014 <strong>read before starting</strong>.</p><ul><li>Isolate the pump</li><li>Check the seal for leaks</li></ul>"
+  "doc": "<h2>Pump P-101 weekly check</h2><p>Sample procedure \u2014 <strong>read before starting</strong>.</p><ul><li>Isolate the pump</li><li>Check the seal for leaks</li></ul><ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"false\">Lockout confirmed</li><li data-type=\"taskItem\" data-checked=\"false\">Guards refitted</li></ul>"
  },
  "propConfig": {
   "custom.doc": {
@@ -131,6 +131,19 @@
      "y": 432,
      "width": 1060,
      "height": 300
+    },
+    "events": {
+     "component": {
+      "onTaskToggle": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# An operator checked off a step in the displayed procedure:\n\t# persist it; the binding round-trips the update to every instance.\n\tself.view.custom.doc = event.content"
+        }
+       }
+      ]
+     }
     }
    }
   ]

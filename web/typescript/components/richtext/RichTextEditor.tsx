@@ -149,6 +149,18 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
     }
 
     private onUserEdit = (): void => {
+        if (this.props.props.mode === 'display') {
+            // A read-only editor only changes via interactive checklist toggles:
+            // emit the updated document for the author to persist (controlled —
+            // the write-back round-trips through the binding as a no-op render).
+            if (this.ctrl) {
+                const html = this.ctrl.getHTML();
+                const plain = plainTextOf(html);
+                this.lastSaved = html;   // the round-trip is our own write landing
+                this.fireEvent('onTaskToggle', { content: html, plainText: plain, wordCount: wordCountOf(plain) });
+            }
+            return;
+        }
         if (!this.state.dirty) {
             this.setState({ dirty: true });
             this.props.store.props.write('output.isDirty', true);
@@ -169,6 +181,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             'bold', 'italic', 'underline', 'strike', 'paragraph',
             'bulletList', 'orderedList', 'link', 'table'
         ].map((n) => (c.isActive(n) ? '1' : '0')).join('')
+            + (c.isActive('taskList') ? '1' : '0')
             + [1, 2, 3].map((n) => (c.isActive('heading', { level: n }) ? '1' : '0')).join('');
         if (sig !== this.lastToolbarSig) {
             this.lastToolbarSig = sig;

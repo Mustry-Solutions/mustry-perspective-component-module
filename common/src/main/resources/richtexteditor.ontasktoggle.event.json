@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when a checklist checkbox is toggled in DISPLAY mode. Persist `content` and rebind data.content to keep the state.",
+  "properties": {
+    "content": {
+      "type": "string",
+      "description": "The updated document as sanitized (schema-constrained) HTML."
+    },
+    "plainText": {
+      "type": "string",
+      "description": "Plain-text mirror of the document."
+    },
+    "wordCount": {
+      "type": "number",
+      "description": "Word count of the plain text."
+    }
+  }
+}

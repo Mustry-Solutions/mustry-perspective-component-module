@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships five components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid** and a **Pan & Zoom View**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships six components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View** and a **Rich Text Editor**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
@@ -245,6 +245,30 @@ Embeds any Perspective view and navigates it like a map. Component id `mustrysol
 Override the `--pz-*` variables via a style class / project stylesheet: `--pz-accent`, `--pz-alert`, `--pz-text`, `--pz-muted`, `--pz-border`, `--pz-bg`, `--pz-canvas`.
 
 > Manual test checklist: [`docs/panzoom-manual-test.md`](docs/panzoom-manual-test.md).
+
+---
+
+## Rich Text Editor
+
+True WYSIWYG editing — and safe read-only display — of rich text: operator instructions, SOPs, shift notes, work orders. Component id `mustrysolutions.input.richtexteditor`. Built on TipTap core (vanilla, no React binding).
+
+### Features
+
+- **Two modes, one component** — `config.mode: 'edit'` is the full editor (toolbar, dirty badge, Save); `'display'` renders the same document read-only with clickable links: the safe way to *show* rich content anywhere (native Markdown can't render arbitrary HTML safely).
+- **Controlled write-back** — `data.content` (HTML) is the bound truth. Edits stay a local draft (dirty badge, grid batch semantics) until **Save fires `onSave`** `{content, plainText, wordCount}`; your script persists and rebinds, and the round-trip clears the dirty state. Discard returns to the bound value; external changes while dirty keep the draft.
+- **Sanitization is the schema** — only allowlisted node/mark types can exist in the document: unknown markup (scripts, event handlers) is dropped on parse, link hrefs pass a protocol allowlist (`http/https/mailto/tel`; `javascript:`/`data:` rejected), image sources additionally allow `data:image/*`.
+- **Formatting allowlist** (`config.features`) — bold/italic/underline/strike, H1–H3, bullet/numbered lists, links, **tables** (insert 3×3 with header; contextual add-row/add-column/delete while inside one), **images** (by URL, or pasted as data URIs capped by `config.maxImageKb`), **checklists**. A disabled feature disappears from the toolbar *and* the schema.
+- **Interactive checklists in display mode** — operators check off steps of the displayed procedure; each toggle fires **`onTaskToggle`** (same payload as `onSave`) so one write-back script keeps the state.
+- `config.charLimit` (0 = unlimited) enforced while typing; `config.placeholder`; localization (same 7 languages + `config.labels` overrides); print stylesheet (toolbar and chrome drop out).
+- **Outputs**: `output.isDirty`, `output.plainText` (for DB search/indexing), `output.wordCount`, `output.charCount` — updated on save/rebind, not per keystroke.
+
+### How editing works
+
+Same philosophy as every component in this module: **controlled, read-from-data**. The editor never mutates `data.content`; `onSave`/`onTaskToggle` fire and your handler writes back. The demo at `/rte` in the verify project ships both handlers (three lines each) and a display instance bound to the same value.
+
+### Theming
+
+Override the `--rte-*` variables via a style class / project stylesheet: `--rte-accent`, `--rte-accent-text`, `--rte-text`, `--rte-muted`, `--rte-border`, `--rte-bg`, `--rte-toolbar-bg`.
 
 ---
 

@@ -8,6 +8,20 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Rich Text Editor (new component)
+Sixth component: `mustrysolutions.input.richtexteditor` — true WYSIWYG
+editing and safe read-only display of operator instructions/SOPs/notes
+(the top remaining validated Perspective gap; research July 2026). Built
+on TipTap core (vanilla — Perspective pins React 16, so the editor
+mounts imperatively, gesture-controller style). Controlled write-back
+(`onSave`), schema-constrained sanitization with URL allowlists,
+feature-flagged formatting (headings/lists/links/tables/images/
+checklists), interactive display-mode checklists (`onTaskToggle`),
+char limit, plainText/wordCount/charCount outputs, 7-language labels,
+`--rte-*` theming, print stylesheet. Demo at `/rte`; 7 e2e tests + pure
+logic jest suites. Bundle grows 245K→656K minified (~180K gz) — first
+runtime dependency, trim pass noted for later.
+
 ### Build & CI
 - The web bundle is now a **production webpack build** by default: minified JS
   + CSS, no source maps (JS 508K → 240K, CSS 68K → 55K, `.modl` ~391K → ~110K).

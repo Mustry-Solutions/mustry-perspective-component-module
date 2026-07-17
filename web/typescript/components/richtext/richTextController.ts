@@ -15,6 +15,9 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import Image from '@tiptap/extension-image';
 import CharacterCount from '@tiptap/extension-character-count';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import { Node as PMNode } from '@tiptap/pm/model';
 import { RteFeatures, dataUriKb, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
 
 export interface RteControllerOpts {
@@ -27,7 +30,8 @@ export interface RteControllerOpts {
     charLimit: number;
     /** Max embedded (pasted) image size in KB; larger pastes are dropped. */
     maxImageKb: number;
-    /** Document changed by user input (typing, toolbar commands). */
+    /** Document changed by user input (typing, toolbar commands) — in a
+     *  read-only editor this only happens via checklist toggles. */
     onUpdate: () => void;
     /** Selection or stored-marks changed — the toolbar re-reads active states. */
     onSelectionChange: () => void;
@@ -70,6 +74,33 @@ export class RichTextController {
                     TableRow, TableHeader, TableCell
                 ] : []),
                 ...(f.image ? [Image.configure({ inline: false, allowBase64: true })] : []),
+                ...(f.checklist ? [
+                    TaskList,
+                    TaskItem.configure({
+                        nested: false,
+                        // Display mode keeps checkboxes interactive. TipTap only
+                        // flips the checkbox VISUALLY in read-only mode — it never
+                        // touches the document — so apply the attribute change
+                        // ourselves; the dispatched transaction fires onUpdate and
+                        // the component turns that into onTaskToggle.
+                        onReadOnlyChecked: (node: PMNode, checked: boolean) => {
+                            const { state, view } = this.editor;
+                            let done = false;
+                            state.doc.descendants((n, pos) => {
+                                if (done) {
+                                    return false;
+                                }
+                                if (n === node) {
+                                    view.dispatch(state.tr.setNodeMarkup(pos, undefined, { ...n.attrs, checked }));
+                                    done = true;
+                                    return false;
+                                }
+                                return true;
+                            });
+                            return done;
+                        }
+                    })
+                ] : []),
                 ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit })] : []),
                 ...(opts.editable && opts.placeholder
                     ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
@@ -139,6 +170,7 @@ export class RichTextController {
             case 'heading': c.toggleHeading({ level: (arg || 1) as 1 | 2 | 3 }).run(); break;
             case 'bulletList': c.toggleBulletList().run(); break;
             case 'orderedList': c.toggleOrderedList().run(); break;
+            case 'checklist': c.toggleTaskList().run(); break;
             case 'insertTable': c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); break;
             case 'addRow': c.addRowAfter().run(); break;
             case 'addColumn': c.addColumnAfter().run(); break;

@@ -85,6 +85,11 @@
               "type": "boolean",
               "default": true,
               "description": "Images by URL (http/https/relative) or pasted as size-capped data URIs."
+            },
+            "checklist": {
+              "type": "boolean",
+              "default": true,
+              "description": "Interactive checklists. In display mode checkboxes stay clickable and fire onTaskToggle — operators check off procedure steps."
             }
           }
         },
@@ -176,6 +181,10 @@
             "imagePlaceholder": {
               "type": "string",
               "description": "Image popover input placeholder."
+            },
+            "checklist": {
+              "type": "string",
+              "description": "Checklist button tooltip."
             }
           }
         },

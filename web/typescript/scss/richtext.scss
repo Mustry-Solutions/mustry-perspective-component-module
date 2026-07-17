@@ -213,6 +213,33 @@
         }
     }
 
+    ul[data-type='taskList'] {
+        list-style: none;
+        padding-left: 0.2em;
+
+        li {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5em;
+
+            > label {
+                flex: 0 0 auto;
+                user-select: none;
+            }
+            > div {
+                flex: 1;
+            }
+            input[type='checkbox'] {
+                cursor: pointer;
+                accent-color: var(--rte-accent);
+            }
+            &[data-checked='true'] > div {
+                color: var(--rte-muted);
+                text-decoration: line-through;
+            }
+        }
+    }
+
     img {
         max-width: 100%;
         height: auto;
@@ -222,5 +249,19 @@
         &.ProseMirror-selectednode {
             outline: 2px solid var(--rte-accent);
         }
+    }
+}
+
+// Print: chrome-free document — toolbar off, borders off, no scroll clipping.
+@media print {
+    .mustry-rte {
+        border: none;
+        overflow: visible;
+    }
+    .mustry-rte-toolbar {
+        display: none;
+    }
+    .mustry-rte-content {
+        overflow: visible;
     }
 }

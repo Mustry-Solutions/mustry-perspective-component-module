@@ -88,3 +88,17 @@ test('richtext: image by URL renders in both instances', async ({ page }) => {
     await page.locator('.mustry-rte-toolbar > .mustry-rte-save-btn').click();
     await expect(page.locator('.mustry-rte--display img')).toBeVisible();
 });
+
+test('richtext: display-mode checklist toggle fires write-back (onTaskToggle)', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const displayBox = page.locator('.mustry-rte--display input[type="checkbox"]').first();
+    await expect(displayBox).toBeVisible();
+    await expect(displayBox).not.toBeChecked();
+
+    await displayBox.click();
+    await expect(displayBox).toBeChecked();
+    // The onTaskToggle script persisted it; the EDIT instance (clean) follows
+    // the bound change — proof the round-trip reached the shared value.
+    await expect(page.locator('.mustry-rte:not(.mustry-rte--display) input[type="checkbox"]').first())
+        .toBeChecked();
+});
