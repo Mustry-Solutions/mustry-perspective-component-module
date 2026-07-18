@@ -1,9 +1,37 @@
 # CLAUDE.md
 
-Ignition 8.3 Perspective module: five custom components (date/time range picker,
-calendar/scheduler, resource timeline, data grid, pan & zoom view). React 16
-class components + TypeScript (full strict) on the web side; Java scopes for
-gateway/designer registration. See README.md for the component reference.
+Ignition 8.3 Perspective module: seven custom components (date/time range
+picker, calendar/scheduler, resource timeline, data grid, pan & zoom view, rich
+text editor, code/JSON editor). React 16 class components + TypeScript (full
+strict) on the web side; Java scopes for gateway/designer registration. See
+README.md for the component reference.
+
+## Source-control workflow — READ FIRST
+
+**Never commit or push to `main` directly. All changes go through a pull request.**
+
+1. Branch off `main` (`git switch -c area/short-name`).
+2. Commit logical chunks; push the branch.
+3. Open a PR. Both CI checks — **Build & test** and **E2E smoke (Playwright)** —
+   must pass.
+4. Squash-merge into `main`, delete the branch.
+
+This is **convention, not enforced** — the repo is private on a free plan, where
+GitHub gates branch protection/rulesets behind Pro (the owner has deferred
+paying). Because nothing *stops* a direct push, the discipline is on you: follow
+it anyway. `main` must always stay releasable.
+
+Verify before opening the PR: `cd web && npx tsc --noEmit && npm test`, and
+`ops/e2e.sh --fresh` for anything with a runtime surface.
+
+## Releases (tag-driven)
+
+Cutting a release is: bump `CHANGELOG.md` (`[Unreleased]` → `[X.Y.Z] - date`) in
+a normal PR, merge, then tag the merge commit `vX.Y.Z` and push the tag. The
+**Release** workflow (`.github/workflows/release.yml`) derives the version from
+the tag, builds + **signs** the `.modl` (from Actions secrets), and publishes a
+GitHub Release. Full detail + the five signing-secret names in `RELEASING.md`.
+Never commit keystores/certs (`signing/`, `*.p12`, `*.jks` are git-ignored).
 
 ## Build & test
 
