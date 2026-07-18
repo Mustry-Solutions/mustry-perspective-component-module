@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
+import { ControlledDraftHost } from '../../shared/controlledDraftHost';
 import { RichTextController } from './richTextController';
 import { plainTextOf, wordCountOf } from './richTextLogic';
 import { RichTextProps, mapRteProps } from './richTextProps';
@@ -34,18 +34,11 @@ interface RichTextEditorState {
  * semantics). `mode: 'display'` renders the same schema-constrained document
  * read-only — the safe way to SHOW rich content anywhere.
  */
-export class RichTextEditor extends Component<ComponentProps<RichTextProps>, RichTextEditorState> {
+export class RichTextEditor extends ControlledDraftHost<RichTextProps, RichTextEditorState> {
 
     private hostRef = React.createRef<HTMLDivElement>();
     private ctrl: RichTextController | null = null;
-    // The draft the last Save emitted: an incoming prop equal to it is our own
-    // write-back landing (clears dirty); anything else is external truth.
-    private lastSaved: string | null = null;
-    private lastOutputSig = '';
     private lastToolbarSig = '';
-    // isDirty is reconciled independently of the content signature (see
-    // writeDirty): a net-zero edit cycle must still clear it on Save.
-    private lastDirtyWritten = false;
 
     constructor(props: ComponentProps<RichTextProps>) {
         super(props);
@@ -54,7 +47,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
 
     componentDidMount(): void {
         this.createEditor();
-        this.syncOutputs(this.props.props.content, false);
+        this.emitOutputs(this.props.props.content, false);
     }
 
     componentWillUnmount(): void {
@@ -75,27 +68,40 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             return;
         }
         if (p.enabled !== q.enabled && this.ctrl) {
-            this.ctrl.setEditable(this.editable());
+            this.ctrl.setEditable(this.isEditable());
         }
-        if (p.content !== q.content && this.ctrl) {
-            if (p.content === (this.lastSaved !== null ? this.lastSaved : this.ctrl.getHTML())) {
-                // Our own save round-tripped through the binding: now clean.
-                this.lastSaved = null;
-                if (this.state.dirty) {
-                    this.setState({ dirty: false });
-                }
-                this.syncOutputs(p.content, false);
-            } else if (!this.state.dirty) {
-                // External change while clean: follow the bound truth.
-                this.ctrl.setContent(p.content);
-                this.syncOutputs(p.content, false);
-            }
-            // External change while dirty: keep the draft (grid pending semantics);
-            // Discard returns to the bound value.
+        // The controlled bound-document round-trip lives in the base.
+        this.reconcileBoundDoc(prev.props);
+    }
+
+    // --- ControlledDraftHost contract ---------------------------------------
+    protected readBoundDoc(props: RichTextProps): string { return props.content; }
+    protected getDraftDoc(): string { return this.ctrl ? this.ctrl.getHTML() : ''; }
+    protected hasEditor(): boolean { return this.ctrl !== null; }
+    protected setEditorDoc(doc: string): void { this.ctrl?.setContent(doc); }
+
+    protected deriveOutputs(html: string): Record<string, unknown> {
+        const plain = plainTextOf(html);
+        return {
+            plainText: plain,
+            wordCount: wordCountOf(plain),
+            charCount: this.ctrl ? this.ctrl.charCount() : plain.length
+        };
+    }
+
+    protected buildSavePayload(html: string): object {
+        const plain = plainTextOf(html);
+        return { content: html, plainText: plain, wordCount: wordCountOf(plain) };
+    }
+
+    /** Save/Discard also close any open popover. */
+    protected onAfterCommit(): void {
+        if (this.state.linkOpen || this.state.imageOpen) {
+            this.setState({ linkOpen: false, imageOpen: false });
         }
     }
 
-    private editable(): boolean {
+    private isEditable(): boolean {
         return this.props.props.mode === 'edit' && this.props.props.enabled;
     }
 
@@ -107,7 +113,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         this.ctrl = new RichTextController({
             element: this.hostRef.current,
             content: content !== undefined ? content : p.content,
-            editable: this.editable(),
+            editable: this.isEditable(),
             placeholder: p.placeholder,
             features: p.features,
             charLimit: p.charLimit,
@@ -129,38 +135,6 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         }
     }
 
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
-    }
-
-    /** Reconcile output.isDirty independently of the content signature — a
-     *  net-zero edit cycle (edit + revert + Save) must still clear it. */
-    private writeDirty(dirty: boolean): void {
-        if (dirty !== this.lastDirtyWritten) {
-            this.lastDirtyWritten = dirty;
-            this.props.store.props.write('output.isDirty', dirty);
-        }
-    }
-
-    /** Outputs are written on mount, save, discard and bound-content changes —
-     *  not per keystroke (prop writes round-trip through the gateway). */
-    private syncOutputs(html: string, dirty: boolean): void {
-        this.writeDirty(dirty);
-        const plain = plainTextOf(html);
-        const words = wordCountOf(plain);
-        const sig = `${words}|${plain.length}|${html.length}`;
-        if (sig === this.lastOutputSig) {
-            return;
-        }
-        this.lastOutputSig = sig;
-        const w = this.props.store.props;
-        w.write('output.plainText', plain);
-        w.write('output.wordCount', words);
-        w.write('output.charCount', this.ctrl ? this.ctrl.charCount() : plain.length);
-    }
-
     private onUserEdit = (): void => {
         if (this.props.props.mode === 'display') {
             // A read-only editor only changes via interactive checklist toggles:
@@ -168,16 +142,12 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
             // the write-back round-trips through the binding as a no-op render).
             if (this.ctrl) {
                 const html = this.ctrl.getHTML();
-                const plain = plainTextOf(html);
                 this.lastSaved = html;   // the round-trip is our own write landing
-                this.fireEvent('onTaskToggle', { content: html, plainText: plain, wordCount: wordCountOf(plain) });
+                this.fireEvent('onTaskToggle', this.buildSavePayload(html));
             }
             return;
         }
-        if (!this.state.dirty) {
-            this.setState({ dirty: true });
-            this.writeDirty(true);
-        }
+        this.markDirty();
     };
 
     /** Re-render ONLY when a toolbar-relevant active state actually changed.
@@ -205,25 +175,11 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
     };
 
     private save = (): void => {
-        if (!this.ctrl) {
-            return;
-        }
-        const html = this.ctrl.getHTML();
-        const plain = plainTextOf(html);
-        this.lastSaved = html;
-        this.setState({ dirty: false, linkOpen: false, imageOpen: false });
-        this.syncOutputs(html, false);
-        this.fireEvent('onSave', { content: html, plainText: plain, wordCount: wordCountOf(plain) });
+        this.commitSave('onSave');
     };
 
     private discard = (): void => {
-        if (!this.ctrl) {
-            return;
-        }
-        this.ctrl.setContent(this.props.props.content);
-        this.lastSaved = null;
-        this.setState({ dirty: false, linkOpen: false, imageOpen: false });
-        this.syncOutputs(this.props.props.content, false);
+        this.commitDiscard();
     };
 
     // --- link popover -------------------------------------------------------

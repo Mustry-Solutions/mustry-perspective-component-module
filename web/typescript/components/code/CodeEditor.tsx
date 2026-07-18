@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
+import { ControlledDraftHost } from '../../shared/controlledDraftHost';
 import { CodeController } from './codeController';
 import { formatJson, lineCountOf, validateJson } from './codeLogic';
 import { CodeProps, mapCodeProps } from './codeProps';
@@ -30,17 +30,10 @@ interface CodeEditorState {
  * JSON gets live parse validation: lint markers in the gutter, a toolbar
  * badge, and output.isValid/errorMessage for bindings to react to.
  */
-export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorState> {
+export class CodeEditor extends ControlledDraftHost<CodeProps, CodeEditorState> {
 
     private hostRef = React.createRef<HTMLDivElement>();
     private ctrl: CodeController | null = null;
-    // The draft the last Save emitted: an incoming prop equal to it is our own
-    // write-back landing (clears dirty); anything else is external truth.
-    private lastSaved: string | null = null;
-    private lastOutputSig = '';
-    // isDirty is reconciled independently of the content signature (see
-    // writeDirty): a net-zero edit cycle must still clear it on Save.
-    private lastDirtyWritten = false;
     // Toolbar re-render key: validity + undo/redo depth folded into one string.
     private lastToolbarSig = '';
 
@@ -51,7 +44,7 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
 
     componentDidMount(): void {
         this.createEditor();
-        this.syncOutputs(this.props.props.code, false);
+        this.emitOutputs(this.props.props.code, false);
     }
 
     componentWillUnmount(): void {
@@ -68,7 +61,7 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
             || p.lineNumbers !== q.lineNumbers || p.lineWrapping !== q.lineWrapping
             || p.tabSize !== q.tabSize || p.placeholder !== q.placeholder)) {
             this.ctrl.reconfigure({
-                editable: this.editable(),
+                editable: this.isEditable(),
                 language: p.language,
                 lineNumbers: p.lineNumbers,
                 lineWrapping: p.lineWrapping,
@@ -76,40 +69,43 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
                 placeholder: p.placeholder
             });
         }
-        if (p.code !== q.code && this.ctrl) {
-            if (p.code === (this.lastSaved !== null ? this.lastSaved : this.ctrl.getCode())) {
-                // Our own save round-tripped through the binding: now clean.
-                this.lastSaved = null;
-                if (this.state.dirty) {
-                    this.setState({ dirty: false });
-                }
-                this.syncOutputs(p.code, false);
-            } else if (!this.state.dirty) {
-                // External change while clean: follow the bound truth.
-                this.ctrl.setCode(p.code);
-                this.syncOutputs(p.code, false);
-            } else {
-                // External change while dirty: keep the draft, but outputs still
-                // describe the (now-changed) BOUND document per the schema.
-                this.syncOutputs(p.code, true);
-            }
-        }
+        // The controlled bound-document round-trip lives in the base.
+        this.reconcileBoundDoc(prev.props);
     }
 
-    private editable(): boolean {
+    // --- ControlledDraftHost contract ---------------------------------------
+    protected readBoundDoc(props: CodeProps): string { return props.code; }
+    protected getDraftDoc(): string { return this.ctrl ? this.ctrl.getCode() : ''; }
+    protected hasEditor(): boolean { return this.ctrl !== null; }
+    protected setEditorDoc(doc: string): void { this.ctrl?.setCode(doc); }
+
+    protected deriveOutputs(code: string): Record<string, unknown> {
+        const v = this.props.props.language === 'json' ? validateJson(code) : { valid: true, message: '' };
+        return { isValid: v.valid, errorMessage: v.message, lineCount: lineCountOf(code) };
+    }
+
+    protected buildSavePayload(code: string): object {
+        const v = this.props.props.language === 'json' ? validateJson(code) : { valid: true, message: '' };
+        return { code, isValid: v.valid, errorMessage: v.message };
+    }
+
+    protected onAfterCommit(doc: string): void {
+        this.setState({ draftValid: this.props.props.language !== 'json' || validateJson(doc).valid });
+    }
+
+    private isEditable(): boolean {
         return this.props.props.mode === 'edit' && this.props.props.enabled;
     }
 
-    private createEditor(code?: string): void {
+    private createEditor(): void {
         if (!this.hostRef.current) {
             return;
         }
         const p = this.props.props;
-        const doc = code !== undefined ? code : p.code;
         this.ctrl = new CodeController({
             element: this.hostRef.current,
-            code: doc,
-            editable: this.editable(),
+            code: p.code,
+            editable: this.isEditable(),
             language: p.language,
             lineNumbers: p.lineNumbers,
             lineWrapping: p.lineWrapping,
@@ -118,7 +114,7 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
             onUpdate: this.onUserEdit,
             onStateChange: this.onEditorStateChange
         });
-        this.setState({ draftValid: p.language !== 'json' || validateJson(doc).valid });
+        this.setState({ draftValid: p.language !== 'json' || validateJson(p.code).valid });
     }
 
     private disposeEditor(): void {
@@ -131,44 +127,8 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
         }
     }
 
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
-    }
-
-    /** Reconcile output.isDirty independently of the content signature — a
-     *  net-zero edit cycle (edit + revert + Save) must still clear it. */
-    private writeDirty(dirty: boolean): void {
-        if (dirty !== this.lastDirtyWritten) {
-            this.lastDirtyWritten = dirty;
-            this.props.store.props.write('output.isDirty', dirty);
-        }
-    }
-
-    /** Outputs describe the BOUND/saved document (not the mid-edit draft) and are
-     *  written on mount, save, discard and bound-content changes — not per keystroke. */
-    private syncOutputs(code: string, dirty: boolean): void {
-        this.writeDirty(dirty);
-        const p = this.props.props;
-        const v = p.language === 'json' ? validateJson(code) : { valid: true, message: '' };
-        const lines = lineCountOf(code);
-        const sig = `${v.valid}|${v.message}|${lines}|${code.length}`;
-        if (sig === this.lastOutputSig) {
-            return;
-        }
-        this.lastOutputSig = sig;
-        const w = this.props.store.props;
-        w.write('output.isValid', v.valid);
-        w.write('output.errorMessage', v.message);
-        w.write('output.lineCount', lines);
-    }
-
     private onUserEdit = (): void => {
-        if (!this.state.dirty) {
-            this.setState({ dirty: true });
-            this.writeDirty(true);
-        }
+        this.markDirty();
     };
 
     /** Toolbar refresh on real document changes: validity badge + undo/redo
@@ -187,26 +147,11 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
     };
 
     private save = (): void => {
-        if (!this.ctrl) {
-            return;
-        }
-        const code = this.ctrl.getCode();
-        const p = this.props.props;
-        const v = p.language === 'json' ? validateJson(code) : { valid: true, message: '' };
-        this.lastSaved = code;
-        this.setState({ dirty: false });
-        this.syncOutputs(code, false);
-        this.fireEvent('onSave', { code, isValid: v.valid, errorMessage: v.message });
+        this.commitSave('onSave');
     };
 
     private discard = (): void => {
-        if (!this.ctrl) {
-            return;
-        }
-        this.ctrl.setCode(this.props.props.code);
-        this.lastSaved = null;
-        this.setState({ dirty: false, draftValid: this.props.props.language !== 'json' || validateJson(this.props.props.code).valid });
-        this.syncOutputs(this.props.props.code, false);
+        this.commitDiscard();
     };
 
     private format = (): void => {
