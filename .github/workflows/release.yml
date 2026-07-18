@@ -16,6 +16,19 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual trigger to validate signing (and the whole build+sign path) without
+  # publishing: dry_run=true builds + signs and uploads the signed .modl as a
+  # workflow artifact, skipping the GitHub Release.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to stamp (dry-run only; no tag involved)'
+        default: '0.0.0-test'
+        type: string
+      dry_run:
+        description: 'Build + sign only, no GitHub Release'
+        default: true
+        type: boolean
 
 permissions:
   contents: write   # create the release + upload the asset
@@ -27,9 +40,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Derive version from tag
+      - name: Derive version + publish flag
         id: ver
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "publish=${{ !inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -80,11 +100,28 @@ jobs:
           if [ -z "$f" ]; then echo "::error::no signed .modl produced"; exit 1; fi
           echo "path=$f" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the signature
+        run: |
+          echo "Signed artifact: ${{ steps.modl.outputs.path }}"
+          unzip -l "${{ steps.modl.outputs.path }}" | grep -qi 'META-INF' \
+            && echo "signature block present" || (echo "::error::no signature in .modl"; exit 1)
+
+      # Dry run (workflow_dispatch): keep the signed .modl as an artifact instead
+      # of publishing — the way to confirm the signing secrets work.
+      - name: Upload signed .modl (dry run)
+        if: ${{ steps.ver.outputs.publish != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-modl-${{ steps.ver.outputs.version }}
+          path: ${{ steps.modl.outputs.path }}
+          if-no-files-found: error
+
       - name: Extract release notes
-        id: notes
+        if: ${{ steps.ver.outputs.publish == 'true' }}
         run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
 
       - name: Publish GitHub Release
+        if: ${{ steps.ver.outputs.publish == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
