@@ -8,7 +8,7 @@ import {
     placeholder as cmPlaceholder
 } from '@codemirror/view';
 import {
-    defaultKeymap, history, historyKeymap, indentWithTab, redo, undo
+    defaultKeymap, history, historyKeymap, indentWithTab, redo, redoDepth, undo, undoDepth
 } from '@codemirror/commands';
 import {
     bracketMatching, foldGutter, foldKeymap, indentOnInput, indentUnit,
@@ -70,7 +70,15 @@ function languageExtensions(lang: CodeLanguage) {
 
 export class CodeController {
     private view: EditorView;
+    // Everything tunable at runtime lives in a compartment so a config change
+    // RECONFIGURES rather than tearing the editor down (which would discard the
+    // undo history, cursor and scroll — see reconfigure()).
     private editableComp = new Compartment();
+    private gutterComp = new Compartment();
+    private wrapComp = new Compartment();
+    private tabComp = new Compartment();
+    private placeholderComp = new Compartment();
+    private langComp = new Compartment();
 
     constructor(opts: CodeControllerOpts) {
         this.view = new EditorView({
@@ -78,18 +86,17 @@ export class CodeController {
             state: EditorState.create({
                 doc: opts.code,
                 extensions: [
-                    ...(opts.lineNumbers ? [lineNumbers(), highlightActiveLineGutter(), foldGutter()] : []),
-                    ...(opts.lineWrapping ? [EditorView.lineWrapping] : []),
+                    this.gutterComp.of(opts.lineNumbers ? [lineNumbers(), highlightActiveLineGutter(), foldGutter()] : []),
+                    this.wrapComp.of(opts.lineWrapping ? [EditorView.lineWrapping] : []),
                     history(),
                     bracketMatching(),
                     indentOnInput(),
                     highlightActiveLine(),
                     highlightSelectionMatches(),
-                    indentUnit.of(' '.repeat(opts.tabSize)),
-                    EditorState.tabSize.of(opts.tabSize),
-                    ...(opts.placeholder && opts.editable ? [cmPlaceholder(opts.placeholder)] : []),
+                    this.tabComp.of([indentUnit.of(' '.repeat(opts.tabSize)), EditorState.tabSize.of(opts.tabSize)]),
+                    this.placeholderComp.of(opts.placeholder && opts.editable ? [cmPlaceholder(opts.placeholder)] : []),
                     syntaxHighlighting(themeHighlight),
-                    ...languageExtensions(opts.language),
+                    this.langComp.of(languageExtensions(opts.language)),
                     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, ...foldKeymap, indentWithTab]),
                     this.editableComp.of([
                         EditorView.editable.of(opts.editable),
@@ -99,13 +106,37 @@ export class CodeController {
                         if (u.docChanged && u.transactions.some((tr) => tr.annotation(Transaction.addToHistory) !== false)) {
                             opts.onUpdate();
                         }
-                        if (u.docChanged || u.selectionSet) {
+                        // Only real document changes affect the toolbar (validity,
+                        // undo/redo depth). Pure caret moves must NOT trigger a
+                        // full re-parse — hence docChanged, not selectionSet.
+                        if (u.docChanged) {
                             opts.onStateChange();
                         }
                     })
                 ]
             })
         });
+    }
+
+    /** Apply runtime config without rebuilding (preserves history/cursor/scroll). */
+    reconfigure(opts: Pick<CodeControllerOpts, 'lineNumbers' | 'lineWrapping' | 'tabSize' | 'placeholder' | 'language' | 'editable'>): void {
+        this.view.dispatch({
+            effects: [
+                this.gutterComp.reconfigure(opts.lineNumbers ? [lineNumbers(), highlightActiveLineGutter(), foldGutter()] : []),
+                this.wrapComp.reconfigure(opts.lineWrapping ? [EditorView.lineWrapping] : []),
+                this.tabComp.reconfigure([indentUnit.of(' '.repeat(opts.tabSize)), EditorState.tabSize.of(opts.tabSize)]),
+                this.placeholderComp.reconfigure(opts.placeholder && opts.editable ? [cmPlaceholder(opts.placeholder)] : []),
+                this.langComp.reconfigure(languageExtensions(opts.language))
+            ]
+        });
+    }
+
+    canUndo(): boolean {
+        return undoDepth(this.view.state) > 0;
+    }
+
+    canRedo(): boolean {
+        return redoDepth(this.view.state) > 0;
     }
 
     dispose(): void {

@@ -38,6 +38,11 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
     // write-back landing (clears dirty); anything else is external truth.
     private lastSaved: string | null = null;
     private lastOutputSig = '';
+    // isDirty is reconciled independently of the content signature (see
+    // writeDirty): a net-zero edit cycle must still clear it on Save.
+    private lastDirtyWritten = false;
+    // Toolbar re-render key: validity + undo/redo depth folded into one string.
+    private lastToolbarSig = '';
 
     constructor(props: ComponentProps<CodeProps>) {
         super(props);
@@ -56,17 +61,20 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
     componentDidUpdate(prev: ComponentProps<CodeProps>): void {
         const p = this.props.props;
         const q = prev.props;
-        // State-shaping props changed: rebuild the editor around the current doc.
-        if (p.language !== q.language || p.mode !== q.mode
+        // Config changes RECONFIGURE the editor in place (compartments) — no
+        // teardown, so the undo history, cursor and scroll survive a lineWrapping
+        // or language toggle mid-edit.
+        if (this.ctrl && (p.language !== q.language || p.mode !== q.mode || p.enabled !== q.enabled
             || p.lineNumbers !== q.lineNumbers || p.lineWrapping !== q.lineWrapping
-            || p.tabSize !== q.tabSize || p.placeholder !== q.placeholder) {
-            const keep = this.state.dirty && this.ctrl ? this.ctrl.getCode() : p.code;
-            this.disposeEditor();
-            this.createEditor(keep);
-            return;
-        }
-        if (p.enabled !== q.enabled && this.ctrl) {
-            this.ctrl.setEditable(this.editable());
+            || p.tabSize !== q.tabSize || p.placeholder !== q.placeholder)) {
+            this.ctrl.reconfigure({
+                editable: this.editable(),
+                language: p.language,
+                lineNumbers: p.lineNumbers,
+                lineWrapping: p.lineWrapping,
+                tabSize: p.tabSize,
+                placeholder: p.placeholder
+            });
         }
         if (p.code !== q.code && this.ctrl) {
             if (p.code === (this.lastSaved !== null ? this.lastSaved : this.ctrl.getCode())) {
@@ -80,8 +88,11 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
                 // External change while clean: follow the bound truth.
                 this.ctrl.setCode(p.code);
                 this.syncOutputs(p.code, false);
+            } else {
+                // External change while dirty: keep the draft, but outputs still
+                // describe the (now-changed) BOUND document per the schema.
+                this.syncOutputs(p.code, true);
             }
-            // External change while dirty: keep the draft; Discard returns to bound.
         }
     }
 
@@ -126,19 +137,28 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
         }
     }
 
+    /** Reconcile output.isDirty independently of the content signature — a
+     *  net-zero edit cycle (edit + revert + Save) must still clear it. */
+    private writeDirty(dirty: boolean): void {
+        if (dirty !== this.lastDirtyWritten) {
+            this.lastDirtyWritten = dirty;
+            this.props.store.props.write('output.isDirty', dirty);
+        }
+    }
+
     /** Outputs describe the BOUND/saved document (not the mid-edit draft) and are
      *  written on mount, save, discard and bound-content changes — not per keystroke. */
     private syncOutputs(code: string, dirty: boolean): void {
+        this.writeDirty(dirty);
         const p = this.props.props;
         const v = p.language === 'json' ? validateJson(code) : { valid: true, message: '' };
         const lines = lineCountOf(code);
-        const sig = `${dirty}|${v.valid}|${v.message}|${lines}|${code.length}`;
+        const sig = `${v.valid}|${v.message}|${lines}|${code.length}`;
         if (sig === this.lastOutputSig) {
             return;
         }
         this.lastOutputSig = sig;
         const w = this.props.store.props;
-        w.write('output.isDirty', dirty);
         w.write('output.isValid', v.valid);
         w.write('output.errorMessage', v.message);
         w.write('output.lineCount', lines);
@@ -147,17 +167,21 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
     private onUserEdit = (): void => {
         if (!this.state.dirty) {
             this.setState({ dirty: true });
-            this.props.store.props.write('output.isDirty', true);
+            this.writeDirty(true);
         }
     };
 
-    /** Toolbar state (validity badge) refresh — cheap and signature-gated. */
+    /** Toolbar refresh on real document changes: validity badge + undo/redo
+     *  enabled state. Fires only on docChanged (not caret moves), so the JSON
+     *  parse here is at most once per edit, never per cursor step. */
     private onEditorStateChange = (): void => {
-        if (!this.ctrl || this.props.props.language !== 'json') {
+        if (!this.ctrl) {
             return;
         }
-        const valid = validateJson(this.ctrl.getCode()).valid;
-        if (valid !== this.state.draftValid) {
+        const valid = this.props.props.language !== 'json' || validateJson(this.ctrl.getCode()).valid;
+        const sig = `${valid}|${this.ctrl.canUndo()}|${this.ctrl.canRedo()}`;
+        if (sig !== this.lastToolbarSig) {
+            this.lastToolbarSig = sig;
             this.setState({ draftValid: valid });
         }
     };
@@ -215,6 +239,8 @@ export class CodeEditor extends Component<ComponentProps<CodeProps>, CodeEditorS
                         labels={p.labels}
                         enabled={p.enabled}
                         dirty={this.state.dirty}
+                        canUndo={this.ctrl ? this.ctrl.canUndo() : false}
+                        canRedo={this.ctrl ? this.ctrl.canRedo() : false}
                         isJson={p.language === 'json'}
                         jsonValid={this.state.draftValid}
                         canFormat={this.state.draftValid}

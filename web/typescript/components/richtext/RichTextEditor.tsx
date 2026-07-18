@@ -43,6 +43,9 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
     private lastSaved: string | null = null;
     private lastOutputSig = '';
     private lastToolbarSig = '';
+    // isDirty is reconciled independently of the content signature (see
+    // writeDirty): a net-zero edit cycle must still clear it on Save.
+    private lastDirtyWritten = false;
 
     constructor(props: ComponentProps<RichTextProps>) {
         super(props);
@@ -132,19 +135,27 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         }
     }
 
+    /** Reconcile output.isDirty independently of the content signature — a
+     *  net-zero edit cycle (edit + revert + Save) must still clear it. */
+    private writeDirty(dirty: boolean): void {
+        if (dirty !== this.lastDirtyWritten) {
+            this.lastDirtyWritten = dirty;
+            this.props.store.props.write('output.isDirty', dirty);
+        }
+    }
+
     /** Outputs are written on mount, save, discard and bound-content changes —
-     *  not per keystroke (isDirty is the only live one; prop writes round-trip
-     *  through the gateway). */
+     *  not per keystroke (prop writes round-trip through the gateway). */
     private syncOutputs(html: string, dirty: boolean): void {
+        this.writeDirty(dirty);
         const plain = plainTextOf(html);
         const words = wordCountOf(plain);
-        const sig = `${dirty}|${words}|${plain.length}|${html.length}`;
+        const sig = `${words}|${plain.length}|${html.length}`;
         if (sig === this.lastOutputSig) {
             return;
         }
         this.lastOutputSig = sig;
         const w = this.props.store.props;
-        w.write('output.isDirty', dirty);
         w.write('output.plainText', plain);
         w.write('output.wordCount', words);
         w.write('output.charCount', this.ctrl ? this.ctrl.charCount() : plain.length);
@@ -165,7 +176,7 @@ export class RichTextEditor extends Component<ComponentProps<RichTextProps>, Ric
         }
         if (!this.state.dirty) {
             this.setState({ dirty: true });
-            this.props.store.props.write('output.isDirty', true);
+            this.writeDirty(true);
         }
     };
 

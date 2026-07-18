@@ -35,9 +35,13 @@ export function validateJson(code: string): JsonValidation {
         return VALID;
     } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        // V8: "... at position 42 (line 3 column 7)" or "... at position 42".
+        // Error message formats differ per JS engine, so try several shapes:
+        //   V8/Chrome:  "... at position 42 (line 3 column 7)" or "at position 42"
+        //   Firefox:    "... at line 3 column 7 of the JSON data"
+        //   Safari/JSC: "JSON Parse error: ..."  (no position at all)
         let pos = -1;
         let line = 0;
+        let col = 0;
         const lineCol = /line (\d+) column (\d+)/.exec(message);
         const position = /at position (\d+)/.exec(message);
         if (position) {
@@ -45,11 +49,28 @@ export function validateJson(code: string): JsonValidation {
         }
         if (lineCol) {
             line = parseInt(lineCol[1], 10);
+            col = parseInt(lineCol[2], 10);
         } else if (pos >= 0) {
             line = code.slice(0, pos).split('\n').length;
         }
+        // No engine-reported position (Safari): fall back to the line/column if
+        // we have one, else leave pos at -1 (callers clamp to 0). This keeps the
+        // gutter marker's degradation graceful rather than silently wrong.
+        if (pos < 0 && line > 0) {
+            pos = offsetFromLineCol(code, line, col);
+        }
         return { valid: false, message, line, pos };
     }
+}
+
+/** Convert a 1-based line + 1-based column to a 0-based character offset. */
+function offsetFromLineCol(code: string, line: number, col: number): number {
+    const lines = code.split('\n');
+    let offset = 0;
+    for (let i = 0; i < line - 1 && i < lines.length; i++) {
+        offset += lines[i].length + 1;   // +1 for the newline
+    }
+    return Math.min(offset + Math.max(0, col - 1), code.length);
 }
 
 /** Pretty-print a JSON document; null when it doesn't parse. */

@@ -169,6 +169,41 @@
      "width": 1060,
      "height": 280
     }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../codeEdit.props.output.isDirty"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\treturn 'output.isDirty: ' + ('true' if value else 'false')"
+        }
+       ]
+      }
+     }
+    },
+    "meta": {
+     "name": "dirtyLabel"
+    },
+    "position": {
+     "x": 720,
+     "y": 396,
+     "width": 300,
+     "height": 22
+    }
    }
   ]
  }

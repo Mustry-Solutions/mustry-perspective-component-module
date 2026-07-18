@@ -20,10 +20,10 @@ test('code: typing dirties, Save writes back, viewer updates', async ({ page }) 
     await editor.click();
     await page.keyboard.press('End');
     await editor.pressSequentially(' ');
-    await expect(page.locator('.mustry-code-dirty-badge')).toBeVisible();
+    await expect(page.locator('.mustry-commit-badge')).toBeVisible();
 
-    await page.locator('.mustry-code-save-btn').click();
-    await expect(page.locator('.mustry-code-dirty-badge')).toHaveCount(0);
+    await page.locator('.mustry-commit-save').click();
+    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
 });
 
 test('code: breaking the JSON flips the badge and output; fixing restores', async ({ page }) => {
@@ -37,7 +37,7 @@ test('code: breaking the JSON flips the badge and output; fixing restores', asyn
     await expect(page.locator('.mustry-code-invalid-badge')).toBeVisible();
 
     // Saving an invalid draft surfaces it in the outputs for bindings to react.
-    await page.locator('.mustry-code-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     await expect(page.getByText(/output\.isValid: false/)).toBeVisible();
 
     // Undo the damage and save again.
@@ -45,7 +45,7 @@ test('code: breaking the JSON flips the badge and output; fixing restores', asyn
         await page.locator('.mustry-code-btn[aria-label="Undo"]').click();
     }
     await expect(page.locator('.mustry-code-invalid-badge')).toHaveCount(0);
-    await page.locator('.mustry-code-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     await expect(page.getByText('output.isValid: true')).toBeVisible();
 });
 
@@ -69,4 +69,31 @@ test('code: display instance is read-only', async ({ page }) => {
     await openRoute(page, '/code', '.mustry-code');
     const viewer = page.locator('.mustry-code--display .cm-content');
     await expect(viewer).toHaveAttribute('contenteditable', 'false');
+});
+
+test('code: undo button is disabled on a pristine document, enables after edit', async ({ page }) => {
+    await openRoute(page, '/code', '.mustry-code');
+    const undo = page.locator('.mustry-code-btn[aria-label="Undo"]');
+    await expect(undo).toBeDisabled();   // fresh mount, empty history
+
+    const editor = page.locator('.mustry-code:not(.mustry-code--display) .cm-content');
+    await editor.click();
+    await editor.pressSequentially('x');
+    await expect(undo).toBeEnabled();
+});
+
+test('code: output.isDirty clears after a net-zero edit cycle (regression)', async ({ page }) => {
+    await openRoute(page, '/code', '.mustry-code');
+    const editor = page.locator('.mustry-code:not(.mustry-code--display) .cm-content');
+    await editor.click();
+    await page.keyboard.press('End');
+    // Type a char then delete it: net-zero content, but the doc went dirty.
+    await editor.pressSequentially('Z');
+    await page.keyboard.press('Backspace');
+    await expect(page.locator('.mustry-commit-badge')).toBeVisible();
+
+    // Save — the stuck-isDirty bug would leave output.isDirty true forever.
+    await page.locator('.mustry-commit-save').click();
+    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
+    await expect(page.getByText('output.isDirty: false')).toBeVisible();
 });
