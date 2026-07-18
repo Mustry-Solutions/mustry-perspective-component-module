@@ -103,8 +103,12 @@ jobs:
       - name: Verify the signature
         run: |
           echo "Signed artifact: ${{ steps.modl.outputs.path }}"
-          unzip -l "${{ steps.modl.outputs.path }}" | grep -qi 'META-INF' \
-            && echo "signature block present" || (echo "::error::no signature in .modl"; exit 1)
+          # A signed Ignition .modl carries certificates.p7b + signatures.properties
+          # (an unsigned one has neither) — not a JAR-style META-INF block.
+          names="$(unzip -l "${{ steps.modl.outputs.path }}")"
+          echo "$names" | grep -q 'certificates.p7b' && echo "$names" | grep -q 'signatures.properties' \
+            && echo "signature present (certificates.p7b + signatures.properties)" \
+            || (echo "::error::.modl is not signed (missing certificates.p7b / signatures.properties)"; exit 1)
 
       # Dry run (workflow_dispatch): keep the signed .modl as an artifact instead
       # of publishing — the way to confirm the signing secrets work.
