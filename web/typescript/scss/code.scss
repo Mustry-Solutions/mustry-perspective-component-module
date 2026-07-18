@@ -11,6 +11,10 @@
     --code-border: var(--neutral-30, #cbd2d9);
     --code-bg: var(--neutral-10, #ffffff);
     --code-toolbar-bg: var(--neutral-20, #f5f7fa);
+    // Feed the shared CommitControls (scss/commit.scss).
+    --commit-accent: var(--code-accent);
+    --commit-accent-text: var(--code-accent-text);
+    --commit-muted: var(--code-muted);
     --code-gutter-bg: var(--neutral-20, #f5f7fa);
     --code-active-line: color-mix(in srgb, var(--callToAction, #0a66c2) 6%, transparent);
     --code-error: var(--error, #d32f2f);
@@ -86,13 +90,6 @@
     flex: 1;
 }
 
-.mustry-code-dirty-badge {
-    color: var(--code-muted);
-    font-size: 12px;
-    font-style: italic;
-    margin-right: 6px;
-    white-space: nowrap;
-}
 
 .mustry-code-invalid-badge {
     color: var(--code-error);
@@ -102,25 +99,7 @@
     white-space: nowrap;
 }
 
-.mustry-code-save-btn {
-    height: 26px;
-    padding: 0 12px;
-    border: none;
-    border-radius: 4px;
-    background: var(--code-accent);
-    color: var(--code-accent-text);
-    font-size: 13px;
-    cursor: pointer;
 
-    &:disabled {
-        opacity: 0.5;
-        cursor: default;
-    }
-}
-
-.mustry-code-discard-btn {
-    color: var(--code-muted);
-}
 
 // --- CodeMirror surface ------------------------------------------------------
 .mustry-code-content {
@@ -180,7 +159,8 @@
     }
 
     .cm-lint-marker-error {
-        content: '';
+        // The JSON linter's gutter error dot picks up the theme error colour.
+        color: var(--code-error);
     }
 
     // Search panel inherits the theme.

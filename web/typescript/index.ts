@@ -14,6 +14,7 @@ import './scss/grid.scss';
 import './scss/panzoom.scss';
 import './scss/richtext.scss';
 import './scss/code.scss';
+import './scss/commit.scss';
 
 export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor };
 

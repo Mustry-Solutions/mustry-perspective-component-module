@@ -9,6 +9,10 @@
     --rte-border: var(--neutral-30, #cbd2d9);
     --rte-bg: var(--neutral-10, #ffffff);
     --rte-toolbar-bg: var(--neutral-20, #f5f7fa);
+    // Feed the shared CommitControls (scss/commit.scss).
+    --commit-accent: var(--rte-accent);
+    --commit-accent-text: var(--rte-accent-text);
+    --commit-muted: var(--rte-muted);
 
     display: flex;
     flex-direction: column;
@@ -82,13 +86,6 @@
     flex: 1;
 }
 
-.mustry-rte-dirty-badge {
-    color: var(--rte-muted);
-    font-size: 12px;
-    font-style: italic;
-    margin-right: 6px;
-    white-space: nowrap;
-}
 
 .mustry-rte-save-btn {
     height: 26px;
@@ -106,9 +103,6 @@
     }
 }
 
-.mustry-rte-discard-btn {
-    color: var(--rte-muted);
-}
 
 .mustry-rte-select {
     height: 26px;

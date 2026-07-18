@@ -23,12 +23,12 @@ test('richtext: typing dirties, Save writes back, display updates', async ({ pag
     await editor.pressSequentially(' Wear gloves.');
 
     // Dirty badge + Save appear; the display instance does NOT have the text yet.
-    await expect(page.locator('.mustry-rte-dirty-badge')).toBeVisible();
+    await expect(page.locator('.mustry-commit-badge')).toBeVisible();
     await expect(page.locator('.mustry-rte--display')).not.toContainText('Wear gloves.');
 
-    await page.locator('.mustry-rte-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     // Write-back round-trip: badge clears, display now shows the addition.
-    await expect(page.locator('.mustry-rte-dirty-badge')).toHaveCount(0);
+    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
     await expect(page.locator('.mustry-rte--display')).toContainText('Wear gloves.');
 });
 
@@ -41,7 +41,7 @@ test('richtext: toolbar formatting produces real markup end-to-end', async ({ pa
     await page.locator('.mustry-rte-btn[aria-label="Italic"]').click();
     await expect(page.locator('.mustry-rte-btn[aria-label="Italic"]')).toHaveAttribute('aria-pressed', 'true');
 
-    await page.locator('.mustry-rte-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     await expect(page.locator('.mustry-rte--display em').first()).toBeVisible();
 });
 
@@ -50,10 +50,10 @@ test('richtext: discard reverts the draft', async ({ page }) => {
     const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
     await editor.click();
     await editor.pressSequentially('TEMPORARY');
-    await expect(page.locator('.mustry-rte-dirty-badge')).toBeVisible();
+    await expect(page.locator('.mustry-commit-badge')).toBeVisible();
 
-    await page.locator('.mustry-rte-discard-btn').click();
-    await expect(page.locator('.mustry-rte-dirty-badge')).toHaveCount(0);
+    await page.locator('.mustry-commit-discard').click();
+    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
     await expect(editor).not.toContainText('TEMPORARY');
 });
 
@@ -67,7 +67,7 @@ test('richtext: insert table, edit it, and see it in the display instance', asyn
     await editor.pressSequentially('Step');
     await page.locator('.mustry-rte-btn[aria-label="Add row"]').click();
 
-    await page.locator('.mustry-rte-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     const displayTable = page.locator('.mustry-rte--display table');
     await expect(displayTable).toBeVisible();
     await expect(displayTable.locator('tr')).toHaveCount(4);   // 3 inserted (incl. header) + 1 added
@@ -85,7 +85,7 @@ test('richtext: image by URL renders in both instances', async ({ page }) => {
     await expect(page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror img')).toBeVisible();
 
     // The main Save button (the linkrow one is gone once the popover closes).
-    await page.locator('.mustry-rte-toolbar > .mustry-rte-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     await expect(page.locator('.mustry-rte--display img')).toBeVisible();
 });
 
@@ -140,7 +140,7 @@ test('richtext: font picker applies an allowlisted family end-to-end', async ({ 
     await editor.getByText('read before starting').click({ clickCount: 3 });
     await page.locator('.mustry-rte-toolbar > .mustry-rte-select').selectOption('Courier New');
 
-    await page.locator('.mustry-rte-toolbar > .mustry-rte-save-btn').click();
+    await page.locator('.mustry-commit-save').click();
     const styled = page.locator('.mustry-rte--display [style*="Courier New"]').first();
     await expect(styled).toBeVisible();
 });

@@ -1,0 +1,49 @@
+// Shared styling for the CommitControls tail (unsaved badge + Save + Discard),
+// used by every editor toolbar. Reads the host component's --*-accent /
+// --*-muted etc. via a small set of --commit-* aliases each editor sets, with
+// sensible fallbacks so the block also works standalone.
+.mustry-commit-badge {
+    color: var(--commit-muted, #7b8794);
+    font-size: 12px;
+    font-style: italic;
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.mustry-commit-save {
+    height: 26px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    background: var(--commit-accent, #0a66c2);
+    color: var(--commit-accent-text, #ffffff);
+    font-size: 13px;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.mustry-commit-discard {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--commit-muted, #7b8794);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--commit-accent, #0a66c2) 12%, transparent);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}

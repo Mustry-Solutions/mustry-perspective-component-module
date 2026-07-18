@@ -3,6 +3,7 @@
 // Pure presentation — command routing and editor state live in the class.
 import * as React from 'react';
 import { RteLabels } from '../../shared/labels/richtext';
+import { CommitControls } from '../../shared/CommitControls';
 import { RteFeatures, fillLabel } from './richTextLogic';
 
 interface RteToolbarProps {
@@ -165,24 +166,7 @@ export function RteToolbar(p: RteToolbarProps): React.ReactElement {
             )}
 
             <span className="mustry-rte-spring" />
-            {p.dirty && <span className="mustry-rte-dirty-badge">{labels.unsaved}</span>}
-            {p.dirty && (
-                <button type="button" className="mustry-rte-save-btn" disabled={!enabled} onClick={p.onSave}>
-                    {labels.save}
-                </button>
-            )}
-            {p.dirty && (
-                <button
-                    type="button"
-                    className="mustry-rte-btn mustry-rte-discard-btn"
-                    title={labels.discard}
-                    aria-label={labels.discard}
-                    disabled={!enabled}
-                    onClick={p.onDiscard}
-                >
-                    ✕
-                </button>
-            )}
+            <CommitControls labels={labels} enabled={enabled} dirty={p.dirty} onSave={p.onSave} onDiscard={p.onDiscard} />
 
             {p.linkOpen && (
                 <div className="mustry-rte-linkrow">
