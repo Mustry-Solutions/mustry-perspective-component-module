@@ -14,7 +14,10 @@ plugins {
 val sdk_version by extra("8.3.6")
 
 allprojects {
-    version = "0.1.0"
+    // The release workflow passes -PreleaseVersion=<tag> (the git tag drives the
+    // module version — see .github/workflows/release.yml). Local and main-branch
+    // builds carry a SNAPSHOT so a dev .modl is never mistaken for a release.
+    version = (project.findProperty("releaseVersion") as String?)?.removePrefix("v") ?: "0.2.0-SNAPSHOT"
 }
 
 ignitionModule {

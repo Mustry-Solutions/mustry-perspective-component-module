@@ -1,0 +1,94 @@
+name: Release
+
+# A release is a git tag `vX.Y.Z`. Pushing the tag builds + signs the module,
+# then publishes a GitHub Release with the signed .modl attached and the
+# matching CHANGELOG section as the notes. The tag drives the module version.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   SIGNING_KEYSTORE_B64       base64 of the signing keystore (.p12/.jks)
+#   SIGNING_CERT_B64           base64 of the certificate chain (.pem)
+#   SIGNING_KEYSTORE_PASSWORD  keystore password
+#   SIGNING_CERT_ALIAS         key alias inside the keystore
+#   SIGNING_CERT_PASSWORD      key password (often == keystore password)
+# See RELEASING.md.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # create the release + upload the asset
+
+jobs:
+  release:
+    name: Build, sign & publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'web/package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Decode signing material
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          CERT_B64: ${{ secrets.SIGNING_CERT_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$CERT_B64" ]; then
+            echo "::error::Signing secrets missing. Add SIGNING_KEYSTORE_B64, SIGNING_CERT_B64, SIGNING_KEYSTORE_PASSWORD, SIGNING_CERT_ALIAS, SIGNING_CERT_PASSWORD (see RELEASING.md)."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.pem"
+
+      # `build` runs jest via `check`; the e2e job on the tagged commit already
+      # passed on main (branch protection guarantees it), so the release build
+      # signs the artifact rather than re-booting a gateway.
+      - name: Build & sign the module
+        env:
+          ORG_GRADLE_PROJECT_org.gradle.java.installations.auto-download: "false"
+        run: |
+          ./gradlew clean build --no-daemon --stacktrace \
+            -PreleaseVersion="${{ steps.ver.outputs.version }}" \
+            -Pignition.signing.keystoreFile="$RUNNER_TEMP/keystore.p12" \
+            -Pignition.signing.keystorePassword="${{ secrets.SIGNING_KEYSTORE_PASSWORD }}" \
+            -Pignition.signing.certFile="$RUNNER_TEMP/cert.pem" \
+            -Pignition.signing.certAlias="${{ secrets.SIGNING_CERT_ALIAS }}" \
+            -Pignition.signing.certPassword="${{ secrets.SIGNING_CERT_PASSWORD }}"
+
+      - name: Locate the signed .modl
+        id: modl
+        run: |
+          f="$(find build -maxdepth 1 -name '*.modl' ! -name '*.unsigned.modl' | head -1)"
+          if [ -z "$f" ]; then echo "::error::no signed .modl produced"; exit 1; fi
+          echo "path=$f" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes
+        id: notes
+        run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "v${{ steps.ver.outputs.version }}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${{ steps.modl.outputs.path }}"

@@ -23,6 +23,11 @@ ops/modules/*.modl
 
 # --- Local dev signing material (NEVER commit keystores/certs/keys) ---
 ops/signing/
+# Belt-and-suspenders: any stray signing dir + common keystore/cert extensions.
+signing/
+*.p12
+*.jks
+*.keystore
 
 # --- IDE / editor ---
 .idea/

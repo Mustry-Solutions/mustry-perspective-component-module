@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-18
+
 ### Code / JSON Editor (new component)
 Seventh component: `mustrysolutions.input.codeeditor` — CodeMirror-6
 editing and read-only viewing of JSON / Python / SQL / XML / plain text
