@@ -8,6 +8,20 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Code / JSON Editor (new component)
+Seventh component: `mustrysolutions.input.codeeditor` — CodeMirror-6
+editing and read-only viewing of JSON / Python / SQL / XML / plain text
+for config-driven apps (an open gap: only a read-only JSON viewer
+existed third-party; nothing native through 8.3.8). Live JSON parse
+validation (lint gutter + toolbar badge + output.isValid/errorMessage
+to gate commit buttons on), Format JSON, folding, search, bracket
+matching, undo/redo (bound content history-exempt), the module's
+standard controlled save/dirty model (`onSave`), display mode,
+7-language labels, `--code-*` theming incl. a CSS-variable syntax
+palette. Demo at `/code`; 5 e2e tests + pure-logic jest suite.
+Bundle 656K→1.25M minified (~350K gz) — CodeMirror + 4 grammars;
+lazy-loading language chunks is the noted follow-up trim.
+
 ### Rich Text Editor (new component)
 Sixth component: `mustrysolutions.input.richtexteditor` — true WYSIWYG
 editing and safe read-only display of operator instructions/SOPs/notes

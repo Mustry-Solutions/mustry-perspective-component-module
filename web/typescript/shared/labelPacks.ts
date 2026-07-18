@@ -14,3 +14,4 @@ export * from './labels/timeline';
 export * from './labels/grid';
 export * from './labels/panzoom';
 export * from './labels/richtext';
+export * from './labels/code';

@@ -102,7 +102,12 @@ public class MustrySolutionsPerspectiveComponentsModule {
         g.setColor(new Color(0x53, 0x53, 0x53));
         g.setStroke(new BasicStroke(1.4f));
         String k = id.toLowerCase();
-        if (k.contains("richtexteditor")) {
+        if (k.contains("codeeditor")) {
+            // Angle brackets + a code line.
+            g.drawLine(6, 5, 3, 8); g.drawLine(3, 8, 6, 11);      // <
+            g.drawLine(10, 5, 13, 8); g.drawLine(13, 8, 10, 11);  // >
+            g.drawLine(5, 14, 11, 14);                            // code line
+        } else if (k.contains("richtexteditor")) {
             // Text lines with a bold lead line (a styled document).
             g.drawRoundRect(2, 2, 12, 12, 2, 2);
             g.setStroke(new BasicStroke(2.2f));

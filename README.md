@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships six components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View** and a **Rich Text Editor**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships seven components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor** and a **Code/JSON Editor**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
@@ -272,6 +272,24 @@ Same philosophy as every component in this module: **controlled, read-from-data*
 ### Theming
 
 Override the `--rte-*` variables via a style class / project stylesheet: `--rte-accent`, `--rte-accent-text`, `--rte-text`, `--rte-muted`, `--rte-border`, `--rte-bg`, `--rte-toolbar-bg`.
+
+---
+
+## Code / JSON Editor
+
+A CodeMirror-6-based code editor — and read-only viewer — for structured text: JSON config blobs, SQL, Python snippets, XML. Component id `mustrysolutions.input.codeeditor`.
+
+### Features
+
+- **Languages** (`config.language`) — `json` / `python` / `sql` / `xml` / `text`, with syntax highlighting driven by CSS variables so every Perspective theme restyles it.
+- **Live JSON validation** — parse errors mark the gutter, an "Invalid JSON" badge appears while the draft is broken, and `output.isValid` / `output.errorMessage` describe the bound document — **gate your commit button on `output.isValid`** and config-driven apps stop accepting broken configs.
+- **Controlled write-back** — the same model as every editor in this module: `data.code` is the bound truth, edits are a local draft (dirty badge) until **Save fires `onSave`** `{code, isValid, errorMessage}`; the round-trip clears dirty, Discard reverts, external changes while dirty keep the draft.
+- **Editor comforts** — line numbers + **code folding**, bracket matching, auto-indent, search (Ctrl+F), selection-match highlighting, undo/redo buttons (bound-content arrivals are history-exempt), **Format JSON** (pretty-print at `config.tabSize`).
+- **`mode: 'display'`** — a read-only structured-data viewer with folding and search; `config.lineWrapping`, `config.placeholder`, `output.lineCount`; labels in the same 7 languages.
+
+### Theming
+
+Override the `--code-*` variables via a style class / project stylesheet: chrome (`--code-accent`, `--code-text`, `--code-muted`, `--code-border`, `--code-bg`, `--code-toolbar-bg`, `--code-gutter-bg`, `--code-active-line`, `--code-error`) and the syntax palette (`--code-property`, `--code-string`, `--code-number`, `--code-keyword`, `--code-comment`, `--code-function`, `--code-type`).
 
 ---
 

@@ -47,6 +47,10 @@
     "/rte": {
       "viewPath": "RteDemo",
       "viewParams": {}
+    },
+    "/code": {
+      "viewPath": "CodeDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

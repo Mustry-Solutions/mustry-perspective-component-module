@@ -1,0 +1,175 @@
+{
+ "custom": {
+  "doc": "{\n  \"recipe\": \"CIP-40\",\n  \"steps\": [\n    { \"phase\": \"rinse\", \"minutes\": 5 },\n    { \"phase\": \"caustic\", \"minutes\": 20, \"tempC\": 75 }\n  ],\n  \"enabled\": true\n}\n"
+ },
+ "propConfig": {
+  "custom.doc": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1100,
+   "height": 760
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Code/JSON Editor demo \u2014 the top instance EDITS a JSON config (live validation, Format, Save fires onSave writing back to view.custom.doc); the label shows output.isValid/errorMessage; the bottom instance is a read-only VIEWER of the same bound value. Break the JSON to see the badge + gutter marker + output flip.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 900,
+     "height": 54
+    }
+   },
+   {
+    "type": "mustrysolutions.input.codeeditor",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "edit",
+      "language": "json",
+      "placeholder": "Paste or write JSON\u2026"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.data.code": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.doc"
+       }
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Persist the saved document; the binding round-trips it back into\n\t# data.code, which clears the editor's dirty state.\n\tself.view.custom.doc = event.code"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "codeEdit"
+    },
+    "position": {
+     "x": 16,
+     "y": 70,
+     "width": 1060,
+     "height": 320
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../codeEdit.props.output.isValid"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\tif value:\n\t\treturn 'output.isValid: true'\n\terr = self.getSibling('codeEdit').props.output.errorMessage\n\treturn 'output.isValid: false \u2014 ' + str(err)"
+        }
+       ]
+      }
+     }
+    },
+    "meta": {
+     "name": "validityLabel"
+    },
+    "position": {
+     "x": 16,
+     "y": 396,
+     "width": 1060,
+     "height": 22
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Display mode (same bound value):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "displayCaption"
+    },
+    "position": {
+     "x": 16,
+     "y": 424,
+     "width": 1060,
+     "height": 20
+    }
+   },
+   {
+    "type": "mustrysolutions.input.codeeditor",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "display",
+      "language": "json"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.data.code": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.doc"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "codeDisplay"
+    },
+    "position": {
+     "x": 16,
+     "y": 448,
+     "width": 1060,
+     "height": 280
+    }
+   }
+  ]
+ }
+}

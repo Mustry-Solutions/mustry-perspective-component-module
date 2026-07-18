@@ -1,0 +1,192 @@
+// Code Editor — themeable via CSS variables (defaults track the active
+// Perspective theme where a var exists). Override the --code-* vars from a
+// style class / project stylesheet; the syntax palette (--code-property,
+// --code-string, --code-number, --code-keyword, --code-comment,
+// --code-function, --code-type) is consumed by the highlight style in JS.
+.mustry-code {
+    --code-accent: var(--callToAction, #0a66c2);
+    --code-accent-text: var(--callToActionContrast, #ffffff);
+    --code-text: var(--neutral-90, #1f2933);
+    --code-muted: var(--neutral-60, #7b8794);
+    --code-border: var(--neutral-30, #cbd2d9);
+    --code-bg: var(--neutral-10, #ffffff);
+    --code-toolbar-bg: var(--neutral-20, #f5f7fa);
+    --code-gutter-bg: var(--neutral-20, #f5f7fa);
+    --code-active-line: color-mix(in srgb, var(--callToAction, #0a66c2) 6%, transparent);
+    --code-error: var(--error, #d32f2f);
+    // Syntax palette (sensible light defaults; dark themes read better with
+    // overrides via a style class if desired).
+    --code-property: #0550ae;
+    --code-string: #0a3069;
+    --code-number: #953800;
+    --code-keyword: #cf222e;
+    --code-comment: #6e7781;
+    --code-function: #8250df;
+    --code-type: #116329;
+
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--code-border);
+    border-radius: 6px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    overflow: hidden;
+
+    &.is-disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+}
+
+.mustry-code--display {
+    border-color: transparent;
+    background: transparent;
+}
+
+// --- toolbar (mirrors the rich text editor's visual language) ---------------
+.mustry-code-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--code-border);
+    background: var(--code-toolbar-bg);
+}
+
+.mustry-code-btn {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--code-text);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--code-accent) 12%, transparent);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.mustry-code-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--code-border);
+}
+
+.mustry-code-spring {
+    flex: 1;
+}
+
+.mustry-code-dirty-badge {
+    color: var(--code-muted);
+    font-size: 12px;
+    font-style: italic;
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.mustry-code-invalid-badge {
+    color: var(--code-error);
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+.mustry-code-save-btn {
+    height: 26px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    background: var(--code-accent);
+    color: var(--code-accent-text);
+    font-size: 13px;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.mustry-code-discard-btn {
+    color: var(--code-muted);
+}
+
+// --- CodeMirror surface ------------------------------------------------------
+.mustry-code-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+
+    > .cm-editor {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.mustry-code .cm-editor {
+    background: var(--code-bg);
+    color: var(--code-text);
+    font-size: 13px;
+
+    &.cm-focused {
+        outline: none;
+    }
+
+    .cm-scroller {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+        line-height: 1.5;
+    }
+
+    .cm-gutters {
+        background: var(--code-gutter-bg);
+        color: var(--code-muted);
+        border-right: 1px solid var(--code-border);
+    }
+
+    .cm-activeLine {
+        background: var(--code-active-line);
+    }
+    .cm-activeLineGutter {
+        background: color-mix(in srgb, var(--code-accent) 10%, transparent);
+    }
+
+    .cm-selectionBackground,
+    &.cm-focused .cm-selectionBackground {
+        background: color-mix(in srgb, var(--code-accent) 22%, transparent);
+    }
+
+    .cm-cursor {
+        border-left-color: var(--code-text);
+    }
+
+    .cm-placeholder {
+        color: var(--code-muted);
+    }
+
+    .cm-matchingBracket {
+        background: color-mix(in srgb, var(--code-accent) 20%, transparent);
+        outline: 1px solid var(--code-accent);
+    }
+
+    .cm-lint-marker-error {
+        content: '';
+    }
+
+    // Search panel inherits the theme.
+    .cm-panels {
+        background: var(--code-toolbar-bg);
+        color: var(--code-text);
+        border-color: var(--code-border);
+    }
+}

@@ -5,6 +5,7 @@ import { ResourceTimeline, ResourceTimelineMeta } from './components/timeline/Re
 import { DataGrid, DataGridMeta } from './components/grid/DataGrid';
 import { PanZoomView, PanZoomViewMeta } from './components/panzoom/PanZoomView';
 import { RichTextEditor, RichTextEditorMeta } from './components/richtext/RichTextEditor';
+import { CodeEditor, CodeEditorMeta } from './components/code/CodeEditor';
 
 import './scss/picker.scss';
 import './scss/calendar.scss';
@@ -12,8 +13,9 @@ import './scss/timeline.scss';
 import './scss/grid.scss';
 import './scss/panzoom.scss';
 import './scss/richtext.scss';
+import './scss/code.scss';
 
-export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor };
+export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor };
 
 // Register every component this module provides with the Perspective client registry.
 const components: Array<ComponentMeta> = [
@@ -22,7 +24,8 @@ const components: Array<ComponentMeta> = [
     new ResourceTimelineMeta(),
     new DataGridMeta(),
     new PanZoomViewMeta(),
-    new RichTextEditorMeta()
+    new RichTextEditorMeta(),
+    new CodeEditorMeta()
 ];
 
 components.forEach((c: ComponentMeta) => ComponentRegistry.register(c));

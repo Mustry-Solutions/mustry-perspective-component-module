@@ -23,5 +23,6 @@ public final class Components {
         DataGrid.DESCRIPTOR,
         PanZoomView.DESCRIPTOR,
         ResourceTimeline.DESCRIPTOR,
-        RichTextEditor.DESCRIPTOR);
+        RichTextEditor.DESCRIPTOR,
+        CodeEditor.DESCRIPTOR);
 }
