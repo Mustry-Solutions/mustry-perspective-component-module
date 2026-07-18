@@ -83,6 +83,14 @@
               "type": "string",
               "description": "Dirty badge text."
             },
+            "undo": {
+              "type": "string",
+              "description": "Undo button tooltip."
+            },
+            "redo": {
+              "type": "string",
+              "description": "Redo button tooltip."
+            },
             "format": {
               "type": "string",
               "description": "Format-JSON button tooltip."

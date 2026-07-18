@@ -6,10 +6,13 @@
 // overrides exist precisely so deployments can correct or rebrand them.
 
 import { primaryLang } from './common';
+import { CommitLabels, commitLabelBase } from './commit';
 
 // --- rich text editor -----------------------------------------------------------
+// save / discard / unsaved / undo / redo come from CommitLabels (shared with
+// every editor); only the rich-text-specific strings live here.
 
-export interface RteLabels {
+export interface RteLabels extends CommitLabels {
     bold: string;                     // toolbar tooltips / accessible labels
     italic: string;
     underline: string;
@@ -29,28 +32,22 @@ export interface RteLabels {
     deleteTable: string;
     image: string;
     imagePlaceholder: string;         // the image popover's input placeholder
-    undo: string;
-    redo: string;
     font: string;                     // font picker tooltip
     fontDefault: string;              // font picker: theme-default entry
-    save: string;
-    discard: string;
-    unsaved: string;                  // dirty badge
 }
 
-export const EN_RTE_LABELS: RteLabels = {
-    bold: 'Bold', italic: 'Italic', underline: 'Underline', strike: 'Strikethrough',
-    paragraph: 'Paragraph', heading: 'Heading {n}',
-    bulletList: 'Bulleted list', orderedList: 'Numbered list', checklist: 'Checklist',
-    link: 'Link', linkPlaceholder: 'https://…', apply: 'Apply', removeLink: 'Remove link',
-    table: 'Table', addRow: 'Add row', addColumn: 'Add column', deleteTable: 'Delete table',
-    image: 'Image', imagePlaceholder: 'https://… (image URL)',
-    undo: 'Undo', redo: 'Redo', font: 'Font', fontDefault: 'Default',
-    save: 'Save', discard: 'Discard', unsaved: 'Unsaved changes'
-};
+type RteOnly = Omit<RteLabels, keyof CommitLabels>;
 
-const RTE_PACKS: { [lang: string]: RteLabels } = {
-    en: EN_RTE_LABELS,
+const RTE_ONLY: { [lang: string]: RteOnly } = {
+    en: {
+        bold: 'Bold', italic: 'Italic', underline: 'Underline', strike: 'Strikethrough',
+        paragraph: 'Paragraph', heading: 'Heading {n}',
+        bulletList: 'Bulleted list', orderedList: 'Numbered list', checklist: 'Checklist',
+        link: 'Link', linkPlaceholder: 'https://…', apply: 'Apply', removeLink: 'Remove link',
+        table: 'Table', addRow: 'Add row', addColumn: 'Add column', deleteTable: 'Delete table',
+        image: 'Image', imagePlaceholder: 'https://… (image URL)',
+        font: 'Font', fontDefault: 'Default'
+    },
     fr: {
         bold: 'Gras', italic: 'Italique', underline: 'Souligné', strike: 'Barré',
         paragraph: 'Paragraphe', heading: 'Titre {n}',
@@ -58,8 +55,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Lien', linkPlaceholder: 'https://…', apply: 'Appliquer', removeLink: 'Supprimer le lien',
         table: 'Tableau', addRow: 'Ajouter une ligne', addColumn: 'Ajouter une colonne', deleteTable: 'Supprimer le tableau',
         image: 'Image', imagePlaceholder: "https://… (URL de l'image)",
-        undo: 'Annuler', redo: 'Rétablir', font: 'Police', fontDefault: 'Par défaut',
-        save: 'Enregistrer', discard: 'Annuler', unsaved: 'Modifications non enregistrées'
+        font: 'Police', fontDefault: 'Par défaut'
     },
     de: {
         bold: 'Fett', italic: 'Kursiv', underline: 'Unterstrichen', strike: 'Durchgestrichen',
@@ -68,8 +64,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Übernehmen', removeLink: 'Link entfernen',
         table: 'Tabelle', addRow: 'Zeile hinzufügen', addColumn: 'Spalte hinzufügen', deleteTable: 'Tabelle löschen',
         image: 'Bild', imagePlaceholder: 'https://… (Bild-URL)',
-        undo: 'Rückgängig', redo: 'Wiederholen', font: 'Schriftart', fontDefault: 'Standard',
-        save: 'Speichern', discard: 'Verwerfen', unsaved: 'Ungespeicherte Änderungen'
+        font: 'Schriftart', fontDefault: 'Standard'
     },
     es: {
         bold: 'Negrita', italic: 'Cursiva', underline: 'Subrayado', strike: 'Tachado',
@@ -78,8 +73,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Enlace', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Quitar enlace',
         table: 'Tabla', addRow: 'Añadir fila', addColumn: 'Añadir columna', deleteTable: 'Eliminar tabla',
         image: 'Imagen', imagePlaceholder: 'https://… (URL de la imagen)',
-        undo: 'Deshacer', redo: 'Rehacer', font: 'Fuente', fontDefault: 'Predeterminada',
-        save: 'Guardar', discard: 'Descartar', unsaved: 'Cambios sin guardar'
+        font: 'Fuente', fontDefault: 'Predeterminada'
     },
     nl: {
         bold: 'Vet', italic: 'Cursief', underline: 'Onderstreept', strike: 'Doorgestreept',
@@ -88,8 +82,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Toepassen', removeLink: 'Link verwijderen',
         table: 'Tabel', addRow: 'Rij toevoegen', addColumn: 'Kolom toevoegen', deleteTable: 'Tabel verwijderen',
         image: 'Afbeelding', imagePlaceholder: 'https://… (afbeeldings-URL)',
-        undo: 'Ongedaan maken', redo: 'Opnieuw', font: 'Lettertype', fontDefault: 'Standaard',
-        save: 'Opslaan', discard: 'Verwerpen', unsaved: 'Niet-opgeslagen wijzigingen'
+        font: 'Lettertype', fontDefault: 'Standaard'
     },
     it: {
         bold: 'Grassetto', italic: 'Corsivo', underline: 'Sottolineato', strike: 'Barrato',
@@ -98,8 +91,7 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Applica', removeLink: 'Rimuovi link',
         table: 'Tabella', addRow: 'Aggiungi riga', addColumn: 'Aggiungi colonna', deleteTable: 'Elimina tabella',
         image: 'Immagine', imagePlaceholder: 'https://… (URL immagine)',
-        undo: 'Annulla', redo: 'Ripristina', font: 'Carattere', fontDefault: 'Predefinito',
-        save: 'Salva', discard: 'Annulla', unsaved: 'Modifiche non salvate'
+        font: 'Carattere', fontDefault: 'Predefinito'
     },
     pt: {
         bold: 'Negrito', italic: 'Itálico', underline: 'Sublinhado', strike: 'Tachado',
@@ -108,12 +100,13 @@ const RTE_PACKS: { [lang: string]: RteLabels } = {
         link: 'Link', linkPlaceholder: 'https://…', apply: 'Aplicar', removeLink: 'Remover link',
         table: 'Tabela', addRow: 'Adicionar linha', addColumn: 'Adicionar coluna', deleteTable: 'Excluir tabela',
         image: 'Imagem', imagePlaceholder: 'https://… (URL da imagem)',
-        undo: 'Desfazer', redo: 'Refazer', font: 'Fonte', fontDefault: 'Padrão',
-        save: 'Salvar', discard: 'Descartar', unsaved: 'Alterações não salvas'
+        font: 'Fonte', fontDefault: 'Padrão'
     }
 };
 
+export const EN_RTE_LABELS: RteLabels = { ...commitLabelBase('en'), ...RTE_ONLY.en };
+
 /** The rich text editor's default label set for a locale (English when not bundled). */
 export function rteLabelBase(locale: string): RteLabels {
-    return RTE_PACKS[primaryLang(locale)] || EN_RTE_LABELS;
+    return { ...commitLabelBase(locale), ...(RTE_ONLY[primaryLang(locale)] || RTE_ONLY.en) };
 }

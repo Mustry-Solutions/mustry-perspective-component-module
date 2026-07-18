@@ -184,11 +184,10 @@ export function realtimeSelection(amount: number, unit: PresetUnit, now: Date, f
 
 // --- label templates ----------------------------------------------------------
 
-/** Fill a label template: '{n} {days}' + {n: 3, days: 'days'} -> '3 days'.
- *  Unknown placeholders are left untouched. */
-export function fillLabel(tpl: string, vars: { [k: string]: string | number }): string {
-    return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
-}
+// Template filler moved to the shared labels layer; re-exported so this module
+// stays the picker's single pure-logic surface (and its tests keep importing it).
+import { fillLabel } from '../../shared/labels/common';
+export { fillLabel };
 
 /** The strings a day count formats with ('1 day' / '3 days', localized). */
 export interface DayWordLabels {

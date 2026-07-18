@@ -111,7 +111,4 @@ export function wordCountOf(text: string): number {
     return t ? t.split(/\s+/).length : 0;
 }
 
-/** '{n}'-style template fill for label strings. */
-export function fillLabel(template: string, vars: { [k: string]: string | number }): string {
-    return template.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
-}
+export { fillLabel } from '../../shared/labels/common';

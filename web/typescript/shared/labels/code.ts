@@ -6,33 +6,32 @@
 // overrides exist precisely so deployments can correct or rebrand them.
 
 import { primaryLang } from './common';
+import { CommitLabels, commitLabelBase } from './commit';
 
 // --- code editor ----------------------------------------------------------------
+// save / discard / unsaved / undo / redo come from CommitLabels (shared with
+// every editor); only the code-specific strings live here.
 
-export interface CodeLabels {
-    save: string;
-    discard: string;
-    unsaved: string;                  // dirty badge
+export interface CodeLabels extends CommitLabels {
     format: string;                   // JSON pretty-print button
     invalid: string;                  // validity badge when the JSON doesn't parse
 }
 
-export const EN_CODE_LABELS: CodeLabels = {
-    save: 'Save', discard: 'Discard', unsaved: 'Unsaved changes',
-    format: 'Format JSON', invalid: 'Invalid JSON'
+interface CodeOnly { format: string; invalid: string; }
+
+const CODE_ONLY: { [lang: string]: CodeOnly } = {
+    en: { format: 'Format JSON', invalid: 'Invalid JSON' },
+    fr: { format: 'Formater le JSON', invalid: 'JSON invalide' },
+    de: { format: 'JSON formatieren', invalid: 'Ungültiges JSON' },
+    es: { format: 'Formatear JSON', invalid: 'JSON no válido' },
+    nl: { format: 'JSON formatteren', invalid: 'Ongeldige JSON' },
+    it: { format: 'Formatta JSON', invalid: 'JSON non valido' },
+    pt: { format: 'Formatar JSON', invalid: 'JSON inválido' }
 };
 
-const CODE_PACKS: { [lang: string]: CodeLabels } = {
-    en: EN_CODE_LABELS,
-    fr: { save: 'Enregistrer', discard: 'Annuler', unsaved: 'Modifications non enregistrées', format: 'Formater le JSON', invalid: 'JSON invalide' },
-    de: { save: 'Speichern', discard: 'Verwerfen', unsaved: 'Ungespeicherte Änderungen', format: 'JSON formatieren', invalid: 'Ungültiges JSON' },
-    es: { save: 'Guardar', discard: 'Descartar', unsaved: 'Cambios sin guardar', format: 'Formatear JSON', invalid: 'JSON no válido' },
-    nl: { save: 'Opslaan', discard: 'Verwerpen', unsaved: 'Niet-opgeslagen wijzigingen', format: 'JSON formatteren', invalid: 'Ongeldige JSON' },
-    it: { save: 'Salva', discard: 'Annulla', unsaved: 'Modifiche non salvate', format: 'Formatta JSON', invalid: 'JSON non valido' },
-    pt: { save: 'Salvar', discard: 'Descartar', unsaved: 'Alterações não salvas', format: 'Formatar JSON', invalid: 'JSON inválido' }
-};
+export const EN_CODE_LABELS: CodeLabels = { ...commitLabelBase('en'), ...CODE_ONLY.en };
 
 /** The code editor's default label set for a locale (English when not bundled). */
 export function codeLabelBase(locale: string): CodeLabels {
-    return CODE_PACKS[primaryLang(locale)] || EN_CODE_LABELS;
+    return { ...commitLabelBase(locale), ...(CODE_ONLY[primaryLang(locale)] || CODE_ONLY.en) };
 }

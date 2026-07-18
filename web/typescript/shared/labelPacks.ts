@@ -8,6 +8,7 @@
 // The packs live per component under shared/labels/; this barrel keeps the
 // historical import path stable.
 export * from './labels/common';
+export * from './labels/commit';
 export * from './labels/calendar';
 export * from './labels/picker';
 export * from './labels/timeline';

@@ -13,6 +13,12 @@ export function primaryLang(locale: string): string {
     return (locale || '').toLowerCase().split(/[-_]/)[0];
 }
 
+/** Substitute '{name}' placeholders in a label template; unknown ones are left
+ *  untouched. The one home for what picker and richtext each used to define. */
+export function fillLabel(tpl: string, vars: { [k: string]: string | number }): string {
+    return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
 /** The empty-badge text: the schema default ('No events') counts as "unset" so it
  *  follows the locale pack's noEvents; any other value (including '' = hide the
  *  badge) is an explicit author choice. */
