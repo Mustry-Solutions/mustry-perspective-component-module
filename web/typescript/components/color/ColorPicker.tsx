@@ -388,11 +388,14 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
                     onClick={asTrigger ? this.togglePanel : undefined}
                 >
                     {asTrigger && (
-                        // A picker glyph over the colour signals the swatch is a
-                        // control that opens the panel (the colour stays the
-                        // background). Contrast is handled in scss via the light class.
-                        <svg className="mustry-cp-swatch-pick" viewBox="0 0 16 16" aria-hidden="true">
-                            <path fill="currentColor" d="M11.4 1.6a2 2 0 0 1 2.9 2.8l-1.6 1.6.5.5-1 1-.6-.6-4.7 4.7c-.2.2-.4.3-.6.3l-2.4.5.5-2.4c0-.2.1-.4.3-.6l4.7-4.7-.6-.6 1-1 .5.5 1.6-1.6z"/>
+                        // A palette glyph over the colour signals the swatch is a
+                        // control that opens the picker (the colour stays the
+                        // background). The paint wells are punched with fill-rule
+                        // evenodd, so they reveal the current colour behind the
+                        // glyph. Contrast (ink flip) is handled in scss via the
+                        // light class.
+                        <svg className="mustry-cp-swatch-pick" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fillRule="evenodd" fill="currentColor" d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm5.5 11c-.83 0-1.5-.67-1.5-1.5S16.67 10 17.5 10s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-3-4C13.67 9 13 8.33 13 7.5S13.67 6 14.5 6s1.5.67 1.5 1.5S15.33 9 14.5 9zM9 7.5C9 8.33 8.33 9 7.5 9S6 8.33 6 7.5 6.67 6 7.5 6 9 6.67 9 7.5zM6.5 13c-.83 0-1.5-.67-1.5-1.5S5.67 10 6.5 10s1.5.67 1.5 1.5S7.33 13 6.5 13z"/>
                         </svg>
                     )}
                 </button>

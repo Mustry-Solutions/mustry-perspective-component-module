@@ -49,137 +49,6 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Version 1 — icon button (popover, showInput false):",
-     "style": {
-      "fontSize": "12px",
-      "fontStyle": "italic"
-     }
-    },
-    "meta": {
-     "name": "cap1"
-    },
-    "position": {
-     "x": 16,
-     "y": 74,
-     "width": 520,
-     "height": 18
-    }
-   },
-   {
-    "type": "mustrysolutions.input.colorpicker",
-    "version": 0,
-    "props": {
-     "config": {
-      "mode": "popover",
-      "showAlpha": true,
-      "showInput": false,
-      "format": "hex"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.value.color": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.color"
-       },
-       "bidirectional": true
-      }
-     }
-    },
-    "events": {
-     "component": {
-      "onChange": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v1 button) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
-        }
-       }
-      ]
-     }
-    },
-    "meta": {
-     "name": "buttonPicker"
-    },
-    "position": {
-     "x": 16,
-     "y": 94,
-     "width": 44,
-     "height": 34
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "Version 2 — swatch + hex/rgb/hsl field (popover):",
-     "style": {
-      "fontSize": "12px",
-      "fontStyle": "italic"
-     }
-    },
-    "meta": {
-     "name": "cap2"
-    },
-    "position": {
-     "x": 16,
-     "y": 140,
-     "width": 520,
-     "height": 18
-    }
-   },
-   {
-    "type": "mustrysolutions.input.colorpicker",
-    "version": 0,
-    "props": {
-     "config": {
-      "mode": "popover",
-      "showAlpha": true,
-      "format": "hex"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.value.color": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.color"
-       },
-       "bidirectional": true
-      }
-     }
-    },
-    "events": {
-     "component": {
-      "onChange": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v2 swatch+code) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
-        }
-       }
-      ]
-     }
-    },
-    "meta": {
-     "name": "popPicker"
-    },
-    "position": {
-     "x": 16,
-     "y": 160,
-     "width": 224,
-     "height": 40
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
      "text": "Version 3 — full inline panel:",
      "style": {
       "fontSize": "12px",
@@ -191,8 +60,8 @@
     },
     "position": {
      "x": 16,
-     "y": 212,
-     "width": 520,
+     "y": 74,
+     "width": 300,
      "height": 18
     }
    },
@@ -236,9 +105,140 @@
     },
     "position": {
      "x": 16,
-     "y": 234,
+     "y": 96,
      "width": 264,
-     "height": 320
+     "height": 330
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 1 — icon button (popover, showInput false):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap1"
+    },
+    "position": {
+     "x": 340,
+     "y": 74,
+     "width": 300,
+     "height": 30
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "showInput": false,
+      "format": "hex"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v1 button) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "buttonPicker"
+    },
+    "position": {
+     "x": 340,
+     "y": 110,
+     "width": 44,
+     "height": 34
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 2 — swatch + hex/rgb/hsl field (popover):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap2"
+    },
+    "position": {
+     "x": 340,
+     "y": 166,
+     "width": 300,
+     "height": 18
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "format": "hex"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v2 swatch+code) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "popPicker"
+    },
+    "position": {
+     "x": 340,
+     "y": 188,
+     "width": 224,
+     "height": 40
     }
    },
    {
@@ -266,9 +266,9 @@
      "name": "preview"
     },
     "position": {
-     "x": 320,
-     "y": 234,
-     "width": 240,
+     "x": 636,
+     "y": 96,
+     "width": 220,
      "height": 120
     }
    },
@@ -302,9 +302,9 @@
      "name": "readout"
     },
     "position": {
-     "x": 320,
-     "y": 366,
-     "width": 380,
+     "x": 636,
+     "y": 228,
+     "width": 340,
      "height": 120
     }
    },
@@ -332,10 +332,10 @@
      "name": "eventLabel"
     },
     "position": {
-     "x": 320,
-     "y": 496,
-     "width": 400,
-     "height": 22
+     "x": 636,
+     "y": 360,
+     "width": 340,
+     "height": 40
     }
    }
   ]

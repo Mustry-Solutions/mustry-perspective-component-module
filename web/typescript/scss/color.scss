@@ -241,14 +241,21 @@
 }
 
 // Popover: a floating card portalled to <body>, positioned via inline style.
+// Strong elevation + a crisp ring so it always reads as floating above whatever
+// sits behind it (e.g. another panel), never blending into it.
 .mustry-cp-popover {
     z-index: 2147483000; // above Perspective overlays, like the picker's popover
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
     border-radius: 8px;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.10),
+        0 12px 34px rgba(0, 0, 0, 0.30);
 
     .mustry-cp-body {
-        // The popover card already casts the shadow; keep the border for definition.
+        // The popover card casts the elevation; give the body a slightly heavier
+        // border than the inline panel so the two are distinguishable.
         box-shadow: none;
+        border-width: 1px;
+        border-color: var(--cp-border);
     }
 }
 
@@ -283,8 +290,8 @@
 .mustry-cp-swatch-pick {
     position: relative;
     z-index: 1;
-    width: 12px;
-    height: 12px;
+    width: 15px;
+    height: 15px;
     color: #ffffff;
     filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.55));
     pointer-events: none;
