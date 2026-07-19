@@ -6,17 +6,21 @@ import { test, expect, openRoute } from './helpers';
 // asserting the *initial* colour (custom.color is a persistent prop that earlier
 // picks mutate) — they assert deltas or set their own colour.
 
-test('color: inline and popover instances render with their surfaces', async ({ page }) => {
+test('color: all three presentations render with their surfaces', async ({ page }) => {
     await openRoute(page, '/color', '.mustry-colorpicker');
-    await expect(page.locator('.mustry-colorpicker')).toHaveCount(2);
+    // Three instances: v1 (button popover), v2 (swatch+code popover), v3 (inline).
+    await expect(page.locator('.mustry-colorpicker')).toHaveCount(3);
+    await expect(page.locator('.mustry-cp--popover')).toHaveCount(2);
+    await expect(page.locator('.mustry-cp--inline')).toHaveCount(1);
     // The inline panel's three draggable surfaces.
     await expect(page.locator('.mustry-cp--inline .mustry-cp-sv')).toBeVisible();
     await expect(page.locator('.mustry-cp--inline .mustry-cp-hue')).toBeVisible();
     await expect(page.locator('.mustry-cp--inline .mustry-cp-alpha')).toBeVisible();
     // The bound swatch palette rendered its chips.
     await expect(page.locator('.mustry-cp--inline .mustry-cp-chip').first()).toBeVisible();
-    // The popover instance renders its trigger, and the panel is NOT open yet.
-    await expect(page.locator('.mustry-cp--popover .mustry-cp-control--trigger')).toBeVisible();
+    // Every popover trigger carries the picker glyph (the click affordance), and
+    // no panel is open yet.
+    await expect(page.locator('.mustry-cp--popover .mustry-cp-swatch-pick')).toHaveCount(2);
     await expect(page.locator('.mustry-cp-popover')).toHaveCount(0);
 });
 
@@ -47,7 +51,7 @@ test('color: dragging the hue bar changes the committed value', async ({ page })
 
     // Releasing the drag commits; the value must have moved off the seed.
     await expect(input).not.toHaveValue(before);
-    await expect(page.getByText(/onChange value=/)).toBeVisible();
+    await expect(page.getByText(/onChange \(v3 inline\) value=/)).toBeVisible();
 });
 
 test('color: the format toggle switches the input notation', async ({ page }) => {
@@ -72,13 +76,14 @@ test('color: typing an invalid colour flags it and reverts on commit', async ({ 
 
 test('color: the popover opens, a swatch commits, and Escape closes it', async ({ page }) => {
     await openRoute(page, '/color', '.mustry-colorpicker');
-    await page.locator('.mustry-cp--popover .mustry-cp-control--trigger .mustry-cp-swatch').click();
+    // The version-1 icon button is the first popover trigger in the DOM.
+    await page.locator('.mustry-cp--popover .mustry-cp-control--trigger .mustry-cp-swatch').first().click();
     const panel = page.locator('.mustry-cp-popover');
     await expect(panel).toBeVisible();
 
     // Palette index 3 is #e03131 (red) — pick it from the popover.
     await panel.locator('.mustry-cp-chip').nth(3).click();
-    await expect(page.getByText(/onChange \(popover\) value=/)).toBeVisible();
+    await expect(page.getByText(/onChange \(v1 button\) value=/)).toBeVisible();
     // The pick propagated to the inline picker's output readout as well.
     await expect(page.getByText(/rgb: \(224, 49, 49\)/)).toBeVisible();
 

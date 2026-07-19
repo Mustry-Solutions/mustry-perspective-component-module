@@ -15,7 +15,7 @@
  "props": {
   "defaultSize": {
    "width": 1000,
-   "height": 560
+   "height": 600
   }
  },
  "root": {
@@ -30,7 +30,7 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Color Picker demo — the inline picker EDITS view.custom.color (two-way). Drag the SV area / hue / alpha bars; releasing a drag fires onChange and writes the value back. The swatch box and readouts are bound to the picker's output.* props, proving the write-back reached the store.",
+     "text": "Color Picker demo — three presentations of ONE component, all editing view.custom.color. The trigger swatches carry a picker glyph so it's clear they open the panel. Picking on any instance fires onChange (author script persists to custom.color) and the others follow; the preview box + readout are bound to the inline instance's output.* props.",
      "style": {
       "fontSize": "13px"
      }
@@ -41,8 +41,159 @@
     "position": {
      "x": 16,
      "y": 10,
-     "width": 900,
+     "width": 940,
      "height": 60
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 1 — icon button (popover, showInput false):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap1"
+    },
+    "position": {
+     "x": 16,
+     "y": 74,
+     "width": 520,
+     "height": 18
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "showInput": false,
+      "format": "hex"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v1 button) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "buttonPicker"
+    },
+    "position": {
+     "x": 16,
+     "y": 94,
+     "width": 44,
+     "height": 34
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 2 — swatch + hex/rgb/hsl field (popover):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap2"
+    },
+    "position": {
+     "x": 16,
+     "y": 140,
+     "width": 520,
+     "height": 18
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "format": "hex"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v2 swatch+code) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "popPicker"
+    },
+    "position": {
+     "x": 16,
+     "y": 160,
+     "width": 224,
+     "height": 40
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 3 — full inline panel:",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap3"
+    },
+    "position": {
+     "x": 16,
+     "y": 212,
+     "width": 520,
+     "height": 18
     }
    },
    {
@@ -74,7 +225,7 @@
         "type": "script",
         "scope": "G",
         "config": {
-         "script": "\t# Controlled round-trip: persist the picked value so the forward binding\n\t# rebinds value.color and the sibling popover picker stays in sync.\n\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v3 inline) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
         }
        }
       ]
@@ -85,7 +236,7 @@
     },
     "position": {
      "x": 16,
-     "y": 78,
+     "y": 234,
      "width": 264,
      "height": 320
     }
@@ -115,8 +266,8 @@
      "name": "preview"
     },
     "position": {
-     "x": 300,
-     "y": 78,
+     "x": 320,
+     "y": 234,
      "width": 240,
      "height": 120
     }
@@ -151,8 +302,8 @@
      "name": "readout"
     },
     "position": {
-     "x": 300,
-     "y": 210,
+     "x": 320,
+     "y": 366,
      "width": 380,
      "height": 120
     }
@@ -181,75 +332,10 @@
      "name": "eventLabel"
     },
     "position": {
-     "x": 300,
-     "y": 340,
-     "width": 380,
+     "x": 320,
+     "y": 496,
+     "width": 400,
      "height": 22
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "Popover mode (same bound value) — click the swatch to open the panel; the bound swatch palette + eyedropper live in the panel:",
-     "style": {
-      "fontSize": "12px",
-      "fontStyle": "italic"
-     }
-    },
-    "meta": {
-     "name": "popCaption"
-    },
-    "position": {
-     "x": 16,
-     "y": 470,
-     "width": 664,
-     "height": 20
-    }
-   },
-   {
-    "type": "mustrysolutions.input.colorpicker",
-    "version": 0,
-    "props": {
-     "config": {
-      "mode": "popover",
-      "showAlpha": true,
-      "format": "hex"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.value.color": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.color"
-       },
-       "bidirectional": true
-      }
-     }
-    },
-    "events": {
-     "component": {
-      "onChange": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\t# Same controlled round-trip as the inline picker: persist to the shared\n\t# custom prop so both instances stay in sync.\n\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (popover) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
-        }
-       }
-      ]
-     }
-    },
-    "meta": {
-     "name": "popPicker"
-    },
-    "position": {
-     "x": 16,
-     "y": 494,
-     "width": 224,
-     "height": 40
     }
    }
   ]

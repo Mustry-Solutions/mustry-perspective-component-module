@@ -378,14 +378,24 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
             <div className={'mustry-cp-control' + (asTrigger ? ' mustry-cp-control--trigger' : '')} {...rootProps}>
                 <button
                     type="button"
-                    className={'mustry-cp-swatch' + (unset ? ' mustry-cp-swatch--empty' : '')}
+                    className={'mustry-cp-swatch' + (unset ? ' mustry-cp-swatch--empty' : '')
+                        + (asTrigger ? ' mustry-cp-swatch--trigger' : '')}
                     style={swatchStyle}
                     disabled={!this.editable()}
                     aria-label={this.displayText() || p.labels.clear}
                     aria-haspopup={asTrigger ? 'dialog' : undefined}
                     aria-expanded={asTrigger ? this.state.open : undefined}
                     onClick={asTrigger ? this.togglePanel : undefined}
-                />
+                >
+                    {asTrigger && (
+                        // A picker glyph over the colour signals the swatch is a
+                        // control that opens the panel (the colour stays the
+                        // background). Contrast is handled in scss via the light class.
+                        <svg className="mustry-cp-swatch-pick" viewBox="0 0 16 16" aria-hidden="true">
+                            <path fill="currentColor" d="M11.4 1.6a2 2 0 0 1 2.9 2.8l-1.6 1.6.5.5-1 1-.6-.6-4.7 4.7c-.2.2-.4.3-.6.3l-2.4.5.5-2.4c0-.2.1-.4.3-.6l4.7-4.7-.6-.6 1-1 .5.5 1.6-1.6z"/>
+                        </svg>
+                    )}
+                </button>
                 {p.showInput && (
                     <input
                         className={'mustry-cp-input' + (this.state.editValid ? '' : ' mustry-cp-input--invalid')}

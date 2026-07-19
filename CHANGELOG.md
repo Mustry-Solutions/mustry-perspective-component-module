@@ -15,8 +15,11 @@ selector) and that the Exchange covers only with copy-in views (#112,
 #2388, #2691), not a compiled component. HSV area + hue/alpha bars
 (continuous drag; hue survives greys/black via a working copy),
 hex/rgb/hsl formats switchable at runtime, optional alpha
-(`#RRGGBBAA`/`rgba()`), inline or popover mode (portalled panel, flips on
-overflow, outside-click/Escape close), a **bound** swatch palette
+(`#RRGGBBAA`/`rgba()`), three presentations from `mode` + `showInput`
+(full inline panel / swatch+code popover / compact icon button) whose
+popover triggers carry a contrast-aware picker glyph so they read as a
+control, portalled panel (flips on overflow, outside-click/Escape close),
+a **bound** swatch palette
 (`data.swatches`) + recent-colours row, and an eyedropper (EyeDropper API
 where available). Controlled write-back: `value.color` is the bound truth,
 a pick fires `onChange` `{value, hex, rgb, hsl, alpha}` and mirrors

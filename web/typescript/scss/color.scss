@@ -257,6 +257,47 @@
 
     .mustry-cp-swatch {
         cursor: pointer;
+        transition: box-shadow 0.12s ease, border-color 0.12s ease;
+
+        &:hover:not(:disabled) {
+            border-color: var(--cp-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 30%, transparent);
+        }
+
+        &:focus-visible {
+            outline: none;
+            border-color: var(--cp-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 45%, transparent);
+        }
+    }
+}
+
+// The picker glyph over the trigger swatch. It sits ABOVE the colour ::after
+// (z-index) and flips ink for contrast on light colours.
+.mustry-cp-swatch--trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mustry-cp-swatch-pick {
+    position: relative;
+    z-index: 1;
+    width: 12px;
+    height: 12px;
+    color: #ffffff;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.55));
+    pointer-events: none;
+
+    .mustry-cp--light & {
+        color: #1f2933;
+        filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));
+    }
+
+    // No colour yet: show the glyph in muted ink over the empty field.
+    .mustry-cp-swatch--empty & {
+        color: var(--cp-muted);
+        filter: none;
     }
 }
 
