@@ -115,3 +115,154 @@
         cursor: not-allowed;
     }
 }
+
+// --- inline panel ---------------------------------------------------------
+
+.mustry-cp-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--cp-border);
+    border-radius: 8px;
+    background: var(--cp-bg);
+}
+
+.mustry-cp-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    // Give the thumb room to sit centred on the edges without clipping.
+    padding: 2px;
+}
+
+// Saturation/value area: pure-hue base + white(→x) + black(→y) overlays.
+.mustry-cp-sv {
+    position: relative;
+    width: 100%;
+    height: 130px;
+    min-height: 80px;
+    border-radius: 5px;
+    cursor: crosshair;
+    touch-action: none;
+    overflow: hidden;
+}
+
+.mustry-cp-sv-white,
+.mustry-cp-sv-black {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.mustry-cp-sv-white {
+    background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0));
+}
+
+.mustry-cp-sv-black {
+    background: linear-gradient(to top, #000000, rgba(0, 0, 0, 0));
+}
+
+// Hue and alpha are horizontal bars.
+.mustry-cp-hue,
+.mustry-cp-alpha {
+    position: relative;
+    width: 100%;
+    height: 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.mustry-cp-hue {
+    background: linear-gradient(
+        to right,
+        #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
+        #0000ff 67%, #ff00ff 83%, #ff0000 100%
+    );
+}
+
+// Alpha bar: checkerboard base + a transparent→opaque-colour fill on top.
+.mustry-cp-alpha {
+    background-color: var(--cp-check-a);
+    background-image:
+        linear-gradient(45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--cp-check-b) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--cp-check-b) 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+}
+
+.mustry-cp-alpha-fill {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+// Draggable thumb, shared by all three surfaces. Positioned by inline left/top.
+.mustry-cp-thumb {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background: transparent;
+
+    // On the SV area the thumb is placed by both left and top (not centred row).
+    .mustry-cp-sv & {
+        top: auto;
+    }
+
+    &.mustry-cp-thumb--on-light {
+        border-color: #1f2933;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+    }
+}
+
+.mustry-cp-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+// Format segmented toggle (HEX / RGB / HSL).
+.mustry-cp-fmt {
+    display: inline-flex;
+    align-self: flex-start;
+    border: 1px solid var(--cp-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.mustry-cp-fmt-btn {
+    appearance: none;
+    border: none;
+    background: var(--cp-bg);
+    color: var(--cp-muted);
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    cursor: pointer;
+
+    & + & {
+        border-left: 1px solid var(--cp-border);
+    }
+
+    &.is-active {
+        background: var(--cp-accent);
+        color: #ffffff;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+    }
+}
