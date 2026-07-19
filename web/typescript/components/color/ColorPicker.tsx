@@ -378,14 +378,26 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
             <div className={'mustry-cp-control' + (asTrigger ? ' mustry-cp-control--trigger' : '')} {...rootProps}>
                 <button
                     type="button"
-                    className={'mustry-cp-swatch' + (unset ? ' mustry-cp-swatch--empty' : '')}
+                    className={'mustry-cp-swatch' + (unset ? ' mustry-cp-swatch--empty' : '')
+                        + (asTrigger ? ' mustry-cp-swatch--trigger' : '')}
                     style={swatchStyle}
                     disabled={!this.editable()}
                     aria-label={this.displayText() || p.labels.clear}
                     aria-haspopup={asTrigger ? 'dialog' : undefined}
                     aria-expanded={asTrigger ? this.state.open : undefined}
                     onClick={asTrigger ? this.togglePanel : undefined}
-                />
+                >
+                    {asTrigger && (
+                        // An eyedropper glyph over the colour signals the swatch is
+                        // a control that opens the picker (the colour stays the
+                        // background) — the icon nearly everyone recognises for a
+                        // colour picker. Contrast (ink flip) is handled in scss via
+                        // the light class.
+                        <svg className="mustry-cp-swatch-pick" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M17.66 5.41l.92.92-2.69 2.69-.92-.92 2.69-2.69M17.67 3c-.26 0-.51.1-.71.29l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42l-2.34-2.34c-.2-.19-.45-.29-.71-.29M6.92 19L5 17.08l8.06-8.06 1.92 1.92z"/>
+                        </svg>
+                    )}
+                </button>
                 {p.showInput && (
                     <input
                         className={'mustry-cp-input' + (this.state.editValid ? '' : ' mustry-cp-input--invalid')}
@@ -500,10 +512,19 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
             left: this.state.panelLeft,
             width: this.popoverWidth()
         };
+        // Optional backdrop scrim (config.popoverScrim): dims the page so the
+        // panel pops unambiguously even over busy or near-identical content, and
+        // catches outside clicks. Off by default — it's a deliberate choice
+        // because dimming the screen on every pick is a heavier feel.
         return ReactDOM.createPortal(
-            <div className="mustry-cp-popover" ref={this.setPanelEl} style={style} role="dialog">
-                {this.renderBody()}
-            </div>,
+            <React.Fragment>
+                {this.props.props.popoverScrim && (
+                    <div className="mustry-cp-scrim" onMouseDown={() => this.closePanel()} />
+                )}
+                <div className="mustry-cp-popover" ref={this.setPanelEl} style={style} role="dialog">
+                    {this.renderBody()}
+                </div>
+            </React.Fragment>,
             document.body
         );
     }

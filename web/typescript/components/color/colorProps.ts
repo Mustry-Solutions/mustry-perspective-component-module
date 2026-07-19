@@ -14,6 +14,7 @@ export interface ColorPickerProps {
     showSwatches: boolean;
     showRecent: boolean;
     showEyedropper: boolean;
+    popoverScrim: boolean;
     locale: string;
     labels: ColorLabels;
     /** The two-way value (value.color) — any accepted colour string; '' means unset. */
@@ -46,6 +47,7 @@ export function mapColorProps(tree: PropertyTree): ColorPickerProps {
         showSwatches: tree.readBoolean('config.showSwatches', true),
         showRecent: tree.readBoolean('config.showRecent', true),
         showEyedropper: tree.readBoolean('config.showEyedropper', true),
+        popoverScrim: tree.readBoolean('config.popoverScrim', false),
         locale,
         labels: labels as unknown as ColorLabels,
         color: tree.readString('value.color', ''),

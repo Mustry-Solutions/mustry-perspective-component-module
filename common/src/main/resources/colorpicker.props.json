@@ -57,6 +57,11 @@
           "default": true,
           "description": "Show the eyedropper button where the browser supports the EyeDropper API."
         },
+        "popoverScrim": {
+          "type": "boolean",
+          "default": false,
+          "description": "Popover mode: dim the page behind the open panel with a backdrop scrim, so it stands out over busy content (and clicking the scrim closes it). Off by default."
+        },
         "locale": {
           "type": "string",
           "default": "",

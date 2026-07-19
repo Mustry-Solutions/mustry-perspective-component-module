@@ -1,7 +1,13 @@
 // Color Picker — themeable via CSS variables (defaults track the active
 // Perspective theme where a var exists). Override the --cp-* vars from a style
 // class / project stylesheet. The checkerboard behind the swatch reveals alpha.
-.mustry-colorpicker {
+//
+// The tokens are declared on BOTH the component root AND the portaled popover:
+// the popover renders under <body>, OUTSIDE .mustry-colorpicker, so without its
+// own copy it would lose every --cp-* var (accent, bg, borders, checkerboard)
+// and render un-themed (e.g. an invisible white-on-transparent active button).
+.mustry-colorpicker,
+.mustry-cp-popover {
     --cp-accent: var(--callToAction, #0a66c2);
     --cp-text: var(--neutral-90, #1f2933);
     --cp-muted: var(--neutral-60, #7b8794);
@@ -12,7 +18,9 @@
     // Alpha checkerboard tiles (light/mid grey).
     --cp-check-a: #ffffff;
     --cp-check-b: #c9ced6;
+}
 
+.mustry-colorpicker {
     display: inline-flex;
     box-sizing: border-box;
     color: var(--cp-text);
@@ -240,15 +248,39 @@
     gap: 8px;
 }
 
+// Optional full-viewport scrim behind the popover (config.popoverScrim): dims
+// the page so the panel pops over busy content, and catches outside clicks.
+.mustry-cp-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 2147482999; // one below the popover
+    background: rgba(12, 17, 24, 0.32);
+}
+
 // Popover: a floating card portalled to <body>, positioned via inline style.
+// Strong elevation + a crisp ring so it always reads as floating above whatever
+// sits behind it (e.g. another panel), never blending into it.
 .mustry-cp-popover {
     z-index: 2147483000; // above Perspective overlays, like the picker's popover
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
     border-radius: 8px;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.10),
+        0 12px 34px rgba(0, 0, 0, 0.30);
+    // Base styles the component root normally provides to its subtree — the
+    // portal is outside .mustry-colorpicker, so restate them here.
+    color: var(--cp-text);
+    font-size: 13px;
+
+    * {
+        box-sizing: border-box;
+    }
 
     .mustry-cp-body {
-        // The popover card already casts the shadow; keep the border for definition.
+        // The popover card casts the elevation; give the body a slightly heavier
+        // border than the inline panel so the two are distinguishable.
         box-shadow: none;
+        border-width: 1px;
+        border-color: var(--cp-border);
     }
 }
 
@@ -257,6 +289,47 @@
 
     .mustry-cp-swatch {
         cursor: pointer;
+        transition: box-shadow 0.12s ease, border-color 0.12s ease;
+
+        &:hover:not(:disabled) {
+            border-color: var(--cp-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 30%, transparent);
+        }
+
+        &:focus-visible {
+            outline: none;
+            border-color: var(--cp-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 45%, transparent);
+        }
+    }
+}
+
+// The picker glyph over the trigger swatch. It sits ABOVE the colour ::after
+// (z-index) and flips ink for contrast on light colours.
+.mustry-cp-swatch--trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mustry-cp-swatch-pick {
+    position: relative;
+    z-index: 1;
+    width: 15px;
+    height: 15px;
+    color: #ffffff;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.55));
+    pointer-events: none;
+
+    .mustry-cp--light & {
+        color: #1f2933;
+        filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));
+    }
+
+    // No colour yet: show the glyph in muted ink over the empty field.
+    .mustry-cp-swatch--empty & {
+        color: var(--cp-muted);
+        filter: none;
     }
 }
 
