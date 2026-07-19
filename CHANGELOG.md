@@ -8,6 +8,22 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Color Picker (new component)
+Eighth component: `mustrysolutions.input.colorpicker` — a runtime colour
+input, the gap Perspective only fills at design time (the property-editor
+selector) and that the Exchange covers only with copy-in views (#112,
+#2388, #2691), not a compiled component. HSV area + hue/alpha bars
+(continuous drag; hue survives greys/black via a working copy),
+hex/rgb/hsl formats switchable at runtime, optional alpha
+(`#RRGGBBAA`/`rgba()`), inline or popover mode (portalled panel, flips on
+overflow, outside-click/Escape close), a **bound** swatch palette
+(`data.swatches`) + recent-colours row, and an eyedropper (EyeDropper API
+where available). Controlled write-back: `value.color` is the bound truth,
+a pick fires `onChange` `{value, hex, rgb, hsl, alpha}` and mirrors
+read-only `output.*` (hex/rgb/hsl/alpha/isValid); 7-language labels,
+`--cp-*` theming. All colour maths is pure + node-tested. Demo at
+`/color`; 6 e2e tests + 30 pure-logic jest cases.
+
 
 ## [0.2.0] - 2026-07-18
 

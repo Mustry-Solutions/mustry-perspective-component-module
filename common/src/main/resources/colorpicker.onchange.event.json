@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "description": "Fired when the user picks a colour. Persist `value` and rebind value.color to make it survive a reload.",
+  "properties": {
+    "value": {
+      "type": "string",
+      "description": "The canonical colour string in config.format (what was written to value.color)."
+    },
+    "hex": {
+      "type": "string",
+      "description": "The colour as #RRGGBB (or #RRGGBBAA when showAlpha and alpha < 1)."
+    },
+    "rgb": {
+      "type": "object",
+      "description": "Integer RGB channels.",
+      "properties": {
+        "r": { "type": "number" },
+        "g": { "type": "number" },
+        "b": { "type": "number" }
+      }
+    },
+    "hsl": {
+      "type": "object",
+      "description": "Hue (0-360), saturation & lightness (0-100).",
+      "properties": {
+        "h": { "type": "number" },
+        "s": { "type": "number" },
+        "l": { "type": "number" }
+      }
+    },
+    "alpha": {
+      "type": "number",
+      "description": "Opacity 0..1."
+    }
+  }
+}
