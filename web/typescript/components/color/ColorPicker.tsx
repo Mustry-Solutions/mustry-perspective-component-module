@@ -388,14 +388,13 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
                     onClick={asTrigger ? this.togglePanel : undefined}
                 >
                     {asTrigger && (
-                        // A palette glyph over the colour signals the swatch is a
-                        // control that opens the picker (the colour stays the
-                        // background). The paint wells are punched with fill-rule
-                        // evenodd, so they reveal the current colour behind the
-                        // glyph. Contrast (ink flip) is handled in scss via the
-                        // light class.
+                        // An eyedropper glyph over the colour signals the swatch is
+                        // a control that opens the picker (the colour stays the
+                        // background) — the icon nearly everyone recognises for a
+                        // colour picker. Contrast (ink flip) is handled in scss via
+                        // the light class.
                         <svg className="mustry-cp-swatch-pick" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fillRule="evenodd" fill="currentColor" d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm5.5 11c-.83 0-1.5-.67-1.5-1.5S16.67 10 17.5 10s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-3-4C13.67 9 13 8.33 13 7.5S13.67 6 14.5 6s1.5.67 1.5 1.5S15.33 9 14.5 9zM9 7.5C9 8.33 8.33 9 7.5 9S6 8.33 6 7.5 6.67 6 7.5 6 9 6.67 9 7.5zM6.5 13c-.83 0-1.5-.67-1.5-1.5S5.67 10 6.5 10s1.5.67 1.5 1.5S7.33 13 6.5 13z"/>
+                            <path fill="currentColor" d="M17.66 5.41l.92.92-2.69 2.69-.92-.92 2.69-2.69M17.67 3c-.26 0-.51.1-.71.29l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42l-2.34-2.34c-.2-.19-.45-.29-.71-.29M6.92 19L5 17.08l8.06-8.06 1.92 1.92z"/>
                         </svg>
                     )}
                 </button>
@@ -513,10 +512,19 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
             left: this.state.panelLeft,
             width: this.popoverWidth()
         };
+        // Optional backdrop scrim (config.popoverScrim): dims the page so the
+        // panel pops unambiguously even over busy or near-identical content, and
+        // catches outside clicks. Off by default — it's a deliberate choice
+        // because dimming the screen on every pick is a heavier feel.
         return ReactDOM.createPortal(
-            <div className="mustry-cp-popover" ref={this.setPanelEl} style={style} role="dialog">
-                {this.renderBody()}
-            </div>,
+            <React.Fragment>
+                {this.props.props.popoverScrim && (
+                    <div className="mustry-cp-scrim" onMouseDown={() => this.closePanel()} />
+                )}
+                <div className="mustry-cp-popover" ref={this.setPanelEl} style={style} role="dialog">
+                    {this.renderBody()}
+                </div>
+            </React.Fragment>,
             document.body
         );
     }

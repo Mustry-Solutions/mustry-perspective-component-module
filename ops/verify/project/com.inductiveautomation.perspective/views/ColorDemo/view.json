@@ -15,7 +15,7 @@
  "props": {
   "defaultSize": {
    "width": 1000,
-   "height": 600
+   "height": 850
   }
  },
  "root": {
@@ -30,7 +30,7 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Color Picker demo — three presentations of ONE component, all editing view.custom.color. The trigger swatches carry a picker glyph so it's clear they open the panel. Picking on any instance fires onChange (author script persists to custom.color) and the others follow; the preview box + readout are bound to the inline instance's output.* props.",
+     "text": "Color Picker demo — three presentations of ONE component, all editing view.custom.color. Trigger swatches carry an eyedropper glyph so it's clear they open the panel. Picking on any instance fires onChange (author script persists to custom.color) and the others follow; the preview box + readout are bound to the inline instance's output.* props. Each popover has clear space to open into.",
      "style": {
       "fontSize": "13px"
      }
@@ -42,7 +42,236 @@
      "x": 16,
      "y": 10,
      "width": 940,
-     "height": 60
+     "height": 56
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 1 — icon button (popover, showInput false):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap1"
+    },
+    "position": {
+     "x": 16,
+     "y": 72,
+     "width": 300,
+     "height": 18
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "showInput": false,
+      "format": "hex"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v1 button) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "buttonPicker"
+    },
+    "position": {
+     "x": 16,
+     "y": 92,
+     "width": 44,
+     "height": 34
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Version 2 — swatch + code (popover, scrim ON):",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "cap2"
+    },
+    "position": {
+     "x": 320,
+     "y": 72,
+     "width": 360,
+     "height": 18
+    }
+   },
+   {
+    "type": "mustrysolutions.input.colorpicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "popover",
+      "showAlpha": true,
+      "format": "hex",
+      "popoverScrim": true
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.color": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.color"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v2 swatch+code) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "popPicker"
+    },
+    "position": {
+     "x": 320,
+     "y": 92,
+     "width": 224,
+     "height": 40
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "",
+     "style": {
+      "borderRadius": "8px",
+      "border": "1px solid #cbd2d9"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.style.backgroundColor": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../picker.props.output.hex"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "preview"
+    },
+    "position": {
+     "x": 600,
+     "y": 92,
+     "width": 200,
+     "height": 110
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "13px",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../picker.props.output.hex"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\tp = self.getSibling('picker').props.output\n\trgb = p.rgb\n\thsl = p.hsl\n\treturn 'hex: ' + str(value) + '\\nrgb: (' + str(rgb.r) + ', ' + str(rgb.g) + ', ' + str(rgb.b) + ')\\nhsl: (' + str(hsl.h) + ', ' + str(hsl.s) + '%, ' + str(hsl.l) + '%)\\nalpha: ' + str(p.alpha) + '\\nisValid: ' + str(p.isValid)"
+        }
+       ]
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 600,
+     "y": 214,
+     "width": 340,
+     "height": 120
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "color": "#7b8794"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "eventLabel"
+    },
+    "position": {
+     "x": 600,
+     "y": 346,
+     "width": 340,
+     "height": 40
     }
    },
    {
@@ -60,8 +289,8 @@
     },
     "position": {
      "x": 16,
-     "y": 74,
-     "width": 300,
+     "y": 470,
+     "width": 360,
      "height": 18
     }
    },
@@ -105,237 +334,9 @@
     },
     "position": {
      "x": 16,
-     "y": 96,
+     "y": 492,
      "width": 264,
      "height": 330
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "Version 1 — icon button (popover, showInput false):",
-     "style": {
-      "fontSize": "12px",
-      "fontStyle": "italic"
-     }
-    },
-    "meta": {
-     "name": "cap1"
-    },
-    "position": {
-     "x": 340,
-     "y": 74,
-     "width": 300,
-     "height": 30
-    }
-   },
-   {
-    "type": "mustrysolutions.input.colorpicker",
-    "version": 0,
-    "props": {
-     "config": {
-      "mode": "popover",
-      "showAlpha": true,
-      "showInput": false,
-      "format": "hex"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.value.color": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.color"
-       },
-       "bidirectional": true
-      }
-     }
-    },
-    "events": {
-     "component": {
-      "onChange": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v1 button) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
-        }
-       }
-      ]
-     }
-    },
-    "meta": {
-     "name": "buttonPicker"
-    },
-    "position": {
-     "x": 340,
-     "y": 110,
-     "width": 44,
-     "height": 34
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "Version 2 — swatch + hex/rgb/hsl field (popover):",
-     "style": {
-      "fontSize": "12px",
-      "fontStyle": "italic"
-     }
-    },
-    "meta": {
-     "name": "cap2"
-    },
-    "position": {
-     "x": 340,
-     "y": 166,
-     "width": 300,
-     "height": 18
-    }
-   },
-   {
-    "type": "mustrysolutions.input.colorpicker",
-    "version": 0,
-    "props": {
-     "config": {
-      "mode": "popover",
-      "showAlpha": true,
-      "format": "hex"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.value.color": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.color"
-       },
-       "bidirectional": true
-      }
-     }
-    },
-    "events": {
-     "component": {
-      "onChange": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\tself.view.custom.color = event.value\n\tself.view.custom.lastEvent = 'onChange (v2 swatch+code) value=' + str(event.value) + '  alpha=' + str(event.alpha)"
-        }
-       }
-      ]
-     }
-    },
-    "meta": {
-     "name": "popPicker"
-    },
-    "position": {
-     "x": 340,
-     "y": 188,
-     "width": 224,
-     "height": 40
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "",
-     "style": {
-      "borderRadius": "8px",
-      "border": "1px solid #cbd2d9"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.style.backgroundColor": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "../picker.props.output.hex"
-       }
-      }
-     }
-    },
-    "meta": {
-     "name": "preview"
-    },
-    "position": {
-     "x": 636,
-     "y": 96,
-     "width": 220,
-     "height": 120
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "style": {
-      "fontSize": "13px",
-      "fontFamily": "monospace"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.text": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "../picker.props.output.hex"
-       },
-       "transforms": [
-        {
-         "type": "script",
-         "code": "\tp = self.getSibling('picker').props.output\n\trgb = p.rgb\n\thsl = p.hsl\n\treturn 'hex: ' + str(value) + '\\nrgb: (' + str(rgb.r) + ', ' + str(rgb.g) + ', ' + str(rgb.b) + ')\\nhsl: (' + str(hsl.h) + ', ' + str(hsl.s) + '%, ' + str(hsl.l) + '%)\\nalpha: ' + str(p.alpha) + '\\nisValid: ' + str(p.isValid)"
-        }
-       ]
-      }
-     }
-    },
-    "meta": {
-     "name": "readout"
-    },
-    "position": {
-     "x": 636,
-     "y": 228,
-     "width": 340,
-     "height": 120
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "style": {
-      "fontSize": "12px",
-      "color": "#7b8794"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.text": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.lastEvent"
-       }
-      }
-     }
-    },
-    "meta": {
-     "name": "eventLabel"
-    },
-    "position": {
-     "x": 636,
-     "y": 360,
-     "width": 340,
-     "height": 40
     }
    }
   ]

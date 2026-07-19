@@ -81,6 +81,12 @@ test('color: the popover opens, a swatch commits, and Escape closes it', async (
     const panel = page.locator('.mustry-cp-popover');
     await expect(panel).toBeVisible();
 
+    // Regression: the popover is portalled to <body>, outside .mustry-colorpicker.
+    // It must carry its own --cp-* theme vars, or the active format button renders
+    // white-on-transparent (invisible). Assert its background is a real colour.
+    await expect(panel.locator('.mustry-cp-fmt-btn.is-active'))
+        .not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
     // Palette index 3 is #e03131 (red) — pick it from the popover.
     await panel.locator('.mustry-cp-chip').nth(3).click();
     await expect(page.getByText(/onChange \(v1 button\) value=/)).toBeVisible();

@@ -17,9 +17,9 @@ selector) and that the Exchange covers only with copy-in views (#112,
 hex/rgb/hsl formats switchable at runtime, optional alpha
 (`#RRGGBBAA`/`rgba()`), three presentations from `mode` + `showInput`
 (full inline panel / swatch+code popover / compact icon button) whose
-popover triggers carry a contrast-aware picker glyph so they read as a
-control, portalled panel (flips on overflow, outside-click/Escape close),
-a **bound** swatch palette
+popover triggers carry a contrast-aware eyedropper glyph so they read as a
+control, portalled panel (flips on overflow, outside-click/Escape close,
+optional `config.popoverScrim` backdrop), a **bound** swatch palette
 (`data.swatches`) + recent-colours row, and an eyedropper (EyeDropper API
 where available). Controlled write-back: `value.color` is the bound truth,
 a pick fires `onChange` `{value, hex, rgb, hsl, alpha}` and mirrors
