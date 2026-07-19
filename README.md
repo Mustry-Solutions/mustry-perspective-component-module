@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships seven components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor** and a **Code/JSON Editor**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships eight components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor** and a **Dashboard Layout**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
@@ -290,6 +290,25 @@ A CodeMirror-6-based code editor — and read-only viewer — for structured tex
 ### Theming
 
 Override the `--code-*` variables via a style class / project stylesheet: chrome (`--code-accent`, `--code-text`, `--code-muted`, `--code-border`, `--code-bg`, `--code-toolbar-bg`, `--code-gutter-bg`, `--code-active-line`, `--code-error`) and the syntax palette (`--code-property`, `--code-string`, `--code-number`, `--code-keyword`, `--code-comment`, `--code-function`, `--code-type`).
+
+---
+
+## Dashboard Layout
+
+An operator-configurable grid of tiles, each embedding a Perspective view by path. Component id `mustrysolutions.display.dashboard`.
+
+### Features
+
+- **Tiles embed views** — `data.tiles` (`[{ id, title, viewPath, viewParams, x, y, w, h, minW, minH }]`); each tile embeds `viewPath` and sits on a `config.columns`-wide grid (`x`/`w` in columns, `y`/`h` in `config.rowHeight` rows). Any view works — including this module's own components (the demo tiles a synoptic plus a calendar, timeline and data grid).
+- **Operator-arrangeable** (`config.arrangeable`) — drag a tile's **header** to move it, drag its **bottom-right corner** to resize, both snapping to the grid with a live preview. The tile **body stays interactive** (the drag lives on the header), so embedded views keep working.
+- **Controlled write-back** — the operator's arrangement is two-way `state.layout` (`[{ id, x, y, w, h }]`, merged onto `data.tiles` by id — pre-set or bind it to open pre-arranged). On a move/resize the component rewrites `state.layout` and fires **`onLayoutChange`** `{ layout }`; persist it per user/role and rebind. Nothing mutates `data.tiles`.
+- Per-tile size constraints (`minW`/`minH`), `config.gap`, `config.showTitles`, empty state, 7-language labels.
+
+> Adding/removing tiles from an authored catalog is a planned next milestone; today the tile set is authored (`data.tiles`) and the operator arranges it.
+
+### Theming
+
+Override the `--dash-*` variables via a style class / project stylesheet: `--dash-accent`, `--dash-text`, `--dash-muted`, `--dash-border`, `--dash-bg`, `--dash-tile-bg`, `--dash-head-bg`.
 
 ---
 
