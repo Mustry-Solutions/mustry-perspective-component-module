@@ -8,20 +8,6 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
-### Dashboard Layout (new component)
-Eighth component: `mustrysolutions.display.dashboard` — an
-operator-configurable grid of tiles, each embedding a Perspective view
-by path (the top remaining validated gap; no native 8.3 coverage). M0:
-`data.tiles` render on a `config.columns` grid, each embedding its view
-via `<View>` with a unique per-tile mount path (Pan & Zoom's mechanism,
-driven N times in one component). M1: `config.arrangeable` — drag a
-tile's header to move, its corner to resize, snapped with a live
-preview; the arrangement writes back two-way to `state.layout` and fires
-`onLayoutChange`, the drag confined to the header so tile bodies stay
-interactive. Built on the shared `dragGestureController` (fourth
-geometry). Pure grid + gesture math jest-covered; `--dash-*` theming;
-7-language labels; demo at `/dashboard` tiling four views. Tile
-add/remove-from-catalog is a planned next milestone.
 
 ## [0.2.0] - 2026-07-18
 
