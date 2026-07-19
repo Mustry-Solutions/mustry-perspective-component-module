@@ -7,7 +7,9 @@ import { test, expect, openRoute } from './helpers';
 
 test('calendar: dragging a chip commits a move (and does not open the editor)', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
-    const chip = page.locator('.mustry-cal-tg-event', { hasText: 'Pump A service' });
+    // Any draggable timed chip — the evergreen demo seeds events relative to
+    // today, so the exact set varies by weekday; don't hard-code a title.
+    const chip = page.locator('.mustry-cal-tg-event--draggable').first();
     await expect(chip).toBeVisible();
     const before = (await chip.textContent()) ?? '';
 
@@ -32,7 +34,21 @@ test('calendar: dragging a chip commits a move (and does not open the editor)', 
 
 test('calendar: a plain click on a chip opens the editor (click-vs-drag threshold)', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
-    await page.locator('.mustry-cal-tg-event', { hasText: 'Pump A service' }).click();
+    // Click the TALLEST chip: a short event's center falls on an edge-resize
+    // handle (a noop), so pick the one with the most body between its handles.
+    const chips = page.locator('.mustry-cal-tg-event--draggable');
+    // The evergreen events load just after the calendar shell — wait for them
+    // before measuring, else the count is 0 and the fallback chip is a stub.
+    await expect(chips.first()).toBeVisible();
+    const count = await chips.count();
+    let target = chips.first();
+    let maxH = 0;
+    for (let i = 0; i < count; i++) {
+        const box = await chips.nth(i).boundingBox();
+        if (box && box.height > maxH) { maxH = box.height; target = chips.nth(i); }
+    }
+    await target.scrollIntoViewIfNeeded();
+    await target.click();
     await expect(page.locator('.mustry-cal-editor')).toBeVisible();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.locator('.mustry-cal-editor')).toHaveCount(0);
