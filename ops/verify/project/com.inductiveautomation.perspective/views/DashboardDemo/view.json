@@ -1,0 +1,113 @@
+{
+ "custom": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1200,
+   "height": 820
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Dashboard Layout demo (M0) \u2014 a 12-column grid of tiles, each embedding a Perspective view by path (SynopticDemo, and three of this module's own component demos). Arrange mode (drag/resize \u2192 two-way state.layout) lands in M1.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 1160,
+     "height": 44
+    }
+   },
+   {
+    "type": "mustrysolutions.display.dashboard",
+    "version": 0,
+    "props": {
+     "config": {
+      "columns": 12,
+      "rowHeight": 78,
+      "gap": 8,
+      "showTitles": true
+     },
+     "data": {
+      "tiles": [
+       {
+        "id": "synoptic",
+        "title": "Plant floor",
+        "viewPath": "SynopticDemo",
+        "viewParams": [],
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 5,
+        "minW": 3,
+        "minH": 3
+       },
+       {
+        "id": "calendar",
+        "title": "Schedule",
+        "viewPath": "CalendarEmpty",
+        "viewParams": [],
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 5,
+        "minW": 3,
+        "minH": 3
+       },
+       {
+        "id": "timeline",
+        "title": "Timeline",
+        "viewPath": "TimelineEmpty",
+        "viewParams": [],
+        "x": 0,
+        "y": 5,
+        "w": 6,
+        "h": 4,
+        "minW": 3,
+        "minH": 2
+       },
+       {
+        "id": "grid",
+        "title": "Work orders",
+        "viewPath": "GridDemo",
+        "viewParams": [],
+        "x": 6,
+        "y": 5,
+        "w": 6,
+        "h": 4,
+        "minW": 3,
+        "minH": 2
+       }
+      ]
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "dashboard"
+    },
+    "position": {
+     "x": 16,
+     "y": 60,
+     "width": 1160,
+     "height": 740
+    }
+   }
+  ]
+ }
+}
