@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships seven components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor** and a **Code/JSON Editor**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships eight components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor** and a **Color Picker**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
@@ -290,6 +290,26 @@ A CodeMirror-6-based code editor — and read-only viewer — for structured tex
 ### Theming
 
 Override the `--code-*` variables via a style class / project stylesheet: chrome (`--code-accent`, `--code-text`, `--code-muted`, `--code-border`, `--code-bg`, `--code-toolbar-bg`, `--code-gutter-bg`, `--code-active-line`, `--code-error`) and the syntax palette (`--code-property`, `--code-string`, `--code-number`, `--code-keyword`, `--code-comment`, `--code-function`, `--code-type`).
+
+
+---
+
+## Color Picker
+
+A colour input for the runtime — the piece Perspective has only at design time (the property-editor colour selector). Component id `mustrysolutions.input.colorpicker`.
+
+### Features
+
+- **HSV selection** — a saturation/value area plus hue and (optional) alpha bars, dragged continuously; the working colour keeps its hue while passing through greys and black.
+- **Formats** (`config.format`) — `hex` / `rgb` / `hsl`, switchable at runtime from a segmented toggle. Parses any `#hex` (3/4/6/8-digit), `rgb()/rgba()` or `hsl()/hsla()` string typed into the field; `config.showAlpha` adds the alpha channel (`#RRGGBBAA` / `rgba()`).
+- **Inline or popover** (`config.mode`) — render the panel in place, or a compact swatch/field trigger that opens the panel in a popover (portalled, flips on overflow, closes on outside-click / Escape).
+- **Swatches & recent** — a **bound** palette (`data.swatches`) of quick picks plus a per-session recent-colours row; `config.showSwatches` / `config.showRecent`.
+- **Eyedropper** (`config.showEyedropper`) — sample any on-screen pixel where the browser supports the [EyeDropper API](https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper) (Chromium); hidden otherwise.
+- **Controlled write-back** — `value.color` is the bound truth; a pick fires **`onChange`** `{value, hex, rgb, hsl, alpha}` and the author's script persists it (same model as the editors). Read-only `output.*` mirror the bound colour: `output.hex`, `output.rgb`, `output.hsl`, `output.alpha`, `output.isValid`. Labels in the same 7 languages.
+
+### Theming
+
+Override the `--cp-*` variables via a style class / project stylesheet: `--cp-accent`, `--cp-text`, `--cp-muted`, `--cp-border`, `--cp-bg`, `--cp-field-bg`, `--cp-error`, and the alpha-checkerboard tiles `--cp-check-a` / `--cp-check-b`.
 
 
 ---

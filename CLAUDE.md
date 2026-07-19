@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Ignition 8.3 Perspective module: seven custom components (date/time range
+Ignition 8.3 Perspective module: eight custom components (date/time range
 picker, calendar/scheduler, resource timeline, data grid, pan & zoom view, rich
-text editor, code/JSON editor). React 16 class components + TypeScript (full
-strict) on the web side; Java scopes for gateway/designer registration. See
-README.md for the component reference.
+text editor, code/JSON editor, colour picker). React 16 class components +
+TypeScript (full strict) on the web side; Java scopes for gateway/designer
+registration. See README.md for the component reference.
 
 ## Source-control workflow — READ FIRST
 
