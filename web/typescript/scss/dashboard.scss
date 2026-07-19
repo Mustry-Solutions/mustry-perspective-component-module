@@ -39,6 +39,7 @@
 }
 
 .mustry-dash-tile {
+    position: relative;   // positioning context for the absolute resize handle
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -88,4 +89,42 @@
     color: var(--dash-muted);
     font-size: 12px;
     font-style: italic;
+}
+
+// --- arrange mode ----------------------------------------------------------
+.mustry-dash-tile--arrangeable {
+    .mustry-dash-tile-head--handle {
+        cursor: move;
+        user-select: none;
+        touch-action: none;   // the header owns the drag; don't let touch scroll steal it
+    }
+}
+
+.mustry-dash-grip {
+    color: var(--dash-muted);
+    font-size: 12px;
+    line-height: 1;
+}
+
+.mustry-dash-tile--dragging {
+    z-index: 5;
+    outline: 2px solid var(--dash-accent);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    // The embedded view must not eat pointer events while its tile is moving.
+    .mustry-dash-tile-body {
+        pointer-events: none;
+    }
+}
+
+.mustry-dash-resize {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    touch-action: none;
+    // A subtle corner grip.
+    background:
+        linear-gradient(135deg, transparent 50%, var(--dash-border) 50%, var(--dash-border) 60%, transparent 60%, transparent 72%, var(--dash-border) 72%, var(--dash-border) 82%, transparent 82%);
 }

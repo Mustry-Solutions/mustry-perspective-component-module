@@ -1,10 +1,12 @@
 {
- "custom": {},
+ "custom": {
+  "savedLayout": []
+ },
  "params": {},
  "props": {
   "defaultSize": {
    "width": 1200,
-   "height": 820
+   "height": 840
   }
  },
  "root": {
@@ -19,7 +21,7 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Dashboard Layout demo (M0) \u2014 a 12-column grid of tiles, each embedding a Perspective view by path (SynopticDemo, and three of this module's own component demos). Arrange mode (drag/resize \u2192 two-way state.layout) lands in M1.",
+     "text": "Dashboard Layout demo (M1) \u2014 a 12-column grid of tiles, each embedding a Perspective view. ARRANGE is on: drag a tile's header to move it, drag the bottom-right corner to resize. Each change writes back to state.layout and fires onLayoutChange (persisted below). Tile bodies stay interactive.",
      "style": {
       "fontSize": "13px"
      }
@@ -42,7 +44,8 @@
       "columns": 12,
       "rowHeight": 78,
       "gap": 8,
-      "showTitles": true
+      "showTitles": true,
+      "arrangeable": true
      },
      "data": {
       "tiles": [
@@ -106,6 +109,39 @@
      "y": 60,
      "width": 1160,
      "height": 740
+    },
+    "events": {
+     "component": {
+      "onLayoutChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Persist the operator's arrangement; rebind state.layout to keep it.\n\tself.view.custom.savedLayout = event.layout\n\tself.getSibling('layoutCount').props.text = 'onLayoutChange: ' + str(len(event.layout)) + ' tiles'"
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "onLayoutChange: (drag a tile)",
+     "style": {
+      "fontSize": "12px",
+      "fontStyle": "italic"
+     }
+    },
+    "meta": {
+     "name": "layoutCount"
+    },
+    "position": {
+     "x": 16,
+     "y": 802,
+     "width": 600,
+     "height": 18
     }
    }
   ]

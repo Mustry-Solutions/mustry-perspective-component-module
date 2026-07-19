@@ -31,3 +31,35 @@ test('dashboard: tiles are placed per their grid geometry', async ({ page }) => 
     expect(Math.abs(sBox.y - cBox.y)).toBeLessThan(4);
     expect(sBox.width).toBeGreaterThan(cBox.width);   // 8 cols vs 4
 });
+
+test('dashboard: dragging a tile header moves it and fires onLayoutChange', async ({ page }) => {
+    await openRoute(page, '/dashboard', '.mustry-dash');
+    const tile = page.locator('.mustry-dash-tile[data-tile="grid"]');
+    const before = (await tile.boundingBox())!;
+    const head = page.locator('.mustry-dash-tile[data-tile="grid"] .mustry-dash-tile-head');
+
+    const hb = (await head.boundingBox())!;
+    await page.mouse.move(hb.x + 30, hb.y + hb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(hb.x + 30 - 100, hb.y + hb.height / 2, { steps: 6 });
+    await page.mouse.move(hb.x + 30 - 200, hb.y + hb.height / 2, { steps: 6 });
+    await page.mouse.up();
+
+    await expect.poll(async () => (await tile.boundingBox())!.x).toBeLessThan(before.x - 40);
+    await expect(page.getByText(/onLayoutChange: \d+ tiles/)).toBeVisible();
+});
+
+test('dashboard: the corner handle resizes a tile', async ({ page }) => {
+    await openRoute(page, '/dashboard', '.mustry-dash');
+    const tile = page.locator('.mustry-dash-tile[data-tile="calendar"]');
+    const before = (await tile.boundingBox())!;
+    const handle = page.locator('.mustry-dash-tile[data-tile="calendar"] .mustry-dash-resize');
+
+    const gb = (await handle.boundingBox())!;
+    await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(gb.x + gb.width / 2, gb.y + 120, { steps: 8 });
+    await page.mouse.up();
+
+    await expect.poll(async () => (await tile.boundingBox())!.height).toBeGreaterThan(before.height + 40);
+});
