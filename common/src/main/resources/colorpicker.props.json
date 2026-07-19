@@ -1,0 +1,170 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Behaviour & appearance.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "inline",
+            "popover"
+          ],
+          "default": "popover",
+          "description": "'popover' = a swatch/field trigger that opens the picker panel. 'inline' = the panel is always shown."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Master interactivity switch."
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "hex",
+            "rgb",
+            "hsl"
+          ],
+          "default": "hex",
+          "description": "The text format for the input field, output.* mirror, and the value written back to value.color."
+        },
+        "showAlpha": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the alpha (opacity) control and include the alpha channel in formatted values (e.g. #RRGGBBAA / rgba())."
+        },
+        "showInput": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the editable text field (type a hex/rgb/hsl string to set the colour)."
+        },
+        "showSwatches": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the bound swatch palette (data.swatches) as quick picks."
+        },
+        "showRecent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show recently picked colours."
+        },
+        "showEyedropper": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the eyedropper button where the browser supports the EyeDropper API."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "Default UI-text language (en/fr/de/es/nl/it/pt), matched on the primary subtag. Empty follows the session."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
+          "properties": {
+            "hex": { "type": "string", "description": "HEX format toggle label / input placeholder." },
+            "rgb": { "type": "string", "description": "RGB format toggle label." },
+            "hsl": { "type": "string", "description": "HSL format toggle label." },
+            "alpha": { "type": "string", "description": "Alpha slider aria-label." },
+            "hue": { "type": "string", "description": "Hue slider aria-label." },
+            "saturation": { "type": "string", "description": "Saturation/value area aria-label." },
+            "eyedropper": { "type": "string", "description": "Eyedropper button tooltip." },
+            "swatches": { "type": "string", "description": "Swatch palette heading." },
+            "recent": { "type": "string", "description": "Recent-colours heading." },
+            "invalid": { "type": "string", "description": "Shown when typed text isn't a colour." },
+            "clear": { "type": "string", "description": "Clear / reset tooltip." }
+          }
+        }
+      }
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way value.",
+      "properties": {
+        "color": {
+          "type": "string",
+          "default": "#0a66c2",
+          "description": "The current colour — the source of truth. Accepts any #hex, rgb()/rgba() or hsl()/hsla() string; the picker writes it back in config.format. Empty means 'unset'."
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bound content.",
+      "properties": {
+        "swatches": {
+          "type": "array",
+          "default": [
+            "#0a66c2",
+            "#12b886",
+            "#f59f00",
+            "#e03131",
+            "#7048e8",
+            "#495057",
+            "#000000",
+            "#ffffff"
+          ],
+          "description": "Palette of quick-pick colours (colour strings). Bind to a tag or query for a project-wide palette.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values (mirror the bound colour).",
+      "properties": {
+        "hex": {
+          "type": "string",
+          "default": "",
+          "description": "The colour as #RRGGBB (or #RRGGBBAA when showAlpha and alpha < 1)."
+        },
+        "rgb": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Integer RGB channels.",
+          "properties": {
+            "r": { "type": "number", "default": 0 },
+            "g": { "type": "number", "default": 0 },
+            "b": { "type": "number", "default": 0 }
+          }
+        },
+        "hsl": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Hue (0-360), saturation & lightness (0-100), rounded.",
+          "properties": {
+            "h": { "type": "number", "default": 0 },
+            "s": { "type": "number", "default": 0 },
+            "l": { "type": "number", "default": 0 }
+          }
+        },
+        "alpha": {
+          "type": "number",
+          "default": 1,
+          "description": "Opacity 0..1."
+        },
+        "isValid": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether value.color parsed as a colour."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}

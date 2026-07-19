@@ -1,0 +1,117 @@
+// Color Picker — themeable via CSS variables (defaults track the active
+// Perspective theme where a var exists). Override the --cp-* vars from a style
+// class / project stylesheet. The checkerboard behind the swatch reveals alpha.
+.mustry-colorpicker {
+    --cp-accent: var(--callToAction, #0a66c2);
+    --cp-text: var(--neutral-90, #1f2933);
+    --cp-muted: var(--neutral-60, #7b8794);
+    --cp-border: var(--neutral-30, #cbd2d9);
+    --cp-bg: var(--neutral-10, #ffffff);
+    --cp-field-bg: var(--neutral-20, #f5f7fa);
+    --cp-error: var(--error, #d32f2f);
+    // Alpha checkerboard tiles (light/mid grey).
+    --cp-check-a: #ffffff;
+    --cp-check-b: #c9ced6;
+
+    display: inline-flex;
+    box-sizing: border-box;
+    color: var(--cp-text);
+    font-size: 13px;
+
+    &.mustry-cp--inline {
+        display: inline-block;
+    }
+
+    &.mustry-cp--disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+.mustry-cp-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    padding: 3px;
+    border: 1px solid var(--cp-border);
+    border-radius: 6px;
+    background: var(--cp-bg);
+}
+
+// The colour preview. A checkerboard is the base layer; the swatch colour paints
+// on top as a ::after overlay (colour set via the --cp-swatch-color custom
+// property from React), so partial alpha reads through as translucency.
+.mustry-cp-swatch {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    border: 1px solid var(--cp-border);
+    position: relative;
+    cursor: pointer;
+    // Checkerboard base (white + grey).
+    background-color: var(--cp-check-a);
+    background-image:
+        linear-gradient(45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--cp-check-b) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--cp-check-b) 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+
+    // The colour itself, over the checker (honours alpha via #rrggbbaa).
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background-color: var(--cp-swatch-color, transparent);
+    }
+
+    &.mustry-cp-swatch--empty {
+        background: var(--cp-field-bg);
+        // A diagonal "no value" slash; no colour overlay.
+        background-image: linear-gradient(
+            to top right,
+            transparent calc(50% - 1px), var(--cp-error) calc(50% - 1px),
+            var(--cp-error) calc(50% + 1px), transparent calc(50% + 1px)
+        );
+        &::after { content: none; }
+    }
+}
+
+.mustry-cp-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--cp-text);
+    font: inherit;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding: 2px 4px;
+
+    &::placeholder {
+        color: var(--cp-muted);
+    }
+
+    &:focus {
+        background: var(--cp-field-bg);
+        border-radius: 4px;
+    }
+
+    &.mustry-cp-input--invalid {
+        color: var(--cp-error);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+    }
+}

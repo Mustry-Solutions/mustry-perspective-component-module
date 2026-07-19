@@ -24,5 +24,6 @@ public final class Components {
         PanZoomView.DESCRIPTOR,
         ResourceTimeline.DESCRIPTOR,
         RichTextEditor.DESCRIPTOR,
-        CodeEditor.DESCRIPTOR);
+        CodeEditor.DESCRIPTOR,
+        ColorPicker.DESCRIPTOR);
 }
