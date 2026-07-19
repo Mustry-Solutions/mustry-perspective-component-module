@@ -14,7 +14,7 @@
  "params": {},
  "props": {
   "defaultSize": {
-   "width": 1000,
+   "width": 1040,
    "height": 850
   }
  },
@@ -30,7 +30,7 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Color Picker demo — three presentations of ONE component, all editing view.custom.color. Trigger swatches carry an eyedropper glyph so it's clear they open the panel. Picking on any instance fires onChange (author script persists to custom.color) and the others follow; the preview box + readout are bound to the inline instance's output.* props. Each popover has clear space to open into.",
+     "text": "Color Picker demo — three presentations of ONE component, all editing view.custom.color. Trigger swatches carry an eyedropper glyph so it's clear they open the panel. Picking on any instance fires onChange (author script persists to custom.color) and the others follow.",
      "style": {
       "fontSize": "13px"
      }
@@ -41,15 +41,15 @@
     "position": {
      "x": 16,
      "y": 10,
-     "width": 940,
-     "height": 56
+     "width": 980,
+     "height": 44
     }
    },
    {
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Version 1 — icon button (popover, showInput false):",
+     "text": "Version 1 — icon button. Its popover opens directly OVER the preview + readout below — proof the panel is opaque and fully themed, not just avoiding the overlap:",
      "style": {
       "fontSize": "12px",
       "fontStyle": "italic"
@@ -60,9 +60,9 @@
     },
     "position": {
      "x": 16,
-     "y": 72,
-     "width": 300,
-     "height": 18
+     "y": 60,
+     "width": 380,
+     "height": 44
     }
    },
    {
@@ -106,9 +106,76 @@
     },
     "position": {
      "x": 16,
-     "y": 92,
+     "y": 108,
      "width": 44,
      "height": 34
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "",
+     "style": {
+      "borderRadius": "8px",
+      "border": "1px solid #cbd2d9"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.style.backgroundColor": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../picker.props.output.hex"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "preview"
+    },
+    "position": {
+     "x": 16,
+     "y": 150,
+     "width": 236,
+     "height": 96
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "13px",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../picker.props.output.hex"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\tp = self.getSibling('picker').props.output\n\trgb = p.rgb\n\thsl = p.hsl\n\treturn 'hex: ' + str(value) + '\\nrgb: (' + str(rgb.r) + ', ' + str(rgb.g) + ', ' + str(rgb.b) + ')\\nhsl: (' + str(hsl.h) + ', ' + str(hsl.s) + '%, ' + str(hsl.l) + '%)\\nalpha: ' + str(p.alpha) + '\\nisValid: ' + str(p.isValid)"
+        }
+       ]
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 16,
+     "y": 256,
+     "width": 236,
+     "height": 120
     }
    },
    {
@@ -125,8 +192,8 @@
      "name": "cap2"
     },
     "position": {
-     "x": 320,
-     "y": 72,
+     "x": 440,
+     "y": 60,
      "width": 360,
      "height": 18
     }
@@ -171,77 +238,10 @@
      "name": "popPicker"
     },
     "position": {
-     "x": 320,
-     "y": 92,
+     "x": 440,
+     "y": 82,
      "width": 224,
      "height": 40
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "text": "",
-     "style": {
-      "borderRadius": "8px",
-      "border": "1px solid #cbd2d9"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.style.backgroundColor": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "../picker.props.output.hex"
-       }
-      }
-     }
-    },
-    "meta": {
-     "name": "preview"
-    },
-    "position": {
-     "x": 600,
-     "y": 92,
-     "width": 200,
-     "height": 110
-    }
-   },
-   {
-    "type": "ia.display.label",
-    "version": 0,
-    "props": {
-     "style": {
-      "fontSize": "13px",
-      "fontFamily": "monospace"
-     }
-    },
-    "custom": {},
-    "propConfig": {
-     "props.text": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "../picker.props.output.hex"
-       },
-       "transforms": [
-        {
-         "type": "script",
-         "code": "\tp = self.getSibling('picker').props.output\n\trgb = p.rgb\n\thsl = p.hsl\n\treturn 'hex: ' + str(value) + '\\nrgb: (' + str(rgb.r) + ', ' + str(rgb.g) + ', ' + str(rgb.b) + ')\\nhsl: (' + str(hsl.h) + ', ' + str(hsl.s) + '%, ' + str(hsl.l) + '%)\\nalpha: ' + str(p.alpha) + '\\nisValid: ' + str(p.isValid)"
-        }
-       ]
-      }
-     }
-    },
-    "meta": {
-     "name": "readout"
-    },
-    "position": {
-     "x": 600,
-     "y": 214,
-     "width": 340,
-     "height": 120
     }
    },
    {
@@ -268,10 +268,10 @@
      "name": "eventLabel"
     },
     "position": {
-     "x": 600,
-     "y": 346,
-     "width": 340,
-     "height": 40
+     "x": 760,
+     "y": 108,
+     "width": 260,
+     "height": 60
     }
    },
    {
