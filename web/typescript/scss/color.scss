@@ -230,7 +230,114 @@
 .mustry-cp-footer {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+}
+
+.mustry-cp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+// Popover: a floating card portalled to <body>, positioned via inline style.
+.mustry-cp-popover {
+    z-index: 2147483000; // above Perspective overlays, like the picker's popover
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+    border-radius: 8px;
+
+    .mustry-cp-body {
+        // The popover card already casts the shadow; keep the border for definition.
+        box-shadow: none;
+    }
+}
+
+.mustry-cp-control--trigger {
+    cursor: pointer;
+
+    .mustry-cp-swatch {
+        cursor: pointer;
+    }
+}
+
+// Eyedropper icon button.
+.mustry-cp-eyedropper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--cp-border);
+    border-radius: 6px;
+    background: var(--cp-bg);
+    color: var(--cp-muted);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        color: var(--cp-text);
+        border-color: var(--cp-accent);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}
+
+// Swatch / recent chip rows.
+.mustry-cp-swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mustry-cp-swatches-label {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cp-muted);
+}
+
+.mustry-cp-swatches-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.mustry-cp-chip {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 4px;
+    border: 1px solid var(--cp-border);
+    cursor: pointer;
+    // Checkerboard base (so translucent chips read as translucent).
+    background-color: var(--cp-check-a);
+    background-image:
+        linear-gradient(45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--cp-check-b) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--cp-check-b) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--cp-check-b) 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background-color: var(--cp-chip-color, transparent);
+    }
+
+    &:hover:not(:disabled) {
+        transform: scale(1.12);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+    }
 }
 
 // Format segmented toggle (HEX / RGB / HSL).
