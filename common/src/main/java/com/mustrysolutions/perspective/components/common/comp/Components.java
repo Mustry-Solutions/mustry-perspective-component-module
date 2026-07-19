@@ -24,6 +24,5 @@ public final class Components {
         PanZoomView.DESCRIPTOR,
         ResourceTimeline.DESCRIPTOR,
         RichTextEditor.DESCRIPTOR,
-        CodeEditor.DESCRIPTOR,
-        Dashboard.DESCRIPTOR);
+        CodeEditor.DESCRIPTOR);
 }

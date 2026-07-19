@@ -16,4 +16,3 @@ export * from './labels/grid';
 export * from './labels/panzoom';
 export * from './labels/richtext';
 export * from './labels/code';
-export * from './labels/dashboard';

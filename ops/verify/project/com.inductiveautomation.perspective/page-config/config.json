@@ -51,10 +51,6 @@
     "/code": {
       "viewPath": "CodeDemo",
       "viewParams": {}
-    },
-    "/dashboard": {
-      "viewPath": "DashboardDemo",
-      "viewParams": {}
     }
   },
   "shared": {},
