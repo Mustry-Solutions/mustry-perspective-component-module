@@ -25,5 +25,6 @@ public final class Components {
         ResourceTimeline.DESCRIPTOR,
         RichTextEditor.DESCRIPTOR,
         CodeEditor.DESCRIPTOR,
-        ColorPicker.DESCRIPTOR);
+        ColorPicker.DESCRIPTOR,
+        Keyboard.DESCRIPTOR);
 }

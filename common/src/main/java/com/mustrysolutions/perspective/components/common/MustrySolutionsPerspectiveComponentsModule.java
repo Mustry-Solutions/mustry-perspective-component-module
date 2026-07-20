@@ -139,6 +139,14 @@ public class MustrySolutionsPerspectiveComponentsModule {
             g.drawLine(2, 6, 14, 6);                              // header rule
             g.drawLine(5, 1, 5, 4); g.drawLine(11, 1, 11, 4);     // binder rings
             g.fillRect(4, 9, 8, 3);                               // the range
+        } else if (k.contains("keyboard")) {
+            // A keypad: a rounded frame with a 3x3 grid of dots.
+            g.drawRoundRect(2, 2, 12, 12, 2, 2);
+            for (int gx = 0; gx < 3; gx++) {
+                for (int gy = 0; gy < 3; gy++) {
+                    g.fillRect(4 + gx * 3, 4 + gy * 3, 1, 1);
+                }
+            }
         } else if (k.contains("colorpicker")) {
             // A droplet over a small swatch (colour sampling hint).
             g.drawOval(4, 5, 8, 8);                               // droplet body

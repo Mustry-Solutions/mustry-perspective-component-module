@@ -1,0 +1,164 @@
+{
+ "custom": {
+  "setpoint": 0,
+  "lastEvent": ""
+ },
+ "propConfig": {
+  "custom.setpoint": {
+   "persistent": true
+  },
+  "custom.lastEvent": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 900,
+   "height": 460
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "On-Screen Keyboard demo — a numeric keypad EDITING view.custom.setpoint (range 0-100 psi, 1 decimal). The display is a div, not an input, so tapping it does NOT raise the OS keyboard. Type a value and press Enter; onCommit persists it. The readout is bound to the keypad's output.* props. Try a value over 100 to see clamping + the out-of-range badge.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 860,
+     "height": 60
+    }
+   },
+   {
+    "type": "mustrysolutions.input.keyboard",
+    "version": 0,
+    "props": {
+     "config": {
+      "mode": "inline",
+      "decimals": 1,
+      "enforceRange": true,
+      "min": 0,
+      "max": 100,
+      "units": "psi"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.value": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.setpoint"
+       },
+       "bidirectional": true
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onCommit": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Controlled round-trip: persist the committed value so the binding rebinds value.value.\n\tself.view.custom.setpoint = event.value\n\tself.view.custom.lastEvent = 'onCommit value=' + str(event.value) + '  text=' + str(event.text) + '  isValid=' + str(event.isValid)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "keypad"
+    },
+    "position": {
+     "x": 16,
+     "y": 80,
+     "width": 240,
+     "height": 320
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "14px",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "../keypad.props.output.value"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'output.value: ' + str(value) + '\\noutput.text:  ' + str(p.text) + '\\noutput.isValid: ' + str(p.isValid) + '\\noutput.draft: \"' + str(p.draft) + '\"'"
+        }
+       ]
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 296,
+     "y": 90,
+     "width": 380,
+     "height": 120
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "color": "#7b8794"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "eventLabel"
+    },
+    "position": {
+     "x": 296,
+     "y": 220,
+     "width": 500,
+     "height": 22
+    }
+   }
+  ]
+ }
+}

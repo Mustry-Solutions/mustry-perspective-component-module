@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when the user presses Enter. Persist `value` and rebind value.value.",
+  "properties": {
+    "value": {
+      "type": "number",
+      "description": "The committed number (clamped to [min,max] when config.enforceRange)."
+    },
+    "text": {
+      "type": "string",
+      "description": "The value formatted with decimals + units."
+    },
+    "isValid": {
+      "type": "boolean",
+      "description": "Whether the value is within [min,max] (always true when enforceRange is false)."
+    }
+  }
+}
