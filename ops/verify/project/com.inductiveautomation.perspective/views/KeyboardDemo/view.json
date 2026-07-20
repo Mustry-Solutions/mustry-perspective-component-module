@@ -136,6 +136,37 @@
     },
     "meta": { "name": "eventLabel" },
     "position": { "x": 300, "y": 418, "width": 560, "height": 22 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "text": "Popover mode — tap the field to open the QWERTY keyboard (Enter commits + closes; outside-click discards):", "style": { "fontSize": "12px", "fontStyle": "italic" } },
+    "meta": { "name": "capPop" },
+    "position": { "x": 16, "y": 452, "width": 620, "height": 18 }
+   },
+   {
+    "type": "mustrysolutions.input.keyboard",
+    "version": 0,
+    "props": {
+     "config": { "layout": "text", "mode": "popover", "placeholder": "Tap to enter a name…" }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.value.text": {
+      "binding": { "type": "property", "config": { "path": "view.custom.name" }, "bidirectional": true }
+     }
+    },
+    "events": {
+     "component": {
+      "onCommit": [
+       { "type": "script", "scope": "G", "config": {
+        "script": "\tself.view.custom.name = event.value\n\tself.view.custom.lastEvent = 'popover onCommit value=\"' + str(event.value) + '\"'"
+       } }
+      ]
+     }
+    },
+    "meta": { "name": "popkbd" },
+    "position": { "x": 16, "y": 474, "width": 320, "height": 40 }
    }
   ]
  }

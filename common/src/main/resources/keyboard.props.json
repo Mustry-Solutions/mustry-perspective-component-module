@@ -74,7 +74,12 @@
         "showValue": {
           "type": "boolean",
           "default": true,
-          "description": "Show the value display above the keypad."
+          "description": "Show the value display above the keys."
+        },
+        "placeholder": {
+          "type": "string",
+          "default": "Tap to enter…",
+          "description": "popover mode: text shown on the trigger field when the value is empty."
         },
         "liveUpdate": {
           "type": "boolean",

@@ -91,8 +91,10 @@
 .mustry-kbd-row {
     display: flex;
     gap: 6px;
-    flex: 1 1 0;
-    min-height: 0;
+    flex: 1 1 auto;
+    // Never collapse below one touch target — matters when the keyboard is
+    // content-height (popover) rather than filling a fixed-height component.
+    min-height: 44px;
 }
 
 .mustry-kbd-key {
@@ -160,4 +162,81 @@
             background: color-mix(in srgb, #000 16%, var(--kbd-accent));
         }
     }
+}
+
+// --- popover mode: a field trigger that opens the keyboard ------------------
+
+.mustry-kbd-trigger-root {
+    // Inherits the --kbd-* tokens so the trigger is themeable too.
+    --kbd-accent: var(--callToAction, #0a66c2);
+    --kbd-text: var(--neutral-90, #1f2933);
+    --kbd-muted: var(--neutral-60, #7b8794);
+    --kbd-border: var(--neutral-30, #cbd2d9);
+    --kbd-bg: var(--neutral-10, #ffffff);
+
+    display: inline-flex;
+    width: 100%;
+    box-sizing: border-box;
+
+    &.mustry-kbd--disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+}
+
+.mustry-kbd-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    border: 1px solid var(--kbd-border);
+    border-radius: 6px;
+    background: var(--kbd-bg);
+    color: var(--kbd-text);
+    font-size: 15px;
+    cursor: pointer;
+    transition: box-shadow 0.12s ease, border-color 0.12s ease;
+
+    &:hover {
+        border-color: var(--kbd-accent);
+    }
+
+    &:focus-visible {
+        outline: none;
+        border-color: var(--kbd-accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--kbd-accent) 35%, transparent);
+    }
+
+    &--empty .mustry-kbd-trigger-text {
+        color: var(--kbd-muted);
+    }
+}
+
+.mustry-kbd-trigger-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mustry-kbd-trigger-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--kbd-muted);
+}
+
+// The portalled keyboard panel: strong elevation so it reads as floating.
+// It carries .mustry-keyboard for theming; override the fill-height so it
+// sizes to its content instead of the viewport.
+.mustry-kbd-popover {
+    height: auto;
+    z-index: 2147483000;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.10),
+        0 14px 40px rgba(0, 0, 0, 0.30);
 }

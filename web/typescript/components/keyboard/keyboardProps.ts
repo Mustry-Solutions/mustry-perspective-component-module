@@ -23,6 +23,7 @@ export interface KeyboardProps {
     // shared
     showValue: boolean;
     liveUpdate: boolean;
+    placeholder: string;
     locale: string;
     labels: KeyboardLabels;
     /** The two-way numeric value (value.value) — used by the 'numpad' layout. */
@@ -57,6 +58,7 @@ export function mapKeyboardProps(tree: PropertyTree): KeyboardProps {
         maxLength: Math.max(0, tree.readNumber('config.maxLength', 0)),
         showValue: tree.readBoolean('config.showValue', true),
         liveUpdate: tree.readBoolean('config.liveUpdate', false),
+        placeholder: tree.readString('config.placeholder', ''),
         locale,
         labels: labels as unknown as KeyboardLabels,
         value: tree.readNumber('value.value', 0),

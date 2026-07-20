@@ -73,3 +73,23 @@ test('text: the ?123 key switches to the symbols layer', async ({ page }) => {
     await expect(txtKey(page, '1')).toBeVisible();
     await expect(txtKey(page, 'ABC')).toBeVisible();   // switch back is available
 });
+
+test('popover: tapping the field opens the keyboard; Enter commits and closes', async ({ page }) => {
+    await openRoute(page, '/keyboard', '.mustry-keyboard');
+    await page.locator('.mustry-kbd-trigger').click();
+    const panel = page.locator('.mustry-kbd-popover');
+    await expect(panel).toBeVisible();
+    // The portalled panel keeps its theme vars (the color-picker lesson): the
+    // accent Enter key must have a real, non-transparent background.
+    await expect(panel.locator('.mustry-kbd-key--enter'))
+        .not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+    await panel.getByRole('button', { name: 'a', exact: true }).click();
+    await panel.getByRole('button', { name: 'b', exact: true }).click();
+    await panel.getByRole('button', { name: 'Enter', exact: true }).click();
+
+    // Enter commits value.text and closes the popover.
+    await expect(panel).toHaveCount(0);
+    await expect(page.locator('.mustry-kbd-trigger .mustry-kbd-trigger-text')).toContainText('ab');
+    await expect(page.getByText(/popover onCommit value="[^"]*ab"/)).toBeVisible();
+});
