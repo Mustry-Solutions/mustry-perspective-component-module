@@ -25,7 +25,7 @@ public class Keyboard {
     /** The descriptor registered with Perspective's component registries (see {@link Components#ALL}). */
     public static final ComponentDescriptor DESCRIPTOR = descriptor(
         COMPONENT_ID, "On-Screen Keyboard", "onScreenKeyboard",
-        "A touch numeric keypad that never raises the OS keyboard (its display is a div, not an input). Min/max, decimals, units; controlled write-back on Enter.",
+        "A touch keyboard that never raises the OS keyboard (its display is a div, not an input). Numeric keypad (min/max, decimals, units) or QWERTY text/email/url layouts; controlled write-back on Enter.",
         "/keyboard.props.json",
         List.of(
             event("onCommit",

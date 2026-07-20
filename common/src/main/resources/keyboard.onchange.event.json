@@ -7,8 +7,8 @@
       "description": "The in-progress edit string."
     },
     "value": {
-      "type": "number",
-      "description": "The draft parsed to a number, or null until it parses to a complete number."
+      "type": ["number", "string", "null"],
+      "description": "numpad: the draft parsed to a number (null until complete). text: the draft string."
     }
   }
 }

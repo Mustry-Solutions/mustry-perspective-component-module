@@ -1,163 +1,141 @@
 {
  "custom": {
   "setpoint": 0,
+  "name": "",
   "lastEvent": ""
  },
  "propConfig": {
-  "custom.setpoint": {
-   "persistent": true
-  },
-  "custom.lastEvent": {
-   "persistent": true
-  }
+  "custom.setpoint": { "persistent": true },
+  "custom.name": { "persistent": true },
+  "custom.lastEvent": { "persistent": true }
  },
  "params": {},
  "props": {
   "defaultSize": {
    "width": 900,
-   "height": 460
+   "height": 560
   }
  },
  "root": {
   "type": "ia.container.coord",
   "version": 0,
   "props": {},
-  "meta": {
-   "name": "root"
-  },
+  "meta": { "name": "root" },
   "children": [
    {
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "On-Screen Keyboard demo — a numeric keypad EDITING view.custom.setpoint (range 0-100 psi, 1 decimal). The display is a div, not an input, so tapping it does NOT raise the OS keyboard. Type a value and press Enter; onCommit persists it. The readout is bound to the keypad's output.* props. Try a value over 100 to see clamping + the out-of-range badge.",
-     "style": {
-      "fontSize": "13px"
-     }
+     "text": "On-Screen Keyboard demo — the value display is a div, not an input, so tapping it never raises the OS keyboard. LEFT: numeric keypad editing value.value (0-100 psi, clamped). RIGHT: QWERTY text keyboard editing value.text (shift + ?123 symbols). Both persist via onCommit; readouts are bound to output.*.",
+     "style": { "fontSize": "13px" }
     },
-    "meta": {
-     "name": "help"
-    },
-    "position": {
-     "x": 16,
-     "y": 10,
-     "width": 860,
-     "height": 60
-    }
+    "meta": { "name": "help" },
+    "position": { "x": 16, "y": 10, "width": 860, "height": 44 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "text": "Numeric keypad — value.value (number):", "style": { "fontSize": "12px", "fontStyle": "italic" } },
+    "meta": { "name": "capNum" },
+    "position": { "x": 16, "y": 60, "width": 260, "height": 18 }
    },
    {
     "type": "mustrysolutions.input.keyboard",
     "version": 0,
     "props": {
-     "config": {
-      "mode": "inline",
-      "decimals": 1,
-      "enforceRange": true,
-      "min": 0,
-      "max": 100,
-      "units": "psi"
-     }
+     "config": { "layout": "numpad", "decimals": 1, "enforceRange": true, "min": 0, "max": 100, "units": "psi" }
     },
     "custom": {},
     "propConfig": {
      "props.value.value": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.setpoint"
-       },
-       "bidirectional": true
-      }
+      "binding": { "type": "property", "config": { "path": "view.custom.setpoint" }, "bidirectional": true }
      }
     },
     "events": {
      "component": {
       "onCommit": [
-       {
-        "type": "script",
-        "scope": "G",
-        "config": {
-         "script": "\t# Controlled round-trip: persist the committed value so the binding rebinds value.value.\n\tself.view.custom.setpoint = event.value\n\tself.view.custom.lastEvent = 'onCommit value=' + str(event.value) + '  text=' + str(event.text) + '  isValid=' + str(event.isValid)"
-        }
-       }
+       { "type": "script", "scope": "G", "config": {
+        "script": "\tself.view.custom.setpoint = event.value\n\tself.view.custom.lastEvent = 'numpad onCommit value=' + str(event.value) + '  text=' + str(event.text) + '  isValid=' + str(event.isValid)"
+       } }
       ]
      }
     },
-    "meta": {
-     "name": "keypad"
-    },
-    "position": {
-     "x": 16,
-     "y": 80,
-     "width": 240,
-     "height": 320
-    }
+    "meta": { "name": "keypad" },
+    "position": { "x": 16, "y": 80, "width": 240, "height": 320 }
    },
    {
     "type": "ia.display.label",
     "version": 0,
-    "props": {
-     "style": {
-      "fontSize": "14px",
-      "fontFamily": "monospace"
-     }
-    },
+    "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
     "custom": {},
     "propConfig": {
      "props.text": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "../keypad.props.output.value"
-       },
-       "transforms": [
-        {
-         "type": "script",
-         "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'output.value: ' + str(value) + '\\noutput.text:  ' + str(p.text) + '\\noutput.isValid: ' + str(p.isValid) + '\\noutput.draft: \"' + str(p.draft) + '\"'"
-        }
-       ]
-      }
+      "binding": { "type": "property", "config": { "path": "../keypad.props.output.value" }, "transforms": [
+       { "type": "script", "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'value: ' + str(value) + '  text: ' + str(p.text) + '  isValid: ' + str(p.isValid)" }
+      ] }
      }
     },
-    "meta": {
-     "name": "readout"
-    },
-    "position": {
-     "x": 296,
-     "y": 90,
-     "width": 380,
-     "height": 120
-    }
+    "meta": { "name": "numReadout" },
+    "position": { "x": 16, "y": 408, "width": 260, "height": 40 }
    },
    {
     "type": "ia.display.label",
     "version": 0,
+    "props": { "text": "Text keyboard — value.text (string):", "style": { "fontSize": "12px", "fontStyle": "italic" } },
+    "meta": { "name": "capText" },
+    "position": { "x": 300, "y": 60, "width": 360, "height": 18 }
+   },
+   {
+    "type": "mustrysolutions.input.keyboard",
+    "version": 0,
     "props": {
-     "style": {
-      "fontSize": "12px",
-      "color": "#7b8794"
-     }
+     "config": { "layout": "text" }
     },
     "custom": {},
     "propConfig": {
-     "props.text": {
-      "binding": {
-       "type": "property",
-       "config": {
-        "path": "view.custom.lastEvent"
-       }
-      }
+     "props.value.text": {
+      "binding": { "type": "property", "config": { "path": "view.custom.name" }, "bidirectional": true }
      }
     },
-    "meta": {
-     "name": "eventLabel"
+    "events": {
+     "component": {
+      "onCommit": [
+       { "type": "script", "scope": "G", "config": {
+        "script": "\tself.view.custom.name = event.value\n\tself.view.custom.lastEvent = 'text onCommit value=\"' + str(event.value) + '\"  length=' + str(len(str(event.value)))"
+       } }
+      ]
+     }
     },
-    "position": {
-     "x": 296,
-     "y": 220,
-     "width": 500,
-     "height": 22
-    }
+    "meta": { "name": "textkbd" },
+    "position": { "x": 300, "y": 80, "width": 500, "height": 300 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": { "type": "property", "config": { "path": "../textkbd.props.output.text" }, "transforms": [
+       { "type": "script", "code": "\tp = self.getSibling('textkbd').props.output\n\treturn 'text: \"' + str(value) + '\"  length: ' + str(p.length)" }
+      ] }
+     }
+    },
+    "meta": { "name": "textReadout" },
+    "position": { "x": 300, "y": 388, "width": 500, "height": 24 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "style": { "fontSize": "12px", "color": "#7b8794" } },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": { "type": "property", "config": { "path": "view.custom.lastEvent" } }
+     }
+    },
+    "meta": { "name": "eventLabel" },
+    "position": { "x": 300, "y": 418, "width": 560, "height": 22 }
    }
   ]
  }

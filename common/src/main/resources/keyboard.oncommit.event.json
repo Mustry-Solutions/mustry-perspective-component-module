@@ -3,12 +3,12 @@
   "description": "Fired when the user presses Enter. Persist `value` and rebind value.value.",
   "properties": {
     "value": {
-      "type": "number",
-      "description": "The committed number (clamped to [min,max] when config.enforceRange)."
+      "type": ["number", "string"],
+      "description": "The committed value — a number for the numpad layout (clamped to [min,max] when config.enforceRange), a string for the text layouts."
     },
     "text": {
       "type": "string",
-      "description": "The value formatted with decimals + units."
+      "description": "numpad: the number formatted with decimals + units. text: the committed string."
     },
     "isValid": {
       "type": "boolean",

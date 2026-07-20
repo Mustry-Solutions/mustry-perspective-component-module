@@ -58,6 +58,13 @@
     }
 }
 
+// Text layouts read left-to-right; numeric reads right-aligned (calculator).
+.mustry-kbd-display--left {
+    justify-content: flex-start;
+    font-family: system-ui, sans-serif;
+    font-size: 18px;
+}
+
 .mustry-kbd-value {
     white-space: nowrap;
     overflow: hidden;
@@ -124,6 +131,18 @@
 
     &--util {
         font-size: 15px;
+        color: var(--kbd-muted);
+
+        &.is-active {
+            // Shift engaged.
+            background: var(--kbd-accent);
+            color: var(--kbd-accent-text);
+            border-color: var(--kbd-accent);
+        }
+    }
+
+    &--space {
+        font-size: 13px;
         color: var(--kbd-muted);
     }
 

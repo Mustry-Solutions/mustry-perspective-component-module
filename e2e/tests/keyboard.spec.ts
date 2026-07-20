@@ -1,64 +1,75 @@
 import { test, expect, openRoute } from './helpers';
 
-// The KeyboardDemo view: a numeric keypad editing view.custom.setpoint (0-100
-// psi, 1 decimal, enforceRange). onCommit persists; a readout is bound to the
-// keypad's output.* props. The value display is a <div>, not an <input>.
+// The KeyboardDemo view: a numeric keypad (value.value, 0-100 psi, 1 decimal,
+// enforceRange) and a QWERTY text keyboard (value.text). onCommit persists;
+// readouts are bound to each keyboard's output.*. Both displays are <div>s.
+type Page = import('@playwright/test').Page;
+const numKey = (p: Page, name: string) => p.locator('.mustry-kbd--numpad').getByRole('button', { name, exact: true });
+const numValue = (p: Page) => p.locator('.mustry-kbd--numpad .mustry-kbd-value');
+const txtKey = (p: Page, name: string) => p.locator('.mustry-kbd--text').getByRole('button', { name, exact: true });
+const txtValue = (p: Page) => p.locator('.mustry-kbd--text .mustry-kbd-value');
 
-const key = (page: import('@playwright/test').Page, name: string) =>
-    page.locator('.mustry-keyboard').getByRole('button', { name, exact: true });
-
-test('keyboard: keypad, display and keys render', async ({ page }) => {
+test('keyboard: both layouts render; the displays are divs, not inputs', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
-    await expect(page.locator('.mustry-kbd-display')).toBeVisible();
-    // The value surface is a div (role=textbox), never an <input>.
+    await expect(page.locator('.mustry-keyboard')).toHaveCount(2);
     await expect(page.locator('.mustry-keyboard input')).toHaveCount(0);
-    await expect(key(page, '7')).toBeVisible();
-    await expect(key(page, 'Enter')).toBeVisible();
+    await expect(numKey(page, '7')).toBeVisible();
+    await expect(txtKey(page, 'q')).toBeVisible();
 });
 
-test('keyboard: typing builds a draft and Enter commits (write-back + onCommit)', async ({ page }) => {
+test('numpad: typing builds a draft and Enter commits (write-back + onCommit)', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
     for (const k of ['4', '2', '.', '5']) {
-        await key(page, k).click();
+        await numKey(page, k).click();
     }
-    // While editing, the display shows the draft + units.
-    await expect(page.locator('.mustry-kbd-value')).toHaveText('42.5 psi');
-
-    await key(page, 'Enter').click();
-    // The readout is bound to output.*, proving the write-back reached the store.
-    await expect(page.getByText('output.value: 42.5')).toBeVisible();
-    await expect(page.getByText(/onCommit value=42.5/)).toBeVisible();
+    await expect(numValue(page)).toHaveText('42.5 psi');
+    await numKey(page, 'Enter').click();
+    await expect(page.getByText('value: 42.5')).toBeVisible();
+    await expect(page.getByText(/numpad onCommit value=42.5/)).toBeVisible();
 });
 
-test('keyboard: over-max shows the out-of-range badge, Enter clamps', async ({ page }) => {
+test('numpad: over-max shows the out-of-range badge, Enter clamps', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
     for (const k of ['1', '5', '0']) {
-        await key(page, k).click();
+        await numKey(page, k).click();
     }
-    // 150 > max 100 while typing — warn before commit.
     await expect(page.getByText('Out of range')).toBeVisible();
-
-    await key(page, 'Enter').click();
-    // enforceRange clamps the committed value to 100.
-    await expect(page.getByText('output.value: 100')).toBeVisible();
-    await expect(page.getByText('output.isValid: True')).toBeVisible();
+    await numKey(page, 'Enter').click();
+    await expect(page.getByText('value: 100')).toBeVisible();
 });
 
-test('keyboard: decimal places are capped at config.decimals', async ({ page }) => {
+test('numpad: decimal places are capped at config.decimals', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
     for (const k of ['1', '.', '2', '3']) {
-        await key(page, k).click();
+        await numKey(page, k).click();
     }
-    // decimals: 1 — the trailing '3' is ignored.
-    await expect(page.locator('.mustry-kbd-value')).toHaveText('1.2 psi');
+    await expect(numValue(page)).toHaveText('1.2 psi');
 });
 
-test('keyboard: Clear empties the draft', async ({ page }) => {
+test('numpad: Clear empties the draft', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
     for (const k of ['9', '9']) {
-        await key(page, k).click();
+        await numKey(page, k).click();
     }
-    await expect(page.locator('.mustry-kbd-value')).toHaveText('99 psi');
-    await key(page, 'Clear').click();
-    await expect(page.locator('.mustry-kbd-value')).toHaveText('psi');
+    await expect(numValue(page)).toHaveText('99 psi');
+    await numKey(page, 'Clear').click();
+    await expect(numValue(page)).toHaveText('psi');
+});
+
+test('text: shift types one upper-case letter then resets, Enter commits value.text', async ({ page }) => {
+    await openRoute(page, '/keyboard', '.mustry-keyboard');
+    await txtKey(page, '⇧').click();          // shift on
+    await txtKey(page, 'H').click();          // upper-case H (shift consumed)
+    await txtKey(page, 'i').click();          // back to lower-case
+    await expect(txtValue(page)).toHaveText('Hi');
+    await txtKey(page, 'Enter').click();
+    await expect(page.getByText('text: "Hi"')).toBeVisible();
+    await expect(page.getByText(/text onCommit value="Hi"/)).toBeVisible();
+});
+
+test('text: the ?123 key switches to the symbols layer', async ({ page }) => {
+    await openRoute(page, '/keyboard', '.mustry-keyboard');
+    await txtKey(page, '?123').click();
+    await expect(txtKey(page, '1')).toBeVisible();
+    await expect(txtKey(page, 'ABC')).toBeVisible();   // switch back is available
 });

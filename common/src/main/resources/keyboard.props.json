@@ -8,6 +8,17 @@
       "additionalProperties": false,
       "description": "Behaviour & appearance.",
       "properties": {
+        "layout": {
+          "type": "string",
+          "enum": [
+            "numpad",
+            "text",
+            "email",
+            "url"
+          ],
+          "default": "numpad",
+          "description": "'numpad' = numeric keypad editing value.value (number). 'text'/'email'/'url' = QWERTY keyboard editing value.text (string); email/url add convenience keys (@, .com, /)."
+        },
         "mode": {
           "type": "string",
           "enum": [
@@ -52,7 +63,13 @@
         "units": {
           "type": "string",
           "default": "",
-          "description": "Engineering-unit suffix shown after the value (e.g. 'psi', '°C')."
+          "description": "numpad: engineering-unit suffix shown after the value (e.g. 'psi', '°C')."
+        },
+        "maxLength": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "text layouts: maximum number of characters (0 = unlimited)."
         },
         "showValue": {
           "type": "boolean",
@@ -86,12 +103,17 @@
     "value": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Two-way value.",
+      "description": "Two-way value. Bind `value` for the numpad layout, `text` for the text layouts.",
       "properties": {
         "value": {
           "type": "number",
           "default": 0,
-          "description": "The committed number — the source of truth. The keypad edits a local draft and writes this back on Enter (persist it from onCommit to survive a reload)."
+          "description": "numpad: the committed number — the source of truth. The keypad edits a local draft and writes this back on Enter (persist it from onCommit to survive a reload)."
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "description": "text layouts: the committed string — the source of truth. The keyboard writes this back on Enter."
         }
       }
     },
@@ -113,7 +135,12 @@
         "isValid": {
           "type": "boolean",
           "default": true,
-          "description": "Whether the value is within [min, max] (always true when enforceRange is false)."
+          "description": "numpad: within [min,max] (true when enforceRange is false). text: within maxLength."
+        },
+        "length": {
+          "type": "number",
+          "default": 0,
+          "description": "Character length of the committed value."
         },
         "draft": {
           "type": "string",
