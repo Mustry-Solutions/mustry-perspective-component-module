@@ -17,7 +17,7 @@ import { KeyboardKeys } from './KeyboardKeys';
 import { KeyboardProps, mapKeyboardProps } from './keyboardProps';
 
 // Must match Keyboard.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.input.keyboard';
+export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.keyboard';
 
 const POPOVER_MAX_NUM = 260;
 const POPOVER_MAX_TEXT = 540;

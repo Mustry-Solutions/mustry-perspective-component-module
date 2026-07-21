@@ -18,7 +18,7 @@ theming. Suggested libraries noted per item.
 
 | Component | What people want | Native today | Lib |
 |---|---|---|---|
-| ~~**Calendar / Scheduler**~~ **✅ BUILT** (`mustrysolutions.display.calendar`, custom — no FullCalendar) | Month/week/day/agenda calendar with event create/drag/resize; shift & maintenance schedules. Ideas portal: **44 votes, "Planned"** (IA surveyed users in 2023). | None (Equipment Schedule is timeline/MES-only) | ~~FullCalendar~~ custom |
+| ~~**Calendar / Scheduler**~~ **✅ BUILT** (`mustrysolutions.ingots.display.calendar`, custom — no FullCalendar) | Month/week/day/agenda calendar with event create/drag/resize; shift & maintenance schedules. Ideas portal: **44 votes, "Planned"** (IA surveyed users in 2023). | None (Equipment Schedule is timeline/MES-only) | ~~FullCalendar~~ custom |
 | **Editable data grid** | Excel-like: cell editing, validation, per-column edit permissions, write-back to DB, frozen columns, grouping. Largest raw thread volume. | Partial — Table edits but hits limits fast | AG-Grid (community) |
 | **Rich text / WYSIWYG editor** | Edit *formatted* text for SOPs/notes/work orders. "Markdown styles but can't edit; text input can't style." Zero native coverage. | None (Markdown is display-only) | TipTap / Quill |
 | **Touchscreen on-screen keyboard / numpad** | On-screen entry for Workstation HMIs; persistent 2019→2024 pain. | None native | (custom) |
@@ -27,7 +27,7 @@ theming. Suggested libraries noted per item.
 
 | Component | What people want | Native today | Lib |
 |---|---|---|---|
-| ~~**Gantt / production timeline**~~ **✅ largely covered** by the Resource Timeline (`mustrysolutions.display.resourcetimeline`, custom scheduling board — no dependency arrows, which stay a separate product) | First-class interactive Gantt (draggable bars). Today people fake it with the XY chart. | Poor (XY-chart hack) | ~~FullCalendar / DHTMLX~~ custom |
+| ~~**Gantt / production timeline**~~ **✅ largely covered** by the Resource Timeline (`mustrysolutions.ingots.display.resourcetimeline`, custom scheduling board — no dependency arrows, which stay a separate product) | First-class interactive Gantt (draggable bars). Today people fake it with the XY chart. | Poor (XY-chart hack) | ~~FullCalendar / DHTMLX~~ custom |
 | **Advanced charts** | Sankey, Waterfall, Pareto, funnel. Third parties (Nivo, ApexCharts modules) already fill this. | Heatmap yes; these no | ECharts |
 | **Flow / node-graph editor** | React-Flow-style interactive node graphs / flow charts. Explicitly asked in 8.3 EA. | None (8.3 Drawing Editor is static SVG) | React Flow |
 | **Fancy gauges / KPI widgets** | Circular/bar gauges, circular sliders. Commercially validated (multiple paid/Exchange modules). | Partial (basic gauges) | ECharts gauge |
@@ -62,7 +62,7 @@ The **editable data grid** ([`data-grid-plan.md`](data-grid-plan.md)) is
 built and shipping (M0–M3 core; custom build — the AG-Grid note below is
 historical: its row grouping is Enterprise-only anyway).
 
-The **Pan & Zoom View** (`mustrysolutions.display.panzoomview`) — Sam's own
+The **Pan & Zoom View** (`mustrysolutions.ingots.display.panzoomview`) — Sam's own
 idea, demand-validated (Canny "zoom and pan for large view", the 2019 pan/zoom
 container thread, the Exchange "Pan Zoom Frame" hack) — is built and shipping
 (M0–M2): embed any view by path + params and navigate it like a map, with

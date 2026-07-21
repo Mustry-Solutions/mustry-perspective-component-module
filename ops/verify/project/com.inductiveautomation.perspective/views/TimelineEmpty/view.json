@@ -18,7 +18,7 @@
         "position": { "x": 16, "y": 10, "width": 1060, "height": 40 }
       },
       {
-        "type": "mustrysolutions.display.resourcetimeline",
+        "type": "mustrysolutions.ingots.display.resourcetimeline",
         "version": 0,
         "props": {
           "config": {

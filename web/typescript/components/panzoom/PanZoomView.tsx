@@ -20,7 +20,7 @@ import { PanZoomGestureController } from './panZoomGestureController';
 import { PanZoomProps, mapPanZoomProps } from './panZoomProps';
 
 // Must match PanZoomView.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.display.panzoomview';
+export const COMPONENT_TYPE = 'mustrysolutions.ingots.display.panzoomview';
 
 interface PanZoomState {
     viewportW: number;

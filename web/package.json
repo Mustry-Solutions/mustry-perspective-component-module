@@ -1,7 +1,7 @@
 {
-    "name": "mustry-perspective-components-web",
+    "name": "mustry-ingots-web",
     "version": "0.0.1",
-    "description": "Front-end (React/TypeScript) for the Mustry Solutions Perspective components.",
+    "description": "Front-end (React/TypeScript) for the Mustry Solutions Ingots components.",
     "private": true,
     "scripts": {
         "build": "webpack --mode production",

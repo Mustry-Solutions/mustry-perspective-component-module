@@ -1,15 +1,15 @@
-# Mustry Solutions Perspective Components
+# Mustry Solutions Ingots
 
 An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships nine components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker** and an **On-Screen Keyboard**.
 
-- **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
+- **Module ID:** `com.mustrysolutions.ingots`
 - **Palette category:** `Mustry Solutions`
 
 ---
 
 ## Date/Time Range Picker
 
-A Booking.com-style start/end date-time range picker. Component id `mustrysolutions.input.datetimerangepicker`.
+A Booking.com-style start/end date-time range picker. Component id `mustrysolutions.ingots.input.datetimerangepicker`.
 
 ### Features
 
@@ -73,7 +73,7 @@ Variables: `--dtrp-accent`, `--dtrp-accent-text`, `--dtrp-range`, `--dtrp-text`,
 
 ## Calendar / Scheduler
 
-A month / week / day / list calendar bound to a list of events. Component id `mustrysolutions.display.calendar`. Built from scratch (no FullCalendar / no third-party licence).
+A month / week / day / list calendar bound to a list of events. Component id `mustrysolutions.ingots.display.calendar`. Built from scratch (no FullCalendar / no third-party licence).
 
 ### Features
 
@@ -169,7 +169,7 @@ Override the `--cal-*` CSS variables via a style class / project stylesheet: `--
 
 ## Resource Timeline
 
-A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.display.resourcetimeline`.
+A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.ingots.display.resourcetimeline`.
 
 ### Features
 
@@ -199,7 +199,7 @@ Override the `--tml-*` variables via a style class / project stylesheet: `--tml-
 
 ## Data Grid
 
-An editable virtualized data grid. Component id `mustrysolutions.input.datagrid`.
+An editable virtualized data grid. Component id `mustrysolutions.ingots.input.datagrid`.
 
 ### Features
 
@@ -229,7 +229,7 @@ Override the `--dg-*` variables via a style class / project stylesheet: `--dg-ac
 
 ## Pan & Zoom View
 
-Embeds any Perspective view and navigates it like a map. Component id `mustrysolutions.display.panzoomview`.
+Embeds any Perspective view and navigates it like a map. Component id `mustrysolutions.ingots.display.panzoomview`.
 
 ### Features
 
@@ -250,7 +250,7 @@ Override the `--pz-*` variables via a style class / project stylesheet: `--pz-ac
 
 ## Rich Text Editor
 
-True WYSIWYG editing — and safe read-only display — of rich text: operator instructions, SOPs, shift notes, work orders. Component id `mustrysolutions.input.richtexteditor`. Built on TipTap core (vanilla, no React binding).
+True WYSIWYG editing — and safe read-only display — of rich text: operator instructions, SOPs, shift notes, work orders. Component id `mustrysolutions.ingots.input.richtexteditor`. Built on TipTap core (vanilla, no React binding).
 
 ### Features
 
@@ -277,7 +277,7 @@ Override the `--rte-*` variables via a style class / project stylesheet: `--rte-
 
 ## Code / JSON Editor
 
-A CodeMirror-6-based code editor — and read-only viewer — for structured text: JSON config blobs, SQL, Python snippets, XML. Component id `mustrysolutions.input.codeeditor`.
+A CodeMirror-6-based code editor — and read-only viewer — for structured text: JSON config blobs, SQL, Python snippets, XML. Component id `mustrysolutions.ingots.input.codeeditor`.
 
 ### Features
 
@@ -296,7 +296,7 @@ Override the `--code-*` variables via a style class / project stylesheet: chrome
 
 ## Color Picker
 
-A colour input for the runtime — the piece Perspective has only at design time (the property-editor colour selector). Component id `mustrysolutions.input.colorpicker`.
+A colour input for the runtime — the piece Perspective has only at design time (the property-editor colour selector). Component id `mustrysolutions.ingots.input.colorpicker`.
 
 ### Features
 
@@ -316,7 +316,7 @@ Override the `--cp-*` variables via a style class / project stylesheet: `--cp-ac
 
 ## On-Screen Keyboard
 
-A touch keyboard for the runtime — the piece Perspective leaves to the OS keyboard (Windows TabTip, Linux Squeekboard), which fails in Perspective Browser/mobile and causes the "double-keyboard" problem. Component id `mustrysolutions.input.keyboard`.
+A touch keyboard for the runtime — the piece Perspective leaves to the OS keyboard (Windows TabTip, Linux Squeekboard), which fails in Perspective Browser/mobile and causes the "double-keyboard" problem. Component id `mustrysolutions.ingots.input.keyboard`.
 
 ### Features
 

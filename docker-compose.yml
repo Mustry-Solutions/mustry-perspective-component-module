@@ -1,4 +1,4 @@
-# Local development gateway for testing the Mustry Solutions Perspective Components module.
+# Local development gateway for testing the Mustry Solutions Ingots module.
 #
 # Runs a disposable Ignition 8.3.6 gateway in Docker. DEVELOPMENT ONLY: it accepts
 # the EULA automatically and uses a fixed weak admin password. Do NOT use in production.

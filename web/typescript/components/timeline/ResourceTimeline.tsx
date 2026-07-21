@@ -36,7 +36,7 @@ import { TimelineLegend } from './TimelineLegend';
 import { RowLayouts, TimelineTrack } from './TimelineTrack';
 
 // Must match ResourceTimeline.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.display.resourcetimeline';
+export const COMPONENT_TYPE = 'mustrysolutions.ingots.display.resourcetimeline';
 
 const LABEL_COL_PX = 160;
 const AXIS_PX = 42;        // two 21px tick rows (matches .mustry-tml-axis-row)

@@ -1,7 +1,7 @@
-package com.mustrysolutions.perspective.components.common.comp;
+package com.mustrysolutions.ingots.common.comp;
 
-import static com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule.descriptor;
-import static com.mustrysolutions.perspective.components.common.MustrySolutionsPerspectiveComponentsModule.event;
+import static com.mustrysolutions.ingots.common.MustrySolutionsIngotsModule.descriptor;
+import static com.mustrysolutions.ingots.common.MustrySolutionsIngotsModule.event;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
 public class Keyboard {
 
     /** Unique component id — must match the front-end ComponentMeta.getComponentType(). */
-    public static final String COMPONENT_ID = "mustrysolutions.input.keyboard";
+    public static final String COMPONENT_ID = "mustrysolutions.ingots.input.keyboard";
 
     /** The descriptor registered with Perspective's component registries (see {@link Components#ALL}). */
     public static final ComponentDescriptor DESCRIPTOR = descriptor(

@@ -1,5 +1,5 @@
 {
-    "name": "mustry-perspective-components-e2e",
+    "name": "mustry-ingots-e2e",
     "description": "Playwright smoke tests that render every component in a live Perspective session (see ops/e2e.sh).",
     "private": true,
     "scripts": {

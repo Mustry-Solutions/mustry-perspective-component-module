@@ -42,7 +42,7 @@
     }
    },
    {
-    "type": "mustrysolutions.input.richtexteditor",
+    "type": "mustrysolutions.ingots.input.richtexteditor",
     "version": 0,
     "props": {
      "config": {
@@ -121,7 +121,7 @@
     }
    },
    {
-    "type": "mustrysolutions.input.richtexteditor",
+    "type": "mustrysolutions.ingots.input.richtexteditor",
     "version": 0,
     "props": {
      "config": {
