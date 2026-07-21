@@ -68,7 +68,7 @@ import { TimeGrid } from './TimeGrid';
 import { ListView } from './ListView';
 
 // Must match Calendar.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.display.calendar';
+export const COMPONENT_TYPE = 'mustrysolutions.ingots.display.calendar';
 
 
 export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarState> {

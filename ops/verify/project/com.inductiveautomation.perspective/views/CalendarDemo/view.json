@@ -35,7 +35,7 @@
         }
       },
       {
-        "type": "mustrysolutions.display.calendar",
+        "type": "mustrysolutions.ingots.display.calendar",
         "version": 0,
         "props": {
           "config": {

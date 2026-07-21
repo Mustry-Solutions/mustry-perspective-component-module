@@ -23,7 +23,7 @@ echo
 warn "ONE-TIME STEP on a fresh gateway: finish commissioning in the browser."
 echo "   1. Open ${GATEWAY_URL}"
 echo "   2. Step through the commissioning wizard. When it lists"
-echo "      'Mustry Solutions Perspective Components', ACCEPT its certificate and"
+echo "      'Mustry Solutions Ingots', ACCEPT its certificate and"
 echo "      license (8.3 accepts third-party modules right in the wizard)."
 echo "   3. Finish the wizard / start the gateway."
 echo "   4. Log in as ${ADMIN_USER} / ${ADMIN_PASS} and open Config -> Modules to"

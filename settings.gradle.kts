@@ -7,7 +7,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "mustry-solutions-perspective-components"
+rootProject.name = "mustry-ingots"
 
 dependencyResolutionManagement {
     repositories {

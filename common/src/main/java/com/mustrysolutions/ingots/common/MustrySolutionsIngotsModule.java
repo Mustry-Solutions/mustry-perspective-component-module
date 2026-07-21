@@ -1,4 +1,4 @@
-package com.mustrysolutions.perspective.components.common;
+package com.mustrysolutions.ingots.common;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -20,11 +20,11 @@ import com.inductiveautomation.perspective.common.api.ComponentEventDescriptor;
  * Central location for module- and component-wide constants shared across the
  * gateway, designer, and common scopes.
  */
-public class MustrySolutionsPerspectiveComponentsModule {
+public class MustrySolutionsIngotsModule {
 
     /** Module id — must match {@code id} in the root build.gradle.kts. */
     public static final String MODULE_ID =
-        "com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents";
+        "com.mustrysolutions.ingots";
 
     /** Mount alias: the module's web resources are served at {@code /res/<URL_ALIAS>/}. */
     public static final String URL_ALIAS = "mustry-components";
@@ -53,7 +53,7 @@ public class MustrySolutionsPerspectiveComponentsModule {
     /** Parse a JSON schema bundled in the common resources (props or event payloads). */
     public static JsonSchema schema(String resourcePath) {
         return JsonSchema.parse(
-            MustrySolutionsPerspectiveComponentsModule.class.getResourceAsStream(resourcePath));
+            MustrySolutionsIngotsModule.class.getResourceAsStream(resourcePath));
     }
 
     /** A component event whose payload schema lives in the common resources. */

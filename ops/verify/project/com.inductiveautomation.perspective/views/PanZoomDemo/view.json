@@ -113,7 +113,7 @@
         }
       },
       {
-        "type": "mustrysolutions.display.panzoomview",
+        "type": "mustrysolutions.ingots.display.panzoomview",
         "version": 0,
         "props": {
           "config": {

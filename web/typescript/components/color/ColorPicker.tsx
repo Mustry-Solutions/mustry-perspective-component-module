@@ -18,7 +18,7 @@ import { ColorPanel } from './ColorPanel';
 import { ColorPickerProps, mapColorProps } from './colorProps';
 
 // Must match ColorPicker.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.input.colorpicker';
+export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.colorpicker';
 
 const BLACK: Color = { rgb: { r: 0, g: 0, b: 0 }, alpha: 1 };
 const FORMATS: ColorFormat[] = ['hex', 'rgb', 'hsl'];

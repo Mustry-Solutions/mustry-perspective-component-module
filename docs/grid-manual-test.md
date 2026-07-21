@@ -1,6 +1,6 @@
 # Data Grid — manual test checklist
 
-Hands-on checklist for the Data Grid (`mustrysolutions.input.datagrid`). The pure
+Hands-on checklist for the Data Grid (`mustrysolutions.ingots.input.datagrid`). The pure
 logic (virtualization window, column layout, sort/filter, validation, paste plan,
 aggregates) is unit-tested; this covers rendering, interaction and the write-back
 contract. The committed demo at `/grid` (verify project) has everything enabled

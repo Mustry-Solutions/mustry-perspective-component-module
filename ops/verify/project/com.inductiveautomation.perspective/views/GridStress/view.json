@@ -35,7 +35,7 @@
         }
       },
       {
-        "type": "mustrysolutions.input.datagrid",
+        "type": "mustrysolutions.ingots.input.datagrid",
         "version": 0,
         "props": {
           "config": {

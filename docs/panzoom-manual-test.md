@@ -1,6 +1,6 @@
 # Pan & Zoom View — manual test checklist
 
-Hands-on checklist for the Pan & Zoom View (`mustrysolutions.display.panzoomview`).
+Hands-on checklist for the Pan & Zoom View (`mustrysolutions.ingots.display.panzoomview`).
 The geometry (fit, clamping, zoom-at-point, pinch, fly interpolation) is
 unit-tested in `panZoomLogic.ts`; this covers rendering, gestures and the
 two-way state contract. The committed demo at `/panzoom` (verify project)

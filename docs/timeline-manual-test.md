@@ -1,6 +1,6 @@
 # Resource Timeline — manual test checklist
 
-Hands-on checklist for the Resource Timeline (`mustrysolutions.display.resourcetimeline`).
+Hands-on checklist for the Resource Timeline (`mustrysolutions.ingots.display.resourcetimeline`).
 The pure logic (scale, ticks, packing, gesture math, specs) is unit-tested; this covers
 rendering, interaction and the binding contract. The committed demo at `/timeline`
 (verify project) has everything enabled with a write-back `onChange` script.
