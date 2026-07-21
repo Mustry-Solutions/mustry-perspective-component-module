@@ -8,6 +8,26 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### On-Screen Keyboard (new component)
+Ninth component: `mustrysolutions.input.keyboard` — a touch keyboard for
+the runtime, the gap Perspective leaves to the OS keyboard (Windows
+TabTip / Linux Squeekboard), which breaks in Perspective Browser/mobile
+and causes the "double-keyboard" problem; the Exchange only offers view
+templates that can't stop the OS keyboard. Its value display is a `<div>`,
+not an `<input>`, so tapping it never raises the OS keyboard — the actual
+fix, not a workaround. Two families sharing one controlled shell: a
+**numeric keypad** (`layout: numpad`, editing value.value — min/max clamp
+with an out-of-range badge, decimals, units, allowNegative, setpoint-style
+fresh entry) and a **QWERTY keyboard** (`layout: text`/`email`/`url`,
+editing value.text — one-shot shift, a ?123 symbols layer, maxLength,
+@/.com// convenience keys). `mode: inline` or `popover` (a field trigger
+that opens a portalled panel; Enter commits + closes, outside-click/Escape
+discards). Enter fires `onCommit {value, text, isValid}` (value is a number
+or string by layout); live `onChange`; read-only `output.*`
+(value/text/isValid/length/draft); 7-language labels, `--kbd-*` theming.
+All editing rules pure + node-tested. Demo at `/keyboard`; 8 e2e tests +
+26 pure-logic jest cases.
+
 ### Color Picker (new component)
 Eighth component: `mustrysolutions.input.colorpicker` — a runtime colour
 input, the gap Perspective only fills at design time (the property-editor

@@ -1,6 +1,6 @@
 # Mustry Solutions Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships eight components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor** and a **Color Picker**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships nine components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker** and an **On-Screen Keyboard**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components.MustrySolutionsPerspectiveComponents`
 - **Palette category:** `Mustry Solutions`
@@ -310,6 +310,25 @@ A colour input for the runtime — the piece Perspective has only at design time
 ### Theming
 
 Override the `--cp-*` variables via a style class / project stylesheet: `--cp-accent`, `--cp-text`, `--cp-muted`, `--cp-border`, `--cp-bg`, `--cp-field-bg`, `--cp-error`, and the alpha-checkerboard tiles `--cp-check-a` / `--cp-check-b`.
+
+
+---
+
+## On-Screen Keyboard
+
+A touch keyboard for the runtime — the piece Perspective leaves to the OS keyboard (Windows TabTip, Linux Squeekboard), which fails in Perspective Browser/mobile and causes the "double-keyboard" problem. Component id `mustrysolutions.input.keyboard`.
+
+### Features
+
+- **No OS keyboard** — the value display is a **`<div>`, not an `<input>`**, so tapping it never summons the operating system's on-screen keyboard. This is the core edge over the [Exchange keypad views](https://inductiveautomation.com/exchange/2380/overview), whose documented workaround is "don't use real input fields."
+- **Numeric keypad** (`config.layout: numpad`) — edits `value.value` (number): `config.min`/`max` with `enforceRange` clamping + an out-of-range badge, `config.decimals`, `config.units` suffix, `allowNegative`. Setpoint-style entry (the first key starts fresh).
+- **QWERTY keyboard** (`config.layout: text` / `email` / `url`) — edits `value.text` (string): one-shot shift, a `?123` symbols/numbers layer, `config.maxLength`; email/url add `@`, `.com`, `/` convenience keys.
+- **Inline or popover** (`config.mode`) — the keyboard in place, or a field trigger (with a keyboard glyph + `config.placeholder`) that opens it in a portalled panel; Enter commits **and** closes, outside-click / Escape discards.
+- **Controlled write-back** — Enter fires **`onCommit`** `{value, text, isValid}` (`value` is a number for numpad, a string for text) and writes `value.value` / `value.text`; live `onChange` `{draft, value}` on every key (`config.liveUpdate` also writes live). Read-only `output.*`: `value`, `text`, `isValid`, `length`, `draft`. 7-language labels. All editing rules are pure + node-tested.
+
+### Theming
+
+Override the `--kbd-*` variables via a style class / project stylesheet: `--kbd-accent` / `--kbd-accent-text`, `--kbd-text`, `--kbd-muted`, `--kbd-border`, `--kbd-bg`, `--kbd-key-bg`, `--kbd-key-active`, `--kbd-error`.
 
 
 ---

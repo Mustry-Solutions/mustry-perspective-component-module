@@ -1,0 +1,164 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Behaviour & appearance.",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": [
+            "numpad",
+            "text",
+            "email",
+            "url"
+          ],
+          "default": "numpad",
+          "description": "'numpad' = numeric keypad editing value.value (number). 'text'/'email'/'url' = QWERTY keyboard editing value.text (string); email/url add convenience keys (@, .com, /)."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "inline",
+            "popover"
+          ],
+          "default": "inline",
+          "description": "'inline' = the keypad is always shown. 'popover' opens it from a trigger (a later milestone; treated as inline for now)."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Master interactivity switch."
+        },
+        "decimals": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Maximum decimal places. 0 = integer only (the decimal key is disabled)."
+        },
+        "allowNegative": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow negative values (enables the +/- key)."
+        },
+        "enforceRange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Clamp the committed value to [min, max] and report output.isValid. When false, min/max are ignored."
+        },
+        "min": {
+          "type": "number",
+          "default": 0,
+          "description": "Lower bound (used only when enforceRange is true)."
+        },
+        "max": {
+          "type": "number",
+          "default": 100,
+          "description": "Upper bound (used only when enforceRange is true)."
+        },
+        "units": {
+          "type": "string",
+          "default": "",
+          "description": "numpad: engineering-unit suffix shown after the value (e.g. 'psi', '°C')."
+        },
+        "maxLength": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "text layouts: maximum number of characters (0 = unlimited)."
+        },
+        "showValue": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the value display above the keys."
+        },
+        "placeholder": {
+          "type": "string",
+          "default": "Tap to enter…",
+          "description": "popover mode: text shown on the trigger field when the value is empty."
+        },
+        "liveUpdate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write value.value on every key press (not only on Enter). onCommit still fires on Enter."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "Default UI-text language (en/fr/de/es/nl/it/pt), matched on the primary subtag. Empty follows the session."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
+          "properties": {
+            "enter": { "type": "string", "description": "Enter (commit) key." },
+            "clear": { "type": "string", "description": "Clear key." },
+            "backspace": { "type": "string", "description": "Backspace key aria-label." },
+            "sign": { "type": "string", "description": "+/- key aria-label." },
+            "outOfRange": { "type": "string", "description": "Out-of-range badge text." }
+          }
+        }
+      }
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way value. Bind `value` for the numpad layout, `text` for the text layouts.",
+      "properties": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "description": "numpad: the committed number — the source of truth. The keypad edits a local draft and writes this back on Enter (persist it from onCommit to survive a reload)."
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "description": "text layouts: the committed string — the source of truth. The keyboard writes this back on Enter."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values.",
+      "properties": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "description": "The current committed value (clamped when enforceRange)."
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "description": "The value formatted with decimals + units."
+        },
+        "isValid": {
+          "type": "boolean",
+          "default": true,
+          "description": "numpad: within [min,max] (true when enforceRange is false). text: within maxLength."
+        },
+        "length": {
+          "type": "number",
+          "default": 0,
+          "description": "Character length of the committed value."
+        },
+        "draft": {
+          "type": "string",
+          "default": "",
+          "description": "The in-progress edit string ('' when not editing)."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}

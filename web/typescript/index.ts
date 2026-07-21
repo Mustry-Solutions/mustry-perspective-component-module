@@ -7,6 +7,7 @@ import { PanZoomView, PanZoomViewMeta } from './components/panzoom/PanZoomView';
 import { RichTextEditor, RichTextEditorMeta } from './components/richtext/RichTextEditor';
 import { CodeEditor, CodeEditorMeta } from './components/code/CodeEditor';
 import { ColorPicker, ColorPickerMeta } from './components/color/ColorPicker';
+import { OnScreenKeyboard, OnScreenKeyboardMeta } from './components/keyboard/OnScreenKeyboard';
 
 import './scss/picker.scss';
 import './scss/calendar.scss';
@@ -16,9 +17,10 @@ import './scss/panzoom.scss';
 import './scss/richtext.scss';
 import './scss/code.scss';
 import './scss/color.scss';
+import './scss/keyboard.scss';
 import './scss/commit.scss';
 
-export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker };
+export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard };
 
 // Register every component this module provides with the Perspective client registry.
 const components: Array<ComponentMeta> = [
@@ -29,7 +31,8 @@ const components: Array<ComponentMeta> = [
     new PanZoomViewMeta(),
     new RichTextEditorMeta(),
     new CodeEditorMeta(),
-    new ColorPickerMeta()
+    new ColorPickerMeta(),
+    new OnScreenKeyboardMeta()
 ];
 
 components.forEach((c: ComponentMeta) => ComponentRegistry.register(c));

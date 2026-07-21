@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when the user presses Enter. Persist `value` and rebind value.value.",
+  "properties": {
+    "value": {
+      "type": ["number", "string"],
+      "description": "The committed value — a number for the numpad layout (clamped to [min,max] when config.enforceRange), a string for the text layouts."
+    },
+    "text": {
+      "type": "string",
+      "description": "numpad: the number formatted with decimals + units. text: the committed string."
+    },
+    "isValid": {
+      "type": "boolean",
+      "description": "Whether the value is within [min,max] (always true when enforceRange is false)."
+    }
+  }
+}

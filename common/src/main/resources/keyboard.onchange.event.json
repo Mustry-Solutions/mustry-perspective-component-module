@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "description": "Fired on every key press while typing (before commit).",
+  "properties": {
+    "draft": {
+      "type": "string",
+      "description": "The in-progress edit string."
+    },
+    "value": {
+      "type": ["number", "string", "null"],
+      "description": "numpad: the draft parsed to a number (null until complete). text: the draft string."
+    }
+  }
+}
