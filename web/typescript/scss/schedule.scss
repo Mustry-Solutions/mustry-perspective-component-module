@@ -12,6 +12,12 @@
     --adm-bg: var(--neutral-10, #ffffff);
     --adm-panel-bg: var(--neutral-20, #f5f7fa);
     --adm-active: var(--good, #2e7d32);
+    --adm-danger: var(--error, #d32f2f);
+
+    // Aliases the shared commit tail (scss/commit.scss) reads.
+    --commit-accent: var(--adm-accent);
+    --commit-accent-text: var(--callToActionContrast, #ffffff);
+    --commit-muted: var(--adm-muted);
 
     display: flex;
     box-sizing: border-box;
@@ -211,4 +217,115 @@
     border-radius: 3px;
     background: var(--adm-accent);
     opacity: 0.75;
+
+    &--editable {
+        cursor: pointer;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    &--preview {
+        opacity: 0.45;
+        border: 1px dashed var(--adm-accent);
+        background: var(--adm-accent-soft);
+        pointer-events: none;
+    }
+}
+
+.mustry-sched-preview-label {
+    display: block;
+    padding: 2px 4px;
+    font-size: 10px;
+    color: var(--adm-accent);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+// Resize handles: slim hit zones on a block's top/bottom edge.
+.mustry-sched-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7px;
+    cursor: ns-resize;
+
+    &--start {
+        top: -2px;
+    }
+
+    &--end {
+        bottom: -2px;
+    }
+}
+
+.mustry-sched-col--editable {
+    cursor: crosshair;
+    touch-action: none; // pointer gestures own vertical drags on the paint surface
+}
+
+// --- detail header editing controls ---------------------------------------
+
+.mustry-sched-head-spacer {
+    flex: 1;
+}
+
+.mustry-sched-desc-input {
+    flex: 0 1 260px;
+    min-width: 120px;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 12px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--adm-accent);
+    }
+}
+
+.mustry-sched-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--adm-muted);
+    cursor: pointer;
+    white-space: nowrap;
+
+    input {
+        accent-color: var(--adm-accent);
+        margin: 0;
+    }
+}
+
+.mustry-sched-delete {
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-muted);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        border-color: var(--adm-danger);
+        color: var(--adm-danger);
+    }
+
+    &--confirm {
+        border-color: var(--adm-danger);
+        background: var(--adm-danger);
+        color: #ffffff;
+
+        &:hover {
+            color: #ffffff;
+        }
+    }
 }

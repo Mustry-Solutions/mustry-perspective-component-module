@@ -10,6 +10,10 @@ export interface ScheduleManagerProps {
     /** Display window of the day axis, whole hours (defaults 0..24). */
     dayStartHour: number;
     dayEndHour: number;
+    /** Whether the grid is a paint surface with Save/Discard (default true). */
+    editable: boolean;
+    /** Paint/resize snapping in minutes (default 30). */
+    snapMinutes: number;
     locale: string;
     labels: ScheduleManagerLabels;
     schedules: ScheduleItem[];
@@ -35,6 +39,8 @@ export function mapScheduleProps(tree: PropReader): ScheduleManagerProps {
         firstDayOfWeek: tree.readString('config.firstDayOfWeek', 'monday') === 'sunday' ? 'sunday' : 'monday',
         dayStartHour,
         dayEndHour,
+        editable: tree.readBoolean('config.editable', true),
+        snapMinutes: Math.max(5, Math.min(240, tree.readNumber('config.snapMinutes', 30))),
         locale,
         labels: labels as unknown as ScheduleManagerLabels,
         schedules: (tree.readArray('data.schedules', []) || []).map(normalizeSchedule),

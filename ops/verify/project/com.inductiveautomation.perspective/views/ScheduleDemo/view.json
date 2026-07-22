@@ -1,11 +1,17 @@
 {
- "custom": {},
- "propConfig": {},
+ "custom": {
+  "lastEvent": "",
+  "refreshTick": 0
+ },
+ "propConfig": {
+  "custom.lastEvent": { "persistent": true },
+  "custom.refreshTick": { "persistent": true }
+ },
  "params": {},
  "props": {
   "defaultSize": {
    "width": 960,
-   "height": 560
+   "height": 600
   }
  },
  "root": {
@@ -18,11 +24,11 @@
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "Schedule Manager demo — data.schedules is bound to the GATEWAY's real user schedules (system.user.getSchedules() via a script transform), plus two synthetic demo schedules appended by the binding. Click a schedule to paint its weekly availability; selection is two-way via state.selectedSchedule. Read-only milestone (M0) — editing lands with M1.",
+     "text": "Schedule Manager demo — EDITS ARE REAL: data.schedules is bound to the gateway's user schedules (system.user.getSchedules() + two synthetic demo shifts), and the onScheduleSave / onScheduleDelete scripts persist via system.user.editSchedule / addSchedule / removeSchedule. Drag empty grid space to paint availability, drag a block's edge to resize, click a block to remove, then Save. Delete asks twice.",
      "style": { "fontSize": "13px" }
     },
     "meta": { "name": "help" },
-    "position": { "x": 16, "y": 10, "width": 920, "height": 44 }
+    "position": { "x": 16, "y": 10, "width": 920, "height": 58 }
    },
    {
     "type": "mustrysolutions.ingots.admin.schedulemanager",
@@ -36,19 +42,33 @@
       "binding": {
        "type": "expr",
        "config": {
-        "expression": "now(30000)"
+        "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
        },
        "transforms": [
         {
          "type": "script",
-         "code": "\t# Reference binding: the gateway's real schedules, mapped to the component's\n\t# flat BasicScheduleModel mirror, plus two synthetic demo schedules so the\n\t# grid always has something rich to paint (they are NOT on the gateway).\n\tDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']\n\tdef mapSched(s):\n\t\td = {'name': str(s.name), 'description': str(getattr(s, 'description', '') or '')}\n\t\tfor k in ['observeHolidays', 'allDays', 'repeatAlternating']:\n\t\t\td[k] = bool(getattr(s, k, False))\n\t\tsa = getattr(s, 'startingAt', None)\n\t\td['startingAt'] = system.date.format(sa, 'yyyy-MM-dd') if sa else ''\n\t\tfor day in DAYS:\n\t\t\td[day] = bool(getattr(s, day, False))\n\t\t\td[day + 'Time'] = str(getattr(s, day + 'Time', '') or '')\n\t\treturn d\n\tout = []\n\tfor s in system.user.getSchedules():\n\t\ttry:\n\t\t\tout.append(mapSched(s))\n\t\texcept Exception:\n\t\t\tpass\n\tday = {'name': 'Demo Day Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': True, 'allDays': False, 'repeatAlternating': False, 'startingAt': ''}\n\tnight = {'name': 'Demo Night Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': False, 'allDays': False, 'repeatAlternating': True, 'startingAt': ''}\n\tfor d in DAYS:\n\t\tweekday = d not in ('saturday', 'sunday')\n\t\tday[d] = weekday\n\t\tday[d + 'Time'] = '8:00-12:00, 12:30-17:00' if weekday else ''\n\t\tnight[d] = weekday\n\t\tnight[d + 'Time'] = '0:00-6:00, 22:00-24:00' if weekday else ''\n\treturn out + [day, night]\n"
+         "code": "\t# Reference binding: the gateway's real schedules mapped to the component's\n\t# flat BasicScheduleModel mirror, plus two synthetic demo shifts appended\n\t# when no gateway schedule already has their name (a save persists them for\n\t# real, after which the gateway copy wins). refreshTick in the expression\n\t# refetches immediately after each save/delete.\n\tDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']\n\tdef mapSched(s):\n\t\td = {'name': str(s.name), 'description': str(getattr(s, 'description', '') or '')}\n\t\tfor k in ['observeHolidays', 'allDays', 'repeatAlternating']:\n\t\t\td[k] = bool(getattr(s, k, False))\n\t\tsa = getattr(s, 'startingAt', None)\n\t\td['startingAt'] = system.date.format(sa, 'yyyy-MM-dd') if sa else ''\n\t\tfor day in DAYS:\n\t\t\td[day] = bool(getattr(s, day, False))\n\t\t\td[day + 'Time'] = str(getattr(s, day + 'Time', '') or '')\n\t\treturn d\n\tout = []\n\tfor s in system.user.getSchedules():\n\t\ttry:\n\t\t\tout.append(mapSched(s))\n\t\texcept Exception:\n\t\t\tpass\n\texisting = set(d['name'] for d in out)\n\tday = {'name': 'Demo Day Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': True, 'allDays': False, 'repeatAlternating': False, 'startingAt': ''}\n\tnight = {'name': 'Demo Night Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': False, 'allDays': False, 'repeatAlternating': True, 'startingAt': ''}\n\tfor d in DAYS:\n\t\tweekday = d not in ('saturday', 'sunday')\n\t\tday[d] = weekday\n\t\tday[d + 'Time'] = '8:00-12:00, 12:30-17:00' if weekday else ''\n\t\tnight[d] = weekday\n\t\tnight[d + 'Time'] = '0:00-6:00, 22:00-24:00' if weekday else ''\n\treturn out + [s for s in [day, night] if s['name'] not in existing]\n"
         }
        ]
       }
      }
     },
+    "events": {
+     "component": {
+      "onScheduleSave": [
+       { "type": "script", "scope": "G", "config": {
+        "script": "\t# Reference persistence: rebuild a BasicScheduleModel from the flat mirror\n\t# and write it to the gateway, then bump refreshTick so the binding refetches\n\t# and the component's dirty badge clears against the saved data.\n\tfrom com.inductiveautomation.ignition.common.user.schedule import BasicScheduleModel\n\ts = event.schedule\n\tm = BasicScheduleModel()\n\tm.name = str(s.name)\n\tm.description = str(s.description)\n\tm.observeHolidays = bool(s.observeHolidays)\n\tm.allDays = bool(s.allDays)\n\tfor day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:\n\t\tsetattr(m, day, bool(s[day]))\n\t\tsetattr(m, day + 'Time', str(s[day + 'Time']))\n\ttry:\n\t\tif str(s.name) in [str(n) for n in system.user.getScheduleNames()]:\n\t\t\tsystem.user.editSchedule(str(s.name), m)\n\t\telse:\n\t\t\ttry:\n\t\t\t\tsystem.user.addSchedule(m)\n\t\t\texcept TypeError:\n\t\t\t\tsystem.user.addSchedule(str(s.name), m)\n\t\tself.view.custom.lastEvent = 'onScheduleSave persisted \"' + str(s.name) + '\"'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleSave FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+       } }
+      ],
+      "onScheduleDelete": [
+       { "type": "script", "scope": "G", "config": {
+        "script": "\ttry:\n\t\tsystem.user.removeSchedule(str(event.name))\n\t\tself.view.custom.lastEvent = 'onScheduleDelete removed \"' + str(event.name) + '\"'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleDelete FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+       } }
+      ]
+     }
+    },
     "meta": { "name": "schedmgr" },
-    "position": { "x": 16, "y": 60, "width": 720, "height": 420 }
+    "position": { "x": 16, "y": 76, "width": 720, "height": 440 }
    },
    {
     "type": "ia.display.label",
@@ -57,13 +77,29 @@
     "custom": {},
     "propConfig": {
      "props.text": {
-      "binding": { "type": "property", "config": { "path": "../schedmgr.props.state.selectedSchedule" }, "transforms": [
-       { "type": "script", "code": "\tp = self.getSibling('schedmgr').props\n\treturn 'state.selectedSchedule: \"' + str(value) + '\"   output.count: ' + str(p.output.count)" }
-      ] }
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'state.selectedSchedule: \"' + {../schedmgr.props.state.selectedSchedule} + '\"   output.count: ' + toStr({../schedmgr.props.output.count}) + '   output.isDirty: ' + toStr({../schedmgr.props.output.isDirty})"
+       }
+      }
      }
     },
     "meta": { "name": "readout" },
-    "position": { "x": 16, "y": 492, "width": 720, "height": 22 }
+    "position": { "x": 16, "y": 524, "width": 720, "height": 22 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "style": { "fontSize": "12px", "color": "#7b8794", "fontFamily": "monospace" } },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": { "type": "property", "config": { "path": "view.custom.lastEvent" } }
+     }
+    },
+    "meta": { "name": "eventLabel" },
+    "position": { "x": 16, "y": 548, "width": 720, "height": 22 }
    }
   ]
  }
