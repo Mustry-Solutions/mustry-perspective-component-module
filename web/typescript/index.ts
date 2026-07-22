@@ -8,6 +8,7 @@ import { RichTextEditor, RichTextEditorMeta } from './components/richtext/RichTe
 import { CodeEditor, CodeEditorMeta } from './components/code/CodeEditor';
 import { ColorPicker, ColorPickerMeta } from './components/color/ColorPicker';
 import { OnScreenKeyboard, OnScreenKeyboardMeta } from './components/keyboard/OnScreenKeyboard';
+import { ScheduleManager, ScheduleManagerMeta } from './components/schedule/ScheduleManager';
 
 import './scss/picker.scss';
 import './scss/calendar.scss';
@@ -18,9 +19,10 @@ import './scss/richtext.scss';
 import './scss/code.scss';
 import './scss/color.scss';
 import './scss/keyboard.scss';
+import './scss/schedule.scss';
 import './scss/commit.scss';
 
-export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard };
+export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard, ScheduleManager };
 
 // Register every component this module provides with the Perspective client registry.
 const components: Array<ComponentMeta> = [
@@ -32,7 +34,8 @@ const components: Array<ComponentMeta> = [
     new RichTextEditorMeta(),
     new CodeEditorMeta(),
     new ColorPickerMeta(),
-    new OnScreenKeyboardMeta()
+    new OnScreenKeyboardMeta(),
+    new ScheduleManagerMeta()
 ];
 
 components.forEach((c: ComponentMeta) => ComponentRegistry.register(c));

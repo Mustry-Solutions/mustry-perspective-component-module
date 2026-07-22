@@ -40,7 +40,7 @@ ignitionModule {
      */
     moduleVersion.set("${project.version}")
 
-    moduleDescription.set("Nine custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, and an on-screen keyboard.")
+    moduleDescription.set("Ten custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, an on-screen keyboard, and a schedule manager.")
 
     /*
      * Minimum version of Ignition required for the module to function correctly.  This typically won't change over

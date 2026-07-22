@@ -59,6 +59,10 @@
     "/keyboard": {
       "viewPath": "KeyboardDemo",
       "viewParams": {}
+    },
+    "/schedule": {
+      "viewPath": "ScheduleDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

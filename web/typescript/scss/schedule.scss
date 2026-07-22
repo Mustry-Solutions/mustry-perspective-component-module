@@ -1,0 +1,214 @@
+// Schedule Manager — first of the admin family. The --adm-* variables are the
+// FAMILY set (Roster/User Managers will share them); defaults track the active
+// Perspective theme where a var exists. Override from a style class / project
+// stylesheet. Kept on the component root so any future portalled panel that
+// re-parents the DOM still inherits them (the color-picker lesson).
+.mustry-schedmgr {
+    --adm-accent: var(--callToAction, #0a66c2);
+    --adm-accent-soft: var(--callToActionHighlight, #dbeafe);
+    --adm-text: var(--neutral-90, #1f2933);
+    --adm-muted: var(--neutral-60, #7b8794);
+    --adm-border: var(--neutral-30, #cbd2d9);
+    --adm-bg: var(--neutral-10, #ffffff);
+    --adm-panel-bg: var(--neutral-20, #f5f7fa);
+    --adm-active: var(--good, #2e7d32);
+
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--adm-border);
+    border-radius: 8px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 13px;
+    overflow: hidden;
+    user-select: none;
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+// --- schedule list rail ----------------------------------------------------
+
+.mustry-sched-list {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 200px;
+    border-right: 1px solid var(--adm-border);
+    background: var(--adm-panel-bg);
+    overflow-y: auto;
+}
+
+.mustry-sched-list-header {
+    padding: 10px 12px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--adm-muted);
+}
+
+.mustry-sched-empty {
+    padding: 12px;
+    color: var(--adm-muted);
+}
+
+.mustry-sched-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+
+    &:hover {
+        background: var(--adm-bg);
+    }
+
+    &--selected {
+        background: var(--adm-bg);
+        border-left-color: var(--adm-accent);
+    }
+}
+
+.mustry-sched-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mustry-sched-item-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mustry-sched-item-desc {
+    font-size: 11px;
+    color: var(--adm-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mustry-sched-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--adm-border);
+
+    &--active {
+        background: var(--adm-active);
+        border-color: var(--adm-active);
+    }
+}
+
+// --- detail pane -----------------------------------------------------------
+
+.mustry-sched-detail {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    gap: 10px;
+
+    &--empty {
+        align-items: center;
+        justify-content: center;
+        color: var(--adm-muted);
+    }
+}
+
+.mustry-sched-detail-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mustry-sched-detail-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.mustry-sched-detail-desc {
+    color: var(--adm-muted);
+}
+
+.mustry-sched-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--adm-accent-soft);
+    color: var(--adm-accent);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+// --- week grid -------------------------------------------------------------
+
+.mustry-sched-grid {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.mustry-sched-grid-head,
+.mustry-sched-grid-body {
+    display: grid;
+    grid-template-columns: 44px repeat(7, 1fr);
+}
+
+.mustry-sched-grid-body {
+    flex: 1;
+    min-height: 0;
+}
+
+.mustry-sched-dayhead {
+    padding: 4px 0;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.mustry-sched-gutter-head {
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.mustry-sched-gutter {
+    position: relative;
+    font-size: 10px;
+    color: var(--adm-muted);
+}
+
+.mustry-sched-tick {
+    position: absolute;
+    right: 6px;
+    transform: translateY(-50%);
+
+    &:first-child {
+        transform: none;
+    }
+}
+
+.mustry-sched-col {
+    position: relative;
+    border-left: 1px solid var(--adm-border);
+    // Hour gridlines — background-size is set inline (one repeat per hour).
+    background-image: linear-gradient(to bottom, var(--adm-border) 0, transparent 1px);
+}
+
+.mustry-sched-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 3px;
+    background: var(--adm-accent);
+    opacity: 0.75;
+}
