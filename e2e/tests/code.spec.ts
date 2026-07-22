@@ -23,7 +23,7 @@ test('code: typing dirties, Save writes back, viewer updates', async ({ page }) 
     await expect(page.locator('.mustry-commit-badge')).toBeVisible();
 
     await page.locator('.mustry-commit-save').click();
-    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
+    await expect(page.locator('.mustry-commit-badge').first()).toBeHidden();
 });
 
 test('code: breaking the JSON flips the badge and output; fixing restores', async ({ page }) => {
@@ -94,6 +94,6 @@ test('code: output.isDirty clears after a net-zero edit cycle (regression)', asy
 
     // Save — the stuck-isDirty bug would leave output.isDirty true forever.
     await page.locator('.mustry-commit-save').click();
-    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
+    await expect(page.locator('.mustry-commit-badge').first()).toBeHidden();
     await expect(page.getByText('output.isDirty: false')).toBeVisible();
 });

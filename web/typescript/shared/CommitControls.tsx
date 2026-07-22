@@ -9,21 +9,32 @@ interface CommitControlsProps {
     labels: CommitLabels;
     enabled: boolean;
     dirty: boolean;
+    /**
+     * Keep the tail's space reserved while clean (rendered invisible and
+     * inert) so going dirty doesn't reflow the surrounding header — the admin
+     * family opts in; toolbars keep the historical pop-in (null when clean).
+     */
+    reserveSpace?: boolean;
     onSave: () => void;
     onDiscard: () => void;
 }
 
 export function CommitControls(p: CommitControlsProps): React.ReactElement | null {
-    if (!p.dirty) {
+    if (!p.dirty && !p.reserveSpace) {
         return null;
     }
+    const hidden = !p.dirty;
+    const style: React.CSSProperties | undefined = hidden ? { visibility: 'hidden' } : undefined;
     return (
         <>
-            <span className="mustry-commit-badge">{p.labels.unsaved}</span>
+            <span className="mustry-commit-badge" style={style} aria-hidden={hidden}>{p.labels.unsaved}</span>
             <button
                 type="button"
                 className="mustry-commit-save"
-                disabled={!p.enabled}
+                style={style}
+                disabled={!p.enabled || hidden}
+                tabIndex={hidden ? -1 : undefined}
+                aria-hidden={hidden}
                 onClick={p.onSave}
             >
                 {p.labels.save}
@@ -31,9 +42,12 @@ export function CommitControls(p: CommitControlsProps): React.ReactElement | nul
             <button
                 type="button"
                 className="mustry-commit-discard"
+                style={style}
                 title={p.labels.discard}
                 aria-label={p.labels.discard}
-                disabled={!p.enabled}
+                disabled={!p.enabled || hidden}
+                tabIndex={hidden ? -1 : undefined}
+                aria-hidden={hidden}
                 onClick={p.onDiscard}
             >
                 ✕

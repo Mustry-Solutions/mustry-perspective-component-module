@@ -10,6 +10,7 @@ import {
 import { validateName } from '../../shared/adminCommon';
 import { AdminUser, displayName, filterUsers } from '../../shared/adminUsers';
 import { CommitControls } from '../../shared/CommitControls';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import {
     UserDraft, emptyUserDraft, invalidAdjustments, userDraftEquals, userDraftFromItem, userDraftToFlat
 } from './userLogic';
@@ -341,6 +342,7 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                     {draft && (
                         <React.Fragment>
                             <CommitControls
+                                reserveSpace={true}
                                 labels={p.labels}
                                 enabled={usernameError === null && !this.adjustmentsInvalid()}
                                 dirty={this.isDirty()}
@@ -348,13 +350,14 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                                 onDiscard={this.onDiscard}
                             />
                             {!creating && p.allowDelete && (
-                                <button
-                                    type="button"
-                                    className={'mustry-sched-delete' + (this.state.confirmingDelete ? ' mustry-sched-delete--confirm' : '')}
+                                <ConfirmButton
+                                    label={p.labels.delete}
+                                    confirmLabel={p.labels.confirmDelete}
+                                    confirming={this.state.confirmingDelete}
+                                    className="mustry-sched-delete"
+                                    confirmingClassName="mustry-sched-delete--confirm"
                                     onClick={this.onDelete}
-                                >
-                                    {this.state.confirmingDelete ? p.labels.confirmDelete : p.labels.delete}
-                                </button>
+                                />
                             )}
                         </React.Fragment>
                     )}

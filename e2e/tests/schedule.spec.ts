@@ -86,7 +86,7 @@ test.describe('Schedule Manager', () => {
         // Discard: the painted block and the dirty badge disappear.
         await root.locator('.mustry-commit-discard').click();
         await expect(root.locator('.mustry-sched-block')).toHaveCount(10);
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0);
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden();
     });
 
     test('removing a block, saving, and painting it back persist to the gateway', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('Schedule Manager', () => {
         // First save on a fresh gateway CREATES the demo schedule; later saves edit it.
         await expect(page.getByText(/onScheduleSave (persisted|created) "Demo Day Shift"/)).toBeVisible();
         // The refetch clears the dirty badge without discarding anything.
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
 
         // Reload: the edit came back from the GATEWAY, not the draft.
         await page.reload();
@@ -122,7 +122,7 @@ test.describe('Schedule Manager', () => {
         await dragInColumn(page, monday, 8 / 24, 12 / 24);
         await expect(root2.locator('.mustry-sched-block--editable')).toHaveCount(before);
         await root2.locator('.mustry-commit-save').click();
-        await expect(root2.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root2.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
         await page.reload();
         const root3 = await openRoute(page, '/schedule', '.mustry-schedmgr');
         await root3.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' }).click();
@@ -201,7 +201,7 @@ test.describe('Schedule Manager', () => {
         await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Night Shift' }).click();
         const del = root.locator('.mustry-sched-delete');
         await del.click();
-        await expect(del).toHaveText('Confirm delete?');
+        await expect(del).toHaveClass(/mustry-sched-delete--confirm/);
         await del.click();
         // The script reports the outcome either way; on a gateway where the
         // synthetic schedule was never saved, removeSchedule may legitimately

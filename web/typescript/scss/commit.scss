@@ -47,3 +47,20 @@
         cursor: default;
     }
 }
+
+// Two-step (confirm) buttons: both labels always rendered stacked, inactive
+// one invisible — the button sizes to the wider label so arming never
+// reflows its neighbours (see shared/ConfirmButton.tsx).
+.mustry-confirm-stack {
+    display: inline-grid;
+    justify-items: center;
+
+    > span {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+    }
+}
+
+.mustry-confirm-ghost {
+    visibility: hidden;
+}

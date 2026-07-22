@@ -18,6 +18,7 @@ import { RosterManagerProps, mapRosterProps } from './rosterProps';
 import { RosterUsers } from './RosterUsers';
 import { UserPicker } from './UserPicker';
 import { CommitControls } from '../../shared/CommitControls';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 
 // Must match RosterManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.rostermanager';
@@ -318,6 +319,7 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
                     {draft && (
                         <React.Fragment>
                             <CommitControls
+                                reserveSpace={true}
                                 labels={p.labels}
                                 enabled={nameError === null}
                                 dirty={this.isDirty()}
@@ -325,13 +327,14 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
                                 onDiscard={this.onDiscard}
                             />
                             {!creating && p.allowDelete && (
-                                <button
-                                    type="button"
-                                    className={'mustry-sched-delete' + (this.state.confirmingDelete ? ' mustry-sched-delete--confirm' : '')}
+                                <ConfirmButton
+                                    label={p.labels.delete}
+                                    confirmLabel={p.labels.confirmDelete}
+                                    confirming={this.state.confirmingDelete}
+                                    className="mustry-sched-delete"
+                                    confirmingClassName="mustry-sched-delete--confirm"
                                     onClick={this.onDelete}
-                                >
-                                    {this.state.confirmingDelete ? p.labels.confirmDelete : p.labels.delete}
-                                </button>
+                                />
                             )}
                         </React.Fragment>
                     )}

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { validateName } from '../../shared/adminCommon';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import { UserManagerLabels } from '../../shared/labels/users';
 import { UserDraft, toggleRole } from './userLogic';
 
@@ -139,18 +140,16 @@ export class RolesEditor extends React.Component<RolesEditorProps, RolesEditorSt
                 >
                     ✎
                 </button>
-                <button
-                    type="button"
-                    className={'mustry-users-role-btn' + (confirming ? ' mustry-users-role-btn--danger' : '')}
+                <ConfirmButton
+                    label="✕"
+                    confirmLabel={labels.confirmDelete}
+                    confirming={confirming}
+                    className="mustry-users-role-btn"
+                    confirmingClassName="mustry-users-role-btn--danger"
                     title={confirming ? labels.confirmDelete : labels.deleteRole}
-                    // aria-label wins over text for the accessible name — it must
-                    // track the confirm step or the button stays "Delete role …"
-                    // to assistive tech (and tests) after the first click.
-                    aria-label={confirming ? labels.confirmDelete : `${labels.deleteRole} ${role}`}
+                    ariaLabel={confirming ? labels.confirmDelete : `${labels.deleteRole} ${role}`}
                     onClick={() => this.onDelete(role)}
-                >
-                    {confirming ? labels.confirmDelete : '✕'}
-                </button>
+                />
             </div>
         );
     }
@@ -169,7 +168,10 @@ export class RolesEditor extends React.Component<RolesEditorProps, RolesEditorSt
                             className={'mustry-users-manage-btn' + (managing ? ' mustry-users-manage-btn--active' : '')}
                             onClick={() => this.setState({ managing: !this.state.managing, renaming: null, confirming: null })}
                         >
-                            {managing ? labels.doneManaging : labels.manageRoles}
+                            <span className="mustry-confirm-stack">
+                                <span className={managing ? 'mustry-confirm-ghost' : undefined}>{labels.manageRoles}</span>
+                                <span className={managing ? undefined : 'mustry-confirm-ghost'}>{labels.doneManaging}</span>
+                            </span>
                         </button>
                     )}
                 </div>

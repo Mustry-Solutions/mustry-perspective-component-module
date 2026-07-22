@@ -57,7 +57,7 @@ test.describe('Roster Manager', () => {
         await expect(root.locator('.mustry-commit-badge')).toBeVisible();
         await root.locator('.mustry-commit-discard').click();
         await expect(rows).toHaveCount(3);
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0);
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden();
     });
 
     test('drag-to-reorder persists to the gateway and restores', async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe('Roster Manager', () => {
         // Save → the roster now REALLY exists on the gateway in this order.
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onRosterSave persisted "Demo Escalation"/)).toBeVisible();
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
         await page.reload();
         const root2 = await openPopulated(page);
         await root2.locator('.mustry-sched-item').filter({ hasText: 'Demo Escalation' }).click();
@@ -97,7 +97,7 @@ test.describe('Roster Manager', () => {
         await page.mouse.up();
         await expect(rows2.nth(0)).toContainText('Jane Doe');
         await root2.locator('.mustry-commit-save').click();
-        await expect(root2.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root2.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
     });
 
     test('create → persist → delete lifecycle against the gateway', async ({ page }) => {

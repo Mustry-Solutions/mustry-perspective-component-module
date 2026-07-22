@@ -28,7 +28,7 @@ test('richtext: typing dirties, Save writes back, display updates', async ({ pag
 
     await page.locator('.mustry-commit-save').click();
     // Write-back round-trip: badge clears, display now shows the addition.
-    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
+    await expect(page.locator('.mustry-commit-badge').first()).toBeHidden();
     await expect(page.locator('.mustry-rte--display')).toContainText('Wear gloves.');
 });
 
@@ -53,7 +53,7 @@ test('richtext: discard reverts the draft', async ({ page }) => {
     await expect(page.locator('.mustry-commit-badge')).toBeVisible();
 
     await page.locator('.mustry-commit-discard').click();
-    await expect(page.locator('.mustry-commit-badge')).toHaveCount(0);
+    await expect(page.locator('.mustry-commit-badge').first()).toBeHidden();
     await expect(editor).not.toContainText('TEMPORARY');
 });
 

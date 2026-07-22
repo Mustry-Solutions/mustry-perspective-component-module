@@ -8,6 +8,25 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Admin family: layout stability pass
+No more layout jumps when interacting with the admin components (user
+feedback: the schedule header shoved everything around when buttons
+appeared). Three mechanisms, applied family-wide:
+- The Save/Discard commit tail now RESERVES its space while the draft is
+  clean (rendered invisible and inert via a new CommitControls
+  `reserveSpace` opt-in — the rich-text/code toolbars keep their
+  historical pop-in), so going dirty no longer reflows the header.
+- Two-step delete buttons (and the Manage-roles toggle) render BOTH
+  labels stacked with the inactive one invisible (shared ConfirmButton),
+  so arming "Delete" → "Confirm delete?" can't change the button's width.
+- Validation errors float as absolutely-positioned chips below their
+  anchor instead of reflowing siblings (name/username/date/role/
+  adjustment errors alike).
+Verified by pixel measurement: the schedule header's Delete button, week
+grid and preview strip hold identical coordinates across clean → dirty →
+armed-confirm → restored; the users form holds position when an
+adjustment error appears.
+
 ### User Manager: availability adjustments
 The detail form gains an "Availability adjustments" section editing the
 per-user schedule overrides Ignition already models (vacation = available

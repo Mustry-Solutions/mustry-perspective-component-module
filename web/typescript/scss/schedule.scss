@@ -323,6 +323,7 @@
 }
 
 .mustry-sched-name-wrap {
+    position: relative;
     display: inline-flex;
     align-items: baseline;
     gap: 8px;
@@ -351,9 +352,19 @@
 }
 
 .mustry-sched-name-error {
+    // Floats below its anchor as a chip: appearing/disappearing validation
+    // must never reflow the header or push rows around.
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    z-index: 6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--adm-danger);
+    color: #ffffff;
     font-size: 11px;
-    color: var(--adm-danger);
     white-space: nowrap;
+    pointer-events: none;
 }
 
 .mustry-sched-desc-input {
