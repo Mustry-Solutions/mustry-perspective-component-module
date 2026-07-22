@@ -38,5 +38,11 @@ public class UserManager {
                 "/usermanager.onsave.event.json"),
             event("onUserDelete",
                 "Fires when the user confirms the two-step Delete. Payload: { username }. Persist with system.user.removeUser and refresh data.users.",
-                "/usermanager.ondelete.event.json")));
+                "/usermanager.ondelete.event.json"),
+            event("onRoleSave",
+                "Role-catalog manage mode (config.allowRoleManagement): a role was added or renamed. Payload: { name, oldName? }. Persist with system.user.addRole / editRole and refresh data.availableRoles.",
+                "/usermanager.onrolesave.event.json"),
+            event("onRoleDelete",
+                "Role-catalog manage mode: a role's two-step delete was confirmed. Payload: { name }. Persist with system.user.removeRole and refresh data.availableRoles + data.users.",
+                "/usermanager.onroledelete.event.json")));
 }

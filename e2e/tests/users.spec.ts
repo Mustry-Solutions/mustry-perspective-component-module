@@ -112,6 +112,87 @@ test.describe('User Manager', () => {
         await expect(page.getByText(/onUserDelete removed "e2etemp"/)).toBeVisible();
     });
 
+    /** In manage mode: delete a role when it exists (leftover cleanup). */
+    async function deleteRoleIfPresent(page: any, root: any, role: string) {
+        const row = root.locator('.mustry-users-role-row').filter({ hasText: role }).first();
+        if (await row.count() === 0) {
+            return;
+        }
+        await row.getByRole('button', { name: /Delete role/ }).click();
+        await row.getByRole('button', { name: /Confirm/ }).click();
+        await expect(page.getByText(new RegExp(`onRoleDelete removed "${role}"`))).toBeVisible();
+        await expect(root.locator('.mustry-users-role-row').filter({ hasText: role }))
+            .toHaveCount(0, { timeout: 15_000 });
+    }
+
+    test('role catalog: add → rename keeps assignments → delete', async ({ page }) => {
+        const root = await openPopulated(page);
+        await selectUser(root, 'Kiran Patel', 'kpatel');
+
+        // Enter manage mode; self-heal leftovers from a previously failed run.
+        await root.locator('.mustry-users-manage-btn').click();
+        await deleteRoleIfPresent(page, root, 'E2E Role X');
+        await deleteRoleIfPresent(page, root, 'E2E Role');
+        await expect(root.getByText(/Security policies reference roles by name/)).toBeVisible();
+        await root.locator('.mustry-users-role-input').last().fill('E2E Role');
+        await root.getByRole('button', { name: '+ Add role' }).click();
+        await expect(page.getByText(/onRoleSave added "E2E Role"/)).toBeVisible();
+        // The refetched catalog lists it as a manage row.
+        await expect(root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role' }))
+            .toHaveCount(1, { timeout: 15_000 });
+
+        // Leave manage mode. If the leftover cleanup deleted a role kpatel
+        // still had assigned, the draft is now stale-dirty — resync it first.
+        await root.locator('.mustry-users-manage-btn').click();
+        if (await root.locator('.mustry-commit-discard').count() > 0) {
+            await root.locator('.mustry-commit-discard').click();
+        }
+        await root.locator('.mustry-sched-toggle').filter({ hasText: 'E2E Role' }).locator('input').click();
+        await root.locator('.mustry-commit-save').click();
+        await expect(page.getByText(/onUserSave persisted "kpatel"/)).toBeVisible();
+        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+
+        // Rename the role; the assignment must survive (the source stores ids).
+        await root.locator('.mustry-users-manage-btn').click();
+        const row = root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role' });
+        await row.getByRole('button', { name: /Rename/ }).click();
+        await root.locator('.mustry-users-role-input').first().fill('E2E Role X');
+        await root.getByRole('button', { name: '✓' }).click();
+        await expect(page.getByText(/onRoleSave renamed "E2E Role" -> "E2E Role X"/)).toBeVisible();
+        await root.locator('.mustry-users-manage-btn').click(); // done managing
+        // The rename made the bound user data change under a clean-but-stale
+        // draft, which reads as dirty (the component protects in-progress
+        // edits); Discard resyncs from the refetched truth.
+        await expect(root.locator('.mustry-commit-discard')).toBeVisible({ timeout: 15_000 });
+        await root.locator('.mustry-commit-discard').click();
+        await expect(root.locator('.mustry-sched-toggle').filter({ hasText: 'E2E Role X' }).locator('input'))
+            .toBeChecked({ timeout: 15_000 });
+
+        // Unassign, save, then delete the role from the catalog.
+        await root.locator('.mustry-sched-toggle').filter({ hasText: 'E2E Role X' }).locator('input').click();
+        await root.locator('.mustry-commit-save').click();
+        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await root.locator('.mustry-users-manage-btn').click();
+        const rowX = root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role X' });
+        await rowX.getByRole('button', { name: /Delete role/ }).click();
+        await rowX.getByRole('button', { name: /Confirm/ }).click();
+        await expect(page.getByText(/onRoleDelete removed "E2E Role X"/)).toBeVisible();
+        await expect(root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role X' }))
+            .toHaveCount(0, { timeout: 15_000 });
+    });
+
+    test('the demo refuses to delete the Administrator role', async ({ page }) => {
+        const root = await openPopulated(page);
+        await selectUser(root, 'Jane Doe', 'jdoe');
+        await root.locator('.mustry-users-manage-btn').click();
+        const row = root.locator('.mustry-users-role-row').filter({ hasText: 'Administrator' });
+        await row.getByRole('button', { name: /Delete role/ }).click();
+        await row.getByRole('button', { name: /Confirm/ }).click();
+        await expect(page.getByText(/onRoleDelete REFUSED/)).toBeVisible();
+        await expect(root.locator('.mustry-users-role-row').filter({ hasText: 'Administrator' }))
+            .toHaveCount(1, { timeout: 15_000 });
+    });
+
     test('the demo refuses to delete the admin account', async ({ page }) => {
         const root = await openPopulated(page);
         await root.locator('.mustry-sched-item').filter({ hasText: 'admin' }).first().click();

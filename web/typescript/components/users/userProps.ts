@@ -9,6 +9,9 @@ export interface UserManagerProps {
     allowDelete: boolean;
     /** Show the set-password field (payload-only; default OFF on purpose). */
     allowPasswordChange: boolean;
+    /** Role-catalog CRUD in the Roles section (default OFF: renames/deletes
+     *  ripple into security policies that reference roles by name). */
+    allowRoleManagement: boolean;
     locale: string;
     labels: UserManagerLabels;
     users: AdminUser[];
@@ -32,6 +35,7 @@ export function mapUserProps(tree: PropReader): UserManagerProps {
         allowCreate: tree.readBoolean('config.allowCreate', true),
         allowDelete: tree.readBoolean('config.allowDelete', true),
         allowPasswordChange: tree.readBoolean('config.allowPasswordChange', false),
+        allowRoleManagement: tree.readBoolean('config.allowRoleManagement', false),
         locale,
         labels: labels as unknown as UserManagerLabels,
         users: (tree.readArray('data.users', []) || []).map(normalizeAdminUser),

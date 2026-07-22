@@ -46,6 +46,16 @@ The committed demo at `/users` (verify project) binds the gateway's
       happen BEFORE trying it in production (the demo refuses 'admin').
 - [ ] Save persists across a gateway restart.
 
+## Role-catalog management (config.allowRoleManagement)
+
+- [ ] The flag is OFF unless this instance is meant for security admins.
+- [ ] Renaming a role: user assignments survive (source stores ids), but
+      grep project security levels / scripts for the OLD name first — the
+      manage-mode warning is there for a reason.
+- [ ] Deleting a role strips it from users; verify affected security
+      policies degrade as expected BEFORE doing it in production.
+- [ ] Add/rename validation blocks empty and duplicate names inline.
+
 ## Touch (tablet session — joins the standing hardware checklist)
 
 - [ ] Form inputs raise the OS keyboard as expected; pairing with the

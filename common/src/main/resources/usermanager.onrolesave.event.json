@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "description": "Fired from role-catalog manage mode (config.allowRoleManagement) when a role is added or renamed. Persist with system.user.addRole(userSource, name), or system.user.editRole(userSource, oldName, name) when oldName is present, then refresh the data.availableRoles binding. Renames keep user assignments, but security policies reference roles BY NAME.",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The desired role name."
+    },
+    "oldName": {
+      "type": "string",
+      "description": "Present only on a rename: the role's previous name."
+    }
+  }
+}

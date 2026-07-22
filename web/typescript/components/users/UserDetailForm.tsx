@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { UserManagerLabels } from '../../shared/labels/users';
-import { UserDraft, addContact, removeContact, toggleRole, updateContact } from './userLogic';
+import { UserDraft, addContact, removeContact, updateContact } from './userLogic';
+import { RolesEditor } from './RolesEditor';
 
 /** The contact types the UI offers (the data model keeps the set open). */
 const CONTACT_TYPES = ['email', 'sms', 'phone'];
@@ -10,8 +11,12 @@ interface UserDetailFormProps {
     availableRoles: string[];
     availableSchedules: string[];
     showPassword: boolean;
+    /** config.allowRoleManagement && editable — role-catalog CRUD in the Roles section. */
+    allowRoleManagement: boolean;
     labels: UserManagerLabels;
     onChange: (draft: UserDraft) => void;
+    onRoleSave: (name: string, oldName?: string) => void;
+    onRoleDelete: (name: string) => void;
 }
 
 /**
@@ -59,20 +64,15 @@ export function UserDetailForm(props: UserDetailFormProps): JSX.Element {
             </div>
             {field(labels.notes, draft.notes, (v) => props.onChange({ ...draft, notes: v }))}
 
-            <div className="mustry-users-section">{labels.roles}</div>
-            <div className="mustry-users-roles">
-                {props.availableRoles.length === 0 && <span className="mustry-users-hint">{labels.noRoles}</span>}
-                {props.availableRoles.map((role) => (
-                    <label key={role} className="mustry-sched-toggle">
-                        <input
-                            type="checkbox"
-                            checked={draft.roles.indexOf(role) >= 0}
-                            onChange={() => props.onChange(toggleRole(draft, role))}
-                        />
-                        {role}
-                    </label>
-                ))}
-            </div>
+            <RolesEditor
+                draft={draft}
+                availableRoles={props.availableRoles}
+                manageEnabled={props.allowRoleManagement}
+                labels={labels}
+                onDraftChange={props.onChange}
+                onRoleSave={props.onRoleSave}
+                onRoleDelete={props.onRoleDelete}
+            />
 
             <div className="mustry-users-section">{labels.contact}</div>
             {draft.contactInfo.map((c, i) => (
