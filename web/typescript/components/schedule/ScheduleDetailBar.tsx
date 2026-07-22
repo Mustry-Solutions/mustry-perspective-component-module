@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { CommitControls } from '../../shared/CommitControls';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ScheduleManagerLabels } from '../../shared/labels/schedule';
 import { ScheduleDraft } from './scheduleEditLogic';
 import { ScheduleItem } from './scheduleLogic';
@@ -105,6 +106,7 @@ export function ScheduleDetailBar(props: ScheduleDetailBarProps): JSX.Element {
             {editing && (
                 <React.Fragment>
                     <CommitControls
+                        reserveSpace={true}
                         labels={labels}
                         enabled={nameError === null}
                         dirty={dirty}
@@ -112,13 +114,14 @@ export function ScheduleDetailBar(props: ScheduleDetailBarProps): JSX.Element {
                         onDiscard={props.onDiscard}
                     />
                     {!isNew && props.allowDelete && (
-                        <button
-                            type="button"
-                            className={'mustry-sched-delete' + (confirmingDelete ? ' mustry-sched-delete--confirm' : '')}
+                        <ConfirmButton
+                            label={labels.delete}
+                            confirmLabel={labels.confirmDelete}
+                            confirming={confirmingDelete}
+                            className="mustry-sched-delete"
+                            confirmingClassName="mustry-sched-delete--confirm"
                             onClick={props.onDelete}
-                        >
-                            {confirmingDelete ? labels.confirmDelete : labels.delete}
-                        </button>
+                        />
                     )}
                 </React.Fragment>
             )}

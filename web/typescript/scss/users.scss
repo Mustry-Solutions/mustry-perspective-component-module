@@ -43,6 +43,7 @@
 }
 
 .mustry-users-field {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -150,6 +151,7 @@
 }
 
 .mustry-users-role-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -217,6 +219,7 @@
 // --- availability adjustments ----------------------------------------------
 
 .mustry-users-adj-row {
+    position: relative;
     display: flex;
     align-items: flex-end;
     flex-wrap: wrap;

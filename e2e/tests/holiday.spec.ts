@@ -47,7 +47,7 @@ test.describe('Holiday Manager', () => {
         await expect(root.locator('.mustry-commit-badge')).toBeVisible();
         await root.locator('.mustry-commit-discard').click();
         await expect(date).toHaveValue('2020-01-01');
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0);
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden();
     });
 
     test('create → persist → rename → delete lifecycle against the gateway', async ({ page }) => {

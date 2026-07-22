@@ -9,6 +9,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { validateName } from '../../shared/adminCommon';
 import { CommitControls } from '../../shared/CommitControls';
+import { ConfirmButton } from '../../shared/ConfirmButton';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
     holidayDraftToFlat, nextOccurrence, parseIsoDate, sortHolidays
@@ -283,6 +284,7 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
                     {draft && (
                         <React.Fragment>
                             <CommitControls
+                                reserveSpace={true}
                                 labels={p.labels}
                                 enabled={!this.saveBlocked()}
                                 dirty={this.isDirty()}
@@ -290,13 +292,14 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
                                 onDiscard={this.onDiscard}
                             />
                             {!creating && p.allowDelete && (
-                                <button
-                                    type="button"
-                                    className={'mustry-sched-delete' + (this.state.confirmingDelete ? ' mustry-sched-delete--confirm' : '')}
+                                <ConfirmButton
+                                    label={p.labels.delete}
+                                    confirmLabel={p.labels.confirmDelete}
+                                    confirming={this.state.confirmingDelete}
+                                    className="mustry-sched-delete"
+                                    confirmingClassName="mustry-sched-delete--confirm"
                                     onClick={this.onDelete}
-                                >
-                                    {this.state.confirmingDelete ? p.labels.confirmDelete : p.labels.delete}
-                                </button>
+                                />
                             )}
                         </React.Fragment>
                     )}

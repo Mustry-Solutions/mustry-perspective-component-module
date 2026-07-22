@@ -58,7 +58,7 @@ test.describe('User Manager', () => {
         await expect(page.getByText(/^state\.selectedUser: /)).toContainText(/output\.isDirty: true/i);
         await root.locator('.mustry-commit-discard').click();
         await expect(root.locator('.mustry-users-contact-row')).toHaveCount(1);
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0);
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden();
     });
 
     test('role toggle persists to the gateway and restores', async ({ page }) => {
@@ -70,7 +70,7 @@ test.describe('User Manager', () => {
         await adminRole.click();
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onUserSave persisted "jdoe"/)).toBeVisible();
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
         await page.reload();
         const root2 = await openPopulated(page);
         await selectUser(root2, 'Jane Doe', 'jdoe');
@@ -80,7 +80,7 @@ test.describe('User Manager', () => {
         // Restore the original state so runs stay idempotent.
         await adminRole2.click();
         await root2.locator('.mustry-commit-save').click();
-        await expect(root2.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root2.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
     });
 
     test('create → persist (with password) → edit → delete lifecycle', async ({ page }) => {
@@ -144,13 +144,13 @@ test.describe('User Manager', () => {
         // Leave manage mode. If the leftover cleanup deleted a role kpatel
         // still had assigned, the draft is now stale-dirty — resync it first.
         await root.locator('.mustry-users-manage-btn').click();
-        if (await root.locator('.mustry-commit-discard').count() > 0) {
+        if (await root.locator('.mustry-commit-discard').isVisible()) {
             await root.locator('.mustry-commit-discard').click();
         }
         await root.locator('.mustry-sched-toggle').filter({ hasText: 'E2E Role' }).locator('input').click();
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onUserSave persisted "kpatel"/)).toBeVisible();
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
 
         // Rename the role; the assignment must survive (the source stores ids).
         await root.locator('.mustry-users-manage-btn').click();
@@ -171,7 +171,7 @@ test.describe('User Manager', () => {
         // Unassign, save, then delete the role from the catalog.
         await root.locator('.mustry-sched-toggle').filter({ hasText: 'E2E Role X' }).locator('input').click();
         await root.locator('.mustry-commit-save').click();
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
         await root.locator('.mustry-users-manage-btn').click();
         const rowX = root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role X' });
         await rowX.getByRole('button', { name: /Delete role/ }).click();
@@ -189,9 +189,9 @@ test.describe('User Manager', () => {
         while (await root.locator('.mustry-users-adj-row').count() > 0) {
             await root.locator('.mustry-users-adj-row .mustry-roster-remove').first().click();
         }
-        if (await root.locator('.mustry-commit-badge').count() > 0) {
+        if (await root.locator('.mustry-commit-badge').isVisible()) {
             await root.locator('.mustry-commit-save').click();
-            await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+            await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
         }
 
         // A partially filled row blocks Save with the inline message.
@@ -206,7 +206,7 @@ test.describe('User Manager', () => {
         await expect(root.locator('.mustry-commit-save')).toBeEnabled();
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onUserSave persisted "mvermeer"/)).toBeVisible();
-        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
 
         await page.reload();
         const root2 = await openPopulated(page);
@@ -218,7 +218,7 @@ test.describe('User Manager', () => {
         // Restore: remove it and save so runs stay idempotent.
         await root2.locator('.mustry-users-adj-row .mustry-roster-remove').click();
         await root2.locator('.mustry-commit-save').click();
-        await expect(root2.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        await expect(root2.locator('.mustry-commit-badge').first()).toBeHidden({ timeout: 15_000 });
     });
 
     test('the demo refuses to delete the Administrator role', async ({ page }) => {
