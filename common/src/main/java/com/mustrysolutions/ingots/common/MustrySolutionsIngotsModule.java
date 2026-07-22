@@ -139,6 +139,12 @@ public class MustrySolutionsIngotsModule {
             g.drawLine(2, 6, 14, 6);                              // header rule
             g.drawLine(5, 1, 5, 4); g.drawLine(11, 1, 11, 4);     // binder rings
             g.fillRect(4, 9, 8, 3);                               // the range
+        } else if (k.contains("holidaymanager")) {
+            // Calendar sheet with one starred day (a holiday).
+            g.drawRoundRect(2, 3, 12, 11, 2, 2);
+            g.drawLine(2, 6, 14, 6);                              // header rule
+            g.drawLine(5, 1, 5, 4); g.drawLine(11, 1, 11, 4);     // binder rings
+            g.fillOval(8, 8, 4, 4);                               // the holiday
         } else if (k.contains("usermanager")) {
             // A person silhouette (head + shoulders) beside a small edit line.
             g.drawOval(5, 3, 6, 6);                               // head

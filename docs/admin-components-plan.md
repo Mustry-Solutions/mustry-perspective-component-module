@@ -1,6 +1,6 @@
 # Admin Components (Schedule / Roster / User Management) — family plan
 
-**Status (2026-07-22): ALL THREE BUILT AND SHIPPING.** The family landed in
+**Status (2026-07-22): ALL FOUR BUILT AND SHIPPING** (the Holiday Manager joined the original three — holidays graduated from "deferred, render read-only" to a full component). The family landed in
 build order Schedule Manager (`…admin.schedulemanager`, M0–M2) → Roster
 Manager (`…admin.rostermanager`) → User Manager (`…admin.usermanager`);
 demos at `/schedule`, `/roster` and `/users` persist against the live

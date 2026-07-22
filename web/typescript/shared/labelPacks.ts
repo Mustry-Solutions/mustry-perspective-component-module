@@ -21,3 +21,4 @@ export * from './labels/keyboard';
 export * from './labels/schedule';
 export * from './labels/roster';
 export * from './labels/users';
+export * from './labels/holiday';
