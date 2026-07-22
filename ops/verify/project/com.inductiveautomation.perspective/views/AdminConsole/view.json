@@ -1,0 +1,523 @@
+{
+ "custom": {
+  "lastEvent": "",
+  "refreshTick": 0
+ },
+ "propConfig": {
+  "custom.lastEvent": {
+   "persistent": true
+  },
+  "custom.refreshTick": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 990,
+   "height": 660
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Admin Console — the composition recipe: the three admin components in a NATIVE tab container (tabs are the platform's job, not the components'). Each tab is the same live component as its standalone demo — same bindings, same persistence scripts, one shared refresh tick, so a save in one tab refreshes the others. Per-tab capability flags do the 'select what you want' part: the Users tab runs with password + role management ON; in a real project you'd put that tab behind its own security level (or on its own page).",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 8,
+     "width": 950,
+     "height": 58
+    }
+   },
+   {
+    "type": "ia.container.tab",
+    "version": 0,
+    "props": {
+     "tabs": [
+      "Schedules",
+      "Rosters",
+      "Users"
+     ],
+     "currentTabIndex": 0
+    },
+    "meta": {
+     "name": "tabs"
+    },
+    "position": {
+     "x": 8,
+     "y": 72,
+     "width": 966,
+     "height": 580
+    },
+    "children": [
+     {
+      "type": "ia.container.coord",
+      "version": 0,
+      "props": {},
+      "meta": {
+       "name": "schedTab"
+      },
+      "children": [
+       {
+        "type": "mustrysolutions.ingots.admin.schedulemanager",
+        "version": 0,
+        "props": {
+         "config": {}
+        },
+        "custom": {},
+        "propConfig": {
+         "props.data.schedules": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\t# Reference binding: the gateway's real schedules mapped to the component's\n\t# flat BasicScheduleModel mirror, plus two synthetic demo shifts appended\n\t# when no gateway schedule already has their name (a save persists them for\n\t# real, after which the gateway copy wins). refreshTick in the expression\n\t# refetches immediately after each save/delete.\n\tDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']\n\tdef mapSched(s):\n\t\td = {'name': str(s.name), 'description': str(getattr(s, 'description', '') or '')}\n\t\tfor k in ['observeHolidays', 'allDays', 'repeatAlternating']:\n\t\t\td[k] = bool(getattr(s, k, False))\n\t\tsa = getattr(s, 'startingAt', None)\n\t\td['startingAt'] = system.date.format(sa, 'yyyy-MM-dd') if sa else ''\n\t\tfor day in DAYS:\n\t\t\td[day] = bool(getattr(s, day, False))\n\t\t\td[day + 'Time'] = str(getattr(s, day + 'Time', '') or '')\n\t\treturn d\n\tout = []\n\tfor s in system.user.getSchedules():\n\t\ttry:\n\t\t\tout.append(mapSched(s))\n\t\texcept Exception:\n\t\t\tpass\n\texisting = set(d['name'] for d in out)\n\tday = {'name': 'Demo Day Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': True, 'allDays': False, 'repeatAlternating': False, 'startingAt': ''}\n\tnight = {'name': 'Demo Night Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': False, 'allDays': False, 'repeatAlternating': True, 'startingAt': ''}\n\tfor d in DAYS:\n\t\tweekday = d not in ('saturday', 'sunday')\n\t\tday[d] = weekday\n\t\tday[d + 'Time'] = '8:00-12:00, 12:30-17:00' if weekday else ''\n\t\tnight[d] = weekday\n\t\tnight[d + 'Time'] = '0:00-6:00, 22:00-24:00' if weekday else ''\n\treturn out + [s for s in [day, night] if s['name'] not in existing]\n"
+            }
+           ]
+          }
+         }
+        },
+        "events": {
+         "component": {
+          "onScheduleSave": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\t# Reference persistence: rebuild a BasicScheduleModel from the flat mirror\n\t# and write it to the gateway, then bump refreshTick so the binding refetches\n\t# and the component's dirty badge clears against the saved data. A rename\n\t# (event.oldName present) adds the new name first, then removes the old.\n\tfrom com.inductiveautomation.ignition.common.user.schedule import BasicScheduleModel\n\ts = event.schedule\n\tname = str(s.name)\n\tm = BasicScheduleModel()\n\tm.name = name\n\tm.description = str(s.description)\n\tm.observeHolidays = bool(s.observeHolidays)\n\tm.allDays = bool(s.allDays)\n\tfor day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:\n\t\tsetattr(m, day, bool(s[day]))\n\t\tsetattr(m, day + 'Time', str(s[day + 'Time']))\n\tdef add(model):\n\t\ttry:\n\t\t\tsystem.user.addSchedule(model)\n\t\texcept TypeError:\n\t\t\tsystem.user.addSchedule(name, model)\n\told = getattr(event, 'oldName', None)\n\ttry:\n\t\tif old and str(old) != name:\n\t\t\tadd(m)\n\t\t\tsystem.user.removeSchedule(str(old))\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telif name in [str(n) for n in system.user.getScheduleNames()]:\n\t\t\tsystem.user.editSchedule(name, m)\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave persisted \"' + name + '\"'\n\t\telse:\n\t\t\tadd(m)\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave created \"' + name + '\" (isNew=' + str(bool(event.isNew)) + ')'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleSave FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onScheduleDelete": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\ttry:\n\t\tsystem.user.removeSchedule(str(event.name))\n\t\tself.view.custom.lastEvent = 'onScheduleDelete removed \"' + str(event.name) + '\"'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleDelete FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ]
+         }
+        },
+        "meta": {
+         "name": "schedmgr"
+        },
+        "position": {
+         "x": 8,
+         "y": 8,
+         "width": 930,
+         "height": 470
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "'state.selectedSchedule: \"' + {../schedmgr.props.state.selectedSchedule} + '\"   output.count: ' + toStr({../schedmgr.props.output.count}) + '   output.isDirty: ' + toStr({../schedmgr.props.output.isDirty})"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "schedReadout"
+        },
+        "position": {
+         "x": 8,
+         "y": 486,
+         "width": 930,
+         "height": 20
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "color": "#7b8794",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "property",
+           "config": {
+            "path": "view.custom.lastEvent"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "schedEvent"
+        },
+        "position": {
+         "x": 8,
+         "y": 508,
+         "width": 930,
+         "height": 20
+        }
+       }
+      ],
+      "position": {
+       "tabIndex": 0
+      }
+     },
+     {
+      "type": "ia.container.coord",
+      "version": 0,
+      "props": {},
+      "meta": {
+       "name": "rosterTab"
+      },
+      "children": [
+       {
+        "type": "mustrysolutions.ingots.admin.rostermanager",
+        "version": 0,
+        "props": {
+         "config": {}
+        },
+        "custom": {},
+        "propConfig": {
+         "props.data.rosters": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\t# The gateway's real rosters, plus a synthetic 'Demo Escalation' shown\n\t# until a save persists it for real (then the gateway copy wins).\n\td = system.roster.getRosters()\n\tout = []\n\tfor k in sorted(d.keys()):\n\t\ttry:\n\t\t\tout.append({'name': str(k), 'users': [str(u) for u in d[k]]})\n\t\texcept Exception:\n\t\t\tpass\n\t# Demo convenience: show the synthetic escalation when the gateway has no\n\t# (or only an EMPTY) 'Demo Escalation' — a save then persists it for real.\n\tdemo = [r for r in out if r['name'] == 'Demo Escalation']\n\tif not demo:\n\t\tout.append({'name': 'Demo Escalation', 'users': ['jdoe', 'mvermeer', 'admin']})\n\telif not demo[0]['users']:\n\t\tdemo[0]['users'] = ['jdoe', 'mvermeer', 'admin']\n\treturn out\n"
+            }
+           ]
+          }
+         },
+         "props.data.availableUsers": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\t# The 'default' user source as the picker directory. First ensure three demo\n\t# users exist (idempotent; kpatel deliberately has NO contact info so the\n\t# roster rows can show the warning) — a dev-gateway convenience, remove for\n\t# production bindings. NOTE: bare except on purpose — Jython's 'except\n\t# Exception' does not catch Java exceptions from system.user.\n\timport sys\n\tlog = system.util.getLogger('RosterDemo')\n\tSRC = 'default'\n\tdef ensure(username, first, last, contacts):\n\t\ttry:\n\t\t\tif system.user.getUser(SRC, username) is None:\n\t\t\t\tu = system.user.getNewUser(SRC, username)\n\t\t\t\tu.set('firstname', first)\n\t\t\t\tu.set('lastname', last)\n\t\t\t\tu.set('password', 'Demo-1234!')\n\t\t\t\tfor t, v in contacts:\n\t\t\t\t\tu.addContactInfo(t, v)\n\t\t\t\tresp = system.user.addUser(SRC, u)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addUser(' + username + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + username + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('jdoe', 'Jane', 'Doe', [('email', 'jane.doe@example.com')])\n\tensure('mvermeer', 'Mia', 'Vermeer', [('email', 'mia@example.com'), ('sms', '+31600000001')])\n\tensure('kpatel', 'Kiran', 'Patel', [])\n\tout = []\n\tfor u in system.user.getUsers(SRC):\n\t\ttry:\n\t\t\tci = []\n\t\t\tfor c in u.contactInfo:\n\t\t\t\tci.append({'contactType': str(c.contactType), 'value': str(c.value)})\n\t\t\tout.append({'username': str(u.get('username') or ''), 'firstName': str(u.get('firstname') or ''), 'lastName': str(u.get('lastname') or ''), 'contactInfo': ci})\n\t\texcept:\n\t\t\tlog.warn('map user failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
+            }
+           ]
+          }
+         }
+        },
+        "events": {
+         "component": {
+          "onRosterSave": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\t# Reference persistence: system.roster is append-only, so the full desired\n\t# order is rewritten wholesale — create if new, clear, then append in order.\n\t# addUsers/removeUsers take USER OBJECTS (not username strings): resolve\n\t# each username against the user source first. Bare except on purpose —\n\t# Jython's 'except Exception' does not catch Java exceptions.\n\timport sys\n\tname = str(event.name)\n\twanted = [str(u) for u in event.users]\n\ttry:\n\t\tif name not in [str(n) for n in system.roster.getRosterNames()]:\n\t\t\tsystem.roster.createRoster(name, 'Created from RosterDemo')\n\t\tcurrent = system.roster.getUsers(name)\n\t\tif current:\n\t\t\tsystem.roster.removeUsers(name, current)\n\t\tobjs = []\n\t\tmissing = []\n\t\tfor uname in wanted:\n\t\t\tu = system.user.getUser('default', uname)\n\t\t\tif u is None:\n\t\t\t\tmissing.append(uname)\n\t\t\telse:\n\t\t\t\tobjs.append(u)\n\t\tif objs:\n\t\t\tsystem.roster.addUsers(name, objs)\n\t\tmsg = 'onRosterSave persisted \"' + name + '\" (' + str(len(objs)) + ' users, isNew=' + str(bool(event.isNew)) + ')'\n\t\tif missing:\n\t\t\tmsg = msg + ' — skipped unknown: ' + ','.join(missing)\n\t\tself.view.custom.lastEvent = msg\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onRosterDelete": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\timport sys\n\ttry:\n\t\tsystem.roster.deleteRoster(str(event.name))\n\t\tself.view.custom.lastEvent = 'onRosterDelete removed \"' + str(event.name) + '\"'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ]
+         }
+        },
+        "meta": {
+         "name": "rostermgr"
+        },
+        "position": {
+         "x": 8,
+         "y": 8,
+         "width": 930,
+         "height": 470
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "'state.selectedRoster: \"' + {../rostermgr.props.state.selectedRoster} + '\"   output.count: ' + toStr({../rostermgr.props.output.count}) + '   output.isDirty: ' + toStr({../rostermgr.props.output.isDirty})"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "rosterReadout"
+        },
+        "position": {
+         "x": 8,
+         "y": 486,
+         "width": 930,
+         "height": 20
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "color": "#7b8794",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "property",
+           "config": {
+            "path": "view.custom.lastEvent"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "rosterEvent"
+        },
+        "position": {
+         "x": 8,
+         "y": 508,
+         "width": 930,
+         "height": 20
+        }
+       }
+      ],
+      "position": {
+       "tabIndex": 1
+      }
+     },
+     {
+      "type": "ia.container.coord",
+      "version": 0,
+      "props": {},
+      "meta": {
+       "name": "usersTab"
+      },
+      "children": [
+       {
+        "type": "mustrysolutions.ingots.admin.usermanager",
+        "version": 0,
+        "props": {
+         "config": {
+          "allowPasswordChange": true,
+          "allowRoleManagement": true
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.data.users": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\t# The 'default' user source, seeded with the same three demo users as the\n\t# roster demo (idempotent). Bare except on purpose — Jython's 'except\n\t# Exception' does not catch Java exceptions from system.user.\n\timport sys\n\tlog = system.util.getLogger('UserDemo')\n\tSRC = 'default'\n\tdef ensure(username, first, last, contacts):\n\t\ttry:\n\t\t\tif system.user.getUser(SRC, username) is None:\n\t\t\t\tu = system.user.getNewUser(SRC, username)\n\t\t\t\tu.set('firstname', first)\n\t\t\t\tu.set('lastname', last)\n\t\t\t\tu.set('password', 'Demo-1234!')\n\t\t\t\tfor t, v in contacts:\n\t\t\t\t\tu.addContactInfo(t, v)\n\t\t\t\tresp = system.user.addUser(SRC, u)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addUser(' + username + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + username + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('jdoe', 'Jane', 'Doe', [('email', 'jane.doe@example.com')])\n\tensure('mvermeer', 'Mia', 'Vermeer', [('email', 'mia@example.com'), ('sms', '+31600000001')])\n\tensure('kpatel', 'Kiran', 'Patel', [])\n\tout = []\n\tfor u in system.user.getUsers(SRC):\n\t\ttry:\n\t\t\tci = []\n\t\t\tfor c in u.contactInfo:\n\t\t\t\tci.append({'contactType': str(c.contactType), 'value': str(c.value)})\n\t\t\tout.append({'username': str(u.get('username') or ''), 'firstName': str(u.get('firstname') or ''), 'lastName': str(u.get('lastname') or ''), 'schedule': str(u.get('schedule') or ''), 'language': str(u.get('language') or ''), 'notes': str(u.get('notes') or ''), 'roles': [str(r) for r in u.roles], 'contactInfo': ci})\n\t\texcept:\n\t\t\tlog.warn('map user failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
+            }
+           ]
+          }
+         },
+         "props.data.availableRoles": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\treturn [str(r) for r in system.user.getRoles('default')]\n"
+            }
+           ]
+          }
+         },
+         "props.data.availableSchedules": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\treturn [str(n) for n in system.user.getScheduleNames()]\n"
+            }
+           ]
+          }
+         }
+        },
+        "events": {
+         "component": {
+          "onUserSave": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\t# Reference persistence: rebuild the PyUser from the flat mirror and write\n\t# it back (addUser when isNew, editUser otherwise). Roles and contacts are\n\t# rebuilt wholesale; a staged event.password is applied via u.set and NEVER\n\t# logged. Bare except on purpose (Java exceptions).\n\timport sys\n\ts = event.user\n\tusername = str(s.username)\n\tSRC = 'default'\n\ttry:\n\t\tif bool(event.isNew):\n\t\t\tu = system.user.getNewUser(SRC, username)\n\t\telse:\n\t\t\tu = system.user.getUser(SRC, username)\n\t\tu.set('firstname', str(s.firstName))\n\t\tu.set('lastname', str(s.lastName))\n\t\tu.set('schedule', str(s.schedule))\n\t\tu.set('language', str(s.language))\n\t\tu.set('notes', str(s.notes))\n\t\ttry:\n\t\t\tu.setRoles([str(r) for r in s.roles])\n\t\texcept:\n\t\t\tfor r in list(u.roles):\n\t\t\t\tu.removeRole(str(r))\n\t\t\tfor r in s.roles:\n\t\t\t\tu.addRole(str(r))\n\t\ttry:\n\t\t\tu.setContactInfo([])\n\t\texcept:\n\t\t\tfor c in list(u.contactInfo):\n\t\t\t\tu.removeContactInfo(str(c.contactType), str(c.value))\n\t\tfor c in s.contactInfo:\n\t\t\tu.addContactInfo(str(c.contactType), str(c.value))\n\t\tpw = None\n\t\ttry:\n\t\t\tpw = event.password\n\t\texcept:\n\t\t\tpw = None\n\t\tif pw:\n\t\t\tu.set('password', str(pw))\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addUser(SRC, u)\n\t\telse:\n\t\t\tresp = system.user.editUser(SRC, u)\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onUserSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onUserSave persisted \"' + username + '\" (isNew=' + str(bool(event.isNew)) + (', password set' if pw else '') + ')'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onUserSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onUserDelete": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\timport sys\n\tusername = str(event.username)\n\tif username == 'admin':\n\t\tself.view.custom.lastEvent = 'onUserDelete REFUSED: the demo keeps the admin account'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeUser('default', username)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete removed \"' + username + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onUserDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onRoleSave": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\t# Role-catalog persistence: add or rename (editRole keeps user assignments\n\t# — the source stores role ids — but POLICIES reference roles by name).\n\timport sys\n\tname = str(event.name)\n\told = None\n\ttry:\n\t\told = event.oldName\n\texcept:\n\t\told = None\n\ttry:\n\t\tif old and str(old) != name:\n\t\t\tresp = system.user.editRole('default', str(old), name)\n\t\t\taction = 'renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telse:\n\t\t\tresp = system.user.addRole('default', name)\n\t\t\taction = 'added \"' + name + '\"'\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ' + action\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRoleSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onRoleDelete": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\timport sys\n\tname = str(event.name)\n\tif name == 'Administrator':\n\t\tself.view.custom.lastEvent = 'onRoleDelete REFUSED: the demo keeps the Administrator role'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeRole('default', name)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete removed \"' + name + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onRoleDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ]
+         }
+        },
+        "meta": {
+         "name": "usermgr"
+        },
+        "position": {
+         "x": 8,
+         "y": 8,
+         "width": 930,
+         "height": 470
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "'state.selectedUser: \"' + {../usermgr.props.state.selectedUser} + '\"   output.count: ' + toStr({../usermgr.props.output.count}) + '   output.isDirty: ' + toStr({../usermgr.props.output.isDirty})"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "usersReadout"
+        },
+        "position": {
+         "x": 8,
+         "y": 486,
+         "width": 930,
+         "height": 20
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "color": "#7b8794",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "property",
+           "config": {
+            "path": "view.custom.lastEvent"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "usersEvent"
+        },
+        "position": {
+         "x": 8,
+         "y": 508,
+         "width": 930,
+         "height": 20
+        }
+       }
+      ],
+      "position": {
+       "tabIndex": 2
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

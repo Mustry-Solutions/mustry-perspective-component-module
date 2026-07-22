@@ -71,6 +71,10 @@
     "/users": {
       "viewPath": "UserDemo",
       "viewParams": {}
+    },
+    "/admin": {
+      "viewPath": "AdminConsole",
+      "viewParams": {}
     }
   },
   "shared": {},
