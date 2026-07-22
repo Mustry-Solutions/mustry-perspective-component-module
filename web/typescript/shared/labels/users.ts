@@ -41,6 +41,14 @@ export interface UserManagerLabels extends CommitLabels {
     renameRole: string;        // per-role rename tooltip
     deleteRole: string;        // per-role delete tooltip
     roleWarning: string;       // manage-mode hint: policies reference roles by name
+    adjustments: string;       // availability-adjustments section heading
+    addAdjustment: string;     // add-adjustment-row button
+    adjStart: string;          // start instant label
+    adjEnd: string;            // end instant label
+    adjAvailable: string;      // available toggle (unchecked = time off)
+    adjNote: string;           // note input placeholder
+    adjInvalid: string;        // row validation message
+    adjHint: string;           // section hint
 }
 
 type OwnLabels = Omit<UserManagerLabels, keyof CommitLabels>;
@@ -54,6 +62,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notes', roles: 'Roles', noRoles: 'No roles defined', contact: 'Contact info',
         addContact: 'Add contact', removeContact: 'Remove', password: 'New password',
         passwordPending: 'Password will be set on Save',
+        adjustments: 'Availability adjustments', addAdjustment: 'Add adjustment', adjStart: 'From', adjEnd: 'Until',
+        adjAvailable: 'Available', adjNote: 'Note', adjInvalid: 'Both instants required, end after start',
+        adjHint: 'Overrides the schedule between the two instants — untick Available for time off (vacation), tick it for extra cover.',
         manageRoles: 'Manage roles', doneManaging: 'Done', addRole: 'Add role', roleName: 'Role name',
         roleRequired: 'Role name required', roleTaken: 'Role already exists', renameRole: 'Rename',
         deleteRole: 'Delete role', roleWarning: 'Security policies reference roles by name — renames and deletes ripple.', delete: 'Delete', confirmDelete: 'Confirm delete?'
@@ -66,6 +77,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notes', roles: 'Rôles', noRoles: 'Aucun rôle défini', contact: 'Coordonnées',
         addContact: 'Ajouter un contact', removeContact: 'Retirer', password: 'Nouveau mot de passe',
         passwordPending: 'Le mot de passe sera défini à l’enregistrement',
+        adjustments: 'Ajustements de disponibilité', addAdjustment: 'Ajouter un ajustement', adjStart: 'Du', adjEnd: 'Au',
+        adjAvailable: 'Disponible', adjNote: 'Note', adjInvalid: 'Deux instants requis, fin après début',
+        adjHint: 'Remplace l’horaire entre les deux instants — décochez Disponible pour un congé, cochez pour un renfort.',
         manageRoles: 'Gérer les rôles', doneManaging: 'Terminé', addRole: 'Ajouter un rôle', roleName: 'Nom du rôle',
         roleRequired: 'Nom du rôle requis', roleTaken: 'Rôle déjà existant', renameRole: 'Renommer',
         deleteRole: 'Supprimer le rôle', roleWarning: 'Les politiques de sécurité référencent les rôles par leur nom — renommages et suppressions se propagent.', delete: 'Supprimer', confirmDelete: 'Confirmer la suppression ?'
@@ -78,6 +92,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notizen', roles: 'Rollen', noRoles: 'Keine Rollen definiert', contact: 'Kontaktdaten',
         addContact: 'Kontakt hinzufügen', removeContact: 'Entfernen', password: 'Neues Passwort',
         passwordPending: 'Passwort wird beim Speichern gesetzt',
+        adjustments: 'Verfügbarkeitsanpassungen', addAdjustment: 'Anpassung hinzufügen', adjStart: 'Von', adjEnd: 'Bis',
+        adjAvailable: 'Verfügbar', adjNote: 'Notiz', adjInvalid: 'Beide Zeitpunkte erforderlich, Ende nach Beginn',
+        adjHint: 'Überschreibt den Zeitplan zwischen den beiden Zeitpunkten — Verfügbar abwählen für Abwesenheit, anwählen für Zusatzdienst.',
         manageRoles: 'Rollen verwalten', doneManaging: 'Fertig', addRole: 'Rolle hinzufügen', roleName: 'Rollenname',
         roleRequired: 'Rollenname erforderlich', roleTaken: 'Rolle existiert bereits', renameRole: 'Umbenennen',
         deleteRole: 'Rolle löschen', roleWarning: 'Sicherheitsrichtlinien referenzieren Rollen über den Namen — Umbenennen und Löschen wirken sich aus.', delete: 'Löschen', confirmDelete: 'Löschen bestätigen?'
@@ -90,6 +107,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notas', roles: 'Roles', noRoles: 'Sin roles definidos', contact: 'Datos de contacto',
         addContact: 'Añadir contacto', removeContact: 'Quitar', password: 'Nueva contraseña',
         passwordPending: 'La contraseña se establecerá al guardar',
+        adjustments: 'Ajustes de disponibilidad', addAdjustment: 'Añadir ajuste', adjStart: 'Desde', adjEnd: 'Hasta',
+        adjAvailable: 'Disponible', adjNote: 'Nota', adjInvalid: 'Ambos instantes requeridos, fin posterior al inicio',
+        adjHint: 'Anula el horario entre los dos instantes — desmarque Disponible para ausencias, márquelo para refuerzos.',
         manageRoles: 'Gestionar roles', doneManaging: 'Hecho', addRole: 'Añadir rol', roleName: 'Nombre del rol',
         roleRequired: 'Nombre del rol obligatorio', roleTaken: 'El rol ya existe', renameRole: 'Renombrar',
         deleteRole: 'Eliminar rol', roleWarning: 'Las políticas de seguridad referencian los roles por nombre — renombrar y eliminar repercute.', delete: 'Eliminar', confirmDelete: '¿Confirmar eliminación?'
@@ -102,6 +122,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notities', roles: 'Rollen', noRoles: 'Geen rollen gedefinieerd', contact: 'Contactgegevens',
         addContact: 'Contact toevoegen', removeContact: 'Verwijderen', password: 'Nieuw wachtwoord',
         passwordPending: 'Wachtwoord wordt ingesteld bij opslaan',
+        adjustments: 'Beschikbaarheidsaanpassingen', addAdjustment: 'Aanpassing toevoegen', adjStart: 'Van', adjEnd: 'Tot',
+        adjAvailable: 'Beschikbaar', adjNote: 'Notitie', adjInvalid: 'Beide tijdstippen vereist, einde na begin',
+        adjHint: 'Overschrijft het rooster tussen de twee tijdstippen — vink Beschikbaar uit voor verlof, aan voor extra dekking.',
         manageRoles: 'Rollen beheren', doneManaging: 'Klaar', addRole: 'Rol toevoegen', roleName: 'Rolnaam',
         roleRequired: 'Rolnaam vereist', roleTaken: 'Rol bestaat al', renameRole: 'Hernoemen',
         deleteRole: 'Rol verwijderen', roleWarning: 'Beveiligingsbeleid verwijst naar rollen op naam — hernoemen en verwijderen werkt door.', delete: 'Verwijderen', confirmDelete: 'Verwijderen bevestigen?'
@@ -114,6 +137,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Note', roles: 'Ruoli', noRoles: 'Nessun ruolo definito', contact: 'Contatti',
         addContact: 'Aggiungi contatto', removeContact: 'Rimuovi', password: 'Nuova password',
         passwordPending: 'La password sarà impostata al salvataggio',
+        adjustments: 'Regolazioni di disponibilità', addAdjustment: 'Aggiungi regolazione', adjStart: 'Dal', adjEnd: 'Al',
+        adjAvailable: 'Disponibile', adjNote: 'Nota', adjInvalid: 'Entrambi gli istanti richiesti, fine dopo inizio',
+        adjHint: 'Sostituisce l’orario tra i due istanti — deseleziona Disponibile per le ferie, seleziona per copertura extra.',
         manageRoles: 'Gestisci ruoli', doneManaging: 'Fatto', addRole: 'Aggiungi ruolo', roleName: 'Nome del ruolo',
         roleRequired: 'Nome del ruolo obbligatorio', roleTaken: 'Ruolo già esistente', renameRole: 'Rinomina',
         deleteRole: 'Elimina ruolo', roleWarning: 'Le politiche di sicurezza referenziano i ruoli per nome — rinomine ed eliminazioni si propagano.', delete: 'Elimina', confirmDelete: 'Confermare l’eliminazione?'
@@ -126,6 +152,9 @@ const PACKS: { [lang: string]: OwnLabels } = {
         notes: 'Notas', roles: 'Funções', noRoles: 'Nenhuma função definida', contact: 'Contato',
         addContact: 'Adicionar contato', removeContact: 'Remover', password: 'Nova senha',
         passwordPending: 'A senha será definida ao salvar',
+        adjustments: 'Ajustes de disponibilidade', addAdjustment: 'Adicionar ajuste', adjStart: 'De', adjEnd: 'Até',
+        adjAvailable: 'Disponível', adjNote: 'Nota', adjInvalid: 'Ambos os instantes obrigatórios, fim após início',
+        adjHint: 'Substitui o horário entre os dois instantes — desmarque Disponível para folga, marque para cobertura extra.',
         manageRoles: 'Gerenciar funções', doneManaging: 'Concluído', addRole: 'Adicionar função', roleName: 'Nome da função',
         roleRequired: 'Nome da função obrigatório', roleTaken: 'Função já existe', renameRole: 'Renomear',
         deleteRole: 'Excluir função', roleWarning: 'Políticas de segurança referenciam funções pelo nome — renomear e excluir repercute.', delete: 'Excluir', confirmDelete: 'Confirmar exclusão?'

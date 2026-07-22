@@ -11,7 +11,7 @@ import { validateName } from '../../shared/adminCommon';
 import { AdminUser, displayName, filterUsers } from '../../shared/adminUsers';
 import { CommitControls } from '../../shared/CommitControls';
 import {
-    UserDraft, emptyUserDraft, userDraftEquals, userDraftFromItem, userDraftToFlat
+    UserDraft, emptyUserDraft, invalidAdjustments, userDraftEquals, userDraftFromItem, userDraftToFlat
 } from './userLogic';
 import { UserManagerProps, mapUserProps } from './userProps';
 import { UserDetailForm } from './UserDetailForm';
@@ -116,12 +116,23 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
 
     // --- outputs / selection ------------------------------------------------
 
+    private adjustmentsInvalid(): boolean {
+        return !!this.state.draft && invalidAdjustments(this.state.draft).length > 0;
+    }
+
     private writeOutputs(): void {
         const w = this.props.store.props;
         const err = this.usernameError();
+        const errors: string[] = [];
+        if (err !== null) {
+            errors.push(err === 'empty' ? 'usernameRequired' : 'usernameTaken');
+        }
+        if (this.adjustmentsInvalid()) {
+            errors.push('adjustmentInvalid');
+        }
         w.write('output.count', this.props.props.users.length);
         w.write('output.isDirty', this.isDirty());
-        w.write('output.validationErrors', err === null ? [] : [err === 'empty' ? 'usernameRequired' : 'usernameTaken']);
+        w.write('output.validationErrors', errors);
     }
 
     private ensureSelection(): void {
@@ -180,7 +191,7 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
 
     private onSave = (): void => {
         const draft = this.state.draft;
-        if (!draft || this.usernameError() !== null || !this.isDirty()) {
+        if (!draft || this.usernameError() !== null || this.adjustmentsInvalid() || !this.isDirty()) {
             return;
         }
         const creating = this.state.creating;
@@ -331,7 +342,7 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                         <React.Fragment>
                             <CommitControls
                                 labels={p.labels}
-                                enabled={usernameError === null}
+                                enabled={usernameError === null && !this.adjustmentsInvalid()}
                                 dirty={this.isDirty()}
                                 onSave={this.onSave}
                                 onDiscard={this.onDiscard}

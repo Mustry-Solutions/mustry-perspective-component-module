@@ -52,7 +52,7 @@ test.describe('User Manager', () => {
         const root = await openPopulated(page);
         await selectUser(root, 'Jane Doe', 'jdoe');
         await expect(root.locator('.mustry-users-contact-value')).toHaveValue('jane.doe@example.com');
-        await root.locator('.mustry-users-add-contact').click();
+        await root.locator('.mustry-users-add-contact:not(.mustry-users-add-adj)').click();
         await expect(root.locator('.mustry-users-contact-row')).toHaveCount(2);
         await expect(root.locator('.mustry-commit-badge')).toBeVisible();
         await expect(page.getByText(/^state\.selectedUser: /)).toContainText(/output\.isDirty: true/i);
@@ -179,6 +179,46 @@ test.describe('User Manager', () => {
         await expect(page.getByText(/onRoleDelete removed "E2E Role X"/)).toBeVisible();
         await expect(root.locator('.mustry-users-role-row').filter({ hasText: 'E2E Role X' }))
             .toHaveCount(0, { timeout: 15_000 });
+    });
+
+    test('availability adjustment round-trips to the gateway', async ({ page }) => {
+        const root = await openPopulated(page);
+        await selectUser(root, 'Mia Vermeer', 'mvermeer');
+
+        // Self-heal: drop leftover adjustment rows from a failed run.
+        while (await root.locator('.mustry-users-adj-row').count() > 0) {
+            await root.locator('.mustry-users-adj-row .mustry-roster-remove').first().click();
+        }
+        if (await root.locator('.mustry-commit-badge').count() > 0) {
+            await root.locator('.mustry-commit-save').click();
+            await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+        }
+
+        // A partially filled row blocks Save with the inline message.
+        await root.getByRole('button', { name: '+ Add adjustment' }).click();
+        await root.locator('.mustry-users-adj-note').fill('vacation');
+        await expect(root.locator('.mustry-commit-save')).toBeDisabled();
+        await expect(root.getByText('Both instants required, end after start')).toBeVisible();
+
+        // Fill valid instants and save — the adjustment persists for real.
+        await root.locator('.mustry-users-adj-instant input').nth(0).fill('2030-08-01T08:00');
+        await root.locator('.mustry-users-adj-instant input').nth(1).fill('2030-08-05T17:00');
+        await expect(root.locator('.mustry-commit-save')).toBeEnabled();
+        await root.locator('.mustry-commit-save').click();
+        await expect(page.getByText(/onUserSave persisted "mvermeer"/)).toBeVisible();
+        await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
+
+        await page.reload();
+        const root2 = await openPopulated(page);
+        await selectUser(root2, 'Mia Vermeer', 'mvermeer');
+        await expect(root2.locator('.mustry-users-adj-row')).toHaveCount(1);
+        await expect(root2.locator('.mustry-users-adj-note')).toHaveValue('vacation');
+        await expect(root2.locator('.mustry-users-adj-instant input').nth(0)).toHaveValue('2030-08-01T08:00');
+
+        // Restore: remove it and save so runs stay idempotent.
+        await root2.locator('.mustry-users-adj-row .mustry-roster-remove').click();
+        await root2.locator('.mustry-commit-save').click();
+        await expect(root2.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
     });
 
     test('the demo refuses to delete the Administrator role', async ({ page }) => {

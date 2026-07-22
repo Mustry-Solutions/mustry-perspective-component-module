@@ -4,7 +4,7 @@
   "properties": {
     "user": {
       "type": "object",
-      "description": "The full desired user as the flat PyUser mirror: username, firstName, lastName, schedule, language, notes, roles[], contactInfo[] (blank contact rows already dropped)."
+      "description": "The full desired user as the flat PyUser mirror: username, firstName, lastName, schedule, language, notes, roles[], contactInfo[] (blank rows dropped), scheduleAdjustments[] ({start, end, available, note} — rebuild wholesale via system.user.createScheduleAdjustment)."
     },
     "isNew": {
       "type": "boolean",
