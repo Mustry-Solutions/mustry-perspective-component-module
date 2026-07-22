@@ -28,5 +28,6 @@ public final class Components {
         ColorPicker.DESCRIPTOR,
         Keyboard.DESCRIPTOR,
         ScheduleManager.DESCRIPTOR,
-        RosterManager.DESCRIPTOR);
+        RosterManager.DESCRIPTOR,
+        UserManager.DESCRIPTOR);
 }

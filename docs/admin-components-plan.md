@@ -1,11 +1,27 @@
 # Admin Components (Schedule / Roster / User Management) — family plan
 
-**Status (2026-07-22): PLANNING — nothing built.** Tenth component effort,
-first *family*: three related components under a shared `admin` visual
-language. Build order: **Schedule Manager first** (working id
-`mustrysolutions.ingots.admin.schedulemanager`), then Roster Manager, then —
-only if demand pulls it — User Manager. Decisions below are proposals to
-settle with Sam.
+**Status (2026-07-22): ALL THREE BUILT AND SHIPPING.** The family landed in
+build order Schedule Manager (`…admin.schedulemanager`, M0–M2) → Roster
+Manager (`…admin.rostermanager`) → User Manager (`…admin.usermanager`);
+demos at `/schedule`, `/roster` and `/users` persist against the live
+gateway. The plan below is kept for the decisions and their rationale;
+deviations that emerged during the build are footnoted inline.
+
+**Deviations from the original plan:**
+- Rename is a single `onScheduleSave {…, oldName}` payload field, not a
+  separate `onScheduleRename` event (one persistence script beats two).
+- Rosters and users don't rename at all in v1 (no gateway rename API for
+  rosters; username changes are an auth/history decision, not a UI one).
+- User Manager shipped with the family rather than demand-gated — the
+  shared patterns made it cheap once Schedule/Roster existed.
+- The password flow is a staged field in the save payload
+  (`config.allowPasswordChange`, default off) instead of a separate
+  onPasswordChange event.
+- Hard-won 8.3 facts now encoded in the reference scripts: the default
+  user source is named `'default'` (empty string throws), Jython's
+  `except Exception` misses Java exceptions (demo scripts use bare
+  `except` + logging), `system.roster.addUsers` takes User OBJECTS, and
+  the source's password complexity policy applies to scripted writes.
 
 ## What & why
 

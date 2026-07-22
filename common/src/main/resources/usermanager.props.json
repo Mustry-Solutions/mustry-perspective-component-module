@@ -1,0 +1,183 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "User Manager behaviour and appearance.",
+      "default": {
+        "locale": "",
+        "editable": true,
+        "allowCreate": true,
+        "allowDelete": true,
+        "allowPasswordChange": false
+      },
+      "properties": {
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "BCP-47 locale selecting the built-in UI-text language (see config.labels). Empty = browser/session default."
+        },
+        "editable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow editing the detail form (names, roles, schedule, contact info). Edits are draft-only until Save fires onUserSave. Set FALSE for read-only sources (AD/LDAP) — the component cannot detect writability itself."
+        },
+        "allowCreate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the '+ New user' flow (Save fires onUserSave with isNew: true). Requires editable."
+        },
+        "allowDelete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the two-step Delete button (fires onUserDelete). Requires editable."
+        },
+        "allowPasswordChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "OFF by default. Shows a set-password field whose staged value travels ONLY in the onUserSave payload (never props/state/output). Put this component behind Perspective security levels and TLS before enabling."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
+          "properties": {
+            "listHeader": { "type": "string", "description": "User list heading." },
+            "filterPlaceholder": { "type": "string", "description": "Rail filter input placeholder." },
+            "noUsers": { "type": "string", "description": "Empty-list placeholder." },
+            "noSelection": { "type": "string", "description": "Detail placeholder when nothing is selected." },
+            "newUser": { "type": "string", "description": "The list rail's create button." },
+            "username": { "type": "string", "description": "Username input placeholder (create flow)." },
+            "usernameRequired": { "type": "string", "description": "Validation: empty username." },
+            "usernameTaken": { "type": "string", "description": "Validation: duplicate username." },
+            "firstName": { "type": "string", "description": "First-name field label." },
+            "lastName": { "type": "string", "description": "Last-name field label." },
+            "schedule": { "type": "string", "description": "Schedule select label." },
+            "language": { "type": "string", "description": "Language field label." },
+            "notes": { "type": "string", "description": "Notes field label." },
+            "roles": { "type": "string", "description": "Roles section heading." },
+            "noRoles": { "type": "string", "description": "Hint when the source defines no roles." },
+            "contact": { "type": "string", "description": "Contact-info section heading." },
+            "addContact": { "type": "string", "description": "Add-contact-row button." },
+            "removeContact": { "type": "string", "description": "Contact-row remove tooltip." },
+            "password": { "type": "string", "description": "Password input label." },
+            "passwordPending": { "type": "string", "description": "Hint while a password is staged." },
+            "save": { "type": "string", "description": "Save button." },
+            "discard": { "type": "string", "description": "Discard-draft button tooltip." },
+            "unsaved": { "type": "string", "description": "Unsaved-changes badge." },
+            "delete": { "type": "string", "description": "Delete-user button." },
+            "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The user directory plus the role/schedule catalogs. Bind from the gateway — typically expression bindings with script transforms over system.user.getUsers / getRoles / getScheduleNames (see the UserDemo view for the reference scripts).",
+      "default": {
+        "users": [],
+        "availableRoles": [],
+        "availableSchedules": []
+      },
+      "properties": {
+        "users": {
+          "type": "array",
+          "default": [],
+          "description": "Array of users mirroring PyUser: username, firstName, lastName, schedule, language, notes, roles[], contactInfo[]. Items stay open — extra fields ride along untouched.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "username": { "type": "string", "description": "Unique username (the selection key)." },
+              "firstName": { "type": "string", "description": "First name." },
+              "lastName": { "type": "string", "description": "Last name." },
+              "schedule": { "type": "string", "description": "The user's schedule name." },
+              "language": { "type": "string", "description": "Preferred language code." },
+              "notes": { "type": "string", "description": "Free-text notes." },
+              "roles": {
+                "type": "array",
+                "description": "Role names assigned to the user.",
+                "items": { "type": "string" }
+              },
+              "contactInfo": {
+                "type": "array",
+                "description": "Contact points, e.g. [{contactType: 'email', value: 'a@b.c'}].",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "contactType": { "type": "string", "description": "'email' | 'sms' | 'phone' (open set)." },
+                    "value": { "type": "string", "description": "The address / number." }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "availableRoles": {
+          "type": "array",
+          "default": [],
+          "description": "Role names the source defines (system.user.getRoles) — rendered as assignment chips.",
+          "items": { "type": "string" }
+        },
+        "availableSchedules": {
+          "type": "array",
+          "default": [],
+          "description": "Schedule names (system.user.getScheduleNames) — the schedule dropdown's options.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way runtime state: the component writes user interactions back here, and writing a value drives it.",
+      "default": {
+        "selectedUser": ""
+      },
+      "properties": {
+        "selectedUser": {
+          "type": "string",
+          "default": "",
+          "description": "Username of the selected user (two-way): clicking the list writes it back, and setting it selects. When empty, the component selects the first user and writes that back."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values (the component writes them; do not bind INTO them). The staged password is deliberately NOT mirrored here.",
+      "default": {
+        "count": 0,
+        "isDirty": false,
+        "validationErrors": []
+      },
+      "properties": {
+        "count": {
+          "type": "number",
+          "default": 0,
+          "description": "Number of bound users."
+        },
+        "isDirty": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while the selected user's draft differs from the bound data (unsaved edits, including a staged password)."
+        },
+        "validationErrors": {
+          "type": "array",
+          "default": [],
+          "description": "Error keys blocking Save ('usernameRequired' / 'usernameTaken'); empty when the draft is saveable.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}
