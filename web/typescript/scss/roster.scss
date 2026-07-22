@@ -6,6 +6,7 @@
 .mustry-rostermgr {
     @include adm-vars;
     @include adm-root;
+    @include adm-footer;
 }
 
 // --- detail pane -----------------------------------------------------------

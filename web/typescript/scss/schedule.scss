@@ -8,6 +8,7 @@
 .mustry-schedmgr {
     @include adm-vars;
     @include adm-root;
+    @include adm-footer;
 }
 
 // --- schedule list rail ----------------------------------------------------

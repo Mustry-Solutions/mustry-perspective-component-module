@@ -6,6 +6,7 @@
 .mustry-holidaymgr {
     @include adm-vars;
     @include adm-root;
+    @include adm-footer;
 }
 
 .mustry-holiday-form {
@@ -13,6 +14,8 @@
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
+    flex: 1;            // let the footer pin to the pane's bottom
+    max-width: 420px;
 }
 
 .mustry-holiday-date-field {
