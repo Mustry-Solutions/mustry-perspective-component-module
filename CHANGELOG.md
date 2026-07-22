@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Admin Console demo view (composition recipe)
+The verify project gains `/admin`: the three admin components composed in a
+NATIVE tab container — the intended pattern instead of a merged
+mega-component (tabs and page security are the platform's job; per-tab
+capability flags do the "what do you want to use" part). Each tab is the
+same live component + reference scripts as its standalone demo, sharing one
+refresh tick. Documented in the README ("Composing an Admin Console");
+smoke-tested end-to-end. NOTE for view authors: tab-container children
+require `position: {tabIndex: N}` — without it only the first child renders.
+
 ### User Manager: role-catalog management (opt-in)
 `config.allowRoleManagement` (default off) adds a manage mode to the Roles
 section: add, inline-rename and two-step-delete roles in the user source's

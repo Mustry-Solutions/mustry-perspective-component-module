@@ -388,6 +388,10 @@ A runtime UI over a gateway **user source** — Vision's User Management, which 
 
 The shared admin-family `--adm-*` variables (see Schedule Manager).
 
+### Composing an Admin Console
+
+The three admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to dial each tab. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all three components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.
+
 
 ---
 
