@@ -8,6 +8,31 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Schedule Manager (new component — first of the admin family)
+Tenth component: `mustrysolutions.ingots.admin.schedulemanager` — a runtime
+UI over the gateway's user schedules, the highest-vote component-shaped gap
+on the Ideas portal ("Perspective - Admin Components", 102 votes since 2019,
+no native commitment; only copy-in Exchange view templates exist). Vision has
+Schedule Management; Perspective has nothing. Master-detail: schedule list
+with live active-now dots + a 7-day week grid where availability is
+**painted** — drag empty space to add a range (snapped), drag block edges to
+resize, click a block to remove; a red now-line marks the current time and a
+preview strip answers "active now? until when?" (`output.isActiveNow`, 30s
+tick, midnight-continuity and weekly wrap handled). Name/description/flags
+edit inline; `+ New schedule` creates from a blank draft; Delete asks twice.
+Controlled: `data.schedules` is a flat mirror of Ignition's
+BasicScheduleModel beans (bind via `system.user.getSchedules()`), edits stay
+draft-only until Save fires `onScheduleSave {schedule, isNew, oldName?}` /
+`onScheduleDelete {name}` and the author's script persists via
+`system.user.*` — the `/schedule` demo ships reference scripts incl. the
+rename add-then-remove reconcile. `output.count/isDirty/validationErrors`,
+name validation, 7-language labels, `--adm-*` family theming. Alternating
+A/B schedules deliberately render week A read-only pre-1.0 (unverified bean
+layout). All range/availability/transition/paint math pure + node-tested.
+Demo at `/schedule`; 7 e2e tests (incl. a full create→rename→delete
+lifecycle against the live gateway) + 72 pure-logic jest cases. Family plan
+in `docs/admin-components-plan.md`.
+
 ### On-Screen Keyboard (new component)
 Ninth component: `mustrysolutions.ingots.input.keyboard` — a touch keyboard for
 the runtime, the gap Perspective leaves to the OS keyboard (Windows

@@ -8,7 +8,11 @@
     },
     "isNew": {
       "type": "boolean",
-      "description": "True when the schedule does not exist on the gateway yet (create flows arrive in M2; always false today)."
+      "description": "True when this save comes from the create flow (persist with system.user.addSchedule); false for edits of an existing schedule."
+    },
+    "oldName": {
+      "type": "string",
+      "description": "Present only on a rename: the schedule's previous name. Persist by adding the new name and removing the old (see the ScheduleDemo reference script)."
     }
   }
 }

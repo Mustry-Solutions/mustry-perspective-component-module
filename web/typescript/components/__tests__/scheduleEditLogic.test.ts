@@ -1,6 +1,6 @@
 import {
-    applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, minuteAtFraction,
-    paintPreview, removeRange, resizePreview, snapMinute
+    applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, emptyDraft, minuteAtFraction,
+    newScheduleToFlat, paintPreview, removeRange, resizePreview, snapMinute, validateName
 } from '../schedule/scheduleEditLogic';
 import { MINUTES_PER_DAY, normalizeSchedule } from '../schedule/scheduleLogic';
 
@@ -95,6 +95,40 @@ describe('resize', () => {
         const day = [{ start: 480, end: 600 }, { start: 660, end: 720 }];
         expect(applyResize(day, 0, { start: 480, end: 660 }))
             .toEqual([{ start: 480, end: 720 }]);
+    });
+});
+
+describe('validateName', () => {
+    const names = ['Always', 'Day Shift'];
+    it('rejects empty and whitespace-only names', () => {
+        expect(validateName('', names, '')).toBe('empty');
+        expect(validateName('   ', names, '')).toBe('empty');
+    });
+    it('rejects a clash with another schedule', () => {
+        expect(validateName('Always', names, '')).toBe('duplicate');
+        expect(validateName(' Always ', names, '')).toBe('duplicate'); // trimmed before comparing
+    });
+    it('allows keeping your own name while renaming', () => {
+        expect(validateName('Day Shift', names, 'Day Shift')).toBeNull();
+    });
+    it('accepts a fresh name', () => expect(validateName('Nights', names, '')).toBeNull());
+});
+
+describe('create flow serialization', () => {
+    it('an empty draft has no availability and clean flags', () => {
+        const d = emptyDraft();
+        expect(d.allDays).toBe(false);
+        expect(Object.values(d.ranges).every((r) => r.length === 0)).toBe(true);
+    });
+    it('newScheduleToFlat trims the name and serializes painted days', () => {
+        const d = emptyDraft();
+        d.ranges.monday = [{ start: 480, end: 720 }];
+        const flat = newScheduleToFlat('  Nights  ', d);
+        expect(flat.name).toBe('Nights');
+        expect(flat.monday).toBe(true);
+        expect(flat.mondayTime).toBe('8:00-12:00');
+        expect(flat.tuesday).toBe(false);
+        expect(flat.repeatAlternating).toBe(false);
     });
 });
 
