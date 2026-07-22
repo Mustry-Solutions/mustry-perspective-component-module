@@ -1,6 +1,6 @@
 # Mustry Solutions Ingots
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships nine components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker** and an **On-Screen Keyboard**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships ten components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard** and a **Schedule Manager** (first of the admin family).
 
 - **Module ID:** `com.mustrysolutions.ingots`
 - **Palette category:** `Mustry Solutions`
@@ -329,6 +329,26 @@ A touch keyboard for the runtime — the piece Perspective leaves to the OS keyb
 ### Theming
 
 Override the `--kbd-*` variables via a style class / project stylesheet: `--kbd-accent` / `--kbd-accent-text`, `--kbd-text`, `--kbd-muted`, `--kbd-border`, `--kbd-bg`, `--kbd-key-bg`, `--kbd-key-active`, `--kbd-error`.
+
+
+---
+
+## Schedule Manager
+
+A runtime UI over the gateway's **user schedules** — Vision's Schedule Management component, which Perspective lacks (the Ideas-portal "Admin Components" request has been open since 2019; only copy-in Exchange view templates fill the gap). First of the planned **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.schedulemanager`.
+
+### Features
+
+- **Master-detail** — a schedule list (live *active-now* dots) plus a 7-day week grid where availability is painted as blocks; a red now-line marks the current time in today's column. `config.dayStartHour`/`dayEndHour` clip the axis, `config.firstDayOfWeek` orders it.
+- **Paint editing** (`config.editable`) — drag empty grid space to add an availability range (snapped to `config.snapMinutes`), drag a block's top/bottom edge to resize, click a block to remove. Name (rename), description and the *All days* / *Observes holidays* flags edit inline; `+ New schedule` (`config.allowCreate`) starts a blank draft; Delete (`config.allowDelete`) asks twice.
+- **Draft discipline** — edits are draft-only with the shared Save/Discard tail; a polling binding never clobbers an in-progress draft; name validation (required/unique) blocks Save and surfaces in `output.validationErrors`.
+- **Preview strip** — answers "active now? until when?": *Active now — until Fri 17:00* / *Inactive — next Mon 8:00*, re-evaluated every 30s (also exposed as `output.isActiveNow`). Midnight-touching ranges count as continuous; weekly wrap-around is handled.
+- **Controlled write-back** — `data.schedules` is a **flat mirror of Ignition's `BasicScheduleModel`** (per-day enabled flags + 24h range strings), typically bound via a script transform over `system.user.getSchedules()`. Save fires **`onScheduleSave`** `{schedule, isNew, oldName?}` and Delete fires **`onScheduleDelete`** `{name}`; the author's script persists via `system.user.addSchedule` / `editSchedule` / `removeSchedule` and refreshes the binding (the `/schedule` demo ships reference scripts, including the rename add-then-remove dance). Read-only `output.*`: `count`, `isDirty`, `isActiveNow`, `validationErrors`. Labels in the same 7 languages.
+- **Deliberate limits (pre-1.0)** — alternating A/B schedules render week A and show a badge but aren't editable (the A/B bean layout is unverified; flipping it blind could corrupt saves); composite schedules and holiday calendars render as plain read-only entries.
+
+### Theming
+
+Override the `--adm-*` variables via a style class / project stylesheet (shared by the whole admin family): `--adm-accent` / `--adm-accent-soft`, `--adm-text`, `--adm-muted`, `--adm-border`, `--adm-bg`, `--adm-panel-bg`, `--adm-active`, `--adm-danger`.
 
 
 ---

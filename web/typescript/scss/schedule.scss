@@ -48,12 +48,36 @@
 }
 
 .mustry-sched-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     padding: 10px 12px 6px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--adm-muted);
+}
+
+.mustry-sched-new {
+    padding: 2px 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-accent);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover,
+    &--active {
+        border-color: var(--adm-accent);
+        background: var(--adm-accent-soft);
+    }
 }
 
 .mustry-sched-empty {
@@ -265,10 +289,97 @@
     touch-action: none; // pointer gestures own vertical drags on the paint surface
 }
 
+// The current-time line in today's column.
+.mustry-sched-now {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2px solid var(--adm-danger);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 1;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: -4px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--adm-danger);
+    }
+}
+
+// --- preview strip ("active now? until when?") -----------------------------
+
+.mustry-sched-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 6px;
+    background: var(--adm-panel-bg);
+    font-size: 12px;
+    color: var(--adm-muted);
+
+    &--active {
+        color: var(--adm-text);
+    }
+}
+
+.mustry-sched-strip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--adm-border);
+
+    .mustry-sched-strip--active & {
+        background: var(--adm-active);
+        border-color: var(--adm-active);
+    }
+}
+
 // --- detail header editing controls ---------------------------------------
 
 .mustry-sched-head-spacer {
     flex: 1;
+}
+
+.mustry-sched-name-wrap {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.mustry-sched-name-input {
+    width: 160px;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 14px;
+    font-weight: 600;
+
+    &:focus {
+        outline: none;
+        border-color: var(--adm-accent);
+    }
+
+    &--invalid,
+    &--invalid:focus {
+        border-color: var(--adm-danger);
+    }
+}
+
+.mustry-sched-name-error {
+    font-size: 11px;
+    color: var(--adm-danger);
+    white-space: nowrap;
 }
 
 .mustry-sched-desc-input {

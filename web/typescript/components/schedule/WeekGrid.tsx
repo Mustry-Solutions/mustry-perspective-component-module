@@ -20,6 +20,8 @@ interface WeekGridProps {
     preview: ScheduleGesturePreview | null;
     clickToRemoveLabel: string;
     onRemoveRange: (day: DayKey, index: number) => void;
+    /** "Now" line: display-column index + fraction of the visible window (null = hidden). */
+    nowMarker: { colIndex: number; fraction: number } | null;
 }
 
 /**
@@ -91,7 +93,7 @@ export function WeekGrid(props: WeekGridProps): JSX.Element {
                         </div>
                     ))}
                 </div>
-                {days.map((d) => (
+                {days.map((d, colIndex) => (
                     <div
                         key={d.key}
                         className={'mustry-sched-col' + (editable ? ' mustry-sched-col--editable' : '')}
@@ -99,6 +101,12 @@ export function WeekGrid(props: WeekGridProps): JSX.Element {
                         style={{ backgroundSize: `100% ${hourPct}%` }}
                         onPointerDown={editable && gestures ? (e) => gestures.onColumnDown(d.key, e) : undefined}
                     >
+                        {props.nowMarker && props.nowMarker.colIndex === colIndex && (
+                            <div
+                                className="mustry-sched-now"
+                                style={{ top: `${Math.max(0, Math.min(100, props.nowMarker.fraction * 100))}%` }}
+                            />
+                        )}
                         {/* Map over the FULL array so i stays a valid ranges index
                             for remove/resize even when the window clips some blocks. */}
                         {d.ranges.map((r, i) => (visible(r) ? renderBlock(d, r, i) : null))}

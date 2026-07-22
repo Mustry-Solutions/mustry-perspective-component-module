@@ -82,6 +82,47 @@ export function draftToFlat(item: ScheduleItem, draft: ScheduleDraft): { [key: s
     return out;
 }
 
+/**
+ * Validate a schedule name for create/rename. `currentName` is the schedule
+ * being renamed ('' when creating) — its own name never counts as a clash.
+ */
+export function validateName(name: string, existingNames: string[], currentName: string): 'empty' | 'duplicate' | null {
+    const trimmed = name.trim();
+    if (trimmed === '') {
+        return 'empty';
+    }
+    if (existingNames.some((n) => n === trimmed && n !== currentName)) {
+        return 'duplicate';
+    }
+    return null;
+}
+
+/** A blank draft for the create flow: no availability, nothing set. */
+export function emptyDraft(): ScheduleDraft {
+    const ranges = {} as ScheduleDraft['ranges'];
+    for (const day of DAY_KEYS) {
+        ranges[day] = [];
+    }
+    return { description: '', observeHolidays: false, allDays: false, ranges };
+}
+
+/** Serialize a create-flow draft (no backing item) to the flat mirror. */
+export function newScheduleToFlat(name: string, draft: ScheduleDraft): { [key: string]: any } {
+    const out: { [key: string]: any } = {
+        name: name.trim(),
+        description: draft.description,
+        observeHolidays: draft.observeHolidays,
+        allDays: draft.allDays,
+        repeatAlternating: false,
+        startingAt: ''
+    };
+    for (const day of DAY_KEYS) {
+        out[day] = draft.ranges[day].length > 0;
+        out[`${day}Time`] = formatTimeRanges(draft.ranges[day]);
+    }
+    return out;
+}
+
 // --- pointer geometry ------------------------------------------------------
 
 /** Snap a minute to the grid (round to nearest), clamped to the day. */

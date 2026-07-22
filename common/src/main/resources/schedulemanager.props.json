@@ -13,6 +13,8 @@
         "dayStartHour": 0,
         "dayEndHour": 24,
         "editable": true,
+        "allowCreate": true,
+        "allowDelete": true,
         "snapMinutes": 30
       },
       "properties": {
@@ -44,6 +46,16 @@
           "default": true,
           "description": "The week grid is a paint surface: drag empty space to add availability, drag block edges to resize, click a block to remove; description and the allDays/observeHolidays toggles become editable. All edits are draft-only until Save fires onScheduleSave — handle it and persist (see the ScheduleDemo view). False = viewer."
         },
+        "allowCreate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the '+ New schedule' flow (a blank draft; Save fires onScheduleSave with isNew: true). Requires editable."
+        },
+        "allowDelete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the two-step Delete button (fires onScheduleDelete). Requires editable."
+        },
         "snapMinutes": {
           "type": "number",
           "default": 30,
@@ -67,7 +79,14 @@
             "delete": { "type": "string", "description": "Delete-schedule button." },
             "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." },
             "clickToRemove": { "type": "string", "description": "Block tooltip while editable." },
-            "description": { "type": "string", "description": "Description input placeholder." }
+            "description": { "type": "string", "description": "Description input placeholder." },
+            "newSchedule": { "type": "string", "description": "The list rail's create button." },
+            "name": { "type": "string", "description": "Name input placeholder." },
+            "nameRequired": { "type": "string", "description": "Validation: empty name." },
+            "nameTaken": { "type": "string", "description": "Validation: duplicate name." },
+            "inactive": { "type": "string", "description": "Preview strip: inactive with no upcoming activation." },
+            "activeUntil": { "type": "string", "description": "Preview strip template; {day} and {time} are substituted." },
+            "inactiveUntil": { "type": "string", "description": "Preview strip template; {day} and {time} are substituted." }
           }
         }
       }
@@ -145,6 +164,19 @@
           "type": "boolean",
           "default": false,
           "description": "True while the selected schedule's draft differs from the bound data (unsaved edits). Gate navigation or external commit buttons on it."
+        },
+        "isActiveNow": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the SELECTED schedule is active at the current time (re-evaluated every 30s). Alternating schedules evaluate against week A."
+        },
+        "validationErrors": {
+          "type": "array",
+          "default": [],
+          "description": "Error keys blocking Save ('nameRequired' / 'nameTaken'); empty when the draft is saveable.",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

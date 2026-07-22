@@ -8,9 +8,10 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import { weekdayHeaders } from '../../shared/dateUtils';
-import { dayRanges, isActiveAt, orderedDays, DayKey, MINUTES_PER_DAY, ScheduleItem } from './scheduleLogic';
+import { dayRanges, isActiveAt, orderedDays, DAY_KEYS, DayKey, MINUTES_PER_DAY, ScheduleItem } from './scheduleLogic';
 import {
-    applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, removeRange, ScheduleDraft
+    applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, emptyDraft, newScheduleToFlat,
+    removeRange, validateName, ScheduleDraft
 } from './scheduleEditLogic';
 import {
     ScheduleGesture, ScheduleGestureController, ScheduleGestureKind, ScheduleGesturePreview
@@ -18,6 +19,7 @@ import {
 import { ScheduleManagerProps, mapScheduleProps } from './scheduleProps';
 import { ScheduleList } from './ScheduleList';
 import { ScheduleDetailBar } from './ScheduleDetailBar';
+import { SchedulePreviewStrip } from './SchedulePreviewStrip';
 import { WeekGrid, WeekGridDay } from './WeekGrid';
 
 // Must match ScheduleManager.COMPONENT_ID on the Java side.
@@ -26,11 +28,18 @@ export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.schedulemanager';
 /** How long the Delete button stays in its confirm step before reverting. */
 const CONFIRM_DELETE_MS = 4000;
 
+/** The preview strip / now-line / active dots re-evaluate on this cadence. */
+const NOW_TICK_MS = 30_000;
+
 interface ScheduleManagerState {
     /** The editable draft of the selected schedule (null = nothing selected). */
     draft: ScheduleDraft | null;
     /** Which schedule name the draft belongs to (selection-change detection). */
     draftFor: string;
+    /** Create flow: editing a brand-new schedule not yet on the gateway. */
+    creating: boolean;
+    /** The name under edit (rename for existing, initial name when creating). */
+    nameDraft: string;
     preview: ScheduleGesturePreview | null;
     confirmingDelete: boolean;
 }
@@ -39,20 +48,26 @@ interface ScheduleManagerState {
  * Schedule Manager — first of the admin family. Master-detail over the
  * gateway's user schedules (data.schedules, a flat mirror of Ignition's
  * BasicScheduleModel beans): schedule list + week grid of painted
- * availability. M1: the grid is a paint surface — drag empty space to add
- * availability, drag block edges to resize, click a block to remove; edits
- * are draft-only until Save fires onScheduleSave (the author's script
- * persists via system.user.editSchedule and refreshes the binding).
- * Controlled throughout; selection is two-way via state.selectedSchedule.
+ * availability. The grid is a paint surface (drag to add, drag edges to
+ * resize, click to remove); name/description/flags edit inline; a create
+ * flow starts a blank schedule. Edits stay draft-only until Save fires
+ * onScheduleSave ({schedule, isNew, oldName?}) — the author's script
+ * persists via system.user and refreshes the binding. The preview strip
+ * answers "active now? until when?" on a 30s tick. Controlled throughout;
+ * selection is two-way via state.selectedSchedule.
  */
 export class ScheduleManager extends Component<ComponentProps<ScheduleManagerProps>, ScheduleManagerState> {
 
     private gestures: ScheduleGestureController;
     private confirmTimer: number | null = null;
+    private nowTimer: number | null = null;
 
     constructor(props: ComponentProps<ScheduleManagerProps>) {
         super(props);
-        this.state = { draft: null, draftFor: '', preview: null, confirmingDelete: false };
+        this.state = {
+            draft: null, draftFor: '', creating: false, nameDraft: '',
+            preview: null, confirmingDelete: false
+        };
         this.gestures = new ScheduleGestureController(
             {
                 setPreview: (p) => this.setState({ preview: p }),
@@ -70,6 +85,9 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         this.syncDraft();
         this.writeOutputs();
         this.ensureSelection();
+        // Keep "now" honest: dots, the now-line and the preview strip drift
+        // with the clock even when nothing else re-renders.
+        this.nowTimer = window.setInterval(() => this.forceUpdate(() => this.writeOutputs()), NOW_TICK_MS);
     }
 
     componentDidUpdate(): void {
@@ -81,6 +99,9 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
     componentWillUnmount(): void {
         this.gestures.dispose();
         this.clearConfirmTimer();
+        if (this.nowTimer !== null) {
+            window.clearInterval(this.nowTimer);
+        }
     }
 
     // --- draft lifecycle ----------------------------------------------------
@@ -88,28 +109,48 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
     /**
      * Keep the draft in step with props: a selection change always resets it;
      * a bound-data change only refreshes it while it is NOT dirty (an author's
-     * polling binding must never clobber an operator's in-progress edit).
+     * polling binding must never clobber an operator's in-progress edit). The
+     * create flow owns its draft entirely — props never touch it.
      */
     private syncDraft(): void {
+        if (this.state.creating) {
+            return;
+        }
         const item = this.selected();
         if (!item) {
             if (this.state.draft !== null) {
-                this.setState({ draft: null, draftFor: '', confirmingDelete: false });
+                this.setState({ draft: null, draftFor: '', nameDraft: '', confirmingDelete: false });
             }
             return;
         }
         const selectionChanged = item.name !== this.state.draftFor;
         if (selectionChanged || (this.state.draft && !this.isDirty() && !draftEquals(this.state.draft, draftFromItem(item)))) {
-            this.setState({ draft: draftFromItem(item), draftFor: item.name, confirmingDelete: false });
+            this.setState({
+                draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
+            });
         } else if (this.state.draft === null) {
-            this.setState({ draft: draftFromItem(item), draftFor: item.name });
+            this.setState({ draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name });
         }
     }
 
     private isDirty(): boolean {
+        if (this.state.creating) {
+            return true;
+        }
         const item = this.selected();
-        return !!(item && this.state.draft && item.name === this.state.draftFor
-            && !draftEquals(this.state.draft, draftFromItem(item)));
+        if (!item || !this.state.draft || item.name !== this.state.draftFor) {
+            return false;
+        }
+        return this.state.nameDraft !== item.name || !draftEquals(this.state.draft, draftFromItem(item));
+    }
+
+    private nameError(): 'empty' | 'duplicate' | null {
+        if (!this.props.props.editable) {
+            return null;
+        }
+        const names = this.props.props.schedules.map((s) => s.name);
+        const current = this.state.creating ? '' : this.state.draftFor;
+        return validateName(this.state.nameDraft, names, current);
     }
 
     private patchDraft = (patch: Partial<ScheduleDraft>): void => {
@@ -125,26 +166,41 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         }
     }
 
+    private onNameChange = (name: string): void => {
+        this.setState({ nameDraft: name });
+    };
+
     // --- outputs / selection ------------------------------------------------
 
     private writeOutputs(): void {
         const w = this.props.store.props;
+        const item = this.selected();
+        const { dayIndex, minute } = this.now();
+        const err = this.nameError();
         w.write('output.count', this.props.props.schedules.length);
         w.write('output.isDirty', this.isDirty());
+        w.write('output.isActiveNow', !this.state.creating && !!item && isActiveAt(item, dayIndex, minute));
+        w.write('output.validationErrors', err === null ? [] : [err === 'empty' ? 'nameRequired' : 'nameTaken']);
     }
 
-    /** Auto-select the first schedule when the bound selection names nothing. */
+    /**
+     * Auto-select the first schedule when the selection is EMPTY. A non-empty
+     * name that's missing from the list is left alone — it may be a create or
+     * rename racing the binding refetch, and stomping it would deselect the
+     * schedule the user just saved.
+     */
     private ensureSelection(): void {
         const p = this.props.props;
-        if (p.schedules.length === 0) {
+        if (p.schedules.length === 0 || this.state.creating || p.selectedSchedule !== '') {
             return;
         }
-        if (!p.schedules.some((s) => s.name === p.selectedSchedule)) {
-            this.props.store.props.write('state.selectedSchedule', p.schedules[0].name);
-        }
+        this.props.store.props.write('state.selectedSchedule', p.schedules[0].name);
     }
 
     private onSelect = (name: string): void => {
+        if (this.state.creating) {
+            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
+        }
         this.props.store.props.write('state.selectedSchedule', name);
     };
 
@@ -159,7 +215,20 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         }
     }
 
+    private now(): { dayIndex: number; minute: number } {
+        const d = new Date();
+        return { dayIndex: (d.getDay() + 6) % 7, minute: d.getHours() * 60 + d.getMinutes() };
+    }
+
     // --- editing actions ----------------------------------------------------
+
+    private onCreate = (): void => {
+        this.clearConfirmTimer();
+        this.setState({
+            creating: true, draft: emptyDraft(), draftFor: '', nameDraft: '',
+            confirmingDelete: false, preview: null
+        });
+    };
 
     private onGestureCommit = (kind: ScheduleGestureKind, g: ScheduleGesture, preview: ScheduleGesturePreview | null): void => {
         const draft = this.state.draft;
@@ -182,24 +251,50 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
     };
 
     private onSave = (): void => {
-        const item = this.selected();
         const draft = this.state.draft;
-        if (!item || !draft || !this.isDirty()) {
+        if (!draft || this.nameError() !== null || !this.isDirty()) {
             return;
         }
-        this.fireEvent('onScheduleSave', { schedule: draftToFlat(item, draft), isNew: false });
+        if (this.state.creating) {
+            const name = this.state.nameDraft.trim();
+            this.fireEvent('onScheduleSave', { schedule: newScheduleToFlat(name, draft), isNew: true });
+            // Leave the create flow and follow the new schedule; the refreshed
+            // binding will contain it and the draft re-syncs from there.
+            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
+            this.props.store.props.write('state.selectedSchedule', name);
+            return;
+        }
+        const item = this.selected();
+        if (!item) {
+            return;
+        }
+        const flat = draftToFlat(item, draft);
+        const newName = this.state.nameDraft.trim();
+        const payload: { [key: string]: any } = { schedule: { ...flat, name: newName }, isNew: false };
+        if (newName !== item.name) {
+            payload.oldName = item.name;
+            // Follow the rename so the refreshed list keeps this schedule selected.
+            this.props.store.props.write('state.selectedSchedule', newName);
+        }
+        this.fireEvent('onScheduleSave', payload);
     };
 
     private onDiscard = (): void => {
+        if (this.state.creating) {
+            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '', confirmingDelete: false });
+            return;
+        }
         const item = this.selected();
         if (item) {
-            this.setState({ draft: draftFromItem(item), draftFor: item.name, confirmingDelete: false });
+            this.setState({
+                draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
+            });
         }
     };
 
     private onDelete = (): void => {
         const item = this.selected();
-        if (!item) {
+        if (!item || this.state.creating) {
             return;
         }
         if (!this.state.confirmingDelete) {
@@ -222,15 +317,13 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
 
     // --- render -------------------------------------------------------------
 
-    /** Active-at-render-time flags for the list dots (snapshot, no timer). */
+    /** Active-at-render-time flags for the list dots (refreshed by the ticker). */
     private activeFlags(): boolean[] {
-        const now = new Date();
-        const dayIndex = (now.getDay() + 6) % 7; // JS 0=Sunday → 0=Monday
-        const minute = now.getHours() * 60 + now.getMinutes();
+        const { dayIndex, minute } = this.now();
         return this.props.props.schedules.map((s) => isActiveAt(s, dayIndex, minute));
     }
 
-    private gridDays(item: ScheduleItem, draft: ScheduleDraft | null): WeekGridDay[] {
+    private gridDays(item: ScheduleItem | null, draft: ScheduleDraft | null): WeekGridDay[] {
         const p = this.props.props;
         const headers = weekdayHeaders(p.firstDayOfWeek === 'monday', p.locale);
         return orderedDays(p.firstDayOfWeek).map((key, i) => ({
@@ -238,14 +331,28 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
             label: headers[i],
             ranges: draft
                 ? (draft.allDays ? [{ start: 0, end: MINUTES_PER_DAY }] : draft.ranges[key])
-                : dayRanges(item, key)
+                : (item ? dayRanges(item, key) : [])
         }));
+    }
+
+    /** Today's column + current-time fraction for the grid's now-line. */
+    private nowMarker(): { colIndex: number; fraction: number } | null {
+        const p = this.props.props;
+        const { dayIndex, minute } = this.now();
+        const colIndex = orderedDays(p.firstDayOfWeek).indexOf(DAY_KEYS[dayIndex]);
+        const windowStart = p.dayStartHour * 60;
+        const windowSpan = (p.dayEndHour - p.dayStartHour) * 60;
+        if (minute < windowStart || minute >= windowStart + windowSpan) {
+            return null;
+        }
+        return { colIndex, fraction: (minute - windowStart) / windowSpan };
     }
 
     private renderDetail(): React.ReactNode {
         const p = this.props.props;
-        const item = this.selected();
-        if (!item) {
+        const creating = this.state.creating;
+        const item = this.selected() || null;
+        if (!item && !creating) {
             return (
                 <div className="mustry-sched-detail mustry-sched-detail--empty">
                     {p.schedules.length === 0 ? p.labels.noSchedules : p.labels.noSelection}
@@ -256,6 +363,7 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         // The grid paints from the draft while editable; painting is suspended
         // while allDays overrides the per-day availability.
         const gridEditable = !!(draft && !draft.allDays);
+        const { dayIndex, minute } = this.now();
         return (
             <div className="mustry-sched-detail">
                 <ScheduleDetailBar
@@ -263,8 +371,13 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                     draft={draft}
                     editable={p.editable}
                     dirty={this.isDirty()}
+                    nameDraft={this.state.nameDraft}
+                    nameError={this.nameError()}
+                    isNew={creating}
+                    allowDelete={p.allowDelete}
                     confirmingDelete={this.state.confirmingDelete}
                     labels={p.labels}
+                    onNameChange={this.onNameChange}
                     onDraftChange={this.patchDraft}
                     onSave={this.onSave}
                     onDiscard={this.onDiscard}
@@ -279,7 +392,17 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                     preview={this.state.preview}
                     clickToRemoveLabel={p.labels.clickToRemove}
                     onRemoveRange={this.onRemoveRange}
+                    nowMarker={this.nowMarker()}
                 />
+                {item && !creating && (
+                    <SchedulePreviewStrip
+                        item={item}
+                        dayIndex={dayIndex}
+                        minute={minute}
+                        weekdayNames={weekdayHeaders(true, p.locale)}
+                        labels={p.labels}
+                    />
+                )}
             </div>
         );
     }
@@ -292,6 +415,8 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                     items={p.schedules}
                     selectedName={p.selectedSchedule}
                     activeFlags={this.activeFlags()}
+                    creating={this.state.creating}
+                    onCreate={p.editable && p.allowCreate ? this.onCreate : null}
                     labels={p.labels}
                     onSelect={this.onSelect}
                 />

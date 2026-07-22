@@ -12,6 +12,10 @@ export interface ScheduleManagerProps {
     dayEndHour: number;
     /** Whether the grid is a paint surface with Save/Discard (default true). */
     editable: boolean;
+    /** Show the create-schedule flow (default true; requires editable). */
+    allowCreate: boolean;
+    /** Show the two-step Delete button (default true; requires editable). */
+    allowDelete: boolean;
     /** Paint/resize snapping in minutes (default 30). */
     snapMinutes: number;
     locale: string;
@@ -40,6 +44,8 @@ export function mapScheduleProps(tree: PropReader): ScheduleManagerProps {
         dayStartHour,
         dayEndHour,
         editable: tree.readBoolean('config.editable', true),
+        allowCreate: tree.readBoolean('config.allowCreate', true),
+        allowDelete: tree.readBoolean('config.allowDelete', true),
         snapMinutes: Math.max(5, Math.min(240, tree.readNumber('config.snapMinutes', 30))),
         locale,
         labels: labels as unknown as ScheduleManagerLabels,

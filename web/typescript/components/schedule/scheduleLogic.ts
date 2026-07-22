@@ -169,6 +169,62 @@ export function clampHourWindow(startHour: number, endHour: number): [number, nu
     return [s, e];
 }
 
+/** The next moment a schedule's active state flips, or null when it never
+ *  does (always-active like allDays, or never-active). */
+export interface Transition {
+    /** Whole days ahead of the probe day (0 = later today). */
+    dayOffset: number;
+    /** 0 = Monday .. 6 = Sunday of the transition. */
+    dayIndex: number;
+    /** Minute of that day (0..1439; a range ending 24:00 reports 0:00 next day). */
+    minute: number;
+    /** True when the schedule turns ON at that moment, false when it turns off. */
+    becomesActive: boolean;
+}
+
+/**
+ * Scan forward from `minute` of `dayIndex` (0 = Monday) for the next
+ * active/inactive flip. Looks 8 days out so a weekly wrap (only active
+ * earlier on this weekday) is still found; ranges touching across midnight
+ * (…-24:00 + 0:00-…) merge into one continuous interval, so no false flip
+ * fires at midnight. Alternating schedules are evaluated against week A.
+ */
+export function nextTransition(item: ScheduleItem, dayIndex: number, minute: number): Transition | null {
+    const start = ((dayIndex % 7) + 7) % 7;
+    const intervals: TimeRange[] = [];
+    for (let offset = 0; offset <= 7; offset++) {
+        const day = DAY_KEYS[(start + offset) % 7];
+        for (const r of dayRanges(item, day)) {
+            intervals.push({ start: offset * MINUTES_PER_DAY + r.start, end: offset * MINUTES_PER_DAY + r.end });
+        }
+    }
+    const merged = mergeRanges(intervals);
+    const current = merged.find((r) => minute >= r.start && minute < r.end);
+    let boundary: number;
+    let becomesActive: boolean;
+    if (current) {
+        boundary = current.end;
+        becomesActive = false;
+    } else {
+        const next = merged.find((r) => r.start > minute);
+        if (!next) {
+            return null;
+        }
+        boundary = next.start;
+        becomesActive = true;
+    }
+    if (boundary >= 8 * MINUTES_PER_DAY) {
+        return null; // active through the whole scan window: effectively always-on
+    }
+    const dayOffset = Math.floor(boundary / MINUTES_PER_DAY);
+    return {
+        dayOffset,
+        dayIndex: (start + dayOffset) % 7,
+        minute: boundary % MINUTES_PER_DAY,
+        becomesActive
+    };
+}
+
 /** Hours to label on the time gutter — every hour, or every 2/3 when cramped. */
 export function hourTicks(startHour: number, endHour: number): number[] {
     const span = endHour - startHour;

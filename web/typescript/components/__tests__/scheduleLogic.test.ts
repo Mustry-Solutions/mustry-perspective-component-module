@@ -1,7 +1,7 @@
 import {
     clampHourWindow, dayRanges, formatMinutes, formatTimeRanges, hourTicks, isActiveAt,
-    mergeRanges, MINUTES_PER_DAY, normalizeSchedule, orderedDays, parseTimeRanges, parseTimeToken,
-    ScheduleItem
+    mergeRanges, MINUTES_PER_DAY, nextTransition, normalizeSchedule, orderedDays, parseTimeRanges,
+    parseTimeToken, ScheduleItem
 } from '../schedule/scheduleLogic';
 
 function sched(overrides: any = {}): ScheduleItem {
@@ -138,6 +138,36 @@ describe('clampHourWindow', () => {
         expect(clampHourWindow(20, 8)).toEqual([0, 24]);
     });
     it('falls back on out-of-bounds input', () => expect(clampHourWindow(-1, 25)).toEqual([0, 24]));
+});
+
+describe('nextTransition', () => {
+    const s = sched(); // Mon+Tue 8:00-17:00 (dayIndex 0 = Monday)
+    it('inside a range: reports when it turns off', () => {
+        expect(nextTransition(s, 0, 600)).toEqual({ dayOffset: 0, dayIndex: 0, minute: 1020, becomesActive: false });
+    });
+    it('before a range: reports when it turns on today', () => {
+        expect(nextTransition(s, 0, 300)).toEqual({ dayOffset: 0, dayIndex: 0, minute: 480, becomesActive: true });
+    });
+    it('after the last range of the week: wraps to next Monday', () => {
+        expect(nextTransition(s, 1, 1100)).toEqual({ dayOffset: 6, dayIndex: 0, minute: 480, becomesActive: true });
+    });
+    it('midnight-touching ranges are one continuous interval', () => {
+        const night = normalizeSchedule({
+            name: 'n', monday: true, mondayTime: '22:00-24:00', tuesday: true, tuesdayTime: '0:00-6:00'
+        });
+        // Active Monday 23:00 → next flip is Tuesday 6:00, not midnight.
+        expect(nextTransition(night, 0, 1380)).toEqual({ dayOffset: 1, dayIndex: 1, minute: 360, becomesActive: false });
+    });
+    it('a range ending 24:00 with no continuation flips at 0:00 next day', () => {
+        const s2 = normalizeSchedule({ name: 'x', monday: true, mondayTime: '20:00-24:00' });
+        expect(nextTransition(s2, 0, 1230)).toEqual({ dayOffset: 1, dayIndex: 1, minute: 0, becomesActive: false });
+    });
+    it('always-active (allDays) never flips', () => {
+        expect(nextTransition(sched({ allDays: true }), 3, 100)).toBeNull();
+    });
+    it('never-active never flips', () => {
+        expect(nextTransition(normalizeSchedule({ name: 'off' }), 0, 0)).toBeNull();
+    });
 });
 
 describe('hourTicks', () => {
