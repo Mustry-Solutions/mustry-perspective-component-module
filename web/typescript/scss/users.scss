@@ -1,0 +1,131 @@
+// User Manager — third of the admin family. Shares the --adm-* variable set
+// and the schedule/roster rail/commit/delete classes; only the user-form
+// pieces live here.
+@import 'admin';
+
+.mustry-usermgr {
+    @include adm-vars;
+    @include adm-root;
+}
+
+.mustry-users-filter {
+    margin: 0 10px 8px;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 12px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--adm-accent);
+    }
+}
+
+// --- detail form -----------------------------------------------------------
+
+.mustry-users-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.mustry-users-form-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mustry-users-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mustry-users-field-label {
+    font-size: 11px;
+    color: var(--adm-muted);
+}
+
+.mustry-users-input {
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 12px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--adm-accent);
+    }
+}
+
+.mustry-users-section {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--adm-muted);
+}
+
+.mustry-users-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+}
+
+.mustry-users-hint {
+    font-size: 11px;
+    color: var(--adm-muted);
+}
+
+.mustry-users-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mustry-users-contact-type {
+    flex: 0 0 90px;
+}
+
+.mustry-users-contact-value {
+    flex: 1;
+}
+
+.mustry-users-add-contact {
+    align-self: flex-start;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-accent);
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--adm-accent);
+        background: var(--adm-accent-soft);
+    }
+}
+
+.mustry-users-password {
+    flex: 0 1 220px;
+}
+
+.mustry-users-view-row {
+    font-size: 12px;
+    color: var(--adm-muted);
+}

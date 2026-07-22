@@ -67,6 +67,10 @@
     "/roster": {
       "viewPath": "RosterDemo",
       "viewParams": {}
+    },
+    "/users": {
+      "viewPath": "UserDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

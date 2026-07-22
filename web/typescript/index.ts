@@ -10,6 +10,7 @@ import { ColorPicker, ColorPickerMeta } from './components/color/ColorPicker';
 import { OnScreenKeyboard, OnScreenKeyboardMeta } from './components/keyboard/OnScreenKeyboard';
 import { ScheduleManager, ScheduleManagerMeta } from './components/schedule/ScheduleManager';
 import { RosterManager, RosterManagerMeta } from './components/roster/RosterManager';
+import { UserManager, UserManagerMeta } from './components/users/UserManager';
 
 import './scss/picker.scss';
 import './scss/calendar.scss';
@@ -22,9 +23,10 @@ import './scss/color.scss';
 import './scss/keyboard.scss';
 import './scss/schedule.scss';
 import './scss/roster.scss';
+import './scss/users.scss';
 import './scss/commit.scss';
 
-export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard, ScheduleManager, RosterManager };
+export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard, ScheduleManager, RosterManager, UserManager };
 
 // Register every component this module provides with the Perspective client registry.
 const components: Array<ComponentMeta> = [
@@ -38,7 +40,8 @@ const components: Array<ComponentMeta> = [
     new ColorPickerMeta(),
     new OnScreenKeyboardMeta(),
     new ScheduleManagerMeta(),
-    new RosterManagerMeta()
+    new RosterManagerMeta(),
+    new UserManagerMeta()
 ];
 
 components.forEach((c: ComponentMeta) => ComponentRegistry.register(c));

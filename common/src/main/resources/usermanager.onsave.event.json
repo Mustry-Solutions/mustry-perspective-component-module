@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when the user presses Save on a dirty draft. Persist event.user with system.user.editUser (or addUser when isNew) and refresh the data.users binding. When present, event.password is a staged password to apply (u.set('password', ...)) — it appears ONLY when config.allowPasswordChange is enabled; handle it deliberately and never log it.",
+  "properties": {
+    "user": {
+      "type": "object",
+      "description": "The full desired user as the flat PyUser mirror: username, firstName, lastName, schedule, language, notes, roles[], contactInfo[] (blank contact rows already dropped)."
+    },
+    "isNew": {
+      "type": "boolean",
+      "description": "True when this save comes from the create flow (persist with system.user.addUser)."
+    },
+    "password": {
+      "type": "string",
+      "description": "Present only when a password was staged (config.allowPasswordChange). Apply via u.set('password', ...) in the persistence script; subject to the user source's complexity policy."
+    }
+  }
+}

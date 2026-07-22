@@ -8,6 +8,24 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### User Manager (new component — the admin family is complete)
+Twelfth component: `mustrysolutions.ingots.admin.usermanager` — Vision's
+User Management for Perspective, closing out the admin family. A filterable
+user rail + a detail form editing names, schedule (dropdown), language,
+notes, role chips and contact-info rows, all against the flat PyUser mirror
+(`data.users`, bound via `system.user.getUsers()`; role/schedule catalogs
+bound alongside). Passwords are OPT-IN and payload-only:
+`config.allowPasswordChange` (default off) stages a password that travels
+only in the `onUserSave {user, isNew, password?}` event — never through
+props, state or output — and the docs say loudly to put the component
+behind security levels + TLS first. Create/delete flows with username
+validation (`onUserDelete {username}`); AD/LDAP sources degrade to a
+viewer via `config.editable: false`. The `/users` demo persists for real
+(roles/contacts rebuilt wholesale, delete-admin refused, complexity policy
+respected). `output.count/isDirty/validationErrors`, 7-language labels,
+shared `--adm-*` theming. 7 pure-logic jest suites' worth of draft ops + 5
+e2e tests incl. a create-with-password→edit→delete lifecycle.
+
 ### Roster Manager (new component — second of the admin family)
 Eleventh component: `mustrysolutions.ingots.admin.rostermanager` — a runtime
 UI over the gateway's alarm-notification rosters (Vision's Roster

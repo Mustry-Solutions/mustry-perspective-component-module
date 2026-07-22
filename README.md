@@ -1,6 +1,6 @@
 # Mustry Solutions Ingots
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships eleven components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the admin family's **Schedule Manager** and **Roster Manager**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships twelve components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager** and **User Manager**.
 
 - **Module ID:** `com.mustrysolutions.ingots`
 - **Palette category:** `Mustry Solutions`
@@ -363,6 +363,25 @@ A runtime UI over the gateway's **alarm-notification rosters** — Vision's Rost
 - **Typeahead directory picker** (`+ Add user`) over the bound `data.availableUsers` directory; rows resolve display names and contact points from it, and **warn when a user has no contact info** — the failure mode roster admins are actually hunting.
 - **Create / delete** (`config.allowCreate` / `allowDelete`), draft-only edits with the shared Save/Discard tail, name validation, `output.count` / `isDirty` / `validationErrors`, two-way `state.selectedRoster`. Labels in the same 7 languages, `--adm-*` family theming.
 - **Controlled write-back** — `system.roster` is **append-only** (no reorder primitive), so Save fires **`onRosterSave`** `{name, users, isNew}` with the FULL desired ordered list and the author's script reconciles: `createRoster` when new, `removeUsers(current)`, then `addUsers(users)` in order. Delete fires **`onRosterDelete`** `{name}`. The `/roster` demo ships the reconcile script and seeds a demo directory.
+
+### Theming
+
+The shared admin-family `--adm-*` variables (see Schedule Manager).
+
+
+---
+
+## User Manager
+
+A runtime UI over a gateway **user source** — Vision's User Management, which Perspective lacks. Third and final component of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.usermanager`.
+
+### Features
+
+- **Master-detail** — a filterable user rail (client-side typeahead over username/name) and a detail form editing first/last name, schedule (dropdown from `data.availableSchedules`), language, notes, **role chips** (from `data.availableRoles`) and **contact-info rows** (email/sms/phone type + value, add/remove).
+- **Passwords are opt-in and payload-only** — `config.allowPasswordChange` (default **off**) reveals a staged-password field; the value travels ONLY in the `onUserSave` payload, never through props, state or `output.*`. Put the component behind Perspective security levels and TLS before enabling.
+- **Create / delete** (`config.allowCreate` / `allowDelete`) with username validation; draft-only edits with the shared Save/Discard tail; `output.count` / `isDirty` / `validationErrors`; two-way `state.selectedUser`. Labels in the same 7 languages, `--adm-*` family theming.
+- **Read-only degrade** — AD/LDAP-backed sources can't be written through `system.user`; set `config.editable: false` and the component becomes a directory viewer (it cannot detect writability itself).
+- **Controlled write-back** — `data.users` mirrors PyUser (bind via `system.user.getUsers()`); Save fires **`onUserSave`** `{user, isNew, password?}` and Delete fires **`onUserDelete`** `{username}`; the author's script persists via `system.user.addUser`/`editUser`/`removeUser`. The `/users` demo ships reference scripts (including the roles/contacts wholesale rebuild and a guard that refuses to delete `admin`) — note the user source's password complexity policy applies to staged passwords.
 
 ### Theming
 
