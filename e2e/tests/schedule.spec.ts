@@ -18,11 +18,32 @@ test.describe('Schedule Manager', () => {
         await expect(page.locator('text=output.count')).toContainText(/output\.count: [3-9]/);
     });
 
+    /**
+     * Select Demo Day Shift and guarantee its canonical shape (10 blocks:
+     * 5 weekdays x 2 ranges). A failed earlier run may have SAVED an edited
+     * copy to the gateway; deleting it makes the binding re-append the
+     * synthetic canonical version.
+     */
+    async function selectCanonicalDayShift(page: any, root: any) {
+        await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' }).click();
+        await expect(root.locator('.mustry-sched-name-input')).toHaveValue('Demo Day Shift');
+        const blocks = root.locator('.mustry-sched-block');
+        try {
+            await expect(blocks).toHaveCount(10, { timeout: 3000 });
+        } catch {
+            const del = root.locator('.mustry-sched-delete');
+            await del.click();
+            await del.click();
+            await expect(page.getByText(/onScheduleDelete /)).toBeVisible();
+            await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' })
+                .click({ timeout: 15_000 });
+            await expect(blocks).toHaveCount(10, { timeout: 15_000 });
+        }
+    }
+
     test('selecting a schedule paints its availability and writes state back', async ({ page }) => {
         const root = await openRoute(page, '/schedule', '.mustry-schedmgr');
-        await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' }).click();
-        // 5 weekdays x 2 ranges (8:00-12:00, 12:30-17:00) = 10 blocks.
-        await expect(root.locator('.mustry-sched-block')).toHaveCount(10);
+        await selectCanonicalDayShift(page, root);
         await expect(root.locator('.mustry-sched-dayhead')).toHaveCount(7);
         await expect(root.locator('.mustry-sched-name-input')).toHaveValue('Demo Day Shift');
         // Two-way state: the demo readout reflects the selection. (Anchored so
@@ -55,8 +76,7 @@ test.describe('Schedule Manager', () => {
 
     test('painting availability dirties the draft and Discard reverts it', async ({ page }) => {
         const root = await openRoute(page, '/schedule', '.mustry-schedmgr');
-        await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' }).click();
-        await expect(root.locator('.mustry-sched-block')).toHaveCount(10);
+        await selectCanonicalDayShift(page, root);
         // Saturday (6th column, monday-first) is empty — paint 6:00→12:00.
         const saturday = root.locator('.mustry-sched-col').nth(5);
         await dragInColumn(page, saturday, 0.25, 0.5);
@@ -84,7 +104,8 @@ test.describe('Schedule Manager', () => {
         await blocks.first().click();
         await expect(blocks).toHaveCount(before - 1);
         await root.locator('.mustry-commit-save').click();
-        await expect(page.getByText(/onScheduleSave persisted "Demo Day Shift"/)).toBeVisible();
+        // First save on a fresh gateway CREATES the demo schedule; later saves edit it.
+        await expect(page.getByText(/onScheduleSave (persisted|created) "Demo Day Shift"/)).toBeVisible();
         // The refetch clears the dirty badge without discarding anything.
         await expect(root.locator('.mustry-commit-badge')).toHaveCount(0, { timeout: 15_000 });
 

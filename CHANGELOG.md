@@ -8,6 +8,26 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Roster Manager (new component — second of the admin family)
+Eleventh component: `mustrysolutions.ingots.admin.rostermanager` — a runtime
+UI over the gateway's alarm-notification rosters (Vision's Roster
+Management; Perspective has nothing). A roster is the ORDERED escalation
+sequence alarm pipelines walk, so the UI treats order as the point: rows
+carry "Contact N" ordinals and reorder by dragging a grip; a typeahead
+picker over the bound `data.availableUsers` directory appends users; rows
+resolve names/contact points and warn when a user has NO contact info (the
+real failure mode). Create/delete flows with name validation; draft-only
+edits with the shared Save/Discard tail. Controlled: `system.roster` is
+append-only — no reorder primitive — so `onRosterSave {name, users, isNew}`
+carries the full desired order and the author's script reconciles
+(createRoster → removeUsers → addUsers); `onRosterDelete {name}`. The
+`/roster` demo persists for real and seeds a small demo directory
+(including a contact-less user to show the warning).
+`output.count/isDirty/validationErrors`, 7-language labels, shared
+`--adm-*` theming (now a SCSS mixin used by the whole family). 14 new
+pure-logic jest cases + 4 e2e tests incl. a create→persist→delete
+lifecycle and a reorder-persist round-trip.
+
 ### Schedule Manager (new component — first of the admin family)
 Tenth component: `mustrysolutions.ingots.admin.schedulemanager` — a runtime
 UI over the gateway's user schedules, the highest-vote component-shaped gap

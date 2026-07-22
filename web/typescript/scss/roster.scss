@@ -1,0 +1,228 @@
+// Roster Manager — second of the admin family. Shares the --adm-* variable
+// set and the schedule component's rail/commit/delete classes; only the
+// roster-specific pieces live here.
+@import 'admin';
+
+.mustry-rostermgr {
+    @include adm-vars;
+    @include adm-root;
+}
+
+// --- detail pane -----------------------------------------------------------
+
+.mustry-roster-detail {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    gap: 10px;
+
+    &--empty {
+        align-items: center;
+        justify-content: center;
+        color: var(--adm-muted);
+    }
+}
+
+.mustry-roster-detail-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mustry-roster-detail-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.mustry-roster-add-wrap {
+    position: relative;
+}
+
+.mustry-roster-add {
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-accent);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        border-color: var(--adm-accent);
+        background: var(--adm-accent-soft);
+    }
+}
+
+// --- ordered user rows -----------------------------------------------------
+
+.mustry-roster-users {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border: 1px solid var(--adm-border);
+    border-radius: 6px;
+}
+
+.mustry-roster-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: var(--adm-muted);
+    text-align: center;
+}
+
+.mustry-roster-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--adm-border);
+    background: var(--adm-bg);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &--moving {
+        background: var(--adm-accent-soft);
+    }
+}
+
+.mustry-roster-grip {
+    flex: 0 0 auto;
+    padding: 2px 4px;
+    color: var(--adm-muted);
+    cursor: grab;
+    touch-action: none; // the grip owns vertical drags
+    user-select: none;
+}
+
+.mustry-roster-ordinal {
+    flex: 0 0 76px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--adm-accent);
+    white-space: nowrap;
+}
+
+.mustry-roster-user {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.mustry-roster-user-name {
+    font-weight: 600;
+}
+
+.mustry-roster-user-sub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--adm-muted);
+}
+
+.mustry-roster-contact {
+    white-space: nowrap;
+}
+
+.mustry-roster-warn {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--adm-danger);
+    white-space: nowrap;
+}
+
+.mustry-roster-remove {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-muted);
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover {
+        color: var(--adm-danger);
+        background: var(--adm-panel-bg);
+    }
+}
+
+// --- directory picker ------------------------------------------------------
+
+.mustry-roster-picker {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    z-index: 10;
+    width: 260px;
+    max-height: 280px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--adm-border);
+    border-radius: 6px;
+    background: var(--adm-bg);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.mustry-roster-picker-search {
+    margin: 8px;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 4px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 12px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--adm-accent);
+    }
+}
+
+.mustry-roster-picker-list {
+    overflow-y: auto;
+}
+
+.mustry-roster-picker-none {
+    padding: 10px;
+    color: var(--adm-muted);
+    font-size: 12px;
+}
+
+.mustry-roster-picker-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+
+    &:hover {
+        background: var(--adm-accent-soft);
+    }
+}
+
+.mustry-roster-picker-name {
+    font-weight: 600;
+}
+
+.mustry-roster-picker-sub {
+    font-size: 11px;
+    color: var(--adm-muted);
+}

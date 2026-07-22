@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "description": "Fired when the user presses Save on a dirty draft. `users` is the FULL desired ordered list (order = escalation sequence). Reconcile via system.roster: create the roster when isNew, then removeUsers(current) and addUsers(users) — the API is append-only, so ordering is rewritten wholesale. Refresh the data.rosters binding afterwards.",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The roster's name."
+    },
+    "users": {
+      "type": "array",
+      "description": "The full desired ordered username list.",
+      "items": { "type": "string" }
+    },
+    "isNew": {
+      "type": "boolean",
+      "description": "True when this save comes from the create flow (persist with system.roster.createRoster first)."
+    }
+  }
+}

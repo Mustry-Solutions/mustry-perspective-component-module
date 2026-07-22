@@ -27,5 +27,6 @@ public final class Components {
         CodeEditor.DESCRIPTOR,
         ColorPicker.DESCRIPTOR,
         Keyboard.DESCRIPTOR,
-        ScheduleManager.DESCRIPTOR);
+        ScheduleManager.DESCRIPTOR,
+        RosterManager.DESCRIPTOR);
 }

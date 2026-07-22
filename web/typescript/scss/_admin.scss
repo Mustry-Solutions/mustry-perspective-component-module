@@ -1,0 +1,39 @@
+// The admin family's shared theme variables (--adm-*), included on EACH
+// family component's root (.mustry-schedmgr, .mustry-rostermgr, …) so any
+// of them can be themed alone or all together, and portalled panels keep
+// working. Defaults track the active Perspective theme where a var exists.
+@mixin adm-vars {
+    --adm-accent: var(--callToAction, #0a66c2);
+    --adm-accent-soft: var(--callToActionHighlight, #dbeafe);
+    --adm-text: var(--neutral-90, #1f2933);
+    --adm-muted: var(--neutral-60, #7b8794);
+    --adm-border: var(--neutral-30, #cbd2d9);
+    --adm-bg: var(--neutral-10, #ffffff);
+    --adm-panel-bg: var(--neutral-20, #f5f7fa);
+    --adm-active: var(--good, #2e7d32);
+    --adm-danger: var(--error, #d32f2f);
+
+    // Aliases the shared commit tail (scss/commit.scss) reads.
+    --commit-accent: var(--adm-accent);
+    --commit-accent-text: var(--callToActionContrast, #ffffff);
+    --commit-muted: var(--adm-muted);
+}
+
+// The family's shared root chrome (border, type, layout).
+@mixin adm-root {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--adm-border);
+    border-radius: 8px;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+    font-size: 13px;
+    overflow: hidden;
+    user-select: none;
+
+    * {
+        box-sizing: border-box;
+    }
+}

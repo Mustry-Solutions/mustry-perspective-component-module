@@ -19,3 +19,4 @@ export * from './labels/code';
 export * from './labels/color';
 export * from './labels/keyboard';
 export * from './labels/schedule';
+export * from './labels/roster';

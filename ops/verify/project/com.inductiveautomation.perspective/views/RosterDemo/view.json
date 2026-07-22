@@ -1,0 +1,180 @@
+{
+ "custom": {
+  "lastEvent": "",
+  "refreshTick": 0
+ },
+ "propConfig": {
+  "custom.lastEvent": {
+   "persistent": true
+  },
+  "custom.refreshTick": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 960,
+   "height": 600
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Roster Manager demo — EDITS ARE REAL: data.rosters binds the gateway's alarm rosters (system.roster.getRosters(), plus a synthetic 'Demo Escalation' until it's saved), data.availableUsers binds the default user source (the binding seeds three demo users incl. one with NO contact info, to show the warning). Order is the escalation sequence: drag a row's grip to reorder, '+ Add user' opens the typeahead picker, ✕ removes a row, then Save — the script reconciles via system.roster removeUsers + addUsers (the API is append-only). '+ New roster' creates one; Delete asks twice.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 920,
+     "height": 72
+    }
+   },
+   {
+    "type": "mustrysolutions.ingots.admin.rostermanager",
+    "version": 0,
+    "props": {
+     "config": {}
+    },
+    "custom": {},
+    "propConfig": {
+     "props.data.rosters": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\t# The gateway's real rosters, plus a synthetic 'Demo Escalation' shown\n\t# until a save persists it for real (then the gateway copy wins).\n\td = system.roster.getRosters()\n\tout = []\n\tfor k in sorted(d.keys()):\n\t\ttry:\n\t\t\tout.append({'name': str(k), 'users': [str(u) for u in d[k]]})\n\t\texcept Exception:\n\t\t\tpass\n\t# Demo convenience: show the synthetic escalation when the gateway has no\n\t# (or only an EMPTY) 'Demo Escalation' — a save then persists it for real.\n\tdemo = [r for r in out if r['name'] == 'Demo Escalation']\n\tif not demo:\n\t\tout.append({'name': 'Demo Escalation', 'users': ['jdoe', 'mvermeer', 'admin']})\n\telif not demo[0]['users']:\n\t\tdemo[0]['users'] = ['jdoe', 'mvermeer', 'admin']\n\treturn out\n"
+        }
+       ]
+      }
+     },
+     "props.data.availableUsers": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
+       },
+       "transforms": [
+        {
+         "type": "script",
+         "code": "\t# The 'default' user source as the picker directory. First ensure three demo\n\t# users exist (idempotent; kpatel deliberately has NO contact info so the\n\t# roster rows can show the warning) — a dev-gateway convenience, remove for\n\t# production bindings. NOTE: bare except on purpose — Jython's 'except\n\t# Exception' does not catch Java exceptions from system.user.\n\timport sys\n\tlog = system.util.getLogger('RosterDemo')\n\tSRC = 'default'\n\tdef ensure(username, first, last, contacts):\n\t\ttry:\n\t\t\tif system.user.getUser(SRC, username) is None:\n\t\t\t\tu = system.user.getNewUser(SRC, username)\n\t\t\t\tu.set('firstname', first)\n\t\t\t\tu.set('lastname', last)\n\t\t\t\tu.set('password', 'Demo-1234!')\n\t\t\t\tfor t, v in contacts:\n\t\t\t\t\tu.addContactInfo(t, v)\n\t\t\t\tresp = system.user.addUser(SRC, u)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addUser(' + username + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + username + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('jdoe', 'Jane', 'Doe', [('email', 'jane.doe@example.com')])\n\tensure('mvermeer', 'Mia', 'Vermeer', [('email', 'mia@example.com'), ('sms', '+31600000001')])\n\tensure('kpatel', 'Kiran', 'Patel', [])\n\tout = []\n\tfor u in system.user.getUsers(SRC):\n\t\ttry:\n\t\t\tci = []\n\t\t\tfor c in u.contactInfo:\n\t\t\t\tci.append({'contactType': str(c.contactType), 'value': str(c.value)})\n\t\t\tout.append({'username': str(u.get('username') or ''), 'firstName': str(u.get('firstname') or ''), 'lastName': str(u.get('lastname') or ''), 'contactInfo': ci})\n\t\texcept:\n\t\t\tlog.warn('map user failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
+        }
+       ]
+      }
+     }
+    },
+    "events": {
+     "component": {
+      "onRosterSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: system.roster is append-only, so the full desired\n\t# order is rewritten wholesale — create if new, clear, then append in order.\n\t# addUsers/removeUsers take USER OBJECTS (not username strings): resolve\n\t# each username against the user source first. Bare except on purpose —\n\t# Jython's 'except Exception' does not catch Java exceptions.\n\timport sys\n\tname = str(event.name)\n\twanted = [str(u) for u in event.users]\n\ttry:\n\t\tif name not in [str(n) for n in system.roster.getRosterNames()]:\n\t\t\tsystem.roster.createRoster(name, 'Created from RosterDemo')\n\t\tcurrent = system.roster.getUsers(name)\n\t\tif current:\n\t\t\tsystem.roster.removeUsers(name, current)\n\t\tobjs = []\n\t\tmissing = []\n\t\tfor uname in wanted:\n\t\t\tu = system.user.getUser('default', uname)\n\t\t\tif u is None:\n\t\t\t\tmissing.append(uname)\n\t\t\telse:\n\t\t\t\tobjs.append(u)\n\t\tif objs:\n\t\t\tsystem.roster.addUsers(name, objs)\n\t\tmsg = 'onRosterSave persisted \"' + name + '\" (' + str(len(objs)) + ' users, isNew=' + str(bool(event.isNew)) + ')'\n\t\tif missing:\n\t\t\tmsg = msg + ' — skipped unknown: ' + ','.join(missing)\n\t\tself.view.custom.lastEvent = msg\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRosterDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\timport sys\n\ttry:\n\t\tsystem.roster.deleteRoster(str(event.name))\n\t\tself.view.custom.lastEvent = 'onRosterDelete removed \"' + str(event.name) + '\"'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "rostermgr"
+    },
+    "position": {
+     "x": 16,
+     "y": 90,
+     "width": 720,
+     "height": 420
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'state.selectedRoster: \"' + {../rostermgr.props.state.selectedRoster} + '\"   output.count: ' + toStr({../rostermgr.props.output.count}) + '   output.isDirty: ' + toStr({../rostermgr.props.output.isDirty})"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 16,
+     "y": 518,
+     "width": 720,
+     "height": 22
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "color": "#7b8794",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "eventLabel"
+    },
+    "position": {
+     "x": 16,
+     "y": 542,
+     "width": 720,
+     "height": 22
+    }
+   }
+  ]
+ }
+}
