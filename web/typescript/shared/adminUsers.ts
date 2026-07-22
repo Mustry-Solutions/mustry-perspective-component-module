@@ -9,6 +9,16 @@ export interface ContactInfo {
     value: string;
 }
 
+/** A per-user schedule override (vacation, extra on-call cover, …).
+ *  Instants serialize as 'YYYY-MM-DD HH:mm' on the wire. */
+export interface ScheduleAdjustment {
+    start: string;
+    end: string;
+    /** true = extra availability; false = time off (the common case). */
+    available: boolean;
+    note: string;
+}
+
 export interface AdminUser {
     username: string;
     firstName: string;
@@ -18,6 +28,7 @@ export interface AdminUser {
     notes: string;
     roles: string[];
     contactInfo: ContactInfo[];
+    scheduleAdjustments: ScheduleAdjustment[];
 }
 
 export function normalizeAdminUser(raw: any): AdminUser {
@@ -36,6 +47,16 @@ export function normalizeAdminUser(raw: any): AdminUser {
                 .map((c: any) => ({
                     contactType: c.contactType == null ? '' : String(c.contactType),
                     value: c.value == null ? '' : String(c.value)
+                }))
+            : [],
+        scheduleAdjustments: Array.isArray(src.scheduleAdjustments)
+            ? src.scheduleAdjustments
+                .filter((a: any) => a != null)
+                .map((a: any) => ({
+                    start: a.start == null ? '' : String(a.start),
+                    end: a.end == null ? '' : String(a.end),
+                    available: !!a.available,
+                    note: a.note == null ? '' : String(a.note)
                 }))
             : []
     };

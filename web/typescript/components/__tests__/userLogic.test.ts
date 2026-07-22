@@ -1,6 +1,7 @@
 import { normalizeAdminUser } from '../../shared/adminUsers';
 import {
-    addContact, emptyUserDraft, removeContact, toggleRole, updateContact, userDraftEquals,
+    addAdjustment, addContact, emptyUserDraft, inputToInstant, instantToInput, invalidAdjustments,
+    removeAdjustment, removeContact, toggleRole, updateAdjustment, updateContact, userDraftEquals,
     userDraftFromItem, userDraftToFlat
 } from '../users/userLogic';
 
@@ -66,5 +67,49 @@ describe('userDraftToFlat', () => {
         const d = userDraftFromItem(item());
         d.password = 'Secret-1!';
         expect('password' in userDraftToFlat('jdoe', d)).toBe(false);
+    });
+});
+
+
+describe('schedule adjustments', () => {
+    it('normalizes from the bound user and round-trips through the draft', () => {
+        const u = normalizeAdminUser({
+            username: 'x',
+            scheduleAdjustments: [{ start: '2026-08-01 08:00', end: '2026-08-05 17:00', available: false, note: 'vacation' }]
+        });
+        const d = userDraftFromItem(u);
+        expect(d.scheduleAdjustments).toEqual(u.scheduleAdjustments);
+        expect(userDraftToFlat('x', d).scheduleAdjustments).toEqual(u.scheduleAdjustments);
+    });
+    it('an adjustment edit makes the draft dirty', () => {
+        const u = normalizeAdminUser({ username: 'x' });
+        const a = userDraftFromItem(u);
+        const b = addAdjustment(userDraftFromItem(u));
+        expect(userDraftEquals(a, b)).toBe(false);
+    });
+    it('add/update/remove are positional and immutable', () => {
+        let d = addAdjustment(emptyUserDraft());
+        d = updateAdjustment(d, 0, { start: '2026-08-01 08:00', end: '2026-08-02 08:00', note: 'cover' });
+        expect(d.scheduleAdjustments[0].note).toBe('cover');
+        expect(removeAdjustment(d, 0).scheduleAdjustments).toEqual([]);
+    });
+    it('all-blank rows are dropped on save, not saved empty', () => {
+        const d = addAdjustment(emptyUserDraft());
+        expect(userDraftToFlat('x', d).scheduleAdjustments).toEqual([]);
+        expect(invalidAdjustments(d)).toEqual([]);
+    });
+    it('partially filled or inverted rows block save', () => {
+        let d = addAdjustment(emptyUserDraft());
+        d = updateAdjustment(d, 0, { note: 'oops' });
+        expect(invalidAdjustments(d)).toEqual([0]);
+        d = updateAdjustment(d, 0, { start: '2026-08-05 17:00', end: '2026-08-01 08:00' });
+        expect(invalidAdjustments(d)).toEqual([0]); // inverted
+        d = updateAdjustment(d, 0, { start: '2026-08-01 08:00', end: '2026-08-05 17:00' });
+        expect(invalidAdjustments(d)).toEqual([]);
+    });
+    it('instant <-> datetime-local conversion round-trips', () => {
+        expect(instantToInput('2026-08-01 08:00')).toBe('2026-08-01T08:00');
+        expect(inputToInstant('2026-08-01T08:00')).toBe('2026-08-01 08:00');
+        expect(inputToInstant('')).toBe('');
     });
 });

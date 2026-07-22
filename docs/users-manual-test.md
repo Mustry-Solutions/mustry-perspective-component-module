@@ -44,6 +44,9 @@ The committed demo at `/users` (verify project) binds the gateway's
       the script's own feedback).
 - [ ] Deleting the account you are logged in with: decide what should
       happen BEFORE trying it in production (the demo refuses 'admin').
+- [ ] Availability adjustments: add a vacation row (available unticked)
+      covering NOW for a user on an "Always" schedule — alarm pipelines
+      skip that user for the duration (verify with a test pipeline).
 - [ ] Save persists across a gateway restart.
 
 ## Role-catalog management (config.allowRoleManagement)

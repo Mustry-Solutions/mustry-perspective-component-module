@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { UserManagerLabels } from '../../shared/labels/users';
-import { UserDraft, addContact, removeContact, updateContact } from './userLogic';
+import {
+    UserDraft, addAdjustment, addContact, inputToInstant, instantToInput, invalidAdjustments,
+    removeAdjustment, removeContact, updateAdjustment, updateContact
+} from './userLogic';
 import { RolesEditor } from './RolesEditor';
 
 /** The contact types the UI offers (the data model keeps the set open). */
@@ -108,6 +111,67 @@ export function UserDetailForm(props: UserDetailFormProps): JSX.Element {
                 onClick={() => props.onChange(addContact(draft, 'email'))}
             >
                 + {labels.addContact}
+            </button>
+
+            <div className="mustry-users-section">{labels.adjustments}</div>
+            <span className="mustry-users-hint">{labels.adjHint}</span>
+            {draft.scheduleAdjustments.map((a, i) => {
+                const invalid = invalidAdjustments(draft).indexOf(i) >= 0;
+                return (
+                    <div key={i} className="mustry-users-adj-row">
+                        <label className="mustry-users-field mustry-users-adj-instant">
+                            <span className="mustry-users-field-label">{labels.adjStart}</span>
+                            <input
+                                className={'mustry-users-input' + (invalid ? ' mustry-sched-name-input--invalid' : '')}
+                                type="datetime-local"
+                                value={instantToInput(a.start)}
+                                onChange={(e) => props.onChange(updateAdjustment(draft, i, { start: inputToInstant(e.target.value) }))}
+                            />
+                        </label>
+                        <label className="mustry-users-field mustry-users-adj-instant">
+                            <span className="mustry-users-field-label">{labels.adjEnd}</span>
+                            <input
+                                className={'mustry-users-input' + (invalid ? ' mustry-sched-name-input--invalid' : '')}
+                                type="datetime-local"
+                                value={instantToInput(a.end)}
+                                onChange={(e) => props.onChange(updateAdjustment(draft, i, { end: inputToInstant(e.target.value) }))}
+                            />
+                        </label>
+                        <label className="mustry-sched-toggle mustry-users-adj-avail">
+                            <input
+                                type="checkbox"
+                                checked={a.available}
+                                onChange={(e) => props.onChange(updateAdjustment(draft, i, { available: e.target.checked }))}
+                            />
+                            {labels.adjAvailable}
+                        </label>
+                        <input
+                            className="mustry-users-input mustry-users-adj-note"
+                            type="text"
+                            value={a.note}
+                            placeholder={labels.adjNote}
+                            aria-label={labels.adjNote}
+                            onChange={(e) => props.onChange(updateAdjustment(draft, i, { note: e.target.value }))}
+                        />
+                        <button
+                            type="button"
+                            className="mustry-roster-remove"
+                            title={labels.removeContact}
+                            aria-label={`${labels.removeContact} ${labels.adjustments} ${i + 1}`}
+                            onClick={() => props.onChange(removeAdjustment(draft, i))}
+                        >
+                            ✕
+                        </button>
+                        {invalid && <span className="mustry-sched-name-error">{labels.adjInvalid}</span>}
+                    </div>
+                );
+            })}
+            <button
+                type="button"
+                className="mustry-users-add-contact mustry-users-add-adj"
+                onClick={() => props.onChange(addAdjustment(draft))}
+            >
+                + {labels.addAdjustment}
             </button>
 
             {props.showPassword && (

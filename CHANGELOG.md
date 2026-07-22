@@ -8,6 +8,19 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### User Manager: availability adjustments
+The detail form gains an "Availability adjustments" section editing the
+per-user schedule overrides Ignition already models (vacation = available
+false, extra cover = available true): from/until instants
+(datetime-local, wire format 'YYYY-MM-DD HH:mm'), note, add/remove rows.
+Blank rows drop on save; partially filled or inverted rows BLOCK save
+('adjustmentInvalid' in output.validationErrors). Rides in the existing
+onUserSave payload (user.scheduleAdjustments, rebuilt wholesale via
+system.user.createScheduleAdjustment — see the /users reference script,
+which also documents that the ScheduleAdjustment bean's getter names
+vary, hence the defensive accessors). e2e covers the full round-trip
+incl. validation blocking.
+
 ### Holiday Manager (new component — admin family #4)
 Thirteenth component: `mustrysolutions.ingots.admin.holidaymanager` — the
 missing quarter of the schedule story: schedules can "observe holidays"

@@ -181,6 +181,38 @@
             "roleWarning": {
               "type": "string",
               "description": "Manage-mode warning that policies reference roles by name."
+            },
+            "adjustments": {
+              "type": "string",
+              "description": "Availability-adjustments section heading."
+            },
+            "addAdjustment": {
+              "type": "string",
+              "description": "Add-adjustment-row button."
+            },
+            "adjStart": {
+              "type": "string",
+              "description": "Adjustment start label."
+            },
+            "adjEnd": {
+              "type": "string",
+              "description": "Adjustment end label."
+            },
+            "adjAvailable": {
+              "type": "string",
+              "description": "Available toggle (unchecked = time off)."
+            },
+            "adjNote": {
+              "type": "string",
+              "description": "Note input placeholder."
+            },
+            "adjInvalid": {
+              "type": "string",
+              "description": "Row validation message."
+            },
+            "adjHint": {
+              "type": "string",
+              "description": "Section hint explaining override semantics."
             }
           }
         },
@@ -255,6 +287,31 @@
                     }
                   }
                 }
+              },
+              "scheduleAdjustments": {
+                "type": "array",
+                "description": "Per-user schedule overrides, e.g. vacation (available: false) or extra cover (available: true). Instants as 'YYYY-MM-DD HH:mm'.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "string",
+                      "description": "Start instant, 'YYYY-MM-DD HH:mm'."
+                    },
+                    "end": {
+                      "type": "string",
+                      "description": "End instant, 'YYYY-MM-DD HH:mm' (after start)."
+                    },
+                    "available": {
+                      "type": "boolean",
+                      "description": "true = extra availability; false = time off."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "Free-text reason shown in the row."
+                    }
+                  }
+                }
               }
             }
           }
@@ -315,7 +372,7 @@
         "validationErrors": {
           "type": "array",
           "default": [],
-          "description": "Error keys blocking Save ('usernameRequired' / 'usernameTaken'); empty when the draft is saveable.",
+          "description": "Error keys blocking Save ('usernameRequired' / 'usernameTaken' / 'adjustmentInvalid'); empty when the draft is saveable.",
           "items": {
             "type": "string"
           }

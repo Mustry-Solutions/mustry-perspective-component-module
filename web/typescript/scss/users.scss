@@ -213,3 +213,25 @@
         background: var(--adm-accent-soft);
     }
 }
+
+// --- availability adjustments ----------------------------------------------
+
+.mustry-users-adj-row {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mustry-users-adj-instant {
+    flex: 0 1 190px;
+}
+
+.mustry-users-adj-avail {
+    padding-bottom: 5px;
+}
+
+.mustry-users-adj-note {
+    flex: 1 1 140px;
+    min-width: 100px;
+}
