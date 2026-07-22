@@ -8,6 +8,18 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### User Manager: role-catalog management (opt-in)
+`config.allowRoleManagement` (default off) adds a manage mode to the Roles
+section: add, inline-rename and two-step-delete roles in the user source's
+catalog, firing `onRoleSave {name, oldName?}` / `onRoleDelete {name}`
+immediately (persist via `system.user.addRole/editRole/removeRole`).
+Renames keep user assignments (the source stores role ids); the UI warns
+that security policies reference roles BY NAME. Folded into the User
+Manager rather than a separate component — Ignition roles are flat
+strings, and role gaps are noticed while assigning them. The `/users`
+demo persists for real (and refuses to delete 'Administrator'); e2e
+covers add → assign → rename-keeps-assignment → delete.
+
 ### User Manager (new component — the admin family is complete)
 Twelfth component: `mustrysolutions.ingots.admin.usermanager` — Vision's
 User Management for Perspective, closing out the admin family. A filterable

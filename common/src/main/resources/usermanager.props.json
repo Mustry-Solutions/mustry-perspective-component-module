@@ -12,7 +12,8 @@
         "editable": true,
         "allowCreate": true,
         "allowDelete": true,
-        "allowPasswordChange": false
+        "allowPasswordChange": false,
+        "allowRoleManagement": false
       },
       "properties": {
         "locale": {
@@ -45,32 +46,148 @@
           "additionalProperties": false,
           "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
           "properties": {
-            "listHeader": { "type": "string", "description": "User list heading." },
-            "filterPlaceholder": { "type": "string", "description": "Rail filter input placeholder." },
-            "noUsers": { "type": "string", "description": "Empty-list placeholder." },
-            "noSelection": { "type": "string", "description": "Detail placeholder when nothing is selected." },
-            "newUser": { "type": "string", "description": "The list rail's create button." },
-            "username": { "type": "string", "description": "Username input placeholder (create flow)." },
-            "usernameRequired": { "type": "string", "description": "Validation: empty username." },
-            "usernameTaken": { "type": "string", "description": "Validation: duplicate username." },
-            "firstName": { "type": "string", "description": "First-name field label." },
-            "lastName": { "type": "string", "description": "Last-name field label." },
-            "schedule": { "type": "string", "description": "Schedule select label." },
-            "language": { "type": "string", "description": "Language field label." },
-            "notes": { "type": "string", "description": "Notes field label." },
-            "roles": { "type": "string", "description": "Roles section heading." },
-            "noRoles": { "type": "string", "description": "Hint when the source defines no roles." },
-            "contact": { "type": "string", "description": "Contact-info section heading." },
-            "addContact": { "type": "string", "description": "Add-contact-row button." },
-            "removeContact": { "type": "string", "description": "Contact-row remove tooltip." },
-            "password": { "type": "string", "description": "Password input label." },
-            "passwordPending": { "type": "string", "description": "Hint while a password is staged." },
-            "save": { "type": "string", "description": "Save button." },
-            "discard": { "type": "string", "description": "Discard-draft button tooltip." },
-            "unsaved": { "type": "string", "description": "Unsaved-changes badge." },
-            "delete": { "type": "string", "description": "Delete-user button." },
-            "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." }
+            "listHeader": {
+              "type": "string",
+              "description": "User list heading."
+            },
+            "filterPlaceholder": {
+              "type": "string",
+              "description": "Rail filter input placeholder."
+            },
+            "noUsers": {
+              "type": "string",
+              "description": "Empty-list placeholder."
+            },
+            "noSelection": {
+              "type": "string",
+              "description": "Detail placeholder when nothing is selected."
+            },
+            "newUser": {
+              "type": "string",
+              "description": "The list rail's create button."
+            },
+            "username": {
+              "type": "string",
+              "description": "Username input placeholder (create flow)."
+            },
+            "usernameRequired": {
+              "type": "string",
+              "description": "Validation: empty username."
+            },
+            "usernameTaken": {
+              "type": "string",
+              "description": "Validation: duplicate username."
+            },
+            "firstName": {
+              "type": "string",
+              "description": "First-name field label."
+            },
+            "lastName": {
+              "type": "string",
+              "description": "Last-name field label."
+            },
+            "schedule": {
+              "type": "string",
+              "description": "Schedule select label."
+            },
+            "language": {
+              "type": "string",
+              "description": "Language field label."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Notes field label."
+            },
+            "roles": {
+              "type": "string",
+              "description": "Roles section heading."
+            },
+            "noRoles": {
+              "type": "string",
+              "description": "Hint when the source defines no roles."
+            },
+            "contact": {
+              "type": "string",
+              "description": "Contact-info section heading."
+            },
+            "addContact": {
+              "type": "string",
+              "description": "Add-contact-row button."
+            },
+            "removeContact": {
+              "type": "string",
+              "description": "Contact-row remove tooltip."
+            },
+            "password": {
+              "type": "string",
+              "description": "Password input label."
+            },
+            "passwordPending": {
+              "type": "string",
+              "description": "Hint while a password is staged."
+            },
+            "save": {
+              "type": "string",
+              "description": "Save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Discard-draft button tooltip."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Unsaved-changes badge."
+            },
+            "delete": {
+              "type": "string",
+              "description": "Delete-user button."
+            },
+            "confirmDelete": {
+              "type": "string",
+              "description": "Second-step delete confirmation."
+            },
+            "manageRoles": {
+              "type": "string",
+              "description": "Enters role-catalog manage mode."
+            },
+            "doneManaging": {
+              "type": "string",
+              "description": "Leaves role-catalog manage mode."
+            },
+            "addRole": {
+              "type": "string",
+              "description": "Add-role button."
+            },
+            "roleName": {
+              "type": "string",
+              "description": "Role name input placeholder."
+            },
+            "roleRequired": {
+              "type": "string",
+              "description": "Validation: empty role name."
+            },
+            "roleTaken": {
+              "type": "string",
+              "description": "Validation: duplicate role name."
+            },
+            "renameRole": {
+              "type": "string",
+              "description": "Per-role rename tooltip."
+            },
+            "deleteRole": {
+              "type": "string",
+              "description": "Per-role delete tooltip."
+            },
+            "roleWarning": {
+              "type": "string",
+              "description": "Manage-mode warning that policies reference roles by name."
+            }
           }
+        },
+        "allowRoleManagement": {
+          "type": "boolean",
+          "default": false,
+          "description": "OFF by default. Adds a manage mode to the Roles section that edits the role CATALOG itself (add / rename / two-step delete), firing onRoleSave/onRoleDelete immediately. Renames keep user assignments (the source stores role ids) but security policies reference roles BY NAME — enable deliberately. Requires editable."
         }
       }
     },
@@ -91,16 +208,36 @@
           "items": {
             "type": "object",
             "properties": {
-              "username": { "type": "string", "description": "Unique username (the selection key)." },
-              "firstName": { "type": "string", "description": "First name." },
-              "lastName": { "type": "string", "description": "Last name." },
-              "schedule": { "type": "string", "description": "The user's schedule name." },
-              "language": { "type": "string", "description": "Preferred language code." },
-              "notes": { "type": "string", "description": "Free-text notes." },
+              "username": {
+                "type": "string",
+                "description": "Unique username (the selection key)."
+              },
+              "firstName": {
+                "type": "string",
+                "description": "First name."
+              },
+              "lastName": {
+                "type": "string",
+                "description": "Last name."
+              },
+              "schedule": {
+                "type": "string",
+                "description": "The user's schedule name."
+              },
+              "language": {
+                "type": "string",
+                "description": "Preferred language code."
+              },
+              "notes": {
+                "type": "string",
+                "description": "Free-text notes."
+              },
               "roles": {
                 "type": "array",
                 "description": "Role names assigned to the user.",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "contactInfo": {
                 "type": "array",
@@ -108,8 +245,14 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "contactType": { "type": "string", "description": "'email' | 'sms' | 'phone' (open set)." },
-                    "value": { "type": "string", "description": "The address / number." }
+                    "contactType": {
+                      "type": "string",
+                      "description": "'email' | 'sms' | 'phone' (open set)."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The address / number."
+                    }
                   }
                 }
               }
@@ -120,13 +263,17 @@
           "type": "array",
           "default": [],
           "description": "Role names the source defines (system.user.getRoles) — rendered as assignment chips.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "availableSchedules": {
           "type": "array",
           "default": [],
           "description": "Schedule names (system.user.getScheduleNames) — the schedule dropdown's options.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -169,7 +316,9 @@
           "type": "array",
           "default": [],
           "description": "Error keys blocking Save ('usernameRequired' / 'usernameTaken'); empty when the draft is saveable.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

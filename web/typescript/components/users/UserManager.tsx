@@ -163,6 +163,21 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
         this.setState({ draft });
     };
 
+    // Catalog-level role CRUD (config.allowRoleManagement): these are NOT part
+    // of the user draft — they fire immediately and the author's script
+    // persists via system.user.addRole/editRole/removeRole, then refetches.
+    private onRoleSave = (name: string, oldName?: string): void => {
+        const payload: { [key: string]: any } = { name };
+        if (oldName !== undefined) {
+            payload.oldName = oldName;
+        }
+        this.fireEvent('onRoleSave', payload);
+    };
+
+    private onRoleDelete = (name: string): void => {
+        this.fireEvent('onRoleDelete', { name });
+    };
+
     private onSave = (): void => {
         const draft = this.state.draft;
         if (!draft || this.usernameError() !== null || !this.isDirty()) {
@@ -339,8 +354,11 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                         availableRoles={p.availableRoles}
                         availableSchedules={p.availableSchedules}
                         showPassword={p.allowPasswordChange}
+                        allowRoleManagement={p.allowRoleManagement && !creating}
                         labels={p.labels}
                         onChange={this.onDraftChange}
+                        onRoleSave={this.onRoleSave}
+                        onRoleDelete={this.onRoleDelete}
                     />
                 ) : (
                     item && (

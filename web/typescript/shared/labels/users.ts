@@ -32,6 +32,15 @@ export interface UserManagerLabels extends CommitLabels {
     passwordPending: string;   // hint while a password is staged
     delete: string;
     confirmDelete: string;
+    manageRoles: string;       // enters role-catalog manage mode
+    doneManaging: string;      // leaves manage mode
+    addRole: string;           // add-role button
+    roleName: string;          // role name input placeholder
+    roleRequired: string;      // validation: empty role name
+    roleTaken: string;         // validation: duplicate role name
+    renameRole: string;        // per-role rename tooltip
+    deleteRole: string;        // per-role delete tooltip
+    roleWarning: string;       // manage-mode hint: policies reference roles by name
 }
 
 type OwnLabels = Omit<UserManagerLabels, keyof CommitLabels>;
@@ -44,7 +53,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'First name', lastName: 'Last name', schedule: 'Schedule', language: 'Language',
         notes: 'Notes', roles: 'Roles', noRoles: 'No roles defined', contact: 'Contact info',
         addContact: 'Add contact', removeContact: 'Remove', password: 'New password',
-        passwordPending: 'Password will be set on Save', delete: 'Delete', confirmDelete: 'Confirm delete?'
+        passwordPending: 'Password will be set on Save',
+        manageRoles: 'Manage roles', doneManaging: 'Done', addRole: 'Add role', roleName: 'Role name',
+        roleRequired: 'Role name required', roleTaken: 'Role already exists', renameRole: 'Rename',
+        deleteRole: 'Delete role', roleWarning: 'Security policies reference roles by name — renames and deletes ripple.', delete: 'Delete', confirmDelete: 'Confirm delete?'
     },
     fr: {
         listHeader: 'Utilisateurs', filterPlaceholder: 'Filtrer…', noUsers: 'Aucun utilisateur',
@@ -53,7 +65,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Prénom', lastName: 'Nom', schedule: 'Horaire', language: 'Langue',
         notes: 'Notes', roles: 'Rôles', noRoles: 'Aucun rôle défini', contact: 'Coordonnées',
         addContact: 'Ajouter un contact', removeContact: 'Retirer', password: 'Nouveau mot de passe',
-        passwordPending: 'Le mot de passe sera défini à l’enregistrement', delete: 'Supprimer', confirmDelete: 'Confirmer la suppression ?'
+        passwordPending: 'Le mot de passe sera défini à l’enregistrement',
+        manageRoles: 'Gérer les rôles', doneManaging: 'Terminé', addRole: 'Ajouter un rôle', roleName: 'Nom du rôle',
+        roleRequired: 'Nom du rôle requis', roleTaken: 'Rôle déjà existant', renameRole: 'Renommer',
+        deleteRole: 'Supprimer le rôle', roleWarning: 'Les politiques de sécurité référencent les rôles par leur nom — renommages et suppressions se propagent.', delete: 'Supprimer', confirmDelete: 'Confirmer la suppression ?'
     },
     de: {
         listHeader: 'Benutzer', filterPlaceholder: 'Benutzer filtern…', noUsers: 'Keine Benutzer',
@@ -62,7 +77,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Vorname', lastName: 'Nachname', schedule: 'Zeitplan', language: 'Sprache',
         notes: 'Notizen', roles: 'Rollen', noRoles: 'Keine Rollen definiert', contact: 'Kontaktdaten',
         addContact: 'Kontakt hinzufügen', removeContact: 'Entfernen', password: 'Neues Passwort',
-        passwordPending: 'Passwort wird beim Speichern gesetzt', delete: 'Löschen', confirmDelete: 'Löschen bestätigen?'
+        passwordPending: 'Passwort wird beim Speichern gesetzt',
+        manageRoles: 'Rollen verwalten', doneManaging: 'Fertig', addRole: 'Rolle hinzufügen', roleName: 'Rollenname',
+        roleRequired: 'Rollenname erforderlich', roleTaken: 'Rolle existiert bereits', renameRole: 'Umbenennen',
+        deleteRole: 'Rolle löschen', roleWarning: 'Sicherheitsrichtlinien referenzieren Rollen über den Namen — Umbenennen und Löschen wirken sich aus.', delete: 'Löschen', confirmDelete: 'Löschen bestätigen?'
     },
     es: {
         listHeader: 'Usuarios', filterPlaceholder: 'Filtrar usuarios…', noUsers: 'Sin usuarios',
@@ -71,7 +89,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Nombre', lastName: 'Apellidos', schedule: 'Horario', language: 'Idioma',
         notes: 'Notas', roles: 'Roles', noRoles: 'Sin roles definidos', contact: 'Datos de contacto',
         addContact: 'Añadir contacto', removeContact: 'Quitar', password: 'Nueva contraseña',
-        passwordPending: 'La contraseña se establecerá al guardar', delete: 'Eliminar', confirmDelete: '¿Confirmar eliminación?'
+        passwordPending: 'La contraseña se establecerá al guardar',
+        manageRoles: 'Gestionar roles', doneManaging: 'Hecho', addRole: 'Añadir rol', roleName: 'Nombre del rol',
+        roleRequired: 'Nombre del rol obligatorio', roleTaken: 'El rol ya existe', renameRole: 'Renombrar',
+        deleteRole: 'Eliminar rol', roleWarning: 'Las políticas de seguridad referencian los roles por nombre — renombrar y eliminar repercute.', delete: 'Eliminar', confirmDelete: '¿Confirmar eliminación?'
     },
     nl: {
         listHeader: 'Gebruikers', filterPlaceholder: 'Gebruikers filteren…', noUsers: 'Geen gebruikers',
@@ -80,7 +101,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Voornaam', lastName: 'Achternaam', schedule: 'Rooster', language: 'Taal',
         notes: 'Notities', roles: 'Rollen', noRoles: 'Geen rollen gedefinieerd', contact: 'Contactgegevens',
         addContact: 'Contact toevoegen', removeContact: 'Verwijderen', password: 'Nieuw wachtwoord',
-        passwordPending: 'Wachtwoord wordt ingesteld bij opslaan', delete: 'Verwijderen', confirmDelete: 'Verwijderen bevestigen?'
+        passwordPending: 'Wachtwoord wordt ingesteld bij opslaan',
+        manageRoles: 'Rollen beheren', doneManaging: 'Klaar', addRole: 'Rol toevoegen', roleName: 'Rolnaam',
+        roleRequired: 'Rolnaam vereist', roleTaken: 'Rol bestaat al', renameRole: 'Hernoemen',
+        deleteRole: 'Rol verwijderen', roleWarning: 'Beveiligingsbeleid verwijst naar rollen op naam — hernoemen en verwijderen werkt door.', delete: 'Verwijderen', confirmDelete: 'Verwijderen bevestigen?'
     },
     it: {
         listHeader: 'Utenti', filterPlaceholder: 'Filtra utenti…', noUsers: 'Nessun utente',
@@ -89,7 +113,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Nome', lastName: 'Cognome', schedule: 'Orario', language: 'Lingua',
         notes: 'Note', roles: 'Ruoli', noRoles: 'Nessun ruolo definito', contact: 'Contatti',
         addContact: 'Aggiungi contatto', removeContact: 'Rimuovi', password: 'Nuova password',
-        passwordPending: 'La password sarà impostata al salvataggio', delete: 'Elimina', confirmDelete: 'Confermare l’eliminazione?'
+        passwordPending: 'La password sarà impostata al salvataggio',
+        manageRoles: 'Gestisci ruoli', doneManaging: 'Fatto', addRole: 'Aggiungi ruolo', roleName: 'Nome del ruolo',
+        roleRequired: 'Nome del ruolo obbligatorio', roleTaken: 'Ruolo già esistente', renameRole: 'Rinomina',
+        deleteRole: 'Elimina ruolo', roleWarning: 'Le politiche di sicurezza referenziano i ruoli per nome — rinomine ed eliminazioni si propagano.', delete: 'Elimina', confirmDelete: 'Confermare l’eliminazione?'
     },
     pt: {
         listHeader: 'Usuários', filterPlaceholder: 'Filtrar usuários…', noUsers: 'Sem usuários',
@@ -98,7 +125,10 @@ const PACKS: { [lang: string]: OwnLabels } = {
         firstName: 'Nome', lastName: 'Sobrenome', schedule: 'Horário', language: 'Idioma',
         notes: 'Notas', roles: 'Funções', noRoles: 'Nenhuma função definida', contact: 'Contato',
         addContact: 'Adicionar contato', removeContact: 'Remover', password: 'Nova senha',
-        passwordPending: 'A senha será definida ao salvar', delete: 'Excluir', confirmDelete: 'Confirmar exclusão?'
+        passwordPending: 'A senha será definida ao salvar',
+        manageRoles: 'Gerenciar funções', doneManaging: 'Concluído', addRole: 'Adicionar função', roleName: 'Nome da função',
+        roleRequired: 'Nome da função obrigatório', roleTaken: 'Função já existe', renameRole: 'Renomear',
+        deleteRole: 'Excluir função', roleWarning: 'Políticas de segurança referenciam funções pelo nome — renomear e excluir repercute.', delete: 'Excluir', confirmDelete: 'Confirmar exclusão?'
     }
 };
 

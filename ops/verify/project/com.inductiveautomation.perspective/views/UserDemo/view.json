@@ -4,8 +4,12 @@
   "refreshTick": 0
  },
  "propConfig": {
-  "custom.lastEvent": { "persistent": true },
-  "custom.refreshTick": { "persistent": true }
+  "custom.lastEvent": {
+   "persistent": true
+  },
+  "custom.refreshTick": {
+   "persistent": true
+  }
  },
  "params": {},
  "props": {
@@ -18,23 +22,37 @@
   "type": "ia.container.coord",
   "version": 0,
   "props": {},
-  "meta": { "name": "root" },
+  "meta": {
+   "name": "root"
+  },
   "children": [
    {
     "type": "ia.display.label",
     "version": 0,
     "props": {
-     "text": "User Manager demo — EDITS ARE REAL against the gateway's 'default' user source: data.users binds system.user.getUsers() (the binding seeds the same three demo users as /roster), roles and schedules bind their catalogs. Filter the rail, edit names/roles/schedule/contact info, stage a password (allowPasswordChange is ON here — the staged value travels only in the onUserSave payload), then Save; '+ New user' creates one; Delete asks twice (the demo script refuses to delete 'admin' so the gateway stays usable).",
-     "style": { "fontSize": "13px" }
+     "text": "User Manager demo — EDITS ARE REAL against the gateway's 'default' user source: data.users binds system.user.getUsers() (the binding seeds the same three demo users as /roster), roles and schedules bind their catalogs. Filter the rail, edit names/roles/schedule/contact info, stage a password (allowPasswordChange is ON here — the staged value travels only in the onUserSave payload), then Save; '+ New user' creates one; Delete asks twice (the demo script refuses to delete 'admin' so the gateway stays usable). 'Manage roles' (allowRoleManagement is ON here) edits the role CATALOG — add/rename/delete roles for real; the demo refuses to delete 'Administrator'.",
+     "style": {
+      "fontSize": "13px"
+     }
     },
-    "meta": { "name": "help" },
-    "position": { "x": 16, "y": 10, "width": 920, "height": 72 }
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 920,
+     "height": 72
+    }
    },
    {
     "type": "mustrysolutions.ingots.admin.usermanager",
     "version": 0,
     "props": {
-     "config": { "allowPasswordChange": true }
+     "config": {
+      "allowPasswordChange": true,
+      "allowRoleManagement": true
+     }
     },
     "custom": {},
     "propConfig": {
@@ -59,7 +77,10 @@
         "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
        },
        "transforms": [
-        { "type": "script", "code": "\treturn [str(r) for r in system.user.getRoles('default')]\n" }
+        {
+         "type": "script",
+         "code": "\treturn [str(r) for r in system.user.getRoles('default')]\n"
+        }
        ]
       }
      },
@@ -70,7 +91,10 @@
         "expression": "toStr(now(60000)) + toStr({view.custom.refreshTick})"
        },
        "transforms": [
-        { "type": "script", "code": "\treturn [str(n) for n in system.user.getScheduleNames()]\n" }
+        {
+         "type": "script",
+         "code": "\treturn [str(n) for n in system.user.getScheduleNames()]\n"
+        }
        ]
       }
      }
@@ -78,24 +102,62 @@
     "events": {
      "component": {
       "onUserSave": [
-       { "type": "script", "scope": "G", "config": {
-        "script": "\t# Reference persistence: rebuild the PyUser from the flat mirror and write\n\t# it back (addUser when isNew, editUser otherwise). Roles and contacts are\n\t# rebuilt wholesale; a staged event.password is applied via u.set and NEVER\n\t# logged. Bare except on purpose (Java exceptions).\n\timport sys\n\ts = event.user\n\tusername = str(s.username)\n\tSRC = 'default'\n\ttry:\n\t\tif bool(event.isNew):\n\t\t\tu = system.user.getNewUser(SRC, username)\n\t\telse:\n\t\t\tu = system.user.getUser(SRC, username)\n\t\tu.set('firstname', str(s.firstName))\n\t\tu.set('lastname', str(s.lastName))\n\t\tu.set('schedule', str(s.schedule))\n\t\tu.set('language', str(s.language))\n\t\tu.set('notes', str(s.notes))\n\t\ttry:\n\t\t\tu.setRoles([str(r) for r in s.roles])\n\t\texcept:\n\t\t\tfor r in list(u.roles):\n\t\t\t\tu.removeRole(str(r))\n\t\t\tfor r in s.roles:\n\t\t\t\tu.addRole(str(r))\n\t\ttry:\n\t\t\tu.setContactInfo([])\n\t\texcept:\n\t\t\tfor c in list(u.contactInfo):\n\t\t\t\tu.removeContactInfo(str(c.contactType), str(c.value))\n\t\tfor c in s.contactInfo:\n\t\t\tu.addContactInfo(str(c.contactType), str(c.value))\n\t\tpw = None\n\t\ttry:\n\t\t\tpw = event.password\n\t\texcept:\n\t\t\tpw = None\n\t\tif pw:\n\t\t\tu.set('password', str(pw))\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addUser(SRC, u)\n\t\telse:\n\t\t\tresp = system.user.editUser(SRC, u)\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onUserSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onUserSave persisted \"' + username + '\" (isNew=' + str(bool(event.isNew)) + (', password set' if pw else '') + ')'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onUserSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
-       } }
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: rebuild the PyUser from the flat mirror and write\n\t# it back (addUser when isNew, editUser otherwise). Roles and contacts are\n\t# rebuilt wholesale; a staged event.password is applied via u.set and NEVER\n\t# logged. Bare except on purpose (Java exceptions).\n\timport sys\n\ts = event.user\n\tusername = str(s.username)\n\tSRC = 'default'\n\ttry:\n\t\tif bool(event.isNew):\n\t\t\tu = system.user.getNewUser(SRC, username)\n\t\telse:\n\t\t\tu = system.user.getUser(SRC, username)\n\t\tu.set('firstname', str(s.firstName))\n\t\tu.set('lastname', str(s.lastName))\n\t\tu.set('schedule', str(s.schedule))\n\t\tu.set('language', str(s.language))\n\t\tu.set('notes', str(s.notes))\n\t\ttry:\n\t\t\tu.setRoles([str(r) for r in s.roles])\n\t\texcept:\n\t\t\tfor r in list(u.roles):\n\t\t\t\tu.removeRole(str(r))\n\t\t\tfor r in s.roles:\n\t\t\t\tu.addRole(str(r))\n\t\ttry:\n\t\t\tu.setContactInfo([])\n\t\texcept:\n\t\t\tfor c in list(u.contactInfo):\n\t\t\t\tu.removeContactInfo(str(c.contactType), str(c.value))\n\t\tfor c in s.contactInfo:\n\t\t\tu.addContactInfo(str(c.contactType), str(c.value))\n\t\tpw = None\n\t\ttry:\n\t\t\tpw = event.password\n\t\texcept:\n\t\t\tpw = None\n\t\tif pw:\n\t\t\tu.set('password', str(pw))\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addUser(SRC, u)\n\t\telse:\n\t\t\tresp = system.user.editUser(SRC, u)\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onUserSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onUserSave persisted \"' + username + '\" (isNew=' + str(bool(event.isNew)) + (', password set' if pw else '') + ')'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onUserSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
       ],
       "onUserDelete": [
-       { "type": "script", "scope": "G", "config": {
-        "script": "\timport sys\n\tusername = str(event.username)\n\tif username == 'admin':\n\t\tself.view.custom.lastEvent = 'onUserDelete REFUSED: the demo keeps the admin account'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeUser('default', username)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete removed \"' + username + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onUserDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
-       } }
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\timport sys\n\tusername = str(event.username)\n\tif username == 'admin':\n\t\tself.view.custom.lastEvent = 'onUserDelete REFUSED: the demo keeps the admin account'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeUser('default', username)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete removed \"' + username + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onUserDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRoleSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Role-catalog persistence: add or rename (editRole keeps user assignments\n\t# — the source stores role ids — but POLICIES reference roles by name).\n\timport sys\n\tname = str(event.name)\n\told = None\n\ttry:\n\t\told = event.oldName\n\texcept:\n\t\told = None\n\ttry:\n\t\tif old and str(old) != name:\n\t\t\tresp = system.user.editRole('default', str(old), name)\n\t\t\taction = 'renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telse:\n\t\t\tresp = system.user.addRole('default', name)\n\t\t\taction = 'added \"' + name + '\"'\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ' + action\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRoleSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRoleDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\timport sys\n\tname = str(event.name)\n\tif name == 'Administrator':\n\t\tself.view.custom.lastEvent = 'onRoleDelete REFUSED: the demo keeps the Administrator role'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeRole('default', name)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete removed \"' + name + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onRoleDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
       ]
      }
     },
-    "meta": { "name": "usermgr" },
-    "position": { "x": 16, "y": 90, "width": 760, "height": 460 }
+    "meta": {
+     "name": "usermgr"
+    },
+    "position": {
+     "x": 16,
+     "y": 90,
+     "width": 760,
+     "height": 460
+    }
    },
    {
     "type": "ia.display.label",
     "version": 0,
-    "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
     "custom": {},
     "propConfig": {
      "props.text": {
@@ -107,21 +169,46 @@
       }
      }
     },
-    "meta": { "name": "readout" },
-    "position": { "x": 16, "y": 558, "width": 760, "height": 22 }
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 16,
+     "y": 558,
+     "width": 760,
+     "height": 22
+    }
    },
    {
     "type": "ia.display.label",
     "version": 0,
-    "props": { "style": { "fontSize": "12px", "color": "#7b8794", "fontFamily": "monospace" } },
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "color": "#7b8794",
+      "fontFamily": "monospace"
+     }
+    },
     "custom": {},
     "propConfig": {
      "props.text": {
-      "binding": { "type": "property", "config": { "path": "view.custom.lastEvent" } }
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
      }
     },
-    "meta": { "name": "eventLabel" },
-    "position": { "x": 16, "y": 582, "width": 760, "height": 22 }
+    "meta": {
+     "name": "eventLabel"
+    },
+    "position": {
+     "x": 16,
+     "y": 582,
+     "width": 760,
+     "height": 22
+    }
    }
   ]
  }

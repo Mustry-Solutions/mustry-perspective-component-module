@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "description": "Fired from role-catalog manage mode when a role's two-step delete is confirmed. Persist with system.user.removeRole(userSource, event.name) and refresh the data.availableRoles (and data.users) bindings — deleting a role strips it from users, and any security policy referencing it by name silently stops matching.",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the role to delete."
+    }
+  }
+}
