@@ -29,5 +29,6 @@ public final class Components {
         Keyboard.DESCRIPTOR,
         ScheduleManager.DESCRIPTOR,
         RosterManager.DESCRIPTOR,
-        UserManager.DESCRIPTOR);
+        UserManager.DESCRIPTOR,
+        HolidayManager.DESCRIPTOR);
 }

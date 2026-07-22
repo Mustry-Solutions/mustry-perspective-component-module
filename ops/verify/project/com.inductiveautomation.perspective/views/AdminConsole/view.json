@@ -52,7 +52,8 @@
      "tabs": [
       "Schedules",
       "Rosters",
-      "Users"
+      "Users",
+      "Holidays"
      ],
      "currentTabIndex": 0
     },
@@ -515,6 +516,135 @@
       "position": {
        "tabIndex": 2
       }
+     },
+     {
+      "type": "ia.container.coord",
+      "version": 0,
+      "props": {},
+      "meta": {
+       "name": "holidayTab"
+      },
+      "position": {
+       "tabIndex": 3
+      },
+      "children": [
+       {
+        "type": "mustrysolutions.ingots.admin.holidaymanager",
+        "version": 0,
+        "props": {
+         "config": {}
+        },
+        "custom": {},
+        "propConfig": {
+         "props.data.holidays": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "toStr(now(15000)) + toStr({view.custom.refreshTick})"
+           },
+           "transforms": [
+            {
+             "type": "script",
+             "code": "\t# The gateway's holidays, seeded with two demo entries (idempotent). Bare\n\t# except on purpose — Jython's 'except Exception' misses Java exceptions.\n\timport sys\n\tlog = system.util.getLogger('HolidayDemo')\n\tfrom com.inductiveautomation.ignition.common.user.schedule import HolidayModel\n\tdef ensure(name, dateStr, repeat):\n\t\ttry:\n\t\t\tif name not in [str(n) for n in system.user.getHolidayNames()]:\n\t\t\t\td = system.date.parse(dateStr, 'yyyy-MM-dd')\n\t\t\t\ttry:\n\t\t\t\t\tm = HolidayModel(name, d, repeat)\n\t\t\t\texcept:\n\t\t\t\t\tm = HolidayModel()\n\t\t\t\t\tm.name = name\n\t\t\t\t\tm.date = d\n\t\t\t\t\tm.repeatAnnually = repeat\n\t\t\t\tresp = system.user.addHoliday(m)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addHoliday(' + name + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + name + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('Demo New Year', '2020-01-01', True)\n\tensure('Demo Founders Day', '2026-09-01', False)\n\tout = []\n\tfor h in system.user.getHolidays():\n\t\ttry:\n\t\t\tout.append({'name': str(h.name), 'date': system.date.format(h.date, 'yyyy-MM-dd') if h.date else '', 'repeatAnnually': bool(h.repeatAnnually)})\n\t\texcept:\n\t\t\tlog.warn('map holiday failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
+            }
+           ]
+          }
+         }
+        },
+        "events": {
+         "component": {
+          "onHolidaySave": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\t# Reference persistence: rebuild a HolidayModel and write it back —\n\t# addHoliday when new, else editHoliday under the OLD name on a rename.\n\timport sys\n\tfrom com.inductiveautomation.ignition.common.user.schedule import HolidayModel\n\ts = event.holiday\n\tname = str(s.name)\n\ttry:\n\t\td = system.date.parse(str(s.date), 'yyyy-MM-dd')\n\t\ttry:\n\t\t\tm = HolidayModel(name, d, bool(s.repeatAnnually))\n\t\texcept:\n\t\t\tm = HolidayModel()\n\t\t\tm.name = name\n\t\t\tm.date = d\n\t\t\tm.repeatAnnually = bool(s.repeatAnnually)\n\t\told = None\n\t\ttry:\n\t\t\told = event.oldName\n\t\texcept:\n\t\t\told = None\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addHoliday(m)\n\t\t\taction = 'created \"' + name + '\"'\n\t\telif old and str(old) != name:\n\t\t\tresp = system.user.editHoliday(str(old), m)\n\t\t\taction = 'renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telse:\n\t\t\tresp = system.user.editHoliday(name, m)\n\t\t\taction = 'persisted \"' + name + '\"'\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onHolidaySave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onHolidaySave ' + action\n\texcept:\n\t\tself.view.custom.lastEvent = 'onHolidaySave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ],
+          "onHolidayDelete": [
+           {
+            "type": "script",
+            "scope": "G",
+            "config": {
+             "script": "\timport sys\n\ttry:\n\t\tresp = system.user.removeHoliday(str(event.name))\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onHolidayDelete ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onHolidayDelete removed \"' + str(event.name) + '\"'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onHolidayDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+            }
+           }
+          ]
+         }
+        },
+        "meta": {
+         "name": "holidaymgr"
+        },
+        "position": {
+         "x": 8,
+         "y": 8,
+         "width": 930,
+         "height": 470
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "expr",
+           "config": {
+            "expression": "'state.selectedHoliday: \"' + {../holidaymgr.props.state.selectedHoliday} + '\"   output.count: ' + toStr({../holidaymgr.props.output.count}) + '   output.isDirty: ' + toStr({../holidaymgr.props.output.isDirty})"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "holidayReadout"
+        },
+        "position": {
+         "x": 8,
+         "y": 486,
+         "width": 930,
+         "height": 20
+        }
+       },
+       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+         "style": {
+          "fontSize": "12px",
+          "color": "#7b8794",
+          "fontFamily": "monospace"
+         }
+        },
+        "custom": {},
+        "propConfig": {
+         "props.text": {
+          "binding": {
+           "type": "property",
+           "config": {
+            "path": "view.custom.lastEvent"
+           }
+          }
+         }
+        },
+        "meta": {
+         "name": "holidayEvent"
+        },
+        "position": {
+         "x": 8,
+         "y": 508,
+         "width": 930,
+         "height": 20
+        }
+       }
+      ]
      }
     ]
    }

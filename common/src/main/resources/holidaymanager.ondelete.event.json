@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "description": "Fired when the user confirms the two-step Delete button. Persist with system.user.removeHoliday(event.name) and refresh the data.holidays binding.",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the holiday to delete."
+    }
+  }
+}

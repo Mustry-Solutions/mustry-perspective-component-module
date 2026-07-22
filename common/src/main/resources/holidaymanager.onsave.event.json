@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when the user presses Save on a dirty draft. Persist event.holiday with system.user.editHoliday (or addHoliday when isNew; on a rename — oldName present — edit under the old name with the new model) and refresh the data.holidays binding.",
+  "properties": {
+    "holiday": {
+      "type": "object",
+      "description": "The flat HolidayModel mirror: { name, date: 'YYYY-MM-DD', repeatAnnually }."
+    },
+    "isNew": {
+      "type": "boolean",
+      "description": "True when this save comes from the create flow (persist with system.user.addHoliday)."
+    },
+    "oldName": {
+      "type": "string",
+      "description": "Present only on a rename: the holiday's previous name (pass it as editHoliday's first argument)."
+    }
+  }
+}

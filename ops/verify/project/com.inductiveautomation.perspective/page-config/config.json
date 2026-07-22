@@ -75,6 +75,10 @@
     "/admin": {
       "viewPath": "AdminConsole",
       "viewParams": {}
+    },
+    "/holidays": {
+      "viewPath": "HolidayDemo",
+      "viewParams": {}
     }
   },
   "shared": {},

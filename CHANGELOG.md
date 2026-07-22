@@ -8,6 +8,22 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Holiday Manager (new component — admin family #4)
+Thirteenth component: `mustrysolutions.ingots.admin.holidaymanager` — the
+missing quarter of the schedule story: schedules can "observe holidays"
+but nothing in the runtime showed or edited which dates those are. A rail
+sorted by NEXT occurrence (annual repeats compute their next date, Feb-29
+observes Feb 28 off-leap-years, past one-offs sink and dim) + a small
+detail form (name/date/repeat) with strict calendar-checked date
+validation (no silent Feb-31→March rollover). All the family patterns:
+create/rename/delete with validation, draft discipline,
+`onHolidaySave {holiday, isNew, oldName?}` / `onHolidayDelete {name}`
+persisted via `system.user.addHoliday/editHoliday/removeHoliday`,
+`output.count/isDirty/validationErrors`, 7-language labels, `--adm-*`
+theming. Demo at `/holidays` (real persistence, seeded demo holidays);
+the Admin Console gains a fourth tab. 13 pure-logic jest cases + 3 e2e
+tests incl. a create→rename→delete lifecycle.
+
 ### Admin Console demo view (composition recipe)
 The verify project gains `/admin`: the three admin components composed in a
 NATIVE tab container — the intended pattern instead of a merged

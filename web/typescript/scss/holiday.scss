@@ -1,0 +1,40 @@
+// Holiday Manager — fourth of the admin family. Shares the --adm-* variable
+// set and the family rail/commit/form classes; only holiday-specific bits
+// live here.
+@import 'admin';
+
+.mustry-holidaymgr {
+    @include adm-vars;
+    @include adm-root;
+}
+
+.mustry-holiday-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.mustry-holiday-date-field {
+    flex: 0 0 auto;
+    min-width: 180px;
+}
+
+.mustry-holiday-badge {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--adm-accent-soft);
+    color: var(--adm-accent);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.mustry-holiday-item--past {
+    opacity: 0.55;
+
+    .mustry-holiday-badge {
+        background: var(--adm-panel-bg);
+        color: var(--adm-muted);
+    }
+}

@@ -28,6 +28,13 @@ test.describe('Admin Console (composed view)', () => {
             .toHaveCount(1, { timeout: 15_000 });
         await expect(users.locator('.mustry-users-manage-btn')).toBeVisible();
 
+        // Tab 4: Holiday Manager.
+        await page.getByText('Holidays', { exact: true }).click();
+        const holidays = page.locator('.mustry-holidaymgr');
+        await expect(holidays).toBeVisible();
+        await expect(holidays.locator('.mustry-sched-item').filter({ hasText: 'Demo New Year' }))
+            .toHaveCount(1, { timeout: 15_000 });
+
         // Back to tab 1: the schedule component remounts cleanly.
         await page.getByText('Schedules', { exact: true }).click();
         await expect(page.locator('.mustry-schedmgr')).toBeVisible();

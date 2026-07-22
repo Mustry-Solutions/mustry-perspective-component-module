@@ -1,6 +1,6 @@
 # Mustry Solutions Ingots
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships twelve components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager** and **User Manager**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships thirteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
 
 - **Module ID:** `com.mustrysolutions.ingots`
 - **Palette category:** `Mustry Solutions`
@@ -388,9 +388,26 @@ A runtime UI over a gateway **user source** — Vision's User Management, which 
 
 The shared admin-family `--adm-*` variables (see Schedule Manager).
 
+---
+
+## Holiday Manager
+
+A runtime UI over the gateway's **holiday list** — the missing quarter of the schedule story: schedules can *observe holidays* (they're inactive on those dates), but nothing in the runtime showed or edited which dates those are. Fourth component of the **admin family**. Component id `mustrysolutions.ingots.admin.holidaymanager`.
+
+### Features
+
+- **Master-detail** — a rail sorted by **next occurrence** (annual repeats compute their next date, Feb-29 repeats observe Feb 28 off-leap-years, past one-offs sink and dim with a *past* badge) and a small detail form: name (rename via `oldName`), date, repeat-annually.
+- **Strict date validation** — calendar-checked `YYYY-MM-DD` (no silent Date-object rollover of Feb 31 into March); an invalid or missing date blocks Save and surfaces in `output.validationErrors`.
+- **Create / delete** (`config.allowCreate` / `allowDelete`), draft-only edits with the shared Save/Discard tail, two-way `state.selectedHoliday`, `output.count` / `isDirty` / `validationErrors`. Labels in the same 7 languages, `--adm-*` family theming.
+- **Controlled write-back** — `data.holidays` mirrors Ignition's `HolidayModel` (bind via `system.user.getHolidays()`); Save fires **`onHolidaySave`** `{holiday, isNew, oldName?}` and Delete fires **`onHolidayDelete`** `{name}`; the author's script persists via `system.user.addHoliday`/`editHoliday`/`removeHoliday`. The `/holidays` demo ships the reference scripts; the Admin Console gains a fourth tab.
+
+### Theming
+
+The shared admin-family `--adm-*` variables (see Schedule Manager).
+
 ### Composing an Admin Console
 
-The three admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to dial each tab. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all three components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.
+The three admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to dial each tab. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all four components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.
 
 
 ---
