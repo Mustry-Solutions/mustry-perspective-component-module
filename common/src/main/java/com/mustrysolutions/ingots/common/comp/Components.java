@@ -26,5 +26,6 @@ public final class Components {
         RichTextEditor.DESCRIPTOR,
         CodeEditor.DESCRIPTOR,
         ColorPicker.DESCRIPTOR,
-        Keyboard.DESCRIPTOR);
+        Keyboard.DESCRIPTOR,
+        ScheduleManager.DESCRIPTOR);
 }
