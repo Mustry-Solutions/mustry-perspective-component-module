@@ -82,20 +82,9 @@ export function draftToFlat(item: ScheduleItem, draft: ScheduleDraft): { [key: s
     return out;
 }
 
-/**
- * Validate a schedule name for create/rename. `currentName` is the schedule
- * being renamed ('' when creating) — its own name never counts as a clash.
- */
-export function validateName(name: string, existingNames: string[], currentName: string): 'empty' | 'duplicate' | null {
-    const trimmed = name.trim();
-    if (trimmed === '') {
-        return 'empty';
-    }
-    if (existingNames.some((n) => n === trimmed && n !== currentName)) {
-        return 'duplicate';
-    }
-    return null;
-}
+// Name validation moved to the family-shared layer; re-exported so existing
+// imports (component + tests) keep working.
+export { validateName } from '../../shared/adminCommon';
 
 /** A blank draft for the create flow: no availability, nothing set. */
 export function emptyDraft(): ScheduleDraft {

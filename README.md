@@ -1,6 +1,6 @@
 # Mustry Solutions Ingots
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships ten components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard** and a **Schedule Manager** (first of the admin family).
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships eleven components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the admin family's **Schedule Manager** and **Roster Manager**.
 
 - **Module ID:** `com.mustrysolutions.ingots`
 - **Palette category:** `Mustry Solutions`
@@ -349,6 +349,24 @@ A runtime UI over the gateway's **user schedules** — Vision's Schedule Managem
 ### Theming
 
 Override the `--adm-*` variables via a style class / project stylesheet (shared by the whole admin family): `--adm-accent` / `--adm-accent-soft`, `--adm-text`, `--adm-muted`, `--adm-border`, `--adm-bg`, `--adm-panel-bg`, `--adm-active`, `--adm-danger`.
+
+
+---
+
+## Roster Manager
+
+A runtime UI over the gateway's **alarm-notification rosters** — Vision's Roster Management, which Perspective lacks. Second of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.rostermanager`.
+
+### Features
+
+- **Order is the point** — a roster is the escalation sequence alarm pipelines walk, so rows carry *Contact 1 / Contact 2 / …* ordinals and reorder by **dragging a row's grip**.
+- **Typeahead directory picker** (`+ Add user`) over the bound `data.availableUsers` directory; rows resolve display names and contact points from it, and **warn when a user has no contact info** — the failure mode roster admins are actually hunting.
+- **Create / delete** (`config.allowCreate` / `allowDelete`), draft-only edits with the shared Save/Discard tail, name validation, `output.count` / `isDirty` / `validationErrors`, two-way `state.selectedRoster`. Labels in the same 7 languages, `--adm-*` family theming.
+- **Controlled write-back** — `system.roster` is **append-only** (no reorder primitive), so Save fires **`onRosterSave`** `{name, users, isNew}` with the FULL desired ordered list and the author's script reconciles: `createRoster` when new, `removeUsers(current)`, then `addUsers(users)` in order. Delete fires **`onRosterDelete`** `{name}`. The `/roster` demo ships the reconcile script and seeds a demo directory.
+
+### Theming
+
+The shared admin-family `--adm-*` variables (see Schedule Manager).
 
 
 ---

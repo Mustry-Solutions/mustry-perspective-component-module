@@ -139,6 +139,11 @@ public class MustrySolutionsIngotsModule {
             g.drawLine(2, 6, 14, 6);                              // header rule
             g.drawLine(5, 1, 5, 4); g.drawLine(11, 1, 11, 4);     // binder rings
             g.fillRect(4, 9, 8, 3);                               // the range
+        } else if (k.contains("rostermanager")) {
+            // Numbered list rows (an ordered escalation roster).
+            g.fillRect(3, 3, 2, 2); g.drawLine(7, 4, 13, 4);      // 1st row
+            g.fillRect(3, 7, 2, 2); g.drawLine(7, 8, 13, 8);      // 2nd row
+            g.fillRect(3, 11, 2, 2); g.drawLine(7, 12, 13, 12);   // 3rd row
         } else if (k.contains("schedulemanager")) {
             // Clock over a list rail (schedules being managed).
             g.drawLine(2, 3, 2, 13);                              // list rail edge
