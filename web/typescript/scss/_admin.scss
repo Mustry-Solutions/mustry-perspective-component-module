@@ -37,3 +37,15 @@
         box-sizing: border-box;
     }
 }
+
+// The family's action bar: destructive left, Save cluster right, hairline top.
+@mixin adm-footer {
+    .mustry-adm-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: auto;   // pin to the detail pane's bottom
+        padding-top: 10px;
+        border-top: 1px solid var(--adm-border);
+    }
+}

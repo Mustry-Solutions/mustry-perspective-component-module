@@ -17,8 +17,7 @@ import { ReorderGesture, ReorderPreview, RosterReorderController } from './roste
 import { RosterManagerProps, mapRosterProps } from './rosterProps';
 import { RosterUsers } from './RosterUsers';
 import { UserPicker } from './UserPicker';
-import { CommitControls } from '../../shared/CommitControls';
-import { ConfirmButton } from '../../shared/ConfirmButton';
+import { AdminFooter } from '../../shared/AdminFooter';
 
 // Must match RosterManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.rostermanager';
@@ -315,29 +314,6 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
                             )}
                         </span>
                     )}
-                    <span className="mustry-sched-head-spacer" />
-                    {draft && (
-                        <React.Fragment>
-                            <CommitControls
-                                reserveSpace={true}
-                                labels={p.labels}
-                                enabled={nameError === null}
-                                dirty={this.isDirty()}
-                                onSave={this.onSave}
-                                onDiscard={this.onDiscard}
-                            />
-                            {!creating && p.allowDelete && (
-                                <ConfirmButton
-                                    label={p.labels.delete}
-                                    confirmLabel={p.labels.confirmDelete}
-                                    confirming={this.state.confirmingDelete}
-                                    className="mustry-sched-delete"
-                                    confirmingClassName="mustry-sched-delete--confirm"
-                                    onClick={this.onDelete}
-                                />
-                            )}
-                        </React.Fragment>
-                    )}
                 </div>
                 <RosterUsers
                     usernames={usernames}
@@ -348,6 +324,20 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
                     labels={p.labels}
                     onRemove={this.onRemoveUser}
                 />
+                {draft && (
+                    <AdminFooter
+                        labels={p.labels}
+                        enabled={nameError === null}
+                        dirty={this.isDirty()}
+                        onSave={this.onSave}
+                        onDiscard={this.onDiscard}
+                        showDelete={!creating && p.allowDelete}
+                        deleteLabel={p.labels.delete}
+                        confirmDeleteLabel={p.labels.confirmDelete}
+                        confirmingDelete={this.state.confirmingDelete}
+                        onDelete={this.onDelete}
+                    />
+                )}
             </div>
         );
     }

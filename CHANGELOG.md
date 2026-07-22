@@ -26,6 +26,12 @@ Verified by pixel measurement: the schedule header's Delete button, week
 grid and preview strip hold identical coordinates across clean → dirty →
 armed-confirm → restored; the users form holds position when an
 adjustment error appears.
+Follow-up structural pass (same release): actions moved out of the
+headers entirely into a shared **footer action bar** (hairline top,
+destructive Delete on the left, the reserved Save cluster on the right,
+pinned to the pane's bottom) — headers are identity-only and never fight
+buttons for width again. Forms got readability caps (users 640px,
+holiday 420px) and hairlined section headings.
 
 ### User Manager: availability adjustments
 The detail form gains an "Availability adjustments" section editing the

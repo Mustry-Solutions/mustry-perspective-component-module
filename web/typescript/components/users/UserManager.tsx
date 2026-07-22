@@ -9,8 +9,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { validateName } from '../../shared/adminCommon';
 import { AdminUser, displayName, filterUsers } from '../../shared/adminUsers';
-import { CommitControls } from '../../shared/CommitControls';
-import { ConfirmButton } from '../../shared/ConfirmButton';
+import { AdminFooter } from '../../shared/AdminFooter';
 import {
     UserDraft, emptyUserDraft, invalidAdjustments, userDraftEquals, userDraftFromItem, userDraftToFlat
 } from './userLogic';
@@ -338,29 +337,6 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                         <span className="mustry-roster-detail-name">{item ? displayName(item) : ''}</span>
                     )}
                     {!creating && item && <span className="mustry-sched-detail-desc">{item.username}</span>}
-                    <span className="mustry-sched-head-spacer" />
-                    {draft && (
-                        <React.Fragment>
-                            <CommitControls
-                                reserveSpace={true}
-                                labels={p.labels}
-                                enabled={usernameError === null && !this.adjustmentsInvalid()}
-                                dirty={this.isDirty()}
-                                onSave={this.onSave}
-                                onDiscard={this.onDiscard}
-                            />
-                            {!creating && p.allowDelete && (
-                                <ConfirmButton
-                                    label={p.labels.delete}
-                                    confirmLabel={p.labels.confirmDelete}
-                                    confirming={this.state.confirmingDelete}
-                                    className="mustry-sched-delete"
-                                    confirmingClassName="mustry-sched-delete--confirm"
-                                    onClick={this.onDelete}
-                                />
-                            )}
-                        </React.Fragment>
-                    )}
                 </div>
                 {draft ? (
                     <UserDetailForm
@@ -385,6 +361,20 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                             ))}
                         </div>
                     )
+                )}
+                {draft && (
+                    <AdminFooter
+                        labels={p.labels}
+                        enabled={usernameError === null && !this.adjustmentsInvalid()}
+                        dirty={this.isDirty()}
+                        onSave={this.onSave}
+                        onDiscard={this.onDiscard}
+                        showDelete={!creating && p.allowDelete}
+                        deleteLabel={p.labels.delete}
+                        confirmDeleteLabel={p.labels.confirmDelete}
+                        confirmingDelete={this.state.confirmingDelete}
+                        onDelete={this.onDelete}
+                    />
                 )}
             </div>
         );

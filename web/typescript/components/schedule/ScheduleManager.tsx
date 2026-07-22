@@ -17,6 +17,7 @@ import {
     ScheduleGesture, ScheduleGestureController, ScheduleGestureKind, ScheduleGesturePreview
 } from './scheduleGestureController';
 import { ScheduleManagerProps, mapScheduleProps } from './scheduleProps';
+import { AdminFooter } from '../../shared/AdminFooter';
 import { ScheduleList } from './ScheduleList';
 import { ScheduleDetailBar } from './ScheduleDetailBar';
 import { SchedulePreviewStrip } from './SchedulePreviewStrip';
@@ -370,18 +371,11 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                     item={item}
                     draft={draft}
                     editable={p.editable}
-                    dirty={this.isDirty()}
                     nameDraft={this.state.nameDraft}
                     nameError={this.nameError()}
-                    isNew={creating}
-                    allowDelete={p.allowDelete}
-                    confirmingDelete={this.state.confirmingDelete}
                     labels={p.labels}
                     onNameChange={this.onNameChange}
                     onDraftChange={this.patchDraft}
-                    onSave={this.onSave}
-                    onDiscard={this.onDiscard}
-                    onDelete={this.onDelete}
                 />
                 <WeekGrid
                     days={this.gridDays(item, draft)}
@@ -401,6 +395,20 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                         minute={minute}
                         weekdayNames={weekdayHeaders(true, p.locale)}
                         labels={p.labels}
+                    />
+                )}
+                {draft && (
+                    <AdminFooter
+                        labels={p.labels}
+                        enabled={this.nameError() === null}
+                        dirty={this.isDirty()}
+                        onSave={this.onSave}
+                        onDiscard={this.onDiscard}
+                        showDelete={!creating && p.allowDelete}
+                        deleteLabel={p.labels.delete}
+                        confirmDeleteLabel={p.labels.confirmDelete}
+                        confirmingDelete={this.state.confirmingDelete}
+                        onDelete={this.onDelete}
                     />
                 )}
             </div>

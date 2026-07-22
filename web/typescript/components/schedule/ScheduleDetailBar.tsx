@@ -1,6 +1,4 @@
 import * as React from 'react';
-import { CommitControls } from '../../shared/CommitControls';
-import { ConfirmButton } from '../../shared/ConfirmButton';
 import { ScheduleManagerLabels } from '../../shared/labels/schedule';
 import { ScheduleDraft } from './scheduleEditLogic';
 import { ScheduleItem } from './scheduleLogic';
@@ -11,31 +9,24 @@ interface ScheduleDetailBarProps {
     /** The live draft while editable (null in read-only mode). */
     draft: ScheduleDraft | null;
     editable: boolean;
-    dirty: boolean;
     /** The name being edited (rename / create); '' hides the name input. */
     nameDraft: string;
     /** Validation state of nameDraft (null = fine). */
     nameError: 'empty' | 'duplicate' | null;
-    isNew: boolean;
-    allowDelete: boolean;
-    confirmingDelete: boolean;
     labels: ScheduleManagerLabels;
     onNameChange: (name: string) => void;
     onDraftChange: (patch: Partial<ScheduleDraft>) => void;
-    onSave: () => void;
-    onDiscard: () => void;
-    onDelete: () => void;
 }
 
 /**
- * The detail pane's header row: schedule name (an input while editable —
+ * The detail pane's IDENTITY header: schedule name (an input while editable —
  * rename for existing schedules, initial name in the create flow, with
- * inline validation), description input, the allDays/observeHolidays
- * toggles, the read-only alternating badge, the shared Save/Discard commit
- * tail, and the two-step Delete button.
+ * floating validation), description input, the allDays/observeHolidays
+ * toggles and the read-only alternating badge. Actions (Save/Discard/Delete)
+ * live in the shared AdminFooter, not here.
  */
 export function ScheduleDetailBar(props: ScheduleDetailBarProps): JSX.Element {
-    const { item, draft, editable, dirty, nameError, isNew, confirmingDelete, labels } = props;
+    const { item, draft, editable, nameError, labels } = props;
     const editing = editable && draft !== null;
     const d = draft as ScheduleDraft;
 
@@ -102,29 +93,6 @@ export function ScheduleDetailBar(props: ScheduleDetailBarProps): JSX.Element {
                 )
             )}
             {item && item.repeatAlternating && <span className="mustry-sched-badge">{labels.alternating}</span>}
-            <span className="mustry-sched-head-spacer" />
-            {editing && (
-                <React.Fragment>
-                    <CommitControls
-                        reserveSpace={true}
-                        labels={labels}
-                        enabled={nameError === null}
-                        dirty={dirty}
-                        onSave={props.onSave}
-                        onDiscard={props.onDiscard}
-                    />
-                    {!isNew && props.allowDelete && (
-                        <ConfirmButton
-                            label={labels.delete}
-                            confirmLabel={labels.confirmDelete}
-                            confirming={confirmingDelete}
-                            className="mustry-sched-delete"
-                            confirmingClassName="mustry-sched-delete--confirm"
-                            onClick={props.onDelete}
-                        />
-                    )}
-                </React.Fragment>
-            )}
         </div>
     );
 }

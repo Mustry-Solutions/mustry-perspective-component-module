@@ -8,8 +8,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import { validateName } from '../../shared/adminCommon';
-import { CommitControls } from '../../shared/CommitControls';
-import { ConfirmButton } from '../../shared/ConfirmButton';
+import { AdminFooter } from '../../shared/AdminFooter';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
     holidayDraftToFlat, nextOccurrence, parseIsoDate, sortHolidays
@@ -280,29 +279,6 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
                     ) : (
                         <span className="mustry-roster-detail-name">{item ? item.name : ''}</span>
                     )}
-                    <span className="mustry-sched-head-spacer" />
-                    {draft && (
-                        <React.Fragment>
-                            <CommitControls
-                                reserveSpace={true}
-                                labels={p.labels}
-                                enabled={!this.saveBlocked()}
-                                dirty={this.isDirty()}
-                                onSave={this.onSave}
-                                onDiscard={this.onDiscard}
-                            />
-                            {!creating && p.allowDelete && (
-                                <ConfirmButton
-                                    label={p.labels.delete}
-                                    confirmLabel={p.labels.confirmDelete}
-                                    confirming={this.state.confirmingDelete}
-                                    className="mustry-sched-delete"
-                                    confirmingClassName="mustry-sched-delete--confirm"
-                                    onClick={this.onDelete}
-                                />
-                            )}
-                        </React.Fragment>
-                    )}
                 </div>
                 {draft ? (
                     <div className="mustry-holiday-form">
@@ -340,6 +316,20 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
                             </span>
                         </div>
                     )
+                )}
+                {draft && (
+                    <AdminFooter
+                        labels={p.labels}
+                        enabled={!this.saveBlocked()}
+                        dirty={this.isDirty()}
+                        onSave={this.onSave}
+                        onDiscard={this.onDiscard}
+                        showDelete={!creating && p.allowDelete}
+                        deleteLabel={p.labels.delete}
+                        confirmDeleteLabel={p.labels.confirmDelete}
+                        confirmingDelete={this.state.confirmingDelete}
+                        onDelete={this.onDelete}
+                    />
                 )}
             </div>
         );
