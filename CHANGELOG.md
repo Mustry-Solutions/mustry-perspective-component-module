@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-23
+
 ### Admin family: layout stability pass
 No more layout jumps when interacting with the admin components (user
 feedback: the schedule header shoved everything around when buttons
