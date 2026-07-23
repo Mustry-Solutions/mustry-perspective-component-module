@@ -7,12 +7,13 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { validateName } from '../../shared/adminCommon';
+import { uniqueCopyName, validateName } from '../../shared/adminCommon';
 import { AdminFooter } from '../../shared/AdminFooter';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
     holidayDraftToFlat, nextOccurrence, parseIsoDate, sortHolidays
 } from './holidayLogic';
+import { RowMenu } from '../../shared/RowMenu';
 import { HolidayManagerProps, mapHolidayProps } from './holidayProps';
 
 // Must match HolidayManager.COMPONENT_ID on the Java side.
@@ -172,6 +173,26 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
     }
 
     // --- editing actions ----------------------------------------------------
+
+    private onDuplicate = (name: string): void => {
+        const source = this.props.props.holidays.find((h) => h.name === name);
+        if (!source) {
+            return;
+        }
+        this.clearConfirmTimer();
+        this.setState({
+            creating: true, draft: holidayDraftFromItem(source), draftFor: '',
+            nameDraft: uniqueCopyName(name, this.props.props.holidays.map((h) => h.name)),
+            confirmingDelete: false
+        });
+    };
+
+    private onMenuDelete = (name: string): void => {
+        this.fireEvent('onHolidayDelete', { name });
+        if (name === this.props.props.selectedHoliday) {
+            this.props.store.props.write('state.selectedHoliday', '');
+        }
+    };
 
     private onCreate = (): void => {
         this.clearConfirmTimer();
@@ -377,6 +398,18 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
                                         {past && <span className="mustry-holiday-badge">{p.labels.past}</span>}
                                     </span>
                                 </span>
+                                {p.editable && (p.allowCreate || p.allowDelete) && (
+                                    <RowMenu
+                                        moreActionsLabel={`${p.labels.moreActions} h.name`}
+                                        duplicateLabel={p.labels.duplicate}
+                                        deleteLabel={p.labels.delete}
+                                        confirmDeleteLabel={p.labels.confirmDelete}
+                                        showDuplicate={p.allowCreate}
+                                        showDelete={p.allowDelete}
+                                        onDuplicate={() => this.onDuplicate(h.name)}
+                                        onDelete={() => this.onMenuDelete(h.name)}
+                                    />
+                                )}
                             </div>
                         );
                     })}

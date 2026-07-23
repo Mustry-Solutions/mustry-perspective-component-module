@@ -7,13 +7,14 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { validateName } from '../../shared/adminCommon';
+import { uniqueCopyName, validateName } from '../../shared/adminCommon';
 import { AdminUser, displayName, filterUsers } from '../../shared/adminUsers';
 import { AdminFooter } from '../../shared/AdminFooter';
 import {
     UserDraft, emptyUserDraft, invalidAdjustments, userDraftEquals, userDraftFromItem, userDraftToFlat
 } from './userLogic';
 import { UserManagerProps, mapUserProps } from './userProps';
+import { RowMenu } from '../../shared/RowMenu';
 import { UserDetailForm } from './UserDetailForm';
 
 // Must match UserManager.COMPONENT_ID on the Java side.
@@ -163,6 +164,28 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
 
     // --- editing actions ----------------------------------------------------
 
+    private onDuplicate = (username: string): void => {
+        const source = this.props.props.users.find((u) => u.username === username);
+        if (!source) {
+            return;
+        }
+        // Copies roles/schedule/contacts/adjustments but never the password —
+        // the source's policy may demand staging one before the save succeeds.
+        this.clearConfirmTimer();
+        this.setState({
+            creating: true, draft: userDraftFromItem(source), draftFor: '',
+            usernameDraft: uniqueCopyName(username, this.props.props.users.map((u) => u.username), 'dash'),
+            confirmingDelete: false
+        });
+    };
+
+    private onMenuDelete = (username: string): void => {
+        this.fireEvent('onUserDelete', { username });
+        if (username === this.props.props.selectedUser) {
+            this.props.store.props.write('state.selectedUser', '');
+        }
+    };
+
     private onCreate = (): void => {
         this.clearConfirmTimer();
         this.setState({
@@ -295,6 +318,18 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                                 {u.username}{u.roles.length > 0 ? ` · ${u.roles.join(', ')}` : ''}
                             </span>
                         </span>
+                        {p.editable && (p.allowCreate || p.allowDelete) && (
+                            <RowMenu
+                                moreActionsLabel={`${p.labels.moreActions} u.username`}
+                                duplicateLabel={p.labels.duplicate}
+                                deleteLabel={p.labels.delete}
+                                confirmDeleteLabel={p.labels.confirmDelete}
+                                showDuplicate={p.allowCreate}
+                                showDelete={p.allowDelete}
+                                onDuplicate={() => this.onDuplicate(u.username)}
+                                onDelete={() => this.onMenuDelete(u.username)}
+                            />
+                        )}
                     </div>
                 ))}
             </div>

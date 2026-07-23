@@ -8,8 +8,9 @@
 
 import { primaryLang } from './common';
 import { CommitLabels, commitLabelBase } from './commit';
+import { RowMenuLabels, rowMenuLabelBase } from './rowmenu';
 
-export interface ScheduleManagerLabels extends CommitLabels {
+export interface ScheduleManagerLabels extends CommitLabels, RowMenuLabels {
     listHeader: string;       // schedule list rail heading
     noSchedules: string;      // empty-list placeholder
     noSelection: string;      // detail pane placeholder when nothing is selected
@@ -30,7 +31,7 @@ export interface ScheduleManagerLabels extends CommitLabels {
     inactiveUntil: string;    // preview strip template ({day} {time})
 }
 
-type OwnLabels = Omit<ScheduleManagerLabels, keyof CommitLabels>;
+type OwnLabels = Omit<ScheduleManagerLabels, keyof CommitLabels | keyof RowMenuLabels>;
 
 const PACKS: { [lang: string]: OwnLabels } = {
     en: {
@@ -101,7 +102,7 @@ const PACKS: { [lang: string]: OwnLabels } = {
 /** The Schedule Manager's default label set for a locale (English when not
  *  bundled) — the shared commit strings (Save / Discard / unsaved) merged in. */
 export function scheduleLabelBase(locale: string): ScheduleManagerLabels {
-    return { ...commitLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
+    return { ...commitLabelBase(locale), ...rowMenuLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
 }
 
 export const EN_SCHEDULE_LABELS: ScheduleManagerLabels = scheduleLabelBase('en');

@@ -7,7 +7,7 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { reorder, validateName } from '../../shared/adminCommon';
+import { reorder, uniqueCopyName, validateName } from '../../shared/adminCommon';
 import { AdminUser } from '../../shared/adminUsers';
 import {
     RosterDraft, RosterItem, addUserToDraft, normalizeRoster, removeUserFromDraft,
@@ -15,6 +15,7 @@ import {
 } from './rosterLogic';
 import { ReorderGesture, ReorderPreview, RosterReorderController } from './rosterGestureController';
 import { RosterManagerProps, mapRosterProps } from './rosterProps';
+import { RowMenu } from '../../shared/RowMenu';
 import { RosterUsers } from './RosterUsers';
 import { UserPicker } from './UserPicker';
 import { AdminFooter } from '../../shared/AdminFooter';
@@ -172,6 +173,26 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
     }
 
     // --- editing actions ----------------------------------------------------
+
+    private onDuplicate = (name: string): void => {
+        const source = this.props.props.rosters.find((r) => r.name === name);
+        if (!source) {
+            return;
+        }
+        this.clearConfirmTimer();
+        this.setState({
+            creating: true, draft: { users: [...source.users] }, draftFor: '',
+            nameDraft: uniqueCopyName(name, this.props.props.rosters.map((r) => r.name)),
+            confirmingDelete: false, pickerOpen: false, preview: null
+        });
+    };
+
+    private onMenuDelete = (name: string): void => {
+        this.fireEvent('onRosterDelete', { name });
+        if (name === this.props.props.selectedRoster) {
+            this.props.store.props.write('state.selectedRoster', '');
+        }
+    };
 
     private onCreate = (): void => {
         this.clearConfirmTimer();
@@ -375,6 +396,18 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
                                 <span className="mustry-sched-item-name">{r.name}</span>
                                 <span className="mustry-sched-item-desc">{r.users.length} · {r.users.slice(0, 3).join(', ')}{r.users.length > 3 ? '…' : ''}</span>
                             </span>
+                            {p.editable && (p.allowCreate || p.allowDelete) && (
+                                <RowMenu
+                                    moreActionsLabel={`${p.labels.moreActions} r.name`}
+                                    duplicateLabel={p.labels.duplicate}
+                                    deleteLabel={p.labels.delete}
+                                    confirmDeleteLabel={p.labels.confirmDelete}
+                                    showDuplicate={p.allowCreate}
+                                    showDelete={p.allowDelete}
+                                    onDuplicate={() => this.onDuplicate(r.name)}
+                                    onDelete={() => this.onMenuDelete(r.name)}
+                                />
+                            )}
                         </div>
                     ))}
                 </div>

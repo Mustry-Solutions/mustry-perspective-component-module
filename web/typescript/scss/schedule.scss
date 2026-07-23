@@ -426,3 +426,74 @@
         }
     }
 }
+
+// --- per-row ⋯ menu (family-wide; rail classes live in this file) ----------
+
+.mustry-row-menu {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.mustry-row-menu-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    // Revealed on row hover, on the SELECTED row (touch reaches it after one
+    // tap — hover doesn't exist there), while its menu is open, and on focus.
+    opacity: 0;
+
+    &:hover {
+        background: var(--adm-accent-soft);
+        color: var(--adm-accent);
+    }
+}
+
+.mustry-sched-item:hover .mustry-row-menu-btn,
+.mustry-sched-item--selected .mustry-row-menu-btn,
+.mustry-row-menu--open .mustry-row-menu-btn,
+.mustry-row-menu-btn:focus-visible {
+    opacity: 1;
+}
+
+.mustry-row-menu-pop {
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 4px;
+    border: 1px solid var(--adm-border);
+    border-radius: 6px;
+    background: var(--adm-bg);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.mustry-row-menu-item {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--adm-text);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+        background: var(--adm-accent-soft);
+    }
+
+    &--danger {
+        color: var(--adm-danger);
+    }
+
+    &--confirm,
+    &--confirm:hover {
+        background: var(--adm-danger);
+        color: #ffffff;
+    }
+}

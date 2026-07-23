@@ -1,7 +1,7 @@
 import {
     addUserToDraft, normalizeRoster, removeUserFromDraft, rosterDraftEquals, rosterDraftFromItem
 } from '../roster/rosterLogic';
-import { reorder, reorderTarget, validateName } from '../../shared/adminCommon';
+import { reorder, reorderTarget, uniqueCopyName, validateName } from '../../shared/adminCommon';
 import { displayName, filterUsers, hasContact, normalizeAdminUser } from '../../shared/adminUsers';
 
 describe('normalizeRoster', () => {
@@ -87,5 +87,18 @@ describe('shared user directory helpers', () => {
         expect(validateName('', ['a'], '')).toBe('empty');
         expect(validateName('a', ['a'], '')).toBe('duplicate');
         expect(validateName('a', ['a'], 'a')).toBeNull();
+    });
+});
+
+
+describe('uniqueCopyName', () => {
+    it('paren style appends (copy), then counts up', () => {
+        expect(uniqueCopyName('Day Shift', [])).toBe('Day Shift (copy)');
+        expect(uniqueCopyName('Day Shift', ['Day Shift (copy)'])).toBe('Day Shift (copy 2)');
+        expect(uniqueCopyName('Day Shift', ['Day Shift (copy)', 'Day Shift (copy 2)'])).toBe('Day Shift (copy 3)');
+    });
+    it('dash style suits identifier-ish names (usernames)', () => {
+        expect(uniqueCopyName('jdoe', [], 'dash')).toBe('jdoe-copy');
+        expect(uniqueCopyName('jdoe', ['jdoe-copy'], 'dash')).toBe('jdoe-copy-2');
     });
 });

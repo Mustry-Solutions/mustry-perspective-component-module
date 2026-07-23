@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ScheduleManagerLabels } from '../../shared/labels/schedule';
 import { ScheduleItem } from './scheduleLogic';
+import { RowMenu } from '../../shared/RowMenu';
 
 interface ScheduleListProps {
     items: ScheduleItem[];
@@ -13,6 +14,8 @@ interface ScheduleListProps {
     onCreate: (() => void) | null;
     labels: ScheduleManagerLabels;
     onSelect: (name: string) => void;
+    /** Per-row ⋯ menu (null hides it — viewer mode). */
+    rowMenu: { showDuplicate: boolean; showDelete: boolean; onDuplicate: (name: string) => void; onDelete: (name: string) => void } | null;
 }
 
 /** The left rail: one button per schedule, active-now dot, selection highlight. */
@@ -52,6 +55,18 @@ export function ScheduleList(props: ScheduleListProps): JSX.Element {
                         <span className="mustry-sched-item-name">{s.name}</span>
                         {s.description !== '' && <span className="mustry-sched-item-desc">{s.description}</span>}
                     </span>
+                    {props.rowMenu && (
+                        <RowMenu
+                            moreActionsLabel={`${labels.moreActions} ${s.name}`}
+                            duplicateLabel={labels.duplicate}
+                            deleteLabel={labels.delete}
+                            confirmDeleteLabel={labels.confirmDelete}
+                            showDuplicate={props.rowMenu.showDuplicate}
+                            showDelete={props.rowMenu.showDelete}
+                            onDuplicate={() => props.rowMenu!.onDuplicate(s.name)}
+                            onDelete={() => props.rowMenu!.onDelete(s.name)}
+                        />
+                    )}
                 </div>
             ))}
         </div>

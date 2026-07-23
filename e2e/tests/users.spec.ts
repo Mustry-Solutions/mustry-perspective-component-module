@@ -244,4 +244,34 @@ test.describe('User Manager', () => {
         const root2 = await openPopulated(page);
         await expect(root2.locator('.mustry-sched-item').filter({ hasText: 'admin' }).first()).toBeVisible();
     });
+
+    test('row menu: duplicating a user prefills dash-named create flow', async ({ page }) => {
+        const root = await openPopulated(page);
+        await deleteIfPresent(root, 'kpatel-copy');
+        await selectUser(root, 'Kiran Patel', 'kpatel');
+
+        const row = root.locator('.mustry-sched-item').filter({ hasText: 'Kiran Patel' });
+        await row.hover();
+        await row.getByRole('button', { name: /More actions/ }).click();
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect(root.locator('.mustry-sched-name-input')).toHaveValue('kpatel-copy');
+        // Copies profile fields but never the password — stage one to satisfy
+        // the source's complexity policy, then save.
+        await root.locator('.mustry-users-password').fill('E2E-Secr3t!');
+        await root.locator('.mustry-commit-save').click();
+        await expect(page.getByText(/onUserSave persisted "kpatel-copy" \(isNew=True, password set\)/)).toBeVisible();
+        await expect(root.locator('.mustry-sched-item').filter({ hasText: 'kpatel-copy' }))
+            .toHaveCount(1, { timeout: 15_000 });
+
+        // Clean up via the row menu's two-step delete.
+        const copyRow = root.locator('.mustry-sched-item').filter({ hasText: 'kpatel-copy' });
+        await copyRow.hover();
+        await copyRow.getByRole('button', { name: /More actions/ }).click();
+        const menuDelete = page.locator('.mustry-row-menu-pop .mustry-row-menu-item--danger');
+        await menuDelete.click();
+        await menuDelete.click();
+        await expect(page.getByText(/onUserDelete removed "kpatel-copy"/)).toBeVisible();
+        await expect(root.locator('.mustry-sched-item').filter({ hasText: 'kpatel-copy' }))
+            .toHaveCount(0, { timeout: 15_000 });
+    });
 });

@@ -208,4 +208,33 @@ test.describe('Schedule Manager', () => {
         // report a failure — the event contract is what this test pins.
         await expect(page.getByText(/onScheduleDelete /)).toBeVisible();
     });
+
+    test('row menu: duplicate prefills the create flow; menu delete works per-row', async ({ page }) => {
+        const root = await openRoute(page, '/schedule', '.mustry-schedmgr');
+        await selectCanonicalDayShift(page, root);
+
+        // Duplicate: hover reveals the ⋯; the create flow opens prefilled.
+        const row = root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift' });
+        await row.hover();
+        await row.getByRole('button', { name: /More actions/ }).click();
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect(root.locator('.mustry-sched-name-input')).toHaveValue('Demo Day Shift (copy)');
+        await expect(root.locator('.mustry-sched-block')).toHaveCount(10); // prefilled week
+        await root.locator('.mustry-commit-save').click();
+        await expect(page.getByText(/onScheduleSave created "Demo Day Shift \(copy\)"/)).toBeVisible();
+        await expect(root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift (copy)' }))
+            .toHaveCount(1, { timeout: 15_000 });
+
+        // Menu delete on the copy (two-step confirm inside the menu).
+        const copyRow = root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift (copy)' });
+        await copyRow.hover();
+        await copyRow.getByRole('button', { name: /More actions/ }).click();
+        const menuDelete = page.locator('.mustry-row-menu-pop .mustry-row-menu-item--danger');
+        await menuDelete.click();
+        await expect(menuDelete).toHaveClass(/--confirm/);
+        await menuDelete.click();
+        await expect(page.getByText(/onScheduleDelete removed "Demo Day Shift \(copy\)"/)).toBeVisible();
+        await expect(root.locator('.mustry-sched-item').filter({ hasText: 'Demo Day Shift (copy)' }))
+            .toHaveCount(0, { timeout: 15_000 });
+    });
 });

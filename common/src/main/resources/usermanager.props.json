@@ -213,6 +213,14 @@
             "adjHint": {
               "type": "string",
               "description": "Section hint explaining override semantics."
+            },
+            "moreActions": {
+              "type": "string",
+              "description": "Accessible name of the per-row ⋯ menu button."
+            },
+            "duplicate": {
+              "type": "string",
+              "description": "The row menu's duplicate action (prefills the create flow)."
             }
           }
         },

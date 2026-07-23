@@ -39,27 +39,98 @@
           "additionalProperties": false,
           "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
           "properties": {
-            "listHeader": { "type": "string", "description": "Roster list heading." },
-            "noRosters": { "type": "string", "description": "Empty-list placeholder." },
-            "noSelection": { "type": "string", "description": "Detail placeholder when nothing is selected." },
-            "newRoster": { "type": "string", "description": "The list rail's create button." },
-            "name": { "type": "string", "description": "Name input placeholder (create flow)." },
-            "nameRequired": { "type": "string", "description": "Validation: empty name." },
-            "nameTaken": { "type": "string", "description": "Validation: duplicate name." },
-            "addUser": { "type": "string", "description": "Opens the directory picker." },
-            "searchUsers": { "type": "string", "description": "Picker search placeholder." },
-            "noMatches": { "type": "string", "description": "Picker empty state." },
-            "emptyRoster": { "type": "string", "description": "Hint shown when the roster has no users." },
-            "removeUser": { "type": "string", "description": "Per-row remove tooltip." },
-            "noContact": { "type": "string", "description": "Per-row warning when a user has no contact info." },
-            "contactN": { "type": "string", "description": "Row ordinal template; {n} is substituted." },
-            "dragToReorder": { "type": "string", "description": "Drag-handle tooltip." },
-            "unknownUser": { "type": "string", "description": "Row badge when a username is not in data.availableUsers." },
-            "save": { "type": "string", "description": "Save button." },
-            "discard": { "type": "string", "description": "Discard-draft button tooltip." },
-            "unsaved": { "type": "string", "description": "Unsaved-changes badge." },
-            "delete": { "type": "string", "description": "Delete-roster button." },
-            "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." }
+            "listHeader": {
+              "type": "string",
+              "description": "Roster list heading."
+            },
+            "noRosters": {
+              "type": "string",
+              "description": "Empty-list placeholder."
+            },
+            "noSelection": {
+              "type": "string",
+              "description": "Detail placeholder when nothing is selected."
+            },
+            "newRoster": {
+              "type": "string",
+              "description": "The list rail's create button."
+            },
+            "name": {
+              "type": "string",
+              "description": "Name input placeholder (create flow)."
+            },
+            "nameRequired": {
+              "type": "string",
+              "description": "Validation: empty name."
+            },
+            "nameTaken": {
+              "type": "string",
+              "description": "Validation: duplicate name."
+            },
+            "addUser": {
+              "type": "string",
+              "description": "Opens the directory picker."
+            },
+            "searchUsers": {
+              "type": "string",
+              "description": "Picker search placeholder."
+            },
+            "noMatches": {
+              "type": "string",
+              "description": "Picker empty state."
+            },
+            "emptyRoster": {
+              "type": "string",
+              "description": "Hint shown when the roster has no users."
+            },
+            "removeUser": {
+              "type": "string",
+              "description": "Per-row remove tooltip."
+            },
+            "noContact": {
+              "type": "string",
+              "description": "Per-row warning when a user has no contact info."
+            },
+            "contactN": {
+              "type": "string",
+              "description": "Row ordinal template; {n} is substituted."
+            },
+            "dragToReorder": {
+              "type": "string",
+              "description": "Drag-handle tooltip."
+            },
+            "unknownUser": {
+              "type": "string",
+              "description": "Row badge when a username is not in data.availableUsers."
+            },
+            "save": {
+              "type": "string",
+              "description": "Save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Discard-draft button tooltip."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Unsaved-changes badge."
+            },
+            "delete": {
+              "type": "string",
+              "description": "Delete-roster button."
+            },
+            "confirmDelete": {
+              "type": "string",
+              "description": "Second-step delete confirmation."
+            },
+            "moreActions": {
+              "type": "string",
+              "description": "Accessible name of the per-row ⋯ menu button."
+            },
+            "duplicate": {
+              "type": "string",
+              "description": "The row menu's duplicate action (prefills the create flow)."
+            }
           }
         }
       }
@@ -80,11 +151,16 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string", "description": "Unique roster name (the selection key)." },
+              "name": {
+                "type": "string",
+                "description": "Unique roster name (the selection key)."
+              },
               "users": {
                 "type": "array",
                 "description": "Ordered usernames — index 0 is the first contact.",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -96,17 +172,32 @@
           "items": {
             "type": "object",
             "properties": {
-              "username": { "type": "string", "description": "Unique username (the roster entry key)." },
-              "firstName": { "type": "string", "description": "First name." },
-              "lastName": { "type": "string", "description": "Last name." },
+              "username": {
+                "type": "string",
+                "description": "Unique username (the roster entry key)."
+              },
+              "firstName": {
+                "type": "string",
+                "description": "First name."
+              },
+              "lastName": {
+                "type": "string",
+                "description": "Last name."
+              },
               "contactInfo": {
                 "type": "array",
                 "description": "Contact points, e.g. [{contactType: 'email', value: 'a@b.c'}]. Rows warn when empty.",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "contactType": { "type": "string", "description": "'email' | 'sms' | 'phone' (open set)." },
-                    "value": { "type": "string", "description": "The address / number." }
+                    "contactType": {
+                      "type": "string",
+                      "description": "'email' | 'sms' | 'phone' (open set)."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "The address / number."
+                    }
                   }
                 }
               }
@@ -154,7 +245,9 @@
           "type": "array",
           "default": [],
           "description": "Error keys blocking Save ('nameRequired' / 'nameTaken'); empty when the draft is saveable.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

@@ -39,26 +39,94 @@
           "additionalProperties": false,
           "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
           "properties": {
-            "listHeader": { "type": "string", "description": "Holiday list heading." },
-            "noHolidays": { "type": "string", "description": "Empty-list placeholder." },
-            "noSelection": { "type": "string", "description": "Detail placeholder when nothing is selected." },
-            "newHoliday": { "type": "string", "description": "The list rail's create button." },
-            "name": { "type": "string", "description": "Name input placeholder." },
-            "nameRequired": { "type": "string", "description": "Validation: empty name." },
-            "nameTaken": { "type": "string", "description": "Validation: duplicate name." },
-            "date": { "type": "string", "description": "Date input label." },
-            "dateInvalid": { "type": "string", "description": "Validation: missing/invalid date." },
-            "repeatAnnually": { "type": "string", "description": "Repeat-annually toggle." },
-            "repeats": { "type": "string", "description": "Rail badge: repeats annually." },
-            "past": { "type": "string", "description": "Rail badge: non-repeating and already passed." },
-            "nextOn": { "type": "string", "description": "Next-occurrence line; {date} is substituted." },
-            "neverAgain": { "type": "string", "description": "Line for past non-repeating holidays." },
-            "observedBy": { "type": "string", "description": "Hint linking holidays to observing schedules." },
-            "save": { "type": "string", "description": "Save button." },
-            "discard": { "type": "string", "description": "Discard-draft button tooltip." },
-            "unsaved": { "type": "string", "description": "Unsaved-changes badge." },
-            "delete": { "type": "string", "description": "Delete-holiday button." },
-            "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." }
+            "listHeader": {
+              "type": "string",
+              "description": "Holiday list heading."
+            },
+            "noHolidays": {
+              "type": "string",
+              "description": "Empty-list placeholder."
+            },
+            "noSelection": {
+              "type": "string",
+              "description": "Detail placeholder when nothing is selected."
+            },
+            "newHoliday": {
+              "type": "string",
+              "description": "The list rail's create button."
+            },
+            "name": {
+              "type": "string",
+              "description": "Name input placeholder."
+            },
+            "nameRequired": {
+              "type": "string",
+              "description": "Validation: empty name."
+            },
+            "nameTaken": {
+              "type": "string",
+              "description": "Validation: duplicate name."
+            },
+            "date": {
+              "type": "string",
+              "description": "Date input label."
+            },
+            "dateInvalid": {
+              "type": "string",
+              "description": "Validation: missing/invalid date."
+            },
+            "repeatAnnually": {
+              "type": "string",
+              "description": "Repeat-annually toggle."
+            },
+            "repeats": {
+              "type": "string",
+              "description": "Rail badge: repeats annually."
+            },
+            "past": {
+              "type": "string",
+              "description": "Rail badge: non-repeating and already passed."
+            },
+            "nextOn": {
+              "type": "string",
+              "description": "Next-occurrence line; {date} is substituted."
+            },
+            "neverAgain": {
+              "type": "string",
+              "description": "Line for past non-repeating holidays."
+            },
+            "observedBy": {
+              "type": "string",
+              "description": "Hint linking holidays to observing schedules."
+            },
+            "save": {
+              "type": "string",
+              "description": "Save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Discard-draft button tooltip."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Unsaved-changes badge."
+            },
+            "delete": {
+              "type": "string",
+              "description": "Delete-holiday button."
+            },
+            "confirmDelete": {
+              "type": "string",
+              "description": "Second-step delete confirmation."
+            },
+            "moreActions": {
+              "type": "string",
+              "description": "Accessible name of the per-row ⋯ menu button."
+            },
+            "duplicate": {
+              "type": "string",
+              "description": "The row menu's duplicate action (prefills the create flow)."
+            }
           }
         }
       }
@@ -78,9 +146,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string", "description": "Unique holiday name (the selection key)." },
-              "date": { "type": "string", "description": "The holiday's calendar date, 'YYYY-MM-DD'." },
-              "repeatAnnually": { "type": "boolean", "description": "Observed every year on that month/day (Feb-29 repeats observe Feb 28 off-leap-years)." }
+              "name": {
+                "type": "string",
+                "description": "Unique holiday name (the selection key)."
+              },
+              "date": {
+                "type": "string",
+                "description": "The holiday's calendar date, 'YYYY-MM-DD'."
+              },
+              "repeatAnnually": {
+                "type": "boolean",
+                "description": "Observed every year on that month/day (Feb-29 repeats observe Feb 28 off-leap-years)."
+              }
             }
           }
         }
@@ -125,7 +202,9 @@
           "type": "array",
           "default": [],
           "description": "Error keys blocking Save ('nameRequired' / 'nameTaken' / 'dateInvalid'); empty when the draft is saveable.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

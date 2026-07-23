@@ -66,27 +66,98 @@
           "additionalProperties": false,
           "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
           "properties": {
-            "listHeader": { "type": "string", "description": "Schedule list heading." },
-            "noSchedules": { "type": "string", "description": "Empty-list placeholder." },
-            "noSelection": { "type": "string", "description": "Detail placeholder when nothing is selected." },
-            "allDays": { "type": "string", "description": "Badge: available 24/7." },
-            "alternating": { "type": "string", "description": "Badge: alternating A/B schedule (week A shown)." },
-            "observesHolidays": { "type": "string", "description": "Badge: observes gateway holidays." },
-            "activeNow": { "type": "string", "description": "Tooltip of the list's active-now dot." },
-            "save": { "type": "string", "description": "Save button." },
-            "discard": { "type": "string", "description": "Discard-draft button tooltip." },
-            "unsaved": { "type": "string", "description": "Unsaved-changes badge." },
-            "delete": { "type": "string", "description": "Delete-schedule button." },
-            "confirmDelete": { "type": "string", "description": "Second-step delete confirmation." },
-            "clickToRemove": { "type": "string", "description": "Block tooltip while editable." },
-            "description": { "type": "string", "description": "Description input placeholder." },
-            "newSchedule": { "type": "string", "description": "The list rail's create button." },
-            "name": { "type": "string", "description": "Name input placeholder." },
-            "nameRequired": { "type": "string", "description": "Validation: empty name." },
-            "nameTaken": { "type": "string", "description": "Validation: duplicate name." },
-            "inactive": { "type": "string", "description": "Preview strip: inactive with no upcoming activation." },
-            "activeUntil": { "type": "string", "description": "Preview strip template; {day} and {time} are substituted." },
-            "inactiveUntil": { "type": "string", "description": "Preview strip template; {day} and {time} are substituted." }
+            "listHeader": {
+              "type": "string",
+              "description": "Schedule list heading."
+            },
+            "noSchedules": {
+              "type": "string",
+              "description": "Empty-list placeholder."
+            },
+            "noSelection": {
+              "type": "string",
+              "description": "Detail placeholder when nothing is selected."
+            },
+            "allDays": {
+              "type": "string",
+              "description": "Badge: available 24/7."
+            },
+            "alternating": {
+              "type": "string",
+              "description": "Badge: alternating A/B schedule (week A shown)."
+            },
+            "observesHolidays": {
+              "type": "string",
+              "description": "Badge: observes gateway holidays."
+            },
+            "activeNow": {
+              "type": "string",
+              "description": "Tooltip of the list's active-now dot."
+            },
+            "save": {
+              "type": "string",
+              "description": "Save button."
+            },
+            "discard": {
+              "type": "string",
+              "description": "Discard-draft button tooltip."
+            },
+            "unsaved": {
+              "type": "string",
+              "description": "Unsaved-changes badge."
+            },
+            "delete": {
+              "type": "string",
+              "description": "Delete-schedule button."
+            },
+            "confirmDelete": {
+              "type": "string",
+              "description": "Second-step delete confirmation."
+            },
+            "clickToRemove": {
+              "type": "string",
+              "description": "Block tooltip while editable."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description input placeholder."
+            },
+            "newSchedule": {
+              "type": "string",
+              "description": "The list rail's create button."
+            },
+            "name": {
+              "type": "string",
+              "description": "Name input placeholder."
+            },
+            "nameRequired": {
+              "type": "string",
+              "description": "Validation: empty name."
+            },
+            "nameTaken": {
+              "type": "string",
+              "description": "Validation: duplicate name."
+            },
+            "inactive": {
+              "type": "string",
+              "description": "Preview strip: inactive with no upcoming activation."
+            },
+            "activeUntil": {
+              "type": "string",
+              "description": "Preview strip template; {day} and {time} are substituted."
+            },
+            "inactiveUntil": {
+              "type": "string",
+              "description": "Preview strip template; {day} and {time} are substituted."
+            },
+            "moreActions": {
+              "type": "string",
+              "description": "Accessible name of the per-row ⋯ menu button."
+            },
+            "duplicate": {
+              "type": "string",
+              "description": "The row menu's duplicate action (prefills the create flow)."
+            }
           }
         }
       }
@@ -106,26 +177,86 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string", "description": "Unique schedule name (the selection key)." },
-              "description": { "type": "string", "description": "Free-text description." },
-              "observeHolidays": { "type": "boolean", "description": "Schedule observes the gateway's holiday list." },
-              "allDays": { "type": "boolean", "description": "Available 24/7 — overrides the per-day settings." },
-              "repeatAlternating": { "type": "boolean", "description": "Alternating A/B week schedule. This milestone renders week A only." },
-              "startingAt": { "type": "string", "description": "ISO date anchoring alternating weeks (informational)." },
-              "monday": { "type": "boolean", "description": "Available on Monday." },
-              "mondayTime": { "type": "string", "description": "Monday availability, 24h ranges: '8:00-17:00' or '8:00-12:00, 12:30-17:00'. Blank while enabled = all day." },
-              "tuesday": { "type": "boolean", "description": "Available on Tuesday." },
-              "tuesdayTime": { "type": "string", "description": "Tuesday availability ranges (same format as mondayTime)." },
-              "wednesday": { "type": "boolean", "description": "Available on Wednesday." },
-              "wednesdayTime": { "type": "string", "description": "Wednesday availability ranges." },
-              "thursday": { "type": "boolean", "description": "Available on Thursday." },
-              "thursdayTime": { "type": "string", "description": "Thursday availability ranges." },
-              "friday": { "type": "boolean", "description": "Available on Friday." },
-              "fridayTime": { "type": "string", "description": "Friday availability ranges." },
-              "saturday": { "type": "boolean", "description": "Available on Saturday." },
-              "saturdayTime": { "type": "string", "description": "Saturday availability ranges." },
-              "sunday": { "type": "boolean", "description": "Available on Sunday." },
-              "sundayTime": { "type": "string", "description": "Sunday availability ranges." }
+              "name": {
+                "type": "string",
+                "description": "Unique schedule name (the selection key)."
+              },
+              "description": {
+                "type": "string",
+                "description": "Free-text description."
+              },
+              "observeHolidays": {
+                "type": "boolean",
+                "description": "Schedule observes the gateway's holiday list."
+              },
+              "allDays": {
+                "type": "boolean",
+                "description": "Available 24/7 — overrides the per-day settings."
+              },
+              "repeatAlternating": {
+                "type": "boolean",
+                "description": "Alternating A/B week schedule. This milestone renders week A only."
+              },
+              "startingAt": {
+                "type": "string",
+                "description": "ISO date anchoring alternating weeks (informational)."
+              },
+              "monday": {
+                "type": "boolean",
+                "description": "Available on Monday."
+              },
+              "mondayTime": {
+                "type": "string",
+                "description": "Monday availability, 24h ranges: '8:00-17:00' or '8:00-12:00, 12:30-17:00'. Blank while enabled = all day."
+              },
+              "tuesday": {
+                "type": "boolean",
+                "description": "Available on Tuesday."
+              },
+              "tuesdayTime": {
+                "type": "string",
+                "description": "Tuesday availability ranges (same format as mondayTime)."
+              },
+              "wednesday": {
+                "type": "boolean",
+                "description": "Available on Wednesday."
+              },
+              "wednesdayTime": {
+                "type": "string",
+                "description": "Wednesday availability ranges."
+              },
+              "thursday": {
+                "type": "boolean",
+                "description": "Available on Thursday."
+              },
+              "thursdayTime": {
+                "type": "string",
+                "description": "Thursday availability ranges."
+              },
+              "friday": {
+                "type": "boolean",
+                "description": "Available on Friday."
+              },
+              "fridayTime": {
+                "type": "string",
+                "description": "Friday availability ranges."
+              },
+              "saturday": {
+                "type": "boolean",
+                "description": "Available on Saturday."
+              },
+              "saturdayTime": {
+                "type": "string",
+                "description": "Saturday availability ranges."
+              },
+              "sunday": {
+                "type": "boolean",
+                "description": "Available on Sunday."
+              },
+              "sundayTime": {
+                "type": "string",
+                "description": "Sunday availability ranges."
+              }
             }
           }
         }

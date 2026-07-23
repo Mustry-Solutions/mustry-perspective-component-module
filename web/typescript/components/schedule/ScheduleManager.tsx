@@ -7,6 +7,7 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
+import { uniqueCopyName } from '../../shared/adminCommon';
 import { weekdayHeaders } from '../../shared/dateUtils';
 import { dayRanges, isActiveAt, orderedDays, DAY_KEYS, DayKey, MINUTES_PER_DAY, ScheduleItem } from './scheduleLogic';
 import {
@@ -223,6 +224,28 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
 
     // --- editing actions ----------------------------------------------------
 
+    private onDuplicate = (name: string): void => {
+        const source = this.props.props.schedules.find((sch) => sch.name === name);
+        if (!source) {
+            return;
+        }
+        // Duplicate = the create flow prefilled from the source (week A for
+        // alternating schedules); Save fires onScheduleSave with isNew: true.
+        this.clearConfirmTimer();
+        this.setState({
+            creating: true, draft: draftFromItem(source), draftFor: '',
+            nameDraft: uniqueCopyName(name, this.props.props.schedules.map((sch) => sch.name)),
+            confirmingDelete: false, preview: null
+        });
+    };
+
+    private onMenuDelete = (name: string): void => {
+        this.fireEvent('onScheduleDelete', { name });
+        if (name === this.props.props.selectedSchedule) {
+            this.props.store.props.write('state.selectedSchedule', '');
+        }
+    };
+
     private onCreate = (): void => {
         this.clearConfirmTimer();
         this.setState({
@@ -427,6 +450,12 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
                     onCreate={p.editable && p.allowCreate ? this.onCreate : null}
                     labels={p.labels}
                     onSelect={this.onSelect}
+                    rowMenu={p.editable && (p.allowCreate || p.allowDelete) ? {
+                        showDuplicate: p.allowCreate,
+                        showDelete: p.allowDelete,
+                        onDuplicate: this.onDuplicate,
+                        onDelete: this.onMenuDelete
+                    } : null}
                 />
                 {this.renderDetail()}
             </div>

@@ -8,8 +8,9 @@
 
 import { primaryLang } from './common';
 import { CommitLabels, commitLabelBase } from './commit';
+import { RowMenuLabels, rowMenuLabelBase } from './rowmenu';
 
-export interface RosterManagerLabels extends CommitLabels {
+export interface RosterManagerLabels extends CommitLabels, RowMenuLabels {
     listHeader: string;      // roster list rail heading
     noRosters: string;       // empty-list placeholder
     noSelection: string;     // detail placeholder when nothing is selected
@@ -30,7 +31,7 @@ export interface RosterManagerLabels extends CommitLabels {
     unknownUser: string;     // row badge: username not in data.availableUsers
 }
 
-type OwnLabels = Omit<RosterManagerLabels, keyof CommitLabels>;
+type OwnLabels = Omit<RosterManagerLabels, keyof CommitLabels | keyof RowMenuLabels>;
 
 const PACKS: { [lang: string]: OwnLabels } = {
     en: {
@@ -101,7 +102,7 @@ const PACKS: { [lang: string]: OwnLabels } = {
 /** The Roster Manager's default label set for a locale (English when not
  *  bundled) — the shared commit strings (Save / Discard / unsaved) merged in. */
 export function rosterLabelBase(locale: string): RosterManagerLabels {
-    return { ...commitLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
+    return { ...commitLabelBase(locale), ...rowMenuLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
 }
 
 export const EN_ROSTER_LABELS: RosterManagerLabels = rosterLabelBase('en');

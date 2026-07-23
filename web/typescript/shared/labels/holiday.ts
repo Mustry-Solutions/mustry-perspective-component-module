@@ -5,8 +5,9 @@
 
 import { primaryLang } from './common';
 import { CommitLabels, commitLabelBase } from './commit';
+import { RowMenuLabels, rowMenuLabelBase } from './rowmenu';
 
-export interface HolidayManagerLabels extends CommitLabels {
+export interface HolidayManagerLabels extends CommitLabels, RowMenuLabels {
     listHeader: string;     // holiday list rail heading
     noHolidays: string;     // empty-list placeholder
     noSelection: string;    // detail placeholder
@@ -26,7 +27,7 @@ export interface HolidayManagerLabels extends CommitLabels {
     confirmDelete: string;
 }
 
-type OwnLabels = Omit<HolidayManagerLabels, keyof CommitLabels>;
+type OwnLabels = Omit<HolidayManagerLabels, keyof CommitLabels | keyof RowMenuLabels>;
 
 const PACKS: { [lang: string]: OwnLabels } = {
     en: {
@@ -90,7 +91,7 @@ const PACKS: { [lang: string]: OwnLabels } = {
 /** The Holiday Manager's default label set for a locale (English when not
  *  bundled) — the shared commit strings (Save / Discard / unsaved) merged in. */
 export function holidayLabelBase(locale: string): HolidayManagerLabels {
-    return { ...commitLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
+    return { ...commitLabelBase(locale), ...rowMenuLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
 }
 
 export const EN_HOLIDAY_LABELS: HolidayManagerLabels = holidayLabelBase('en');

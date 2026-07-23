@@ -8,6 +8,23 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Admin family: per-row ⋯ menu with Duplicate
+Every admin rail row gains a ⋯ menu — hover-revealed for mouse users and
+ALWAYS visible on the selected row so touch users reach it with one tap
+(hover-only affordances don't exist on touch, which is why bare hover
+delete icons were rejected). It holds **Duplicate** (enters the existing
+create flow prefilled from the source — "Day Shift (copy)", or
+"jdoe-copy" dash-style for usernames — so Save fires the usual
+isNew: true event and NO new events were needed) and **Delete**
+(two-step confirm inside the menu, works on any row without selecting
+it; deleting the selected row clears the selection). Duplicating a user
+copies roles/schedule/contacts/adjustments but never the password;
+duplicating an alternating schedule copies week A. Gated by the existing
+allowCreate (duplicate) / allowDelete (delete) flags. New shared
+RowMenu + labels (7 languages, `moreActions`/`duplicate` override keys
+across all four components).
+
+
 ## [0.3.0] - 2026-07-23
 
 ### Admin family: layout stability pass
