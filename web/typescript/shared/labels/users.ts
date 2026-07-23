@@ -8,8 +8,9 @@
 
 import { primaryLang } from './common';
 import { CommitLabels, commitLabelBase } from './commit';
+import { RowMenuLabels, rowMenuLabelBase } from './rowmenu';
 
-export interface UserManagerLabels extends CommitLabels {
+export interface UserManagerLabels extends CommitLabels, RowMenuLabels {
     listHeader: string;        // user list rail heading
     filterPlaceholder: string; // rail filter input
     noUsers: string;           // empty-list placeholder
@@ -51,7 +52,7 @@ export interface UserManagerLabels extends CommitLabels {
     adjHint: string;           // section hint
 }
 
-type OwnLabels = Omit<UserManagerLabels, keyof CommitLabels>;
+type OwnLabels = Omit<UserManagerLabels, keyof CommitLabels | keyof RowMenuLabels>;
 
 const PACKS: { [lang: string]: OwnLabels } = {
     en: {
@@ -164,7 +165,7 @@ const PACKS: { [lang: string]: OwnLabels } = {
 /** The User Manager's default label set for a locale (English when not
  *  bundled) — the shared commit strings (Save / Discard / unsaved) merged in. */
 export function userLabelBase(locale: string): UserManagerLabels {
-    return { ...commitLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
+    return { ...commitLabelBase(locale), ...rowMenuLabelBase(locale), ...(PACKS[primaryLang(locale)] || PACKS.en) };
 }
 
 export const EN_USER_LABELS: UserManagerLabels = userLabelBase('en');

@@ -406,6 +406,10 @@ A runtime UI over the gateway's **holiday list** — the missing quarter of the 
 
 The shared admin-family `--adm-*` variables (see Schedule Manager).
 
+### Rail row menu (all four components)
+
+Each rail row has a **⋯ menu** — hover-revealed, and always visible on the selected row so touch users reach it with one tap. It offers **Duplicate** (prefills the create flow from the source; Save fires the usual `isNew: true` event) and **Delete** (two-step confirm in the menu, per-row). Gated by `allowCreate` / `allowDelete`.
+
 ### Composing an Admin Console
 
 The three admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to dial each tab. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all four components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.

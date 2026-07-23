@@ -16,6 +16,27 @@ export function validateName(name: string, existingNames: string[], currentName:
     return null;
 }
 
+/**
+ * A unique name for a duplicate: "Name (copy)", then "Name (copy 2)", … —
+ * or dash style ("name-copy", "name-copy-2") for identifier-ish names like
+ * usernames where parentheses/spaces may be rejected by the backing source.
+ */
+export function uniqueCopyName(base: string, existing: string[], style: 'paren' | 'dash' = 'paren'): string {
+    const taken = new Set(existing);
+    const make = (n: number): string => {
+        if (style === 'dash') {
+            return n === 1 ? `${base}-copy` : `${base}-copy-${n}`;
+        }
+        return n === 1 ? `${base} (copy)` : `${base} (copy ${n})`;
+    };
+    for (let n = 1; ; n++) {
+        const candidate = make(n);
+        if (!taken.has(candidate)) {
+            return candidate;
+        }
+    }
+}
+
 /** Move one element of a list (drag-to-reorder commit). Returns a new array. */
 export function reorder<T>(list: T[], from: number, to: number): T[] {
     if (from === to || from < 0 || from >= list.length || to < 0 || to >= list.length) {
