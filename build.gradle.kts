@@ -138,3 +138,28 @@ ignitionModule {
      */
     skipModlSigning.set(!project.hasProperty("ignition.signing.keystoreFile"))
 }
+
+// A licensed module needs its EULA inside the .modl. The plugin has no
+// `license` property, so the file is staged into the module content and
+// referenced from module.xml — the gateway shows it at install time and
+// requires acceptance. (Pattern proven in the AMQP + observability modules.)
+tasks.named("assembleModlStructure") {
+    doLast {
+        copy {
+            from("license.html")
+            into(layout.buildDirectory.dir("moduleContent"))
+        }
+    }
+}
+
+tasks.named("zipModule") {
+    doFirst {
+        val moduleXml = layout.buildDirectory.file("moduleContent/module.xml").get().asFile
+        val content = moduleXml.readText()
+        if (!content.contains("<license>")) {
+            moduleXml.writeText(
+                content.replace("</module>", "\t\t<license>license.html</license>\n\t</module>")
+            )
+        }
+    }
+}

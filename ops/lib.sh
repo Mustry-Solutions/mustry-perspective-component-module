@@ -184,11 +184,16 @@ accept_staged_module() {
                    | cut -d= -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
   [[ -n "${fingerprint}" ]] || { err "Could not fingerprint ${CERT_FILE}."; return 1; }
 
-  info "Pre-accepting the module certificate (fingerprint ${fingerprint})..."
+  # The module ships an EULA (license.html inside the .modl); acceptance
+  # persists as the CRC32 of that file (matches the platform's
+  # ModuleUtil.calculateLicenseCrc — trick ported back from the observability
+  # module's ops). Without it every fresh boot parks in commissioning.
+  license_crc="$(python3 -c "import zipfile,zlib,sys; print(zlib.crc32(zipfile.ZipFile(sys.argv[1]).read('license.html')))" "${modl}")"
+  info "Pre-accepting the module certificate (fingerprint ${fingerprint}) + license (crc ${license_crc})..."
   "${COMPOSE[@]}" stop gateway
   tmp="$(mktemp -d)"
   docker cp "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json" "${tmp}/modules.json"
-  MODULE_ID="${MODULE_ID}" MODL_NAME="$(basename "${modl}")" FINGERPRINT="${fingerprint}" \
+  LICENSE_CRC="${license_crc}" MODULE_ID="${MODULE_ID}" MODL_NAME="$(basename "${modl}")" FINGERPRINT="${fingerprint}" \
   python3 - "${tmp}/modules.json" <<'EOF'
 import json, os, sys
 path = sys.argv[1]
@@ -198,6 +203,7 @@ modules[os.environ["MODULE_ID"]] = {
     "filename": f"/external-modules/{os.environ['MODL_NAME']}",
     "onStartup": "enabled",
     "certFingerprint": os.environ["FINGERPRINT"],
+    "licenseAgreementHash": int(os.environ["LICENSE_CRC"]),
 }
 with open(path, "w") as f:
     json.dump(modules, f, indent=2)
