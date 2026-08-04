@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Fired when a node is clicked (the same click writes state.selectedNode). Look the id up in your bound data for the full node.",
+  "properties": {
+    "id": {
+      "type": "number",
+      "description": "The clicked node's id."
+    },
+    "name": {
+      "type": "string",
+      "description": "The clicked node's label."
+    },
+    "category": {
+      "type": "number",
+      "description": "The clicked node's category."
+    }
+  }
+}

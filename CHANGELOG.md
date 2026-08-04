@@ -8,6 +8,30 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Branching Diagram (new component — migrated from ignition-mustry-ui)
+Fourteenth component: `mustrysolutions.perspective.display.branching` — a
+left-to-right decision-tree / flow-path renderer, the one real component
+in the ignition-mustry-ui repo, absorbed per
+`docs/branching-component-migration-plan.md` (M0+M1 in one pass). Flat
+`data.nodes` in (id/name/category/nextId/colour/icon/tooltip); pure BFS
+layout — one column per depth, one row per category rank, re-referenced
+nodes pushed forward with their subtree so arrows always point right —
+with corridor-aware SVG connector routing, width-responsive column
+spacing, Ignition icons, hover info cards, an inferred root
+(`output.hasRoot`) and empty-state labels. Clicking a node writes
+`state.selectedNode` (two-way highlight) and fires `onNodeClick
+{id, name, category}`. Ported to house standards: the ~250-line layout
+extracted pure into `branchingLogic.ts` (12 jest cases — the source had
+zero tests), React 16 class shell, all CSS namespaced `mustry-branch-*`
+with `--brn-*` theme vars (source used unprefixed globals like `.node`),
+sectioned config/data/state/output schema fixing the source's drift
+(phantom `rootId`, undeclared `nodeBorderWidth`), 7-language labels.
+Divergence from source: info cards are plain text this milestone (the
+source's react-markdown@9 requires React 18). Demo at `/branching`
+(seeded production flow with a rework loop exercising duplicate
+forwarding); 3 e2e tests. The source repo should now be archived.
+
+
 ### BREAKING: full identity rename — "Mustry Perspective Components"
 The module sheds the Ingots working name before any real deployments
 freeze its identifiers (the sanctioned pre-1.0 window):

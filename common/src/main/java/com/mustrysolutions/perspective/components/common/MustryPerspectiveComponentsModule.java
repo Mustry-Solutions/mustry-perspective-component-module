@@ -139,6 +139,12 @@ public class MustryPerspectiveComponentsModule {
             g.drawLine(2, 6, 14, 6);                              // header rule
             g.drawLine(5, 1, 5, 4); g.drawLine(11, 1, 11, 4);     // binder rings
             g.fillRect(4, 9, 8, 3);                               // the range
+        } else if (k.contains("branching")) {
+            // A branching tree: root dot with two forked paths.
+            g.fillOval(2, 7, 4, 4);                               // root
+            g.drawLine(6, 9, 9, 9);                               // trunk
+            g.drawLine(9, 9, 12, 4); g.fillOval(11, 2, 4, 4);     // upper branch
+            g.drawLine(9, 9, 12, 13); g.fillOval(11, 11, 4, 4);   // lower branch
         } else if (k.contains("holidaymanager")) {
             // Calendar sheet with one starred day (a holiday).
             g.drawRoundRect(2, 3, 12, 11, 2, 2);
