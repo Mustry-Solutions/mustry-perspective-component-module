@@ -1,0 +1,222 @@
+{
+ "custom": {
+  "lastEvent": ""
+ },
+ "propConfig": {
+  "custom.lastEvent": {
+   "persistent": true
+  }
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 960,
+   "height": 460
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Branching Diagram demo — a production flow with a rework LOOP: Rework points back to Assemble, which exercises the duplicate-forwarding layout (the re-referenced subtree is pushed right so arrows always point forward). Click a node: it highlights (state.selectedNode, two-way) and fires onNodeClick. Hover Intake or Rework for the info card. Display-only component — the data is a static prop here; bind data.nodes to anything that yields the flat node array.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 920,
+     "height": 58
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.branching",
+    "version": 0,
+    "props": {
+     "config": {},
+     "data": {
+      "nodes": [
+       {
+        "id": 1,
+        "name": "Intake",
+        "category": 0,
+        "nextId": [
+         2
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/input",
+         "color": "#ffffff"
+        },
+        "tooltip": "Raw material arrives.\nScan the batch label."
+       },
+       {
+        "id": 2,
+        "name": "Inspect",
+        "category": 0,
+        "nextId": [
+         3,
+         5
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/search",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 3,
+        "name": "Assemble",
+        "category": 0,
+        "nextId": [
+         4
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/build",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 4,
+        "name": "QA",
+        "category": 0,
+        "nextId": [
+         6,
+         5
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/fact_check",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 5,
+        "name": "Rework",
+        "category": 1,
+        "nextId": [
+         3
+        ],
+        "color": "#d32f2f",
+        "fill": false,
+        "icon": {
+         "path": "material/undo",
+         "color": "#d32f2f"
+        },
+        "tooltip": "Failed items loop back to Assemble."
+       },
+       {
+        "id": 6,
+        "name": "Ship",
+        "category": 0,
+        "nextId": [],
+        "color": "#2e7d32",
+        "icon": {
+         "path": "material/local_shipping",
+         "color": "#ffffff"
+        }
+       }
+      ]
+     }
+    },
+    "custom": {},
+    "events": {
+     "component": {
+      "onNodeClick": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.lastEvent = 'onNodeClick id=' + str(event.id) + ' name=\"' + str(event.name) + '\" category=' + str(event.category)"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "branching"
+    },
+    "position": {
+     "x": 16,
+     "y": 76,
+     "width": 920,
+     "height": 300
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'state.selectedNode: ' + toStr({../branching.props.state.selectedNode}) + '   output.count: ' + toStr({../branching.props.output.count}) + '   output.hasRoot: ' + toStr({../branching.props.output.hasRoot})"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 16,
+     "y": 388,
+     "width": 920,
+     "height": 20
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "color": "#7b8794",
+      "fontFamily": "monospace"
+     }
+    },
+    "custom": {},
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "eventLabel"
+    },
+    "position": {
+     "x": 16,
+     "y": 410,
+     "width": 920,
+     "height": 20
+    }
+   }
+  ]
+ }
+}

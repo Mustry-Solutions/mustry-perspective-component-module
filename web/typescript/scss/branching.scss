@@ -1,0 +1,104 @@
+// Branching Diagram — themeable via the --brn-* variables (defaults track
+// the active Perspective theme where a var exists). Ported from mustry-ui
+// with every class namespaced (the source used globals like `.node`).
+.mustry-branching {
+    --brn-text: var(--neutral-90, #1f2933);
+    --brn-muted: var(--neutral-60, #7b8794);
+    --brn-line: var(--neutral-60, #7b8794);
+    --brn-node-bg: var(--neutral-10, #ffffff);
+    --brn-accent: var(--callToAction, #0a66c2);
+    --brn-card-bg: var(--neutral-10, #ffffff);
+    --brn-card-border: var(--neutral-30, #cbd2d9);
+
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    color: var(--brn-text);
+    font-size: 12px;
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+.mustry-branch-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.mustry-branch-canvas {
+    position: relative;
+}
+
+.mustry-branch-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 16px;
+    color: var(--brn-muted);
+    text-align: center;
+}
+
+.mustry-branch-node {
+    position: absolute;
+    cursor: pointer;
+
+    &--selected .mustry-branch-disc {
+        outline: 2px solid var(--brn-accent);
+        outline-offset: 2px;
+    }
+}
+
+.mustry-branch-node-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mustry-branch-disc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-style: solid;
+    border-color: var(--brn-line);
+    border-radius: 50%;
+    background: var(--brn-node-bg);
+}
+
+.mustry-branch-name {
+    margin: 4px 0 0;
+    transform: translateX(-40%);
+    text-align: center;
+    color: var(--brn-text);
+    overflow-wrap: break-word;
+}
+
+// Hover info card (plain text this milestone).
+.mustry-branch-card {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 10;
+    display: none;
+    max-width: 260px;
+    padding: 8px 10px;
+    border: 1px solid var(--brn-card-border);
+    border-radius: 6px;
+    background: var(--brn-card-bg);
+    color: var(--brn-text);
+    white-space: pre-wrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.mustry-branch-node:hover .mustry-branch-card {
+    display: block;
+}
+
+.mustry-branch-path {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+}

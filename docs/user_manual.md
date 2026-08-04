@@ -8,7 +8,7 @@ is always the current copy.
 
 ## 1. Overview
 
-Mustry Perspective Components adds thirteen production-grade components to
+Mustry Perspective Components adds fourteen production-grade components to
 Ignition Perspective:
 
 | Component | Palette name | What it adds |
@@ -26,6 +26,7 @@ Ignition Perspective:
 | Roster Manager | Roster Manager | Order alarm-escalation rosters by drag |
 | User Manager | User Manager | Full user-source administration at runtime |
 | Holiday Manager | Holiday Manager | Edit the gateway holiday list schedules observe |
+| Branching Diagram | Branching Diagram | Decision-tree / flow-path renderer with auto layout |
 
 All components appear in the Designer palette under the **Mustry
 Solutions** category.
@@ -150,6 +151,16 @@ tapping it never summons the OS keyboard (the "double keyboard" problem).
 Numeric keypad (min/max clamp, decimals, units) or QWERTY text/email/url
 layouts, inline or popover. Enter commits (`onCommit {value, text,
 isValid}`).
+
+## 12b. Branching Diagram
+
+A left-to-right decision-tree / flow-path renderer. Feed `data.nodes` a
+flat array (`id`, `name`, `category`, `nextId[]`, colour, icon, tooltip);
+the root is inferred and the BFS layout places one column per depth and
+one row per category, pushing re-referenced nodes forward so arrows always
+point right. Clicking a node selects it (`state.selectedNode`, two-way)
+and fires `onNodeClick`. Columns stretch to the component's width and
+never compress below `config.minXOffset`. Theming: `--brn-*`.
 
 ## 13. The admin family
 

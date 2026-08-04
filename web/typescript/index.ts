@@ -12,6 +12,7 @@ import { ScheduleManager, ScheduleManagerMeta } from './components/schedule/Sche
 import { RosterManager, RosterManagerMeta } from './components/roster/RosterManager';
 import { UserManager, UserManagerMeta } from './components/users/UserManager';
 import { HolidayManager, HolidayManagerMeta } from './components/holiday/HolidayManager';
+import { BranchingDiagram, BranchingDiagramMeta } from './components/branching/BranchingDiagram';
 
 import './scss/picker.scss';
 import './scss/calendar.scss';
@@ -26,9 +27,10 @@ import './scss/schedule.scss';
 import './scss/roster.scss';
 import './scss/users.scss';
 import './scss/holiday.scss';
+import './scss/branching.scss';
 import './scss/commit.scss';
 
-export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard, ScheduleManager, RosterManager, UserManager, HolidayManager };
+export { DateTimeRangePicker, Calendar, ResourceTimeline, DataGrid, PanZoomView, RichTextEditor, CodeEditor, ColorPicker, OnScreenKeyboard, ScheduleManager, RosterManager, UserManager, HolidayManager, BranchingDiagram };
 
 // Register every component this module provides with the Perspective client registry.
 const components: Array<ComponentMeta> = [
@@ -44,7 +46,8 @@ const components: Array<ComponentMeta> = [
     new ScheduleManagerMeta(),
     new RosterManagerMeta(),
     new UserManagerMeta(),
-    new HolidayManagerMeta()
+    new HolidayManagerMeta(),
+    new BranchingDiagramMeta()
 ];
 
 components.forEach((c: ComponentMeta) => ComponentRegistry.register(c));

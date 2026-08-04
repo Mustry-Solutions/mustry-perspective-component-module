@@ -1,6 +1,6 @@
 # Mustry Perspective Components
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships thirteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships fourteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Branching Diagram**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
@@ -245,6 +245,23 @@ Embeds any Perspective view and navigates it like a map. Component id `mustrysol
 Override the `--pz-*` variables via a style class / project stylesheet: `--pz-accent`, `--pz-alert`, `--pz-text`, `--pz-muted`, `--pz-border`, `--pz-bg`, `--pz-canvas`.
 
 > Manual test checklist: [`docs/panzoom-manual-test.md`](docs/panzoom-manual-test.md).
+
+---
+
+## Branching Diagram
+
+A left-to-right decision-tree / flow-path renderer, migrated from `ignition-mustry-ui` (see [`docs/branching-component-migration-plan.md`](docs/branching-component-migration-plan.md)). Component id `mustrysolutions.perspective.display.branching`.
+
+### Features
+
+- **Flat data in, tree out** — `data.nodes` is a flat array (`id`, `name`, `category`, `nextId[]`, colour, icon, tooltip); the root is inferred (the node with outgoing edges nobody references, reported via `output.hasRoot`). Pure BFS layout: one column per depth, one row per category rank, and nodes that are referenced again later are **pushed forward with their whole subtree** so arrows always point right.
+- **SVG connectors** with curved row hand-offs; the split point prefers the midpoint of a clear corridor and detours around occupied cells.
+- **Width-responsive** — columns stretch to fill the component and never compress below `config.minXOffset` (then it scrolls). Node discs take Ignition icons (`{path, color}`) and show a plain-text hover info card.
+- **Selection + events** — clicking a node writes `state.selectedNode` (two-way, drives a highlight) and fires **`onNodeClick`** `{id, name, category}`. Display-only: the component never mutates `data.nodes`.
+
+### Theming
+
+Override the `--brn-*` variables via a style class / project stylesheet: `--brn-text`, `--brn-muted`, `--brn-line`, `--brn-node-bg`, `--brn-accent`, `--brn-card-bg`, `--brn-card-border`.
 
 ---
 

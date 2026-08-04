@@ -1,0 +1,186 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Branching Diagram behaviour and appearance.",
+      "default": {
+        "locale": "",
+        "minXOffset": 80,
+        "yOffset": 60,
+        "curveSize": 10,
+        "lineWidth": 2,
+        "nodeSize": 24,
+        "nodeBorderWidth": 2
+      },
+      "properties": {
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "BCP-47 locale selecting the built-in UI-text language (see config.labels). Empty = browser/session default."
+        },
+        "minXOffset": {
+          "type": "number",
+          "default": 80,
+          "description": "Minimum pixel spacing between depth columns; the grid stretches to fill the available width above this, and scrolls horizontally below it."
+        },
+        "yOffset": {
+          "type": "number",
+          "default": 60,
+          "description": "Pixel spacing between category rows."
+        },
+        "curveSize": {
+          "type": "number",
+          "default": 10,
+          "description": "Corner radius of connector bends, px."
+        },
+        "lineWidth": {
+          "type": "number",
+          "default": 2,
+          "description": "Connector stroke width, px."
+        },
+        "nodeSize": {
+          "type": "number",
+          "default": 24,
+          "description": "Diameter of the node disc, px."
+        },
+        "nodeBorderWidth": {
+          "type": "number",
+          "default": 2,
+          "description": "Node disc border width, px."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
+          "properties": {
+            "noNodes": {
+              "type": "string",
+              "description": "Empty-state text when data.nodes is empty."
+            },
+            "noRoot": {
+              "type": "string",
+              "description": "Empty-state hint when no root node can be found."
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The tree to draw. The ROOT is inferred: the node with outgoing edges that no other node references (output.hasRoot reports whether one exists).",
+      "default": {
+        "nodes": []
+      },
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "default": [],
+          "description": "Flat node array. Items stay open \u2014 extra fields ride along untouched.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "description": "Unique numeric id (the selection/edge key)."
+              },
+              "name": {
+                "type": "string",
+                "description": "Label under the node."
+              },
+              "category": {
+                "type": "number",
+                "description": "Row bucket: lower categories render higher. Rows are the RANKS of the distinct categories, not their raw values."
+              },
+              "nextId": {
+                "type": "array",
+                "description": "Outgoing edges (ids). Dangling ids are ignored.",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "color": {
+                "type": "string",
+                "description": "Node + outgoing connector colour (any CSS colour). Empty = theme line colour."
+              },
+              "fill": {
+                "type": "boolean",
+                "description": "Fill the disc with the colour (default true); false = outline only."
+              },
+              "icon": {
+                "type": "object",
+                "description": "Ignition icon, e.g. {path: 'material/check', color: '#fff'}.",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  }
+                }
+              },
+              "tooltip": {
+                "type": "string",
+                "description": "Hover info-card text (plain text)."
+              },
+              "style": {
+                "type": "object",
+                "description": "Style passthrough for the node wrapper."
+              },
+              "tooltipStyle": {
+                "type": "object",
+                "description": "Style passthrough for the info card."
+              }
+            }
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way runtime state.",
+      "default": {
+        "selectedNode": -1
+      },
+      "properties": {
+        "selectedNode": {
+          "type": "number",
+          "default": -1,
+          "description": "Id of the selected (highlighted) node, -1 = none. Clicking writes it; writing it drives the highlight."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only derived values (the component writes them; do not bind INTO them).",
+      "default": {
+        "count": 0,
+        "hasRoot": false
+      },
+      "properties": {
+        "count": {
+          "type": "number",
+          "default": 0,
+          "description": "Number of bound nodes."
+        },
+        "hasRoot": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether a root could be inferred (false = nothing renders; check for cycles or missing edges)."
+        }
+      }
+    },
+    "style": {
+      "$ref": "urn:ignition-schema:schemas/style-properties.schema.json",
+      "default": {
+        "classes": ""
+      }
+    }
+  }
+}

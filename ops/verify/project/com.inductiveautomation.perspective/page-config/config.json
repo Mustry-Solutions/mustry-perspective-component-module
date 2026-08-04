@@ -79,6 +79,10 @@
     "/holidays": {
       "viewPath": "HolidayDemo",
       "viewParams": {}
+    },
+    "/branching": {
+      "viewPath": "BranchingDemo",
+      "viewParams": {}
     }
   },
   "shared": {},
