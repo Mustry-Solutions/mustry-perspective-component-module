@@ -76,7 +76,7 @@
       },
       "children": [
        {
-        "type": "mustrysolutions.ingots.admin.schedulemanager",
+        "type": "mustrysolutions.perspective.admin.schedulemanager",
         "version": 0,
         "props": {
          "config": {}
@@ -205,7 +205,7 @@
       },
       "children": [
        {
-        "type": "mustrysolutions.ingots.admin.rostermanager",
+        "type": "mustrysolutions.perspective.admin.rostermanager",
         "version": 0,
         "props": {
          "config": {}
@@ -348,7 +348,7 @@
       },
       "children": [
        {
-        "type": "mustrysolutions.ingots.admin.usermanager",
+        "type": "mustrysolutions.perspective.admin.usermanager",
         "version": 0,
         "props": {
          "config": {
@@ -529,7 +529,7 @@
       },
       "children": [
        {
-        "type": "mustrysolutions.ingots.admin.holidaymanager",
+        "type": "mustrysolutions.perspective.admin.holidaymanager",
         "version": 0,
         "props": {
          "config": {}

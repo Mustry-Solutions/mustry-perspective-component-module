@@ -45,7 +45,7 @@ import { PickerCompactFields, PickerFooter, PickerHint, PickerTimeFields } from 
 import { PickerTrigger } from './PickerTrigger';
 
 // Must match DateTimeRangePicker.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.datetimerangepicker';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.input.datetimerangepicker';
 
 interface DateTimeRangePickerState {
     viewMonth: Date;          // first day of the displayed month

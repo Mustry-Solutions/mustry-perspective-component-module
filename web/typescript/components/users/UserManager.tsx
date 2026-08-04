@@ -18,7 +18,7 @@ import { RowMenu } from '../../shared/RowMenu';
 import { UserDetailForm } from './UserDetailForm';
 
 // Must match UserManager.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.usermanager';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.usermanager';
 
 /** How long the Delete button stays in its confirm step before reverting. */
 const CONFIRM_DELETE_MS = 4000;

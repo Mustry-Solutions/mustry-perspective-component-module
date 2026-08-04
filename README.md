@@ -1,15 +1,15 @@
-# Mustry Solutions Ingots
+# Mustry Perspective Components
 
 An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships thirteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
 
-- **Module ID:** `com.mustrysolutions.ingots`
+- **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
 
 ---
 
 ## Date/Time Range Picker
 
-A Booking.com-style start/end date-time range picker. Component id `mustrysolutions.ingots.input.datetimerangepicker`.
+A Booking.com-style start/end date-time range picker. Component id `mustrysolutions.perspective.input.datetimerangepicker`.
 
 ### Features
 
@@ -73,7 +73,7 @@ Variables: `--dtrp-accent`, `--dtrp-accent-text`, `--dtrp-range`, `--dtrp-text`,
 
 ## Calendar / Scheduler
 
-A month / week / day / list calendar bound to a list of events. Component id `mustrysolutions.ingots.display.calendar`. Built from scratch (no FullCalendar / no third-party licence).
+A month / week / day / list calendar bound to a list of events. Component id `mustrysolutions.perspective.display.calendar`. Built from scratch (no FullCalendar / no third-party licence).
 
 ### Features
 
@@ -169,7 +169,7 @@ Override the `--cal-*` CSS variables via a style class / project stylesheet: `--
 
 ## Resource Timeline
 
-A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.ingots.display.resourcetimeline`.
+A scheduling board: resources (machines, lines, crews) as rows on a zoomable horizontal time axis. Component id `mustrysolutions.perspective.display.resourcetimeline`.
 
 ### Features
 
@@ -199,7 +199,7 @@ Override the `--tml-*` variables via a style class / project stylesheet: `--tml-
 
 ## Data Grid
 
-An editable virtualized data grid. Component id `mustrysolutions.ingots.input.datagrid`.
+An editable virtualized data grid. Component id `mustrysolutions.perspective.input.datagrid`.
 
 ### Features
 
@@ -229,7 +229,7 @@ Override the `--dg-*` variables via a style class / project stylesheet: `--dg-ac
 
 ## Pan & Zoom View
 
-Embeds any Perspective view and navigates it like a map. Component id `mustrysolutions.ingots.display.panzoomview`.
+Embeds any Perspective view and navigates it like a map. Component id `mustrysolutions.perspective.display.panzoomview`.
 
 ### Features
 
@@ -250,7 +250,7 @@ Override the `--pz-*` variables via a style class / project stylesheet: `--pz-ac
 
 ## Rich Text Editor
 
-True WYSIWYG editing — and safe read-only display — of rich text: operator instructions, SOPs, shift notes, work orders. Component id `mustrysolutions.ingots.input.richtexteditor`. Built on TipTap core (vanilla, no React binding).
+True WYSIWYG editing — and safe read-only display — of rich text: operator instructions, SOPs, shift notes, work orders. Component id `mustrysolutions.perspective.input.richtexteditor`. Built on TipTap core (vanilla, no React binding).
 
 ### Features
 
@@ -277,7 +277,7 @@ Override the `--rte-*` variables via a style class / project stylesheet: `--rte-
 
 ## Code / JSON Editor
 
-A CodeMirror-6-based code editor — and read-only viewer — for structured text: JSON config blobs, SQL, Python snippets, XML. Component id `mustrysolutions.ingots.input.codeeditor`.
+A CodeMirror-6-based code editor — and read-only viewer — for structured text: JSON config blobs, SQL, Python snippets, XML. Component id `mustrysolutions.perspective.input.codeeditor`.
 
 ### Features
 
@@ -296,7 +296,7 @@ Override the `--code-*` variables via a style class / project stylesheet: chrome
 
 ## Color Picker
 
-A colour input for the runtime — the piece Perspective has only at design time (the property-editor colour selector). Component id `mustrysolutions.ingots.input.colorpicker`.
+A colour input for the runtime — the piece Perspective has only at design time (the property-editor colour selector). Component id `mustrysolutions.perspective.input.colorpicker`.
 
 ### Features
 
@@ -316,7 +316,7 @@ Override the `--cp-*` variables via a style class / project stylesheet: `--cp-ac
 
 ## On-Screen Keyboard
 
-A touch keyboard for the runtime — the piece Perspective leaves to the OS keyboard (Windows TabTip, Linux Squeekboard), which fails in Perspective Browser/mobile and causes the "double-keyboard" problem. Component id `mustrysolutions.ingots.input.keyboard`.
+A touch keyboard for the runtime — the piece Perspective leaves to the OS keyboard (Windows TabTip, Linux Squeekboard), which fails in Perspective Browser/mobile and causes the "double-keyboard" problem. Component id `mustrysolutions.perspective.input.keyboard`.
 
 ### Features
 
@@ -335,7 +335,7 @@ Override the `--kbd-*` variables via a style class / project stylesheet: `--kbd-
 
 ## Schedule Manager
 
-A runtime UI over the gateway's **user schedules** — Vision's Schedule Management component, which Perspective lacks (the Ideas-portal "Admin Components" request has been open since 2019; only copy-in Exchange view templates fill the gap). First of the planned **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.schedulemanager`.
+A runtime UI over the gateway's **user schedules** — Vision's Schedule Management component, which Perspective lacks (the Ideas-portal "Admin Components" request has been open since 2019; only copy-in Exchange view templates fill the gap). First of the planned **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.perspective.admin.schedulemanager`.
 
 ### Features
 
@@ -355,7 +355,7 @@ Override the `--adm-*` variables via a style class / project stylesheet (shared 
 
 ## Roster Manager
 
-A runtime UI over the gateway's **alarm-notification rosters** — Vision's Roster Management, which Perspective lacks. Second of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.rostermanager`.
+A runtime UI over the gateway's **alarm-notification rosters** — Vision's Roster Management, which Perspective lacks. Second of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.perspective.admin.rostermanager`.
 
 ### Features
 
@@ -373,7 +373,7 @@ The shared admin-family `--adm-*` variables (see Schedule Manager).
 
 ## User Manager
 
-A runtime UI over a gateway **user source** — Vision's User Management, which Perspective lacks. Third and final component of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.ingots.admin.usermanager`.
+A runtime UI over a gateway **user source** — Vision's User Management, which Perspective lacks. Third and final component of the **admin family** (see [`docs/admin-components-plan.md`](docs/admin-components-plan.md)). Component id `mustrysolutions.perspective.admin.usermanager`.
 
 ### Features
 
@@ -393,7 +393,7 @@ The shared admin-family `--adm-*` variables (see Schedule Manager).
 
 ## Holiday Manager
 
-A runtime UI over the gateway's **holiday list** — the missing quarter of the schedule story: schedules can *observe holidays* (they're inactive on those dates), but nothing in the runtime showed or edited which dates those are. Fourth component of the **admin family**. Component id `mustrysolutions.ingots.admin.holidaymanager`.
+A runtime UI over the gateway's **holiday list** — the missing quarter of the schedule story: schedules can *observe holidays* (they're inactive on those dates), but nothing in the runtime showed or edited which dates those are. Fourth component of the **admin family**. Component id `mustrysolutions.perspective.admin.holidaymanager`.
 
 ### Features
 

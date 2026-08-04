@@ -46,7 +46,7 @@
     }
    },
    {
-    "type": "mustrysolutions.ingots.admin.usermanager",
+    "type": "mustrysolutions.perspective.admin.usermanager",
     "version": 0,
     "props": {
      "config": {

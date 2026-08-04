@@ -8,6 +8,25 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### BREAKING: full identity rename — "Mustry Perspective Components"
+The module sheds the Ingots working name before any real deployments
+freeze its identifiers (the sanctioned pre-1.0 window):
+- Repo: `mustry-perspective-component-module` (was `mustry-ingots`).
+- Module id: `com.mustrysolutions.perspective.components` (was
+  `com.mustrysolutions.ingots`) — **a gateway sees this as a different
+  module**: uninstall the old one, install the new; there is no in-place
+  upgrade across the rename.
+- Component ids: `mustrysolutions.perspective.<family>.<name>` (was
+  `mustrysolutions.ingots.…`) — **views built against the old ids must be
+  re-created** (or their JSON search-replaced). The verify project is
+  migrated in this commit and serves as the reference.
+- Display name "Mustry Perspective Components", modl
+  `Mustry-Perspective-Components.modl`, Java packages/hook classes renamed
+  to match. The web bundle name (`MustryComponents.js`), URL alias
+  (`mustry-components`) and CSS prefixes (`mustry-*`) were already
+  brand-level and are unchanged.
+
+
 ### Distribution: EULA in the module + branded user manual
 The .modl now carries `license.html` (staged into the module content and
 referenced from module.xml — the gateway shows it at install time and

@@ -25,7 +25,7 @@ import { SchedulePreviewStrip } from './SchedulePreviewStrip';
 import { WeekGrid, WeekGridDay } from './WeekGrid';
 
 // Must match ScheduleManager.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.schedulemanager';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.schedulemanager';
 
 /** How long the Delete button stays in its confirm step before reverting. */
 const CONFIRM_DELETE_MS = 4000;

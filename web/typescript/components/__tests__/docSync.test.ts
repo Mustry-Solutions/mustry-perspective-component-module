@@ -13,19 +13,19 @@ const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf
 
 /** One row per shipped component: where its pieces must show up. */
 const CONTRACT: Array<{ id: string; readmeHeading: string; demoRoute: string; e2eSpec: string }> = [
-    { id: 'mustrysolutions.ingots.input.datetimerangepicker', readmeHeading: '## Date/Time Range Picker', demoRoute: '/picker', e2eSpec: 'picker.spec.ts' },
-    { id: 'mustrysolutions.ingots.display.calendar', readmeHeading: '## Calendar / Scheduler', demoRoute: '/calendar', e2eSpec: 'calendar.spec.ts' },
-    { id: 'mustrysolutions.ingots.display.resourcetimeline', readmeHeading: '## Resource Timeline', demoRoute: '/timeline', e2eSpec: 'timeline.spec.ts' },
-    { id: 'mustrysolutions.ingots.input.datagrid', readmeHeading: '## Data Grid', demoRoute: '/grid', e2eSpec: 'grid.spec.ts' },
-    { id: 'mustrysolutions.ingots.display.panzoomview', readmeHeading: '## Pan & Zoom View', demoRoute: '/panzoom', e2eSpec: 'panzoom.spec.ts' },
-    { id: 'mustrysolutions.ingots.input.richtexteditor', readmeHeading: '## Rich Text Editor', demoRoute: '/rte', e2eSpec: 'richtext.spec.ts' },
-    { id: 'mustrysolutions.ingots.input.codeeditor', readmeHeading: '## Code / JSON Editor', demoRoute: '/code', e2eSpec: 'code.spec.ts' },
-    { id: 'mustrysolutions.ingots.input.colorpicker', readmeHeading: '## Color Picker', demoRoute: '/color', e2eSpec: 'color.spec.ts' },
-    { id: 'mustrysolutions.ingots.input.keyboard', readmeHeading: '## On-Screen Keyboard', demoRoute: '/keyboard', e2eSpec: 'keyboard.spec.ts' },
-    { id: 'mustrysolutions.ingots.admin.schedulemanager', readmeHeading: '## Schedule Manager', demoRoute: '/schedule', e2eSpec: 'schedule.spec.ts' },
-    { id: 'mustrysolutions.ingots.admin.rostermanager', readmeHeading: '## Roster Manager', demoRoute: '/roster', e2eSpec: 'roster.spec.ts' },
-    { id: 'mustrysolutions.ingots.admin.usermanager', readmeHeading: '## User Manager', demoRoute: '/users', e2eSpec: 'users.spec.ts' },
-    { id: 'mustrysolutions.ingots.admin.holidaymanager', readmeHeading: '## Holiday Manager', demoRoute: '/holidays', e2eSpec: 'holiday.spec.ts' }
+    { id: 'mustrysolutions.perspective.input.datetimerangepicker', readmeHeading: '## Date/Time Range Picker', demoRoute: '/picker', e2eSpec: 'picker.spec.ts' },
+    { id: 'mustrysolutions.perspective.display.calendar', readmeHeading: '## Calendar / Scheduler', demoRoute: '/calendar', e2eSpec: 'calendar.spec.ts' },
+    { id: 'mustrysolutions.perspective.display.resourcetimeline', readmeHeading: '## Resource Timeline', demoRoute: '/timeline', e2eSpec: 'timeline.spec.ts' },
+    { id: 'mustrysolutions.perspective.input.datagrid', readmeHeading: '## Data Grid', demoRoute: '/grid', e2eSpec: 'grid.spec.ts' },
+    { id: 'mustrysolutions.perspective.display.panzoomview', readmeHeading: '## Pan & Zoom View', demoRoute: '/panzoom', e2eSpec: 'panzoom.spec.ts' },
+    { id: 'mustrysolutions.perspective.input.richtexteditor', readmeHeading: '## Rich Text Editor', demoRoute: '/rte', e2eSpec: 'richtext.spec.ts' },
+    { id: 'mustrysolutions.perspective.input.codeeditor', readmeHeading: '## Code / JSON Editor', demoRoute: '/code', e2eSpec: 'code.spec.ts' },
+    { id: 'mustrysolutions.perspective.input.colorpicker', readmeHeading: '## Color Picker', demoRoute: '/color', e2eSpec: 'color.spec.ts' },
+    { id: 'mustrysolutions.perspective.input.keyboard', readmeHeading: '## On-Screen Keyboard', demoRoute: '/keyboard', e2eSpec: 'keyboard.spec.ts' },
+    { id: 'mustrysolutions.perspective.admin.schedulemanager', readmeHeading: '## Schedule Manager', demoRoute: '/schedule', e2eSpec: 'schedule.spec.ts' },
+    { id: 'mustrysolutions.perspective.admin.rostermanager', readmeHeading: '## Roster Manager', demoRoute: '/roster', e2eSpec: 'roster.spec.ts' },
+    { id: 'mustrysolutions.perspective.admin.usermanager', readmeHeading: '## User Manager', demoRoute: '/users', e2eSpec: 'users.spec.ts' },
+    { id: 'mustrysolutions.perspective.admin.holidaymanager', readmeHeading: '## Holiday Manager', demoRoute: '/holidays', e2eSpec: 'holiday.spec.ts' }
 ];
 
 const NUMBER_WORDS: { [n: number]: string } = {
@@ -65,7 +65,7 @@ describe('docs stay in sync with the code', () => {
     });
 
     it('Components.java registers every component (both hooks feed from it)', () => {
-        const java = read('common/src/main/java/com/mustrysolutions/ingots/common/comp/Components.java');
+        const java = read('common/src/main/java/com/mustrysolutions/perspective/components/common/comp/Components.java');
         const registered = (java.match(/\w+\.DESCRIPTOR/g) || []).length;
         expect(registered).toBe(CONTRACT.length);
     });

@@ -1,7 +1,7 @@
 # Roster Manager — manual test checklist
 
 Hands-on checklist for the Roster Manager
-(`mustrysolutions.ingots.admin.rostermanager`). Draft/reorder/filter logic is
+(`mustrysolutions.perspective.admin.rostermanager`). Draft/reorder/filter logic is
 unit-tested; the e2e suite covers picker-add, drag-reorder persistence and
 the create/delete lifecycle against a live gateway. This covers the touch
 gestures and visual checks the suite doesn't automate. The committed demo at

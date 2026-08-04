@@ -17,7 +17,7 @@ import { RowMenu } from '../../shared/RowMenu';
 import { HolidayManagerProps, mapHolidayProps } from './holidayProps';
 
 // Must match HolidayManager.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.holidaymanager';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.holidaymanager';
 
 /** How long the Delete button stays in its confirm step before reverting. */
 const CONFIRM_DELETE_MS = 4000;

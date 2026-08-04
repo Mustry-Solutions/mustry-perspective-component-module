@@ -31,7 +31,7 @@
     "position": { "x": 16, "y": 10, "width": 920, "height": 58 }
    },
    {
-    "type": "mustrysolutions.ingots.admin.holidaymanager",
+    "type": "mustrysolutions.perspective.admin.holidaymanager",
     "version": 0,
     "props": {
      "config": {}

@@ -51,7 +51,7 @@
         }
       },
       {
-        "type": "mustrysolutions.ingots.input.datetimerangepicker",
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
         "version": 0,
         "props": {
           "config": {
@@ -359,7 +359,7 @@
         }
       },
       {
-        "type": "mustrysolutions.ingots.input.datetimerangepicker",
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
         "version": 0,
         "props": {
           "config": {
@@ -394,7 +394,7 @@
         }
       },
       {
-        "type": "mustrysolutions.ingots.input.datetimerangepicker",
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
         "version": 0,
         "props": {
           "config": {
@@ -429,7 +429,7 @@
         }
       },
       {
-        "type": "mustrysolutions.ingots.input.datetimerangepicker",
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
         "version": 0,
         "props": {
           "config": {

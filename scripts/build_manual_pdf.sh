@@ -97,7 +97,7 @@ cover = '''<div class="cover">
   <div class="cover-inner">
     <img class="cover-logo" src="assets/mustry-logo-light.png" alt="Mustry Solutions" />
     <div class="cover-eyebrow">Ignition&nbsp;8.3+ Module</div>
-    <h1 class="cover-title">Ingots</h1>
+    <h1 class="cover-title">Perspective Components</h1>
     <div class="cover-subtitle">User Manual</div>
   </div>
   <div class="cover-footer">
@@ -252,7 +252,7 @@ const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
   const color = rgb(0.545, 0.576, 0.655);       // #8b93a7
   for (let i = 1; i < pages.length; i++) {       // skip page 0 (cover)
     const p = pages[i];
-    const text = `Mustry Solutions Ingots   ·   User Manual   ·   ${i} / ${total}`;
+    const text = `Mustry Perspective Components   ·   User Manual   ·   ${i} / ${total}`;
     const w = font.widthOfTextAtSize(text, size);
     p.drawText(text, { x: (p.getWidth() - w) / 2, y: 24, size, font, color });
   }

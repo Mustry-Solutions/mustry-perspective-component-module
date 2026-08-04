@@ -1,7 +1,7 @@
 # Holiday Manager — manual test checklist
 
 Hands-on checklist for the Holiday Manager
-(`mustrysolutions.ingots.admin.holidaymanager`). Date parsing, next-occurrence
+(`mustrysolutions.perspective.admin.holidaymanager`). Date parsing, next-occurrence
 math and draft logic are unit-tested; the e2e suite covers the CRUD lifecycle
 against a live gateway. This covers the visual/interop checks the suite
 doesn't automate. The committed demo at `/holidays` (verify project) persists

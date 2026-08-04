@@ -22,7 +22,7 @@ import { GridCell, GridHeadCell } from './GridCells';
 import { GridToolbar } from './GridToolbar';
 
 // Must match DataGrid.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.datagrid';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.input.datagrid';
 
 interface EditState {
     pos: CellPos;

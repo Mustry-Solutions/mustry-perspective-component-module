@@ -13,7 +13,7 @@ import { RichTextProps, mapRteProps } from './richTextProps';
 import { RteToolbar } from './RteToolbar';
 
 // Must match RichTextEditor.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.richtexteditor';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.input.richtexteditor';
 
 interface RichTextEditorState {
     dirty: boolean;

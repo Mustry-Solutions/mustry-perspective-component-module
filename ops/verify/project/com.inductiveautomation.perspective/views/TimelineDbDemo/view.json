@@ -34,7 +34,7 @@
         }
       },
       {
-        "type": "mustrysolutions.ingots.display.resourcetimeline",
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
         "version": 0,
         "meta": {
           "name": "Timeline"

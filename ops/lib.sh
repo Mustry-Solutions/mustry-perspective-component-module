@@ -19,8 +19,8 @@ CERT_ALIAS="mspc-dev"
 SIGNING_PASS="devpassword"
 SIGNING_DNAME="CN=Mustry Solutions (Dev), O=Mustry Solutions, C=BE"
 
-# Must match MODULE_ID in common/.../MustrySolutionsIngotsModule.java.
-MODULE_ID="com.mustrysolutions.ingots"
+# Must match MODULE_ID in common/.../MustryPerspectiveComponentsModule.java.
+MODULE_ID="com.mustrysolutions.perspective.components"
 CONTAINER_NAME="mspc-ignition"
 
 # Use Java 17 for Gradle (matches the module's toolchain).

@@ -1,6 +1,6 @@
 # Calendar component — manual test checklist
 
-A hands-on checklist for the Calendar / Scheduler (`mustrysolutions.ingots.display.calendar`).
+A hands-on checklist for the Calendar / Scheduler (`mustrysolutions.perspective.display.calendar`).
 Drop the component on a view, then work through the sections. The pure logic (grid,
 packing, recurrence, gesture math) is unit-tested; this list covers the things only a
 human can judge — rendering, interaction, and the binding contract.
