@@ -24,7 +24,7 @@ ops/setup.sh
 This builds and signs the module, stages it for the gateway, and starts the gateway.
 On a **fresh** gateway there is a one-time step: open <http://localhost:9088>, step
 through the commissioning wizard, and **accept the certificate + license for
-"Mustry Solutions Ingots"** when it's listed (Ignition 8.3 accepts
+"Mustry Perspective Components"** when it's listed (Ignition 8.3 accepts
 third-party modules right in the commissioning wizard). Then log in with
 `admin` / `password` and find it under **Config → Modules**.
 

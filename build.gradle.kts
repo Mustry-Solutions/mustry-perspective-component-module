@@ -24,16 +24,16 @@ ignitionModule {
     /*
      * Human readable name of the module, as will be displayed on the gateway status page
      */
-    name.set("Mustry Solutions Ingots")
+    name.set("Mustry Perspective Components")
 
     /*
      * Name of the '.modl' file to be created, without file extension.
      */
-    fileName.set("Mustry-Solutions-Ingots")
+    fileName.set("Mustry-Perspective-Components")
     /*
      * Unique identifier for the module.  Reverse domain convention is recommended (e.g.: com.mycompany.charting-module)
      */
-    id.set("com.mustrysolutions.ingots")
+    id.set("com.mustrysolutions.perspective.components")
 
     /*
      * Version of the module.  Here being set to the same version that gradle uses, up above in this file.
@@ -116,8 +116,8 @@ ignitionModule {
      * Example entry: "com.myorganization.vectorizer.VectorizerDesignerHook" to "D"
      */
     hooks.putAll(mapOf(
-        "com.mustrysolutions.ingots.gateway.MustrySolutionsIngotsGatewayHook" to "G",
-        "com.mustrysolutions.ingots.designer.MustrySolutionsIngotsDesignerHook" to "D"
+        "com.mustrysolutions.perspective.components.gateway.MustryPerspectiveComponentsGatewayHook" to "G",
+        "com.mustrysolutions.perspective.components.designer.MustryPerspectiveComponentsDesignerHook" to "D"
     ))
 
     /*

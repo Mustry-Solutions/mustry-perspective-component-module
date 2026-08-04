@@ -40,7 +40,7 @@
     "position": { "x": 16, "y": 60, "width": 260, "height": 18 }
    },
    {
-    "type": "mustrysolutions.ingots.input.keyboard",
+    "type": "mustrysolutions.perspective.input.keyboard",
     "version": 0,
     "props": {
      "config": { "layout": "numpad", "decimals": 1, "enforceRange": true, "min": 0, "max": 100, "units": "psi" }
@@ -86,7 +86,7 @@
     "position": { "x": 300, "y": 60, "width": 360, "height": 18 }
    },
    {
-    "type": "mustrysolutions.ingots.input.keyboard",
+    "type": "mustrysolutions.perspective.input.keyboard",
     "version": 0,
     "props": {
      "config": { "layout": "text" }
@@ -145,7 +145,7 @@
     "position": { "x": 16, "y": 452, "width": 620, "height": 18 }
    },
    {
-    "type": "mustrysolutions.ingots.input.keyboard",
+    "type": "mustrysolutions.perspective.input.keyboard",
     "version": 0,
     "props": {
      "config": { "layout": "text", "mode": "popover", "placeholder": "Tap to enter a name…" }

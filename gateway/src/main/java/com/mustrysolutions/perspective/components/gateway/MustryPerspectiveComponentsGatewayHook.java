@@ -1,6 +1,6 @@
-package com.mustrysolutions.ingots.gateway;
+package com.mustrysolutions.perspective.components.gateway;
 
-import static com.mustrysolutions.ingots.common.MustrySolutionsIngotsModule.URL_ALIAS;
+import static com.mustrysolutions.perspective.components.common.MustryPerspectiveComponentsModule.URL_ALIAS;
 
 import java.util.Optional;
 
@@ -11,16 +11,16 @@ import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.perspective.common.api.ComponentRegistry;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 
-import com.mustrysolutions.ingots.common.comp.Components;
+import com.mustrysolutions.perspective.components.common.comp.Components;
 
 /**
  * Gateway-scope hook. Registers this module's Perspective components with the
  * gateway's component registry and serves their front-end resources.
  */
-public class MustrySolutionsIngotsGatewayHook extends AbstractGatewayModuleHook {
+public class MustryPerspectiveComponentsGatewayHook extends AbstractGatewayModuleHook {
 
     private static final LoggerEx log = LoggerEx.newBuilder().build(
-        "MustrySolutions.Ingots.GatewayHook");
+        "MustrySolutions.PerspectiveComponents.GatewayHook");
 
     private GatewayContext gatewayContext;
     private PerspectiveContext perspectiveContext;
@@ -37,7 +37,7 @@ public class MustrySolutionsIngotsGatewayHook extends AbstractGatewayModuleHook 
         this.componentRegistry = this.perspectiveContext.getComponentRegistry();
 
         if (this.componentRegistry != null) {
-            log.info("Registering Mustry Solutions Ingots components.");
+            log.info("Registering Mustry Perspective Components components.");
             Components.ALL.forEach(this.componentRegistry::registerComponent);
         } else {
             log.error("Perspective component registry not found; components not registered.");

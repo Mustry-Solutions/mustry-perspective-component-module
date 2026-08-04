@@ -13,7 +13,7 @@ import { CodeProps, mapCodeProps } from './codeProps';
 import { CodeToolbar } from './CodeToolbar';
 
 // Must match CodeEditor.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.input.codeeditor';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.input.codeeditor';
 
 interface CodeEditorState {
     dirty: boolean;

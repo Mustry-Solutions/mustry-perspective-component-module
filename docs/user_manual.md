@@ -1,4 +1,4 @@
-# Mustry Solutions Ingots — User Manual
+# Mustry Perspective Components — User Manual
 
 Custom Perspective components for Ignition 8.3+. This manual covers
 installation, the concepts shared by every component, and a chapter per
@@ -8,7 +8,7 @@ is always the current copy.
 
 ## 1. Overview
 
-Mustry Solutions Ingots adds thirteen production-grade components to
+Mustry Perspective Components adds thirteen production-grade components to
 Ignition Perspective:
 
 | Component | Palette name | What it adds |
@@ -35,7 +35,7 @@ Solutions** category.
 - Ignition **8.3.0 or newer** (developed and tested against 8.3.6).
 - Perspective module installed.
 
-Install `Mustry-Solutions-Ingots.modl` via **Gateway → Config → Modules →
+Install `Mustry-Perspective-Components.modl` via **Gateway → Config → Modules →
 Install or Upgrade a Module**, accept the license agreement and the signing
 certificate, and restart is not required — components register live. Open
 any Perspective view in the Designer and the components appear in the
@@ -45,7 +45,7 @@ palette.
 
 ### 3.1 Controlled components
 
-Ingots components never mutate their own bound data. Gestures and editors
+The components never mutate their own bound data. Gestures and editors
 fire **events** (`onChange`, `onCellEdit`, `onScheduleSave`, …) carrying the
 full desired result; your event script persists it (to a database, tag, or
 `system.*` call) and the binding refresh closes the loop. Every demo view in

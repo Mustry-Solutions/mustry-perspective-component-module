@@ -21,7 +21,7 @@ import { UserPicker } from './UserPicker';
 import { AdminFooter } from '../../shared/AdminFooter';
 
 // Must match RosterManager.COMPONENT_ID on the Java side.
-export const COMPONENT_TYPE = 'mustrysolutions.ingots.admin.rostermanager';
+export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.rostermanager';
 
 /** How long the Delete button stays in its confirm step before reverting. */
 const CONFIRM_DELETE_MS = 4000;

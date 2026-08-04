@@ -1,7 +1,7 @@
 # Schedule Manager — manual test checklist
 
 Hands-on checklist for the Schedule Manager
-(`mustrysolutions.ingots.admin.schedulemanager`). Range parsing/merging,
+(`mustrysolutions.perspective.admin.schedulemanager`). Range parsing/merging,
 availability evaluation, transitions and the paint/resize geometry are
 unit-tested (`scheduleLogic.ts` / `scheduleEditLogic.ts`); the e2e suite
 covers the full create/edit/rename/delete lifecycle against a live gateway.

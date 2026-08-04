@@ -1,4 +1,4 @@
-package com.mustrysolutions.ingots.designer;
+package com.mustrysolutions.perspective.components.designer;
 
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
@@ -7,16 +7,16 @@ import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.perspective.designer.DesignerComponentRegistry;
 import com.inductiveautomation.perspective.designer.api.PerspectiveDesignerInterface;
 
-import com.mustrysolutions.ingots.common.comp.Components;
+import com.mustrysolutions.perspective.components.common.comp.Components;
 
 /**
  * Designer-scope hook. Registers this module's components so they appear in the
  * Perspective component palette while designing.
  */
-public class MustrySolutionsIngotsDesignerHook extends AbstractDesignerModuleHook {
+public class MustryPerspectiveComponentsDesignerHook extends AbstractDesignerModuleHook {
 
     private static final LoggerEx log = LoggerEx.newBuilder().build(
-        "MustrySolutions.Ingots.DesignerHook");
+        "MustrySolutions.PerspectiveComponents.DesignerHook");
 
     private DesignerComponentRegistry registry;
 
@@ -24,7 +24,7 @@ public class MustrySolutionsIngotsDesignerHook extends AbstractDesignerModuleHoo
     public void startup(DesignerContext context, LicenseState activationState) throws Exception {
         PerspectiveDesignerInterface pdi = PerspectiveDesignerInterface.get(context);
         this.registry = pdi.getDesignerComponentRegistry();
-        log.info("Registering Mustry Solutions Ingots components in the Designer.");
+        log.info("Registering Mustry Perspective Components components in the Designer.");
         Components.ALL.forEach(this.registry::registerComponent);
     }
 

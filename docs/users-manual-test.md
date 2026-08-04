@@ -1,7 +1,7 @@
 # User Manager — manual test checklist
 
 Hands-on checklist for the User Manager
-(`mustrysolutions.ingots.admin.usermanager`). Draft/serialization logic is
+(`mustrysolutions.perspective.admin.usermanager`). Draft/serialization logic is
 unit-tested; the e2e suite covers filter, contact/role editing, the
 create-with-password lifecycle and the delete guard against a live gateway.
 This covers the touch/visual/security checks the suite doesn't automate.

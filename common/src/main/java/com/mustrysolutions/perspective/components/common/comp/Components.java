@@ -1,4 +1,4 @@
-package com.mustrysolutions.ingots.common.comp;
+package com.mustrysolutions.perspective.components.common.comp;
 
 import java.util.List;
 

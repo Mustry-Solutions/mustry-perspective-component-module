@@ -1,7 +1,7 @@
-package com.mustrysolutions.ingots.common.comp;
+package com.mustrysolutions.perspective.components.common.comp;
 
-import static com.mustrysolutions.ingots.common.MustrySolutionsIngotsModule.descriptor;
-import static com.mustrysolutions.ingots.common.MustrySolutionsIngotsModule.event;
+import static com.mustrysolutions.perspective.components.common.MustryPerspectiveComponentsModule.descriptor;
+import static com.mustrysolutions.perspective.components.common.MustryPerspectiveComponentsModule.event;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import com.inductiveautomation.perspective.common.api.ComponentDescriptor;
 public class ColorPicker {
 
     /** Unique component id — must match the front-end ComponentMeta.getComponentType(). */
-    public static final String COMPONENT_ID = "mustrysolutions.ingots.input.colorpicker";
+    public static final String COMPONENT_ID = "mustrysolutions.perspective.input.colorpicker";
 
     /** The descriptor registered with Perspective's component registries (see {@link Components#ALL}). */
     public static final ComponentDescriptor DESCRIPTOR = descriptor(

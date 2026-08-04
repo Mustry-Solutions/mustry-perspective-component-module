@@ -46,7 +46,7 @@
     }
    },
    {
-    "type": "mustrysolutions.ingots.admin.rostermanager",
+    "type": "mustrysolutions.perspective.admin.rostermanager",
     "version": 0,
     "props": {
      "config": {}
