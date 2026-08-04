@@ -44,7 +44,17 @@ jobs:
         id: ver
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            version="${GITHUB_REF_NAME#v}"
+            # Policy: plain x.y.z tags only. Ignition's module.xml version
+            # parser is numeric-only — a prerelease suffix (v0.4.0-beta.1)
+            # produces a .modl the gateway rejects at install (a class of
+            # failure the observability module shipped once). Bump the patch
+            # number instead.
+            if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::Tag version '$version' is not plain x.y.z — prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
+              exit 1
+            fi
+            echo "version=$version" >> "$GITHUB_OUTPUT"
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
@@ -129,7 +139,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Draft first, publish only once every asset attached — a failed
+          # upload must never leave a half-public release.
           gh release create "$GITHUB_REF_NAME" \
             --title "v${{ steps.ver.outputs.version }}" \
             --notes-file "$RUNNER_TEMP/notes.md" \
+            --draft \
             "${{ steps.modl.outputs.path }}"
+          gh release edit "$GITHUB_REF_NAME" --draft=false
