@@ -25,10 +25,16 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
    git push origin v0.2.0
    ```
 3. The **Release** workflow (`.github/workflows/release.yml`) then:
-   - derives the module version from the tag (`v0.2.0` → `0.2.0`),
-   - builds and **signs** the `.modl`,
-   - creates a GitHub Release named `v0.2.0`, attaches the signed `.modl`,
-     and uses the changelog's `[0.2.0]` section as the notes.
+   - derives the module version from the tag (`v0.2.0` → `0.2.0`) —
+     **plain `x.y.z` tags only**: prerelease suffixes are rejected because
+     Ignition's `module.xml` version parser is numeric-only,
+   - builds and **signs** the `.modl` (which carries `license.html`, the
+     install-time EULA) and verifies the signature landed,
+   - builds the branded **user-manual PDF** (`scripts/build_manual_pdf.sh`
+     from `docs/user_manual.md`),
+   - creates a **draft** GitHub Release named `v0.2.0`, attaches the
+     signed `.modl` and the manual PDF, then flips it public — using the
+     changelog's `[0.2.0]` section as the notes.
 
 The tag should point at a commit already on `main` (hence already green — the
 release build signs the artifact rather than re-running the e2e gateway).

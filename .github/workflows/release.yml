@@ -130,6 +130,12 @@ jobs:
           path: ${{ steps.modl.outputs.path }}
           if-no-files-found: error
 
+      - name: Build the user-manual PDF
+        # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
+        # scripts/build_manual_pdf.sh — runs on dry runs too so the pipeline
+        # itself stays release-gating. Attached to the release below.
+        run: scripts/build_manual_pdf.sh
+
       - name: Extract release notes
         if: ${{ steps.ver.outputs.publish == 'true' }}
         run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
@@ -145,5 +151,6 @@ jobs:
             --title "v${{ steps.ver.outputs.version }}" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --draft \
-            "${{ steps.modl.outputs.path }}"
+            "${{ steps.modl.outputs.path }}" \
+            build/user_manual.pdf
           gh release edit "$GITHUB_REF_NAME" --draft=false

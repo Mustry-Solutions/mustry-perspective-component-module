@@ -8,6 +8,20 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Distribution: EULA in the module + branded user manual
+The .modl now carries `license.html` (staged into the module content and
+referenced from module.xml — the gateway shows it at install time and
+requires acceptance; pattern proven in the AMQP/observability modules).
+The ops toolkit seeds acceptance unattended via the CRC32 of license.html
+(`licenseAgreementHash` in modules.json), so `ops/e2e.sh --fresh` and CI
+keep working headlessly. NOTE: the EULA text is a first draft modeled on
+the observability module's — review before any public distribution.
+Releases now also attach a branded **user-manual PDF** built from
+`docs/user_manual.md` by `scripts/build_manual_pdf.sh` (Mustry fonts,
+generated cover, footer stamping — pipeline ported from the observability
+module), with real component screenshots in `docs/images/`.
+
+
 ### Admin family: per-row ⋯ menu with Duplicate
 Every admin rail row gains a ⋯ menu — hover-revealed for mouse users and
 ALWAYS visible on the selected row so touch users reach it with one tap
