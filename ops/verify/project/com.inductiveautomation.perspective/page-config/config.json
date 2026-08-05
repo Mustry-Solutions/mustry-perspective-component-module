@@ -99,6 +99,10 @@
   "/branching-cycle": {
    "viewPath": "BranchingCycle",
    "viewParams": {}
+  },
+  "/branching-labels": {
+   "viewPath": "BranchingLabels",
+   "viewParams": {}
   }
  },
  "shared": {},

@@ -97,9 +97,32 @@
       "additionalProperties": false,
       "description": "The tree to draw. The ROOT is inferred: the node with outgoing edges that no other node references (output.hasRoot reports whether one exists).",
       "default": {
-        "nodes": []
+        "nodes": [],
+        "edgeLabels": []
       },
       "properties": {
+        "edgeLabels": {
+          "type": "array",
+          "default": [],
+          "description": "Optional labels for connectors, e.g. Yes/No on a decision branch. Each item targets an existing edge by its endpoint ids; edges without an entry are unlabelled.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "number",
+                "description": "Source node id of the edge to label."
+              },
+              "to": {
+                "type": "number",
+                "description": "Target node id of the edge to label."
+              },
+              "label": {
+                "type": "string",
+                "description": "Text shown on the connector."
+              }
+            }
+          }
+        },
         "nodes": {
           "type": "array",
           "default": [],

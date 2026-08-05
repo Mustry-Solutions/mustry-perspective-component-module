@@ -71,6 +71,13 @@ a cycle, edges to unknown ids, and nodes unreachable from the root (which
 the BFS layout silently drops). New `config.labels.cyclic` (7 languages);
 pure `diagnose()` with 5 jest cases; demo at `/branching-cycle`; +1 e2e.
 
+**Edge labels** (additive, revertible). Optional `data.edgeLabels`
+(`[{from, to, label}]`) tags connectors — Yes/No on a decision branch —
+matched to existing edges by endpoint ids; edges without an entry stay
+bare, so it's inert unless you supply labels. Rendered as a small chip on
+the connector mid-point. Demo at `/branching-labels` (a decision tree);
++1 e2e.
+
 
 ### BREAKING: full identity rename — "Mustry Perspective Components"
 The module sheds the Ingots working name before any real deployments
