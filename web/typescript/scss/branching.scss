@@ -1,35 +1,37 @@
-// Branching Diagram — themeable via the --brn-* variables (defaults track
-// the active Perspective theme where a var exists). Ported from mustry-ui
-// with every class namespaced (the source used globals like `.node`).
+// Branching Diagram — structure and metrics mirror ignition-mustry-ui's
+// shipped stylesheet (_branchingComponent.scss) so the two render the same;
+// classes are namespaced mustry-branch-* and hardcoded colours became
+// --brn-* theme variables (identical in the light theme, adaptive in dark).
 .mustry-branching {
-    --brn-text: var(--neutral-90, #1f2933);
+    --brn-text: var(--neutral-90, #000000);
     --brn-muted: var(--neutral-60, #7b8794);
-    --brn-line: var(--neutral-60, #7b8794);
+    --brn-line: var(--neutral-90, #000000);
     --brn-node-bg: var(--neutral-10, #ffffff);
     --brn-accent: var(--callToAction, #0a66c2);
-    --brn-card-bg: var(--neutral-10, #ffffff);
-    --brn-card-border: var(--neutral-30, #cbd2d9);
 
-    box-sizing: border-box;
+    box-sizing: content-box; // the original's .nodeTreeWrapperWrapper
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: auto;          // extension: scroll instead of clipping
     color: var(--brn-text);
     font-size: 12px;
-
-    * {
-        box-sizing: border-box;
-    }
 }
 
 .mustry-branch-viewport {
-    position: relative;
+    margin: 0;
+    padding: 0;
     width: 100%;
     height: 100%;
+    position: relative;
 }
 
+// The original .nodeTree: a 0x0 relative origin the absolute children hang off.
 .mustry-branch-canvas {
+    margin: 0;
+    padding: 0;
     position: relative;
+    width: 0;
+    height: 0;
 }
 
 .mustry-branch-empty {
@@ -42,9 +44,19 @@
     text-align: center;
 }
 
+// The original .nodeWrapper: centred ON the grid point, so connector lines
+// pass through disc centres.
 .mustry-branch-node {
+    margin: 0;
+    padding: 0;
     position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 1;
     cursor: pointer;
+
+    &:hover {
+        z-index: 3; // the original's :has() hover raise, without :has()
+    }
 
     &--selected .mustry-branch-disc {
         outline: 2px solid var(--brn-accent);
@@ -52,53 +64,72 @@
     }
 }
 
-.mustry-branch-node-body {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+// The original .node: the pill whose background halos labels over lines.
+.mustry-branch-pill {
+    margin: 0;
+    position: relative;
+    padding: 0 10px;
+    border-radius: 12px;
 }
 
+// The original .iconWrapper.
 .mustry-branch-disc {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0;
+    padding: 0;
+    z-index: 2;
     border-style: solid;
     border-color: var(--brn-line);
     border-radius: 50%;
-    background: var(--brn-node-bg);
+    background-color: var(--brn-line);
 }
 
+.mustry-branch-icon {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+// The original .name: absolutely centred beneath the disc.
 .mustry-branch-name {
-    margin: 4px 0 0;
-    transform: translateX(-40%);
+    margin: 0;
+    padding: 2px;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0);
+    max-width: 200px;
     text-align: center;
     color: var(--brn-text);
-    overflow-wrap: break-word;
 }
 
-// Hover info card (plain text this milestone).
+// The original .infoCardWrapper: fixed so it escapes clipping, opens on
+// body-hover and STAYS while the card itself is hovered.
 .mustry-branch-card {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    z-index: 10;
     display: none;
-    max-width: 260px;
-    padding: 8px 10px;
-    border: 1px solid var(--brn-card-border);
-    border-radius: 6px;
-    background: var(--brn-card-bg);
+    position: fixed;
+    transform: translateY(20px);
+    padding: 0 20px;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+    border-radius: 10px;
+    // Fix over the original: its card shrank to the ~40px node wrapper (the
+    // transformed ancestor is the containing block for position: fixed), so
+    // text wrapped one word per line. max-content lets it flow to the cap.
+    width: max-content;
+    max-width: 350px;
     color: var(--brn-text);
-    white-space: pre-wrap;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
-.mustry-branch-node:hover .mustry-branch-card {
+.mustry-branch-body:hover + .mustry-branch-card,
+.mustry-branch-card:hover {
     display: block;
 }
 
+// The original .nodePath.
 .mustry-branch-path {
+    margin: 0;
+    padding: 0;
     position: absolute;
+    z-index: 0;
     overflow: visible;
     pointer-events: none;
 }

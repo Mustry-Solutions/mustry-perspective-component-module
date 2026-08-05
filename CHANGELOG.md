@@ -26,8 +26,20 @@ zero tests), React 16 class shell, all CSS namespaced `mustry-branch-*`
 with `--brn-*` theme vars (source used unprefixed globals like `.node`),
 sectioned config/data/state/output schema fixing the source's drift
 (phantom `rootId`, undeclared `nodeBorderWidth`), 7-language labels.
-Divergence from source: info cards are plain text this milestone (the
-source's react-markdown@9 requires React 18). Demo at `/branching`
+A follow-up parity sweep against the source's shipped stylesheet and
+README screenshot aligned the look 1:1: nodes CENTRE on their grid
+points (connectors pass through disc centres), the label-halo pill
+(padding/radius/config.backgroundColor) is back, names are absolutely
+centred with the 200px cap, the info card is position:fixed, stays open
+while hovered, and renders MARKDOWN again (react-markdown@4 — the
+React-16-compatible major, replacing the source's React-18-only v9),
+z-index layering and the original defaults (nodeSize 20, offsets 50)
+restored. Two deliberate fixes over the source: the label overhang left
+of the first column is reserved inside the scroll area (the source let it
+spill via overflow: visible; this port scrolls, which would have clipped
+it), and the info card gets width: max-content (the source's card shrank
+to the ~40px node wrapper — a transformed ancestor is the containing
+block for position: fixed — wrapping one word per line). Demo at `/branching`
 (seeded production flow with a rework loop exercising duplicate
 forwarding); 3 e2e tests. The source repo should now be archived.
 

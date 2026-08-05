@@ -256,12 +256,12 @@ A left-to-right decision-tree / flow-path renderer, migrated from `ignition-must
 
 - **Flat data in, tree out** — `data.nodes` is a flat array (`id`, `name`, `category`, `nextId[]`, colour, icon, tooltip); the root is inferred (the node with outgoing edges nobody references, reported via `output.hasRoot`). Pure BFS layout: one column per depth, one row per category rank, and nodes that are referenced again later are **pushed forward with their whole subtree** so arrows always point right.
 - **SVG connectors** with curved row hand-offs; the split point prefers the midpoint of a clear corridor and detours around occupied cells.
-- **Width-responsive** — columns stretch to fill the component and never compress below `config.minXOffset` (then it scrolls). Node discs take Ignition icons (`{path, color}`) and show a plain-text hover info card.
+- **Width-responsive** — columns stretch to fill the component and never compress below `config.minXOffset` (then it scrolls). Node discs take Ignition icons (`{path, color}`) and show a **markdown** hover info card (react-markdown@4, React-16 compatible) that stays open while hovered.
 - **Selection + events** — clicking a node writes `state.selectedNode` (two-way, drives a highlight) and fires **`onNodeClick`** `{id, name, category}`. Display-only: the component never mutates `data.nodes`.
 
 ### Theming
 
-Override the `--brn-*` variables via a style class / project stylesheet: `--brn-text`, `--brn-muted`, `--brn-line`, `--brn-node-bg`, `--brn-accent`, `--brn-card-bg`, `--brn-card-border`.
+Override the `--brn-*` variables via a style class / project stylesheet: `--brn-text`, `--brn-muted`, `--brn-line`, `--brn-node-bg`, `--brn-accent` — plus `config.backgroundColor` for the label halo, matching the original.
 
 ---
 
