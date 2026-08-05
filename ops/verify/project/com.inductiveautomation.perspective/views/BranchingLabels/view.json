@@ -1,0 +1,160 @@
+{
+  "custom": {},
+  "propConfig": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 960,
+      "height": 420
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Edge labels demo \u2014 data.edgeLabels tags decision branches (Yes/No/Wait/Cancel). Unlabelled edges stay bare.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 920,
+          "height": 40
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.branching",
+        "version": 0,
+        "props": {
+          "config": {
+            "showArrows": true,
+            "yOffset": 70
+          },
+          "data": {
+            "nodes": [
+              {
+                "id": 1,
+                "name": "Order",
+                "category": 1,
+                "nextId": [
+                  2
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/shopping_cart",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 2,
+                "name": "In stock?",
+                "category": 1,
+                "nextId": [
+                  3,
+                  4
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/help",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 3,
+                "name": "Ship",
+                "category": 0,
+                "nextId": [],
+                "color": "#2e7d32",
+                "icon": {
+                  "path": "material/local_shipping",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 4,
+                "name": "Backorder?",
+                "category": 2,
+                "nextId": [
+                  5,
+                  6
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/help",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 5,
+                "name": "Notify",
+                "category": 1,
+                "nextId": [],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/notifications",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 6,
+                "name": "Refund",
+                "category": 3,
+                "nextId": [],
+                "color": "#d32f2f",
+                "fill": false,
+                "icon": {
+                  "path": "material/undo",
+                  "color": "#d32f2f"
+                }
+              }
+            ],
+            "edgeLabels": [
+              {
+                "from": 2,
+                "to": 3,
+                "label": "Yes"
+              },
+              {
+                "from": 2,
+                "to": 4,
+                "label": "No"
+              },
+              {
+                "from": 4,
+                "to": 5,
+                "label": "Wait"
+              },
+              {
+                "from": 4,
+                "to": 6,
+                "label": "Cancel"
+              }
+            ]
+          }
+        },
+        "meta": {
+          "name": "branching"
+        },
+        "position": {
+          "x": 16,
+          "y": 60,
+          "width": 920,
+          "height": 320
+        }
+      }
+    ]
+  }
+}

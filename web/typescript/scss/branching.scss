@@ -124,6 +124,22 @@
     display: block;
 }
 
+// Optional per-edge label — a small chip centred on the connector run, above
+// the line but below nodes (which carry z-index 1).
+.mustry-branch-edge-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    padding: 0 4px;
+    border-radius: 4px;
+    background-color: var(--brn-node-bg);
+    color: var(--brn-text);
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1;
+}
+
 // The original .nodePath.
 .mustry-branch-path {
     margin: 0;

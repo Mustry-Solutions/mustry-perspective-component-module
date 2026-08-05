@@ -22,6 +22,8 @@ export interface BranchingProps {
     locale: string;
     labels: BranchingLabels;
     nodes: BranchNode[];
+    /** Optional per-edge labels, keyed `${fromId}-${toId}` ('' when none). */
+    edgeLabels: { [key: string]: string };
     /** state.selectedNode (two-way) — the selected node's id, -1 = none. */
     selectedNode: number;
 }
@@ -48,6 +50,22 @@ export function mapBranchingProps(tree: PropReader): BranchingProps {
         locale,
         labels: labels as unknown as BranchingLabels,
         nodes: (tree.readArray('data.nodes', []) || []).map(normalizeBranchNode),
+        edgeLabels: buildEdgeLabels(tree.readArray('data.edgeLabels', []) || []),
         selectedNode: tree.readNumber('state.selectedNode', -1)
     };
+}
+
+/** Turn the bound `data.edgeLabels` array into a `${from}-${to}` → text map. */
+function buildEdgeLabels(raw: any[]): { [key: string]: string } {
+    const out: { [key: string]: string } = {};
+    for (const e of raw) {
+        if (!e || e.from == null || e.to == null) {
+            continue;
+        }
+        const label = e.label == null ? '' : String(e.label);
+        if (label !== '') {
+            out[`${Number(e.from)}-${Number(e.to)}`] = label;
+        }
+    }
+    return out;
 }

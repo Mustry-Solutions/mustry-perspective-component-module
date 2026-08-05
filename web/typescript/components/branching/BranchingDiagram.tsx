@@ -166,6 +166,26 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                                     nodeRadius={disposition}
                                 />
                             ))}
+                            {layout.connections.map((c) => {
+                                const label = p.edgeLabels[`${c.fromId}-${c.toId}`];
+                                if (!label) {
+                                    return null;
+                                }
+                                const from = pos(c.from.x, c.from.y);
+                                const to = pos(c.to.x, c.to.y);
+                                // Endpoint midpoint: siblings from one source that
+                                // fan to different rows separate instead of colliding.
+                                const at = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+                                return (
+                                    <div
+                                        key={`lbl-${c.fromId}-${c.toId}`}
+                                        className="mustry-branch-edge-label"
+                                        style={{ left: at.x, top: at.y }}
+                                    >
+                                        {label}
+                                    </div>
+                                );
+                            })}
                             {layout.nodes.map(({ node, cell }) => {
                                 const pt = pos(cell.x, cell.y);
                                 return (

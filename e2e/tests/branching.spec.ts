@@ -70,6 +70,17 @@ test.describe('Branching Diagram', () => {
         await expect(page.getByText(/output\.warnings:.*cycle/i)).toBeVisible();
     });
 
+    test('edge labels render on their connectors and nowhere else', async ({ page }) => {
+        const root = await openRoute(page, '/branching-labels', '.mustry-branching');
+        await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
+        const labels = root.locator('.mustry-branch-edge-label');
+        // Four of five edges carry a decision label; the trunk edge stays bare.
+        await expect(labels).toHaveCount(4);
+        for (const text of ['Yes', 'No', 'Wait', 'Cancel']) {
+            await expect(labels.filter({ hasText: new RegExp(`^${text}$`) })).toBeVisible();
+        }
+    });
+
     test('vertical orientation lays the tree top-to-bottom without clipping labels', async ({ page }) => {
         const root = await openRoute(page, '/branching-vertical', '.mustry-branching');
         await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
