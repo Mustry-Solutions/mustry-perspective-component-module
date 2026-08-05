@@ -1,5 +1,5 @@
 import {
-    columnOffset, computeConnector, findRoot, layoutTree, normalizeBranchNode, BranchNode
+    columnOffset, computeConnector, diagnose, findRoot, layoutTree, normalizeBranchNode, BranchNode
 } from '../branching/branchingLogic';
 
 /** Extract every numeric coordinate from an SVG path `d` string. */
@@ -110,6 +110,46 @@ describe('columnOffset', () => {
         expect(columnOffset(500, 4, 20, 1, 50)).toBe((500 - 22) / 4);
         expect(columnOffset(100, 4, 20, 1, 50)).toBe(50);
         expect(columnOffset(500, 0, 20, 1, 50)).toBe(50);
+    });
+});
+
+describe('diagnose', () => {
+    const codes = (nodes: BranchNode[]) => diagnose(nodes).warnings.map((w) => w.code);
+
+    it('a healthy tree has a root and no warnings', () => {
+        const d = diagnose([n({ id: 1, category: 0, nextId: [2] }), n({ id: 2, category: 0 })]);
+        expect(d.rootId).toBe(1);
+        expect(d.warnings).toHaveLength(0);
+    });
+
+    it('flags a cycle (no entry point) with no root', () => {
+        const d = diagnose([
+            n({ id: 1, category: 0, nextId: [2] }),
+            n({ id: 2, category: 0, nextId: [1] })
+        ]);
+        expect(d.rootId).toBeNull();
+        expect(d.warnings.map((w) => w.code)).toContain('cycle');
+    });
+
+    it('flags data with no edges at all', () => {
+        expect(codes([n({ id: 1, category: 0 }), n({ id: 2, category: 0 })])).toContain('no-edges');
+    });
+
+    it('flags edges pointing at unknown ids', () => {
+        const d = diagnose([n({ id: 1, category: 0, nextId: [2, 99] }), n({ id: 2, category: 0 })]);
+        expect(d.warnings.find((w) => w.code === 'dangling-edge')!.ids).toContain(99);
+    });
+
+    it('flags nodes unreachable from the root (which the layout drops)', () => {
+        // 1→2 is the tree; 3→4 is a detached pair the BFS never reaches.
+        const d = diagnose([
+            n({ id: 1, category: 0, nextId: [2] }),
+            n({ id: 2, category: 0 }),
+            n({ id: 3, category: 0, nextId: [4] }),
+            n({ id: 4, category: 0 })
+        ]);
+        const w = d.warnings.find((x) => x.code === 'unreachable')!;
+        expect(w.ids.sort()).toEqual([3, 4]);
     });
 });
 

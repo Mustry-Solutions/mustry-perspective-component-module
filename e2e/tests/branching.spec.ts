@@ -61,6 +61,15 @@ test.describe('Branching Diagram', () => {
         await expect(root.locator('.mustry-branch-path path[marker-end]')).toHaveCount(6);
     });
 
+    test('a cyclic dataset reports the reason (empty-state + output.warnings)', async ({ page }) => {
+        const root = await openRoute(page, '/branching-cycle', '.mustry-branching');
+        // Nothing draws — but the empty state names the cause and a warning is emitted.
+        await expect(root.locator('.mustry-branch-node')).toHaveCount(0);
+        await expect(root.locator('.mustry-branch-empty')).toContainText(/entry point|cycle/i);
+        await expect(page.getByText(/output\.hasRoot: false/i)).toBeVisible();
+        await expect(page.getByText(/output\.warnings:.*cycle/i)).toBeVisible();
+    });
+
     test('vertical orientation lays the tree top-to-bottom without clipping labels', async ({ page }) => {
         const root = await openRoute(page, '/branching-vertical', '.mustry-branching');
         await expect(root.locator('.mustry-branch-node')).toHaveCount(6);

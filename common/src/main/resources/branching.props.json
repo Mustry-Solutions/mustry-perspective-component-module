@@ -78,6 +78,10 @@
             "noRoot": {
               "type": "string",
               "description": "Empty-state hint when no root node can be found."
+            },
+            "cyclic": {
+              "type": "string",
+              "description": "Empty-state hint for the specific no-root case of a cycle (every node referenced)."
             }
           }
         },
@@ -180,7 +184,8 @@
       "description": "Read-only derived values (the component writes them; do not bind INTO them).",
       "default": {
         "count": 0,
-        "hasRoot": false
+        "hasRoot": false,
+        "warnings": []
       },
       "properties": {
         "count": {
@@ -192,6 +197,14 @@
           "type": "boolean",
           "default": false,
           "description": "Whether a root could be inferred (false = nothing renders; check for cycles or missing edges)."
+        },
+        "warnings": {
+          "type": "array",
+          "default": [],
+          "description": "Author-facing diagnostics for data that won't fully draw: no edges, a cycle (no entry point), edges to unknown ids, or nodes unreachable from the root (silently dropped). Empty = clean.",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

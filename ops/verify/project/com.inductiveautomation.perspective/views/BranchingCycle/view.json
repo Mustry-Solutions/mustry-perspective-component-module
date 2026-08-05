@@ -1,0 +1,116 @@
+{
+ "custom": {},
+ "propConfig": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 960,
+   "height": 360
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Validation demo \u2014 a pure cycle (A\u2192B\u2192C\u2192A) has no entry point, so nothing draws. The empty state says why, and output.warnings carries the machine-readable reason.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 920,
+     "height": 40
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.branching",
+    "version": 0,
+    "props": {
+     "config": {},
+     "data": {
+      "nodes": [
+       {
+        "id": 1,
+        "name": "A",
+        "category": 0,
+        "nextId": [
+         2
+        ],
+        "color": "#0a66c2"
+       },
+       {
+        "id": 2,
+        "name": "B",
+        "category": 0,
+        "nextId": [
+         3
+        ],
+        "color": "#0a66c2"
+       },
+       {
+        "id": 3,
+        "name": "C",
+        "category": 0,
+        "nextId": [
+         1
+        ],
+        "color": "#0a66c2"
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "branching"
+    },
+    "position": {
+     "x": 16,
+     "y": 60,
+     "width": 920,
+     "height": 220
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'output.hasRoot: ' + toStr({../branching.props.output.hasRoot}) + '   output.warnings: ' + toStr({../branching.props.output.warnings})"
+       }
+      }
+     }
+    },
+    "meta": {
+     "name": "readout"
+    },
+    "position": {
+     "x": 16,
+     "y": 290,
+     "width": 920,
+     "height": 40
+    }
+   }
+  ]
+ }
+}

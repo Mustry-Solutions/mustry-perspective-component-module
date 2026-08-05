@@ -260,6 +260,7 @@ A left-to-right decision-tree / flow-path renderer, migrated from `ignition-must
 - **Direction arrows** — `config.showArrows` (default off) draws an arrowhead at each connector's target, trimmed to the disc edge and auto-oriented, so flow direction (and loops) read at a glance.
 - **Width-responsive** — columns stretch to fill the component and never compress below `config.minXOffset` (then it scrolls). Node discs take Ignition icons (`{path, color}`) and show a **markdown** hover info card (react-markdown@4, React-16 compatible) that stays open while hovered.
 - **Selection + events** — clicking a node writes `state.selectedNode` (two-way, drives a highlight) and fires **`onNodeClick`** `{id, name, category}`. Display-only: the component never mutates `data.nodes`.
+- **Validation feedback** — when a dataset won't fully draw, the reason is surfaced instead of a blank canvas: the empty state distinguishes *no nodes* / *cycle (no entry point)* / *no root*, and **`output.warnings`** lists machine-readable issues (no edges, cycle, edges to unknown ids, nodes unreachable from the root and silently dropped). Empty `output.warnings` = clean.
 
 ### Theming
 
