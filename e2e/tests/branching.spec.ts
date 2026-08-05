@@ -8,21 +8,24 @@ test.describe('Branching Diagram', () => {
     test('renders the seeded flow with nodes, connectors and outputs', async ({ page }) => {
         const root = await openRoute(page, '/branching', '.mustry-branching');
         await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
-        // Edges: 1→2, 2→3, 2→5, 3→4, 4→6, 4→5, 5→3 = 7 connectors.
-        await expect(root.locator('.mustry-branch-path')).toHaveCount(7);
+        // Edges: 1→2, 2→3, 3→4, 4→6, 4→5, 5→3 = 6 connectors (one rework loop).
+        await expect(root.locator('.mustry-branch-path')).toHaveCount(6);
         await expect(page.getByText(/output\.count: 6/)).toBeVisible();
         await expect(page.getByText(/output\.hasRoot: true/i)).toBeVisible();
     });
 
     test('clicking a node selects it (two-way) and fires onNodeClick', async ({ page }) => {
         const root = await openRoute(page, '/branching', '.mustry-branching');
-        await root.locator('.mustry-branch-node').filter({ hasText: 'QA' }).click();
+        // Select by aria-label (exact) — hasText would also match a tooltip
+        // that mentions another node (QA's tooltip says "ships").
+        const byName = (name: string) => root.getByRole('button', { name, exact: true });
+        await byName('QA').click();
         await expect(root.locator('.mustry-branch-node--selected')).toHaveCount(1);
         await expect(root.locator('.mustry-branch-node--selected')).toContainText('QA');
         await expect(page.getByText(/state\.selectedNode: 4/)).toBeVisible();
         await expect(page.getByText(/onNodeClick id=4 name="QA" category=0/)).toBeVisible();
         // Selecting another node moves the highlight.
-        await root.locator('.mustry-branch-node').filter({ hasText: 'Ship' }).click();
+        await byName('Ship').click();
         await expect(root.locator('.mustry-branch-node--selected')).toContainText('Ship');
     });
 
@@ -40,7 +43,7 @@ test.describe('Branching Diagram', () => {
         // every connector box has real width AND height.
         const root = await openRoute(page, '/branching', '.mustry-branching');
         const paths = root.locator('.mustry-branch-path');
-        await expect(paths).toHaveCount(7);
+        await expect(paths).toHaveCount(6);
         const count = await paths.count();
         for (let i = 0; i < count; i++) {
             const box = await paths.nth(i).boundingBox();
@@ -54,8 +57,8 @@ test.describe('Branching Diagram', () => {
         const root = await openRoute(page, '/branching-arrows', '.mustry-branching');
         await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
         // Each connector SVG defines its own arrow marker when arrows are on.
-        await expect(root.locator('.mustry-branch-path marker')).toHaveCount(7);
-        await expect(root.locator('.mustry-branch-path path[marker-end]')).toHaveCount(7);
+        await expect(root.locator('.mustry-branch-path marker')).toHaveCount(6);
+        await expect(root.locator('.mustry-branch-path path[marker-end]')).toHaveCount(6);
     });
 
     test('vertical orientation lays the tree top-to-bottom without clipping labels', async ({ page }) => {
