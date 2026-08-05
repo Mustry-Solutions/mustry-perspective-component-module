@@ -13,6 +13,8 @@ export interface BranchingProps {
     lineWidth: number;
     nodeSize: number;
     nodeBorderWidth: number;
+    /** Node pill / info-card background ('' = the --brn-node-bg theme var). */
+    backgroundColor: string;
     locale: string;
     labels: BranchingLabels;
     nodes: BranchNode[];
@@ -30,12 +32,13 @@ export function mapBranchingProps(tree: PropReader): BranchingProps {
     });
 
     return {
-        minXOffset: Math.max(20, tree.readNumber('config.minXOffset', 80)),
-        yOffset: Math.max(20, tree.readNumber('config.yOffset', 60)),
+        minXOffset: Math.max(20, tree.readNumber('config.minXOffset', 50)),
+        yOffset: Math.max(20, tree.readNumber('config.yOffset', 50)),
         curveSize: Math.max(0, tree.readNumber('config.curveSize', 10)),
         lineWidth: Math.max(1, tree.readNumber('config.lineWidth', 2)),
-        nodeSize: Math.max(8, tree.readNumber('config.nodeSize', 24)),
+        nodeSize: Math.max(8, tree.readNumber('config.nodeSize', 20)),
         nodeBorderWidth: Math.max(0, tree.readNumber('config.nodeBorderWidth', 2)),
+        backgroundColor: tree.readString('config.backgroundColor', ''),
         locale,
         labels: labels as unknown as BranchingLabels,
         nodes: (tree.readArray('data.nodes', []) || []).map(normalizeBranchNode),

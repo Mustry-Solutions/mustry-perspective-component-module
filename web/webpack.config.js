@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
@@ -23,7 +24,12 @@ module.exports = (env, argv) => ({
     },
     devtool: argv.mode === 'development' ? 'source-map' : false,
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.css', '.scss']
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.css', '.scss'],
+        fallback: {
+            // react-markdown@4's vfile dependency requires Node's `path`;
+            // webpack 5 stopped polyfilling Node builtins automatically.
+            path: require.resolve('path-browserify')
+        }
     },
     module: {
         rules: [
@@ -43,7 +49,10 @@ module.exports = (env, argv) => ({
         ]
     },
     plugins: [
-        new MiniCssExtractPlugin({ filename: `${LibName}.css` })
+        new MiniCssExtractPlugin({ filename: `${LibName}.css` }),
+        // react-markdown@4's vfile dependency also calls process.cwd() at
+        // runtime; webpack 5 no longer injects the process shim itself.
+        new webpack.ProvidePlugin({ process: 'process/browser' })
     ],
     optimization: {
         // '...' keeps webpack's default JS minimizer (terser); CssMinimizerPlugin

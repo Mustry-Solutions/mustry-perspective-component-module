@@ -85,11 +85,24 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
         const empty = layout.nodes.length === 0;
 
         const emitter = this.props.emit({ classes: ['mustry-branching'] });
-        const xOffset = columnOffset(this.state.width, layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset);
+        // The original let labels spill outside the component (overflow
+        // visible); this port scrolls instead, so the half-label that hangs
+        // left of the first column / right of the last must be reserved
+        // INSIDE the scroll area or it gets clipped. Two passes because the
+        // label width follows the column spacing it also reduces.
+        const absoluteNodeSize = p.nodeSize + p.nodeBorderWidth * 2;
+        const firstPass = columnOffset(this.state.width, layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset);
+        const overhangOf = (offset: number): number =>
+            Math.max(0, (Math.min(200, Math.max(40, offset - 30)) - absoluteNodeSize) / 2);
+        const xOffset = columnOffset(
+            this.state.width - 2 * overhangOf(firstPass),
+            layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset
+        );
+        const overhang = overhangOf(xOffset);
         // The grid must stay scrollable at its minimum density.
         emitter.style = {
             ...emitter.style,
-            minWidth: `${layout.maxX * p.minXOffset}px`
+            minWidth: `${layout.maxX * p.minXOffset + 2 * overhang}px`
         };
 
         const disposition = p.nodeSize / 2 + p.nodeBorderWidth;
@@ -105,7 +118,7 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                     ) : (
                         <div
                             className="mustry-branch-canvas"
-                            style={{ transform: `translate(${disposition}px, ${yPadding + disposition}px)` }}
+                            style={{ transform: `translate(${disposition + overhang}px, ${yPadding + disposition}px)` }}
                         >
                             {layout.connections.map((c) => (
                                 <BranchConnection
@@ -128,6 +141,7 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                                     size={p.nodeSize}
                                     borderWidth={p.nodeBorderWidth}
                                     textSpace={Math.max(40, xOffset - 30)}
+                                    backgroundColor={p.backgroundColor}
                                     selected={node.id === p.selectedNode}
                                     onClick={this.onNodeClick}
                                 />

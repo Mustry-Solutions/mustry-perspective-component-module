@@ -9,12 +9,13 @@
       "description": "Branching Diagram behaviour and appearance.",
       "default": {
         "locale": "",
-        "minXOffset": 80,
-        "yOffset": 60,
+        "minXOffset": 50,
+        "yOffset": 50,
         "curveSize": 10,
         "lineWidth": 2,
-        "nodeSize": 24,
-        "nodeBorderWidth": 2
+        "nodeSize": 20,
+        "nodeBorderWidth": 2,
+        "backgroundColor": ""
       },
       "properties": {
         "locale": {
@@ -24,12 +25,12 @@
         },
         "minXOffset": {
           "type": "number",
-          "default": 80,
+          "default": 50,
           "description": "Minimum pixel spacing between depth columns; the grid stretches to fill the available width above this, and scrolls horizontally below it."
         },
         "yOffset": {
           "type": "number",
-          "default": 60,
+          "default": 50,
           "description": "Pixel spacing between category rows."
         },
         "curveSize": {
@@ -44,7 +45,7 @@
         },
         "nodeSize": {
           "type": "number",
-          "default": 24,
+          "default": 20,
           "description": "Diameter of the node disc, px."
         },
         "nodeBorderWidth": {
@@ -66,6 +67,11 @@
               "description": "Empty-state hint when no root node can be found."
             }
           }
+        },
+        "backgroundColor": {
+          "type": "string",
+          "default": "",
+          "description": "Node pill / info-card background colour \u2014 the halo behind labels where they cross connectors. Empty = the theme's --brn-node-bg."
         }
       }
     },
@@ -125,7 +131,7 @@
               },
               "tooltip": {
                 "type": "string",
-                "description": "Hover info-card text (plain text)."
+                "description": "Hover info-card content (markdown)."
               },
               "style": {
                 "type": "object",
