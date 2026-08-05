@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-05
+
 ### Branching Diagram (new component — migrated from ignition-mustry-ui)
 Fourteenth component: `mustrysolutions.perspective.display.branching` — a
 left-to-right decision-tree / flow-path renderer, the one real component
