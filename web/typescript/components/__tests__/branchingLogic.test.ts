@@ -176,6 +176,15 @@ describe('computeConnector', () => {
         }
     });
 
+    it('a backward edge rises CLOSE TO THE TARGET, not at the midpoint', () => {
+        // Regression for the rework-loop crossing: the cross-over run (segment
+        // index 2) must sit near the target, so it clears nodes in the middle.
+        const g = computeConnector({ x: 120, y: 0 }, { x: 0, y: 50 }, -60, -60, 10, false, 0);
+        const [x1, , x2] = coords(g.segments[2]); // the vertical cross-run
+        expect(x1).toBeCloseTo(x2, 5);            // it IS vertical (same x)
+        expect(x1).toBeLessThan(g.width / 3);     // in the target third (target is at left)
+    });
+
     it('vertical orientation transposes the box of a forward edge', () => {
         const h = computeConnector({ x: 0, y: 0 }, { x: 120, y: 50 }, 60, 60, 10, false, 0);
         const v = computeConnector({ x: 0, y: 0 }, { x: 50, y: 120 }, 60, 60, 10, true, 0);

@@ -15,6 +15,11 @@ import { BranchConnection } from './BranchConnection';
 // Must match BranchingDiagram.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.display.branching';
 
+// Horizontal padding of the node's pill halo (must match `.mustry-branch-pill`
+// in branching.scss) — how far the white halo extends past the disc, so an
+// arrowhead approaching along the horizontal (flow) axis can clear it.
+const PILL_PADDING = 10;
+
 interface BranchingState {
     /** Rendered size of the scroll viewport (drives flow-axis spacing). */
     width: number;
@@ -164,6 +169,7 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                                     vertical={vertical}
                                     arrow={p.showArrows}
                                     nodeRadius={disposition}
+                                    haloPad={vertical ? 0 : PILL_PADDING}
                                 />
                             ))}
                             {layout.connections.map((c) => {

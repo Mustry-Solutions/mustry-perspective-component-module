@@ -19,10 +19,12 @@ interface BranchConnectionProps {
     lineWidth: number;
     /** Vertical (top-to-bottom) layout instead of the default left-to-right. */
     vertical: boolean;
-    /** Draw an arrowhead at the target; the run is trimmed to the disc edge. */
+    /** Draw an arrowhead at the target; the run is trimmed clear of the halo. */
     arrow: boolean;
     /** Disc radius (nodeSize/2 + border) — how far to trim for the arrow tip. */
     nodeRadius: number;
+    /** Extra trim so the tip clears the node's pill halo on the approach axis. */
+    haloPad: number;
 }
 
 /**
@@ -40,7 +42,7 @@ export function BranchConnection(props: BranchConnectionProps): JSX.Element {
         props.toSplit,
         props.curveSize,
         props.vertical,
-        props.arrow ? props.nodeRadius + props.lineWidth : 0
+        props.arrow ? props.nodeRadius + props.haloPad + props.lineWidth : 0
     );
     const markerId = `brn-arrow-${props.id}`;
     return (
