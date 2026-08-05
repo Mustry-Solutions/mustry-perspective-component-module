@@ -89,6 +89,99 @@ export function findRoot(nodes: BranchNode[]): number | null {
     return root ? root.id : null;
 }
 
+/** Machine-readable reason codes for why a tree does/doesn't render fully. */
+export type BranchWarningCode = 'no-edges' | 'cycle' | 'dangling-edge' | 'unreachable';
+
+export interface BranchWarning {
+    code: BranchWarningCode;
+    /** English, author-facing detail (surfaced via output.warnings). */
+    message: string;
+    /** Offending node ids, where applicable. */
+    ids: number[];
+}
+
+export interface BranchDiagnosis {
+    rootId: number | null;
+    warnings: BranchWarning[];
+}
+
+/**
+ * Explain a dataset the layout can't (fully) draw, so the reason is visible
+ * instead of a silent empty canvas. Purely additive — it never changes what
+ * renders; it just reports: no edges at all, a cycle (every node referenced,
+ * so no entry point), edges pointing at unknown ids, and nodes unreachable
+ * from the root (which the BFS layout silently drops).
+ */
+export function diagnose(nodes: BranchNode[]): BranchDiagnosis {
+    const warnings: BranchWarning[] = [];
+    if (nodes.length === 0) {
+        return { rootId: null, warnings };
+    }
+
+    const ids = new Set(nodes.map((n) => n.id));
+    let anyOutgoing = false;
+    const dangling: number[] = [];
+    for (const node of nodes) {
+        if (node.nextId.length > 0) {
+            anyOutgoing = true;
+        }
+        for (const target of node.nextId) {
+            if (!ids.has(target) && !dangling.includes(target)) {
+                dangling.push(target);
+            }
+        }
+    }
+    if (dangling.length > 0) {
+        warnings.push({
+            code: 'dangling-edge',
+            message: `Edge(s) point to unknown node id(s): ${dangling.join(', ')}. They are ignored.`,
+            ids: dangling
+        });
+    }
+
+    const rootId = findRoot(nodes);
+    if (rootId === null) {
+        if (!anyOutgoing) {
+            warnings.push({
+                code: 'no-edges',
+                message: 'No node has outgoing edges, so nothing links into a tree.',
+                ids: []
+            });
+        } else {
+            warnings.push({
+                code: 'cycle',
+                message: 'Every node is referenced by another (a cycle) — there is no entry point to draw from.',
+                ids: []
+            });
+        }
+        return { rootId, warnings };
+    }
+
+    // Reachability: the BFS layout only places nodes reachable from the root.
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const reached = new Set<number>([rootId]);
+    const queue = [rootId];
+    while (queue.length > 0) {
+        const cur = byId.get(queue.shift()!)!;
+        for (const target of cur.nextId) {
+            if (ids.has(target) && !reached.has(target)) {
+                reached.add(target);
+                queue.push(target);
+            }
+        }
+    }
+    const unreachable = nodes.filter((n) => !reached.has(n.id)).map((n) => n.id);
+    if (unreachable.length > 0) {
+        warnings.push({
+            code: 'unreachable',
+            message: `${unreachable.length} node(s) are not reachable from the root and are not drawn: ${unreachable.join(', ')}.`,
+            ids: unreachable
+        });
+    }
+
+    return { rootId, warnings };
+}
+
 interface Placed {
     node: BranchNode;
     cell: Cell;

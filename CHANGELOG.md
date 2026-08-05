@@ -63,6 +63,14 @@ components (the original module built and installed alongside) on one view:
 Demos at `/branching-arrows` and `/branching-vertical`; +4 jest connector
 cases and +3 e2e tests.
 
+**Validation feedback** (additive, revertible). When a dataset can't fully
+draw, the reason is surfaced instead of a blank canvas: the empty state
+distinguishes no-nodes / cycle (no entry point) / generic no-root, and a
+new `output.warnings` (string[]) lists machine-readable issues — no edges,
+a cycle, edges to unknown ids, and nodes unreachable from the root (which
+the BFS layout silently drops). New `config.labels.cyclic` (7 languages);
+pure `diagnose()` with 5 jest cases; demo at `/branching-cycle`; +1 e2e.
+
 
 ### BREAKING: full identity rename — "Mustry Perspective Components"
 The module sheds the Ingots working name before any real deployments

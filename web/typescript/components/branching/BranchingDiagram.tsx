@@ -7,7 +7,7 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { columnOffset, findRoot, layoutTree } from './branchingLogic';
+import { columnOffset, diagnose, findRoot, layoutTree } from './branchingLogic';
 import { BranchingProps, mapBranchingProps } from './branchingProps';
 import { BranchNode } from './BranchNode';
 import { BranchConnection } from './BranchConnection';
@@ -66,8 +66,10 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
 
     private writeOutputs(): void {
         const p = this.props.props;
+        const { rootId, warnings } = diagnose(p.nodes);
         this.props.store.props.write('output.count', p.nodes.length);
-        this.props.store.props.write('output.hasRoot', findRoot(p.nodes) !== null);
+        this.props.store.props.write('output.hasRoot', rootId !== null);
+        this.props.store.props.write('output.warnings', warnings.map((w) => w.message));
     }
 
     private onNodeClick = (id: number): void => {
@@ -79,6 +81,17 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
             });
         }
     };
+
+    /** Empty-state message, distinguishing no-nodes / cycle / generic no-root. */
+    private emptyMessage(): string {
+        const p = this.props.props;
+        if (p.nodes.length === 0) {
+            return p.labels.noNodes;
+        }
+        return diagnose(p.nodes).warnings.some((w) => w.code === 'cycle')
+            ? p.labels.cyclic
+            : p.labels.noRoot;
+    }
 
     render() {
         const p = this.props.props;
@@ -134,9 +147,7 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
             <div {...emitter}>
                 <div className="mustry-branch-viewport">
                     {empty ? (
-                        <div className="mustry-branch-empty">
-                            {p.nodes.length === 0 ? p.labels.noNodes : p.labels.noRoot}
-                        </div>
+                        <div className="mustry-branch-empty">{this.emptyMessage()}</div>
                     ) : (
                         <div className="mustry-branch-canvas" style={{ transform: translate }}>
                             {layout.connections.map((c) => (
