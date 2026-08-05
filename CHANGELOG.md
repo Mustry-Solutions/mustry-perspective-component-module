@@ -78,6 +78,13 @@ bare, so it's inert unless you supply labels. Rendered as a small chip on
 the connector mid-point. Demo at `/branching-labels` (a decision tree);
 +1 e2e.
 
+**Loop routing + arrow polish.** Backward/loop connectors now rise close to
+the TARGET instead of at the midpoint — the midpoint often landed on an
+intermediate node (the rework loop visibly crossed the QA node); rising near
+the target keeps the run clear of it. Arrowheads gained a halo-clearance
+trim (the node's pill halo, above the connector layer, was covering the tip)
+so they sit at the halo edge on the approach axis. +1 jest case.
+
 
 ### BREAKING: full identity rename — "Mustry Perspective Components"
 The module sheds the Ingots working name before any real deployments

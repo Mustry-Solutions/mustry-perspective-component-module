@@ -381,13 +381,16 @@ export function computeConnector(
     const toC = vertical ? to.x : to.y;
 
     // Backward edge: the origin sits past the target along the flow axis, where
-    // the layout's split is meaningless. Route straight back via the midpoint.
+    // the layout's split is meaningless. Run along the origin's row and rise
+    // CLOSE TO THE TARGET rather than at the midpoint — the midpoint usually
+    // lands on an intermediate node (e.g. a rework loop crossing the QA node),
+    // whereas rising just past the target clears whatever sits between them.
     let outSplit = fromSplit;
     let inSplit = toSplit;
     if (toF < fromF) {
-        const mid = (toF - fromF) / 2;
-        outSplit = mid;
-        inSplit = mid;
+        const nearTarget = (toF - fromF) * 0.85;
+        outSplit = nearTarget;
+        inSplit = nearTarget;
     }
 
     const cs = fromC === toC ? 0 : curveSize;
