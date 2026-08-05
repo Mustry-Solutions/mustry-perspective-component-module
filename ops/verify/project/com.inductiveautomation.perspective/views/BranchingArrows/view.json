@@ -1,44 +1,54 @@
 {
   "custom": {},
-  "propConfig": {},
   "params": {},
   "props": {
     "defaultSize": {
-      "width": 960,
-      "height": 400
+      "height": 400,
+      "width": 960
     }
   },
   "root": {
-    "type": "ia.container.coord",
-    "version": 0,
-    "props": {},
-    "meta": {
-      "name": "root"
-    },
     "children": [
       {
-        "type": "ia.display.label",
-        "version": 0,
-        "props": {
-          "text": "Branching Diagram \u2014 showArrows: true (arrowheads make flow direction explicit, incl. the rework loop)",
-          "style": {
-            "fontSize": "14px",
-            "fontWeight": "bold"
-          }
-        },
         "meta": {
           "name": "t"
         },
         "position": {
-          "x": 16,
-          "y": 10,
+          "height": 40,
           "width": 920,
-          "height": 40
-        }
+          "x": 16,
+          "y": 10
+        },
+        "props": {
+          "style": {
+            "fontSize": "14px",
+            "fontWeight": "bold"
+          },
+          "text": "Branching Diagram \u2014 showArrows: true (arrowheads make flow direction explicit, incl. the rework loop)"
+        },
+        "type": "ia.display.label"
       },
       {
-        "type": "mustrysolutions.perspective.display.branching",
-        "version": 0,
+        "events": {
+          "component": {
+            "onNodeClick": {
+              "config": {
+                "script": "\tself.view.custom.lastEvent = 'onNodeClick id=' + str(event.id) + ' name=\"' + str(event.name) + '\" category=' + str(event.category)"
+              },
+              "scope": "G",
+              "type": "script"
+            }
+          }
+        },
+        "meta": {
+          "name": "branching"
+        },
+        "position": {
+          "height": 300,
+          "width": 920,
+          "x": 16,
+          "y": 60
+        },
         "props": {
           "config": {
             "showArrows": true
@@ -64,8 +74,7 @@
                 "name": "Inspect",
                 "category": 0,
                 "nextId": [
-                  3,
-                  5
+                  3
                 ],
                 "color": "#0a66c2",
                 "icon": {
@@ -98,7 +107,8 @@
                 "icon": {
                   "path": "material/fact_check",
                   "color": "#ffffff"
-                }
+                },
+                "tooltip": "Pass ships; fail loops to Rework."
               },
               {
                 "id": 5,
@@ -127,32 +137,18 @@
                 }
               }
             ]
+          },
+          "output": {
+            "count": 6,
+            "hasRoot": true
           }
         },
-        "custom": {},
-        "events": {
-          "component": {
-            "onNodeClick": [
-              {
-                "type": "script",
-                "scope": "G",
-                "config": {
-                  "script": "\tself.view.custom.lastEvent = 'onNodeClick id=' + str(event.id) + ' name=\"' + str(event.name) + '\" category=' + str(event.category)"
-                }
-              }
-            ]
-          }
-        },
-        "meta": {
-          "name": "branching"
-        },
-        "position": {
-          "x": 16,
-          "y": 60,
-          "width": 920,
-          "height": 300
-        }
+        "type": "mustrysolutions.perspective.display.branching"
       }
-    ]
+    ],
+    "meta": {
+      "name": "root"
+    },
+    "type": "ia.container.coord"
   }
 }

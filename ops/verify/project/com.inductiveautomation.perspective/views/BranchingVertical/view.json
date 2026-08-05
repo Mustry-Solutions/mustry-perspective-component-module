@@ -66,8 +66,7 @@
                 "name": "Inspect",
                 "category": 0,
                 "nextId": [
-                  3,
-                  5
+                  3
                 ],
                 "color": "#0a66c2",
                 "icon": {
@@ -100,7 +99,8 @@
                 "icon": {
                   "path": "material/fact_check",
                   "color": "#ffffff"
-                }
+                },
+                "tooltip": "Pass ships; fail loops to Rework."
               },
               {
                 "id": 5,
