@@ -15,6 +15,10 @@ export interface BranchingProps {
     nodeBorderWidth: number;
     /** Node pill / info-card background ('' = the --brn-node-bg theme var). */
     backgroundColor: string;
+    /** Flow direction: 'horizontal' (left-to-right) or 'vertical' (top-down). */
+    orientation: string;
+    /** Draw arrowheads at the target end of each connector. */
+    showArrows: boolean;
     locale: string;
     labels: BranchingLabels;
     nodes: BranchNode[];
@@ -39,6 +43,8 @@ export function mapBranchingProps(tree: PropReader): BranchingProps {
         nodeSize: Math.max(8, tree.readNumber('config.nodeSize', 20)),
         nodeBorderWidth: Math.max(0, tree.readNumber('config.nodeBorderWidth', 2)),
         backgroundColor: tree.readString('config.backgroundColor', ''),
+        orientation: tree.readString('config.orientation', 'horizontal') === 'vertical' ? 'vertical' : 'horizontal',
+        showArrows: tree.readBoolean('config.showArrows', false),
         locale,
         labels: labels as unknown as BranchingLabels,
         nodes: (tree.readArray('data.nodes', []) || []).map(normalizeBranchNode),

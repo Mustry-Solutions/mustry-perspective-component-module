@@ -43,6 +43,26 @@ block for position: fixed — wrapping one word per line). Demo at `/branching`
 (seeded production flow with a rework loop exercising duplicate
 forwarding); 3 e2e tests. The source repo should now be archived.
 
+A follow-up enhancement pass added three things, verified by loading BOTH
+components (the original module built and installed alongside) on one view:
+- **Backward/loop connector fix.** The source's split-routing only handled
+  forward edges; an edge whose origin sits in a LATER column than its
+  target (the QA→Rework rework loop) computed a negative-width SVG that,
+  under `overflow: visible`, painted a stray diagonal + stub. The
+  five-segment routing is now a pure, node-tested `computeConnector`
+  (min/max box so width is never negative; backward edges re-routed
+  through the column midpoint). The original still shows the artifact; the
+  new component no longer does.
+- **`config.showArrows`** (default off) — an arrowhead at each connector's
+  target, trimmed to the disc edge and auto-oriented, so flow direction
+  and loops read at a glance.
+- **`config.orientation`** `horizontal` (default) / `vertical` — vertical
+  lays depth top-to-bottom, category across; label overhang is reserved on
+  the cross axis so first-column labels don't clip. Widen `config.yOffset`
+  in vertical mode so horizontal labels don't collide.
+Demos at `/branching-arrows` and `/branching-vertical`; +4 jest connector
+cases and +3 e2e tests.
+
 
 ### BREAKING: full identity rename — "Mustry Perspective Components"
 The module sheds the Ingots working name before any real deployments

@@ -9,6 +9,8 @@
       "description": "Branching Diagram behaviour and appearance.",
       "default": {
         "locale": "",
+        "orientation": "horizontal",
+        "showArrows": false,
         "minXOffset": 50,
         "yOffset": 50,
         "curveSize": 10,
@@ -22,6 +24,17 @@
           "type": "string",
           "default": "",
           "description": "BCP-47 locale selecting the built-in UI-text language (see config.labels). Empty = browser/session default."
+        },
+        "orientation": {
+          "type": "string",
+          "enum": ["horizontal", "vertical"],
+          "default": "horizontal",
+          "description": "Flow direction: 'horizontal' lays the tree left-to-right (depth along x); 'vertical' lays it top-to-bottom (depth along y)."
+        },
+        "showArrows": {
+          "type": "boolean",
+          "default": false,
+          "description": "Draw an arrowhead at the target end of each connector to make flow direction explicit (useful for loops)."
         },
         "minXOffset": {
           "type": "number",

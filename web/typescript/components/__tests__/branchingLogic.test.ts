@@ -1,6 +1,11 @@
 import {
-    columnOffset, findRoot, layoutTree, normalizeBranchNode, BranchNode
+    columnOffset, computeConnector, findRoot, layoutTree, normalizeBranchNode, BranchNode
 } from '../branching/branchingLogic';
+
+/** Extract every numeric coordinate from an SVG path `d` string. */
+function coords(d: string): number[] {
+    return (d.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+}
 
 const n = (raw: any): BranchNode => normalizeBranchNode(raw);
 
@@ -105,5 +110,43 @@ describe('columnOffset', () => {
         expect(columnOffset(500, 4, 20, 1, 50)).toBe((500 - 22) / 4);
         expect(columnOffset(100, 4, 20, 1, 50)).toBe(50);
         expect(columnOffset(500, 0, 20, 1, 50)).toBe(50);
+    });
+});
+
+describe('computeConnector', () => {
+    const box = (g: ReturnType<typeof computeConnector>) => ({ w: g.width, h: g.height });
+
+    it('a forward edge produces a positive box and five segments', () => {
+        const g = computeConnector({ x: 0, y: 0 }, { x: 120, y: 50 }, 60, 60, 10, false, 0);
+        expect(g.width).toBeGreaterThan(0);
+        expect(g.height).toBeGreaterThan(0);
+        expect(g.segments).toHaveLength(5);
+    });
+
+    it('a BACKWARD edge (origin past target) never yields a negative box', () => {
+        // The original bug: to.x < from.x made width = to.x - from.x + pad < 0.
+        const g = computeConnector({ x: 120, y: 0 }, { x: 0, y: 50 }, -180, -180, 10, false, 0);
+        expect(g.width).toBeGreaterThan(0);
+        expect(g.height).toBeGreaterThan(0);
+        // Every drawn coordinate stays inside the box (no stray off-canvas run).
+        for (const d of g.segments) {
+            for (const v of coords(d)) {
+                expect(v).toBeGreaterThanOrEqual(-0.01);
+            }
+        }
+    });
+
+    it('vertical orientation transposes the box of a forward edge', () => {
+        const h = computeConnector({ x: 0, y: 0 }, { x: 120, y: 50 }, 60, 60, 10, false, 0);
+        const v = computeConnector({ x: 0, y: 0 }, { x: 50, y: 120 }, 60, 60, 10, true, 0);
+        // Flow (the longer 120 run) lands on x when horizontal, on y when vertical.
+        expect(box(h).w).toBeGreaterThan(box(h).h);
+        expect(box(v).h).toBeGreaterThan(box(v).w);
+    });
+
+    it('trimTarget shortens the final run so an arrow clears the disc', () => {
+        const full = computeConnector({ x: 0, y: 0 }, { x: 200, y: 0 }, 100, 100, 0, false, 0);
+        const trimmed = computeConnector({ x: 0, y: 0 }, { x: 200, y: 0 }, 100, 100, 0, false, 12);
+        expect(trimmed.width).toBeLessThan(full.width);
     });
 });

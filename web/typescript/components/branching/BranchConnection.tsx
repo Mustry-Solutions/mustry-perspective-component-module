@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { computeConnector } from './branchingLogic';
 
 interface Point {
     x: number;
@@ -6,53 +7,72 @@ interface Point {
 }
 
 interface BranchConnectionProps {
+    /** Stable id for this edge (used to scope the arrow marker). */
+    id: string;
     from: Point;
     to: Point;
-    /** Pixel offsets (from `from.x`) where the run hands off between rows. */
+    /** Pixel offsets (from the origin, along the flow axis) for the run hand-off. */
     fromSplit: number;
     toSplit: number;
     curveSize: number;
     color: string;
     lineWidth: number;
+    /** Vertical (top-to-bottom) layout instead of the default left-to-right. */
+    vertical: boolean;
+    /** Draw an arrowhead at the target; the run is trimmed to the disc edge. */
+    arrow: boolean;
+    /** Disc radius (nodeSize/2 + border) — how far to trim for the arrow tip. */
+    nodeRadius: number;
 }
 
-const PADDING = 10;
-
 /**
- * The SVG connector between two nodes: horizontal run, curved hand-off to
- * the target row, horizontal run to the target. Faithful port of
- * mustry-ui's ConnectionComponent (five path segments), with namespaced
- * classes and theme-var default colour.
+ * The SVG connector between two nodes. All geometry lives in the pure,
+ * node-tested computeConnector (which fixes the original's broken routing for
+ * backward/loop edges and adds orientation + arrow trimming); this component
+ * only turns that into elements and, when enabled, an auto-oriented arrowhead.
  */
 export function BranchConnection(props: BranchConnectionProps): JSX.Element {
-    const { from, to, curveSize, lineWidth } = props;
-    const margin = PADDING / 2;
-    const curveStep = from.y === to.y ? 0 : curveSize;
-    const fromHigher = from.y < to.y;
-
-    const s0: Point = { x: margin, y: fromHigher ? margin : from.y - to.y + margin };
-    const s1: Point = { x: s0.x + props.fromSplit - curveStep, y: s0.y };
-    const s2: Point = { x: s1.x + curveStep, y: fromHigher ? s1.y + curveStep : s1.y - curveStep };
-    const s3: Point = { x: props.toSplit + margin, y: fromHigher ? to.y - from.y + margin - curveStep : margin + curveStep };
-    const s4: Point = { x: s3.x + curveStep, y: fromHigher ? s3.y + curveStep : s3.y - curveStep };
-    const s5: Point = { x: to.x - from.x + margin, y: s4.y };
-
     const stroke = props.color || 'var(--brn-line, #7b8794)';
+    const geo = computeConnector(
+        props.from,
+        props.to,
+        props.fromSplit,
+        props.toSplit,
+        props.curveSize,
+        props.vertical,
+        props.arrow ? props.nodeRadius + props.lineWidth : 0
+    );
+    const markerId = `brn-arrow-${props.id}`;
     return (
         <svg
             className="mustry-branch-path"
-            style={{
-                left: from.x - margin,
-                top: (fromHigher ? from.y : to.y) - margin,
-                width: to.x - from.x + PADDING,
-                height: Math.abs(from.y - to.y) + PADDING
-            }}
+            style={{ left: geo.left, top: geo.top, width: geo.width, height: geo.height }}
         >
-            <path d={`M ${s0.x} ${s0.y} L ${s1.x} ${s1.y}`} stroke={stroke} strokeWidth={lineWidth} fill="none" />
-            <path d={`M ${s1.x} ${s1.y} C ${s1.x} ${s1.y} ${s2.x} ${s1.y} ${s2.x} ${s2.y}`} stroke={stroke} strokeWidth={lineWidth} fill="none" />
-            <path d={`M ${s2.x} ${s2.y} L ${s3.x} ${s3.y}`} stroke={stroke} strokeWidth={lineWidth} fill="none" />
-            <path d={`M ${s3.x} ${s3.y} C ${s3.x} ${s3.y} ${s3.x} ${s4.y} ${s4.x} ${s4.y}`} stroke={stroke} strokeWidth={lineWidth} fill="none" />
-            <path d={`M ${s4.x} ${s4.y} L ${s5.x} ${s5.y}`} stroke={stroke} strokeWidth={lineWidth} fill="none" />
+            {props.arrow && (
+                <defs>
+                    <marker
+                        id={markerId}
+                        viewBox="0 0 10 10"
+                        refX="8"
+                        refY="5"
+                        markerWidth={6}
+                        markerHeight={6}
+                        orient="auto-start-reverse"
+                    >
+                        <path d="M 0 1 L 9 5 L 0 9 z" fill={stroke} />
+                    </marker>
+                </defs>
+            )}
+            {geo.segments.map((d, i) => (
+                <path
+                    key={i}
+                    d={d}
+                    stroke={stroke}
+                    strokeWidth={props.lineWidth}
+                    fill="none"
+                    markerEnd={props.arrow && i === geo.segments.length - 1 ? `url(#${markerId})` : undefined}
+                />
+            ))}
         </svg>
     );
 }

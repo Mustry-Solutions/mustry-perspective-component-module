@@ -241,3 +241,116 @@ export function columnOffset(width: number, maxX: number, nodeSize: number, bord
     const offset = (width - absoluteNodeSize) / maxX;
     return offset < minXOffset ? minXOffset : offset;
 }
+
+/** A positioned SVG connector: box in px + path segments in box-local coords. */
+export interface ConnectorGeometry {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    /** One `d` string per segment (line/curve), already box-local. */
+    segments: string[];
+}
+
+const CONNECTOR_PADDING = 10;
+
+/**
+ * Geometry for one connector, mirroring the original five-segment routing
+ * (horizontal run → rounded corner → cross run → rounded corner → horizontal
+ * run) but generalized so it is CORRECT in every direction and orientation:
+ *
+ *  - It works in a flow/cross frame (flow = tree depth, cross = category) and
+ *    maps to screen at the end, so `vertical` transposes cleanly.
+ *  - The bounding box uses min/max, so a BACKWARD edge (origin in a later
+ *    column than its target — e.g. a rework loop) never yields a negative
+ *    width. The original's split math only handled forward edges, so such
+ *    edges rendered as a stray diagonal; here a backward edge is re-routed
+ *    through the column midpoint.
+ *  - `trimTarget` pulls the target end back by that many px (for arrowheads,
+ *    so the tip lands on the disc edge instead of hidden under the disc).
+ *
+ * `fromSplit`/`toSplit` are pixel offsets from the origin along the flow axis
+ * (the layout's split columns × spacing), same as before.
+ */
+export function computeConnector(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    fromSplit: number,
+    toSplit: number,
+    curveSize: number,
+    vertical: boolean,
+    trimTarget: number
+): ConnectorGeometry {
+    // Flow axis carries tree depth; cross axis carries category.
+    const fromF = vertical ? from.y : from.x;
+    const fromC = vertical ? from.x : from.y;
+    const toF = vertical ? to.y : to.x;
+    const toC = vertical ? to.x : to.y;
+
+    // Backward edge: the origin sits past the target along the flow axis, where
+    // the layout's split is meaningless. Route straight back via the midpoint.
+    let outSplit = fromSplit;
+    let inSplit = toSplit;
+    if (toF < fromF) {
+        const mid = (toF - fromF) / 2;
+        outSplit = mid;
+        inSplit = mid;
+    }
+
+    const cs = fromC === toC ? 0 : curveSize;
+    const dirC = fromC < toC ? 1 : -1;
+    const hOut = fromF + outSplit; // first corner (leaves the origin row)
+    const hIn = fromF + inSplit;   // second corner (reaches the target row)
+    const dirOut = Math.sign(hOut - fromF) || 1;
+    const dirIn = Math.sign(toF - hIn) || 1;
+
+    // Trim the final (flow-axis) segment so an arrow tip clears the disc.
+    const lastLen = Math.abs(toF - (hIn + dirIn * cs));
+    const trim = Math.min(Math.max(0, trimTarget), Math.max(0, lastLen - 1));
+    const lastDir = Math.sign(toF - (hIn + dirIn * cs)) || dirIn;
+    const endF = toF - lastDir * trim;
+
+    // Points in flow/cross space.
+    const p = [
+        { f: fromF, c: fromC },
+        { f: hOut - dirOut * cs, c: fromC },
+        { f: hOut, c: fromC + dirC * cs },
+        { f: hIn, c: toC - dirC * cs },
+        { f: hIn + dirIn * cs, c: toC },
+        { f: endF, c: toC }
+    ];
+
+    const fs = p.map((q) => q.f);
+    const csv = p.map((q) => q.c);
+    const fMin = Math.min(...fs);
+    const fMax = Math.max(...fs);
+    const cMin = Math.min(...csv);
+    const cMax = Math.max(...csv);
+    const margin = CONNECTOR_PADDING / 2;
+
+    // Screen box: flow maps to the x axis (horizontal) or y axis (vertical).
+    const left = (vertical ? cMin : fMin) - margin;
+    const top = (vertical ? fMin : cMin) - margin;
+    const width = (vertical ? cMax - cMin : fMax - fMin) + CONNECTOR_PADDING;
+    const height = (vertical ? fMax - fMin : cMax - cMin) + CONNECTOR_PADDING;
+
+    // Box-local coordinate for a flow/cross point, orientation-aware.
+    const lf = fMin - margin;
+    const lc = cMin - margin;
+    const m = (q: { f: number; c: number }): string =>
+        vertical ? `${q.c - lc} ${q.f - lf}` : `${q.f - lf} ${q.c - lc}`;
+
+    // Rounded-corner elbows, expressed in flow/cross so they transpose right.
+    const e2 = { f: p[2].f, c: p[1].c };
+    const e4 = { f: p[3].f, c: p[4].c };
+
+    const segments = [
+        `M ${m(p[0])} L ${m(p[1])}`,
+        `M ${m(p[1])} C ${m(p[1])} ${m(e2)} ${m(p[2])}`,
+        `M ${m(p[2])} L ${m(p[3])}`,
+        `M ${m(p[3])} C ${m(p[3])} ${m(e4)} ${m(p[4])}`,
+        `M ${m(p[4])} L ${m(p[5])}`
+    ];
+
+    return { left, top, width, height, segments };
+}

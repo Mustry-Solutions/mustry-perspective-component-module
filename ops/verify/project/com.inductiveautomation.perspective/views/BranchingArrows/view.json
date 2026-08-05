@@ -1,0 +1,158 @@
+{
+  "custom": {},
+  "propConfig": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 960,
+      "height": 400
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Branching Diagram \u2014 showArrows: true (arrowheads make flow direction explicit, incl. the rework loop)",
+          "style": {
+            "fontSize": "14px",
+            "fontWeight": "bold"
+          }
+        },
+        "meta": {
+          "name": "t"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 920,
+          "height": 40
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.branching",
+        "version": 0,
+        "props": {
+          "config": {
+            "showArrows": true
+          },
+          "data": {
+            "nodes": [
+              {
+                "id": 1,
+                "name": "Intake",
+                "category": 0,
+                "nextId": [
+                  2
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/input",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Raw material arrives.\nScan the batch label."
+              },
+              {
+                "id": 2,
+                "name": "Inspect",
+                "category": 0,
+                "nextId": [
+                  3,
+                  5
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/search",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 3,
+                "name": "Assemble",
+                "category": 0,
+                "nextId": [
+                  4
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/build",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 4,
+                "name": "QA",
+                "category": 0,
+                "nextId": [
+                  6,
+                  5
+                ],
+                "color": "#0a66c2",
+                "icon": {
+                  "path": "material/fact_check",
+                  "color": "#ffffff"
+                }
+              },
+              {
+                "id": 5,
+                "name": "Rework",
+                "category": 1,
+                "nextId": [
+                  3
+                ],
+                "color": "#d32f2f",
+                "fill": false,
+                "icon": {
+                  "path": "material/undo",
+                  "color": "#d32f2f"
+                },
+                "tooltip": "Failed items loop back to Assemble."
+              },
+              {
+                "id": 6,
+                "name": "Ship",
+                "category": 0,
+                "nextId": [],
+                "color": "#2e7d32",
+                "icon": {
+                  "path": "material/local_shipping",
+                  "color": "#ffffff"
+                }
+              }
+            ]
+          }
+        },
+        "custom": {},
+        "events": {
+          "component": {
+            "onNodeClick": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tself.view.custom.lastEvent = 'onNodeClick id=' + str(event.id) + ' name=\"' + str(event.name) + '\" category=' + str(event.category)"
+                }
+              }
+            ]
+          }
+        },
+        "meta": {
+          "name": "branching"
+        },
+        "position": {
+          "x": 16,
+          "y": 60,
+          "width": 920,
+          "height": 300
+        }
+      }
+    ]
+  }
+}

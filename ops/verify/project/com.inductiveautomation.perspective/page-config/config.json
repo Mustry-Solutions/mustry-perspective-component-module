@@ -1,91 +1,99 @@
 {
-  "pages": {
-    "/": {
-      "viewPath": "Main",
-      "viewParams": {}
-    },
-    "/calendar": {
-      "viewPath": "CalendarDemo",
-      "viewParams": {}
-    },
-    "/calendar-db": {
-      "viewPath": "CalendarDbDemo",
-      "viewParams": {}
-    },
-    "/calendar-empty": {
-      "viewPath": "CalendarEmpty",
-      "viewParams": {}
-    },
-    "/grid": {
-      "viewPath": "GridDemo",
-      "viewParams": {}
-    },
-    "/grid-stress": {
-      "viewPath": "GridStress",
-      "viewParams": {}
-    },
-    "/panzoom": {
-      "viewPath": "PanZoomDemo",
-      "viewParams": {}
-    },
-    "/picker": {
-      "viewPath": "Main",
-      "viewParams": {}
-    },
-    "/timeline": {
-      "viewPath": "TimelineDemo",
-      "viewParams": {}
-    },
-    "/timeline-db": {
-      "viewPath": "TimelineDbDemo",
-      "viewParams": {}
-    },
-    "/timeline-empty": {
-      "viewPath": "TimelineEmpty",
-      "viewParams": {}
-    },
-    "/rte": {
-      "viewPath": "RteDemo",
-      "viewParams": {}
-    },
-    "/code": {
-      "viewPath": "CodeDemo",
-      "viewParams": {}
-    },
-    "/color": {
-      "viewPath": "ColorDemo",
-      "viewParams": {}
-    },
-    "/keyboard": {
-      "viewPath": "KeyboardDemo",
-      "viewParams": {}
-    },
-    "/schedule": {
-      "viewPath": "ScheduleDemo",
-      "viewParams": {}
-    },
-    "/roster": {
-      "viewPath": "RosterDemo",
-      "viewParams": {}
-    },
-    "/users": {
-      "viewPath": "UserDemo",
-      "viewParams": {}
-    },
-    "/admin": {
-      "viewPath": "AdminConsole",
-      "viewParams": {}
-    },
-    "/holidays": {
-      "viewPath": "HolidayDemo",
-      "viewParams": {}
-    },
-    "/branching": {
-      "viewPath": "BranchingDemo",
-      "viewParams": {}
-    }
+ "pages": {
+  "/": {
+   "viewPath": "Main",
+   "viewParams": {}
   },
-  "shared": {},
-  "defaultView": "Main",
-  "props": {}
+  "/calendar": {
+   "viewPath": "CalendarDemo",
+   "viewParams": {}
+  },
+  "/calendar-db": {
+   "viewPath": "CalendarDbDemo",
+   "viewParams": {}
+  },
+  "/calendar-empty": {
+   "viewPath": "CalendarEmpty",
+   "viewParams": {}
+  },
+  "/grid": {
+   "viewPath": "GridDemo",
+   "viewParams": {}
+  },
+  "/grid-stress": {
+   "viewPath": "GridStress",
+   "viewParams": {}
+  },
+  "/panzoom": {
+   "viewPath": "PanZoomDemo",
+   "viewParams": {}
+  },
+  "/picker": {
+   "viewPath": "Main",
+   "viewParams": {}
+  },
+  "/timeline": {
+   "viewPath": "TimelineDemo",
+   "viewParams": {}
+  },
+  "/timeline-db": {
+   "viewPath": "TimelineDbDemo",
+   "viewParams": {}
+  },
+  "/timeline-empty": {
+   "viewPath": "TimelineEmpty",
+   "viewParams": {}
+  },
+  "/rte": {
+   "viewPath": "RteDemo",
+   "viewParams": {}
+  },
+  "/code": {
+   "viewPath": "CodeDemo",
+   "viewParams": {}
+  },
+  "/color": {
+   "viewPath": "ColorDemo",
+   "viewParams": {}
+  },
+  "/keyboard": {
+   "viewPath": "KeyboardDemo",
+   "viewParams": {}
+  },
+  "/schedule": {
+   "viewPath": "ScheduleDemo",
+   "viewParams": {}
+  },
+  "/roster": {
+   "viewPath": "RosterDemo",
+   "viewParams": {}
+  },
+  "/users": {
+   "viewPath": "UserDemo",
+   "viewParams": {}
+  },
+  "/admin": {
+   "viewPath": "AdminConsole",
+   "viewParams": {}
+  },
+  "/holidays": {
+   "viewPath": "HolidayDemo",
+   "viewParams": {}
+  },
+  "/branching": {
+   "viewPath": "BranchingDemo",
+   "viewParams": {}
+  },
+  "/branching-arrows": {
+   "viewPath": "BranchingArrows",
+   "viewParams": {}
+  },
+  "/branching-vertical": {
+   "viewPath": "BranchingVertical",
+   "viewParams": {}
+  }
+ },
+ "shared": {},
+ "defaultView": "Main",
+ "props": {}
 }

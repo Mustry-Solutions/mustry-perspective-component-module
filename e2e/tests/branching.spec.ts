@@ -33,4 +33,44 @@ test.describe('Branching Diagram', () => {
         await root.locator('.mustry-branch-node').filter({ hasText: 'Intake' }).hover();
         await expect(root.locator('.mustry-branch-card').filter({ hasText: 'Raw material arrives' })).toBeVisible();
     });
+
+    test('every connector renders with a positive-area box (no backward-edge artifact)', async ({ page }) => {
+        // The rework loop (QA→Rework) is a backward edge; the original routing
+        // gave it a negative-width SVG that painted a stray diagonal. Assert
+        // every connector box has real width AND height.
+        const root = await openRoute(page, '/branching', '.mustry-branching');
+        const paths = root.locator('.mustry-branch-path');
+        await expect(paths).toHaveCount(7);
+        const count = await paths.count();
+        for (let i = 0; i < count; i++) {
+            const box = await paths.nth(i).boundingBox();
+            expect(box, `connector ${i} has a box`).not.toBeNull();
+            expect(box!.width, `connector ${i} width`).toBeGreaterThan(0);
+            expect(box!.height, `connector ${i} height`).toBeGreaterThan(0);
+        }
+    });
+
+    test('showArrows draws an arrowhead marker per connector', async ({ page }) => {
+        const root = await openRoute(page, '/branching-arrows', '.mustry-branching');
+        await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
+        // Each connector SVG defines its own arrow marker when arrows are on.
+        await expect(root.locator('.mustry-branch-path marker')).toHaveCount(7);
+        await expect(root.locator('.mustry-branch-path path[marker-end]')).toHaveCount(7);
+    });
+
+    test('vertical orientation lays the tree top-to-bottom without clipping labels', async ({ page }) => {
+        const root = await openRoute(page, '/branching-vertical', '.mustry-branching');
+        await expect(root.locator('.mustry-branch-node')).toHaveCount(6);
+        // Target nodes by aria-label (their name) — hasText would also match a
+        // tooltip that mentions another node's name.
+        const byName = (name: string) => root.getByRole('button', { name, exact: true });
+        // Depth runs down the y axis: Intake sits above Ship, and Rework
+        // (parallel column) sits to the right of the main spine.
+        const intake = await byName('Intake').boundingBox();
+        const ship = await byName('Ship').boundingBox();
+        const assemble = await byName('Assemble').boundingBox();
+        const rework = await byName('Rework').boundingBox();
+        expect(ship!.y).toBeGreaterThan(intake!.y);
+        expect(rework!.x).toBeGreaterThan(assemble!.x);
+    });
 });

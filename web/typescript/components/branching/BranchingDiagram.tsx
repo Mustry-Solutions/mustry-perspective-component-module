@@ -16,8 +16,9 @@ import { BranchConnection } from './BranchConnection';
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.display.branching';
 
 interface BranchingState {
-    /** Rendered width of the scroll viewport (drives column spacing). */
+    /** Rendered size of the scroll viewport (drives flow-axis spacing). */
     width: number;
+    height: number;
 }
 
 /**
@@ -34,7 +35,7 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
 
     constructor(props: ComponentProps<BranchingProps>) {
         super(props);
-        this.state = { width: 0 };
+        this.state = { width: 0, height: 0 };
     }
 
     componentDidMount(): void {
@@ -56,9 +57,9 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
         const root = this.props.store.element;
         const viewport = root && root.querySelector('.mustry-branch-viewport');
         if (viewport) {
-            const width = viewport.getBoundingClientRect().width;
-            if (width !== this.state.width) {
-                this.setState({ width });
+            const box = viewport.getBoundingClientRect();
+            if (box.width !== this.state.width || box.height !== this.state.height) {
+                this.setState({ width: box.width, height: box.height });
             }
         }
     };
@@ -85,28 +86,49 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
         const empty = layout.nodes.length === 0;
 
         const emitter = this.props.emit({ classes: ['mustry-branching'] });
-        // The original let labels spill outside the component (overflow
-        // visible); this port scrolls instead, so the half-label that hangs
-        // left of the first column / right of the last must be reserved
-        // INSIDE the scroll area or it gets clipped. Two passes because the
-        // label width follows the column spacing it also reduces.
+        const vertical = p.orientation === 'vertical';
         const absoluteNodeSize = p.nodeSize + p.nodeBorderWidth * 2;
-        const firstPass = columnOffset(this.state.width, layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset);
+
+        // Flow axis = tree depth (fills the available extent, min minXOffset,
+        // then scrolls); cross axis = category (fixed yOffset spacing).
+        const flowSize = vertical ? this.state.height : this.state.width;
+
+        // Horizontal only: the original let labels spill outside the component
+        // (overflow visible); we scroll instead, so the half-label hanging past
+        // the first/last column must be reserved INSIDE the scroll area. Two
+        // passes because the label width follows the spacing it also reduces.
         const overhangOf = (offset: number): number =>
             Math.max(0, (Math.min(200, Math.max(40, offset - 30)) - absoluteNodeSize) / 2);
-        const xOffset = columnOffset(
-            this.state.width - 2 * overhangOf(firstPass),
-            layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset
-        );
-        const overhang = overhangOf(xOffset);
-        // The grid must stay scrollable at its minimum density.
-        emitter.style = {
-            ...emitter.style,
-            minWidth: `${layout.maxX * p.minXOffset + 2 * overhang}px`
-        };
+        const firstPass = columnOffset(flowSize, layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset);
+        const overhang = vertical ? 0 : overhangOf(firstPass);
+        const flowSpacing = columnOffset(flowSize - 2 * overhang, layout.maxX, p.nodeSize, p.nodeBorderWidth, p.minXOffset);
+        const crossSpacing = p.yOffset;
+
+        // cell (depth, category) -> pixel centre, orientation-aware.
+        const pos = (cx: number, cy: number): { x: number; y: number } =>
+            vertical
+                ? { x: cy * crossSpacing, y: cx * flowSpacing }
+                : { x: cx * flowSpacing, y: cy * crossSpacing };
 
         const disposition = p.nodeSize / 2 + p.nodeBorderWidth;
-        const yPadding = layout.minY * -1 * p.yOffset;
+        const crossPad = layout.minY * -1 * crossSpacing;
+        const maxCross = Math.max(0, ...layout.nodes.map((n) => n.cell.y));
+        const crossExtent = (maxCross - layout.minY) * crossSpacing;
+        const flowExtentMin = layout.maxX * p.minXOffset;
+        const textSpace = vertical ? Math.max(40, crossSpacing - 10) : Math.max(40, flowSpacing - 30);
+        // Vertical: labels are horizontal text centred under discs, so the
+        // half-label overhangs the cross axis (as the horizontal label
+        // overhangs the flow axis) and must be reserved to avoid left-clipping.
+        const labelPad = vertical ? textSpace / 2 : 0;
+
+        // Keep the grid scrollable at its minimum density on both axes.
+        emitter.style = vertical
+            ? { ...emitter.style, minWidth: `${crossExtent + 2 * labelPad + absoluteNodeSize}px`, minHeight: `${flowExtentMin}px` }
+            : { ...emitter.style, minWidth: `${flowExtentMin + 2 * overhang}px` };
+
+        const translate = vertical
+            ? `translate(${crossPad + disposition + labelPad}px, ${disposition}px)`
+            : `translate(${disposition + overhang}px, ${crossPad + disposition}px)`;
 
         return (
             <div {...emitter}>
@@ -116,36 +138,40 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                             {p.nodes.length === 0 ? p.labels.noNodes : p.labels.noRoot}
                         </div>
                     ) : (
-                        <div
-                            className="mustry-branch-canvas"
-                            style={{ transform: `translate(${disposition + overhang}px, ${yPadding + disposition}px)` }}
-                        >
+                        <div className="mustry-branch-canvas" style={{ transform: translate }}>
                             {layout.connections.map((c) => (
                                 <BranchConnection
                                     key={`${c.fromId}-${c.toId}`}
-                                    from={{ x: c.from.x * xOffset, y: c.from.y * p.yOffset }}
-                                    to={{ x: c.to.x * xOffset, y: c.to.y * p.yOffset }}
-                                    fromSplit={c.split[1] * xOffset}
-                                    toSplit={c.split[0] * xOffset}
+                                    id={`${c.fromId}-${c.toId}`}
+                                    from={pos(c.from.x, c.from.y)}
+                                    to={pos(c.to.x, c.to.y)}
+                                    fromSplit={c.split[1] * flowSpacing}
+                                    toSplit={c.split[0] * flowSpacing}
                                     curveSize={p.curveSize}
                                     color={c.color}
                                     lineWidth={p.lineWidth}
+                                    vertical={vertical}
+                                    arrow={p.showArrows}
+                                    nodeRadius={disposition}
                                 />
                             ))}
-                            {layout.nodes.map(({ node, cell }) => (
-                                <BranchNode
-                                    key={node.id}
-                                    node={node}
-                                    x={cell.x * xOffset}
-                                    y={cell.y * p.yOffset}
-                                    size={p.nodeSize}
-                                    borderWidth={p.nodeBorderWidth}
-                                    textSpace={Math.max(40, xOffset - 30)}
-                                    backgroundColor={p.backgroundColor}
-                                    selected={node.id === p.selectedNode}
-                                    onClick={this.onNodeClick}
-                                />
-                            ))}
+                            {layout.nodes.map(({ node, cell }) => {
+                                const pt = pos(cell.x, cell.y);
+                                return (
+                                    <BranchNode
+                                        key={node.id}
+                                        node={node}
+                                        x={pt.x}
+                                        y={pt.y}
+                                        size={p.nodeSize}
+                                        borderWidth={p.nodeBorderWidth}
+                                        textSpace={textSpace}
+                                        backgroundColor={p.backgroundColor}
+                                        selected={node.id === p.selectedNode}
+                                        onClick={this.onNodeClick}
+                                    />
+                                );
+                            })}
                         </div>
                     )}
                 </div>
