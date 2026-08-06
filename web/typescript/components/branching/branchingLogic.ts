@@ -189,15 +189,18 @@ interface Placed {
 }
 
 /**
- * BFS layout. Faithful port of the original three passes:
- *  1. BFS from the root, one column per depth, row = the category's rank.
- *     A node reached twice is recorded as a duplicate edge, not re-placed.
- *  2. Duplicate resolution: when an edge points backwards or sideways
- *     (origin at/after the target's column), the target and its whole
- *     subtree are pushed right until the arrow points forward again.
- *  3. Split routing: each connector picks the horizontal hand-off column —
- *     the midpoint when the corridor is clear, otherwise the nearest free
- *     half-cells on each side.
+ * Layered ("Sugiyama-style") layout. Replaces the original BFS + forward-push:
+ *  1. Cycle-break: a DFS from the root classifies each edge as forward or a
+ *     BACK edge (one pointing to an ancestor still on the DFS stack).
+ *  2. Layer assignment: longest path over the forward DAG gives each node its
+ *     column. A loop no longer shoves the whole downstream subtree right to
+ *     keep arrows forward — the layers stay compact and the loop is simply
+ *     drawn as a backward connector (computeConnector routes it clear of the
+ *     nodes between). Row = the category's rank, as before.
+ *  3. Split routing (unchanged): each connector picks its horizontal hand-off.
+ * Only nodes reachable from the root are placed; the rest are diagnose()'d.
+ * Same contract as the original: siblings share a column, so distinct
+ * categories must separate them into rows or they overlap.
  */
 export function layoutTree(input: BranchNode[]): Layout {
     const nodes = new Map<number, BranchNode>();
@@ -211,68 +214,73 @@ export function layoutTree(input: BranchNode[]): Layout {
     const rowOf: { [category: number]: number } = {};
     categories.forEach((c, i) => { rowOf[c] = i; });
 
-    const placed = new Map<number, Placed>();
-    const levels: Array<Array<number | undefined>> = categories.map(() => []);
-    const queued = new Set<number>([rootId]);
-    const duplicates: Array<[number, number]> = []; // [targetId, originId]
-    let maxX = 0;
-
-    const root = nodes.get(rootId)!;
-    const buffer: Array<[BranchNode, Cell, number]> = [[root, { x: 0, y: rowOf[root.category] }, -1]];
-
-    while (buffer.length > 0) {
-        const [node, cell, originId] = buffer.shift()!;
-        for (const childId of node.nextId) {
-            const child = nodes.get(childId);
-            if (!child) {
-                continue; // dangling edge — dropped, never crashes the layout
-            }
-            if (queued.has(childId)) {
-                duplicates.push([childId, node.id]);
-            } else {
-                buffer.push([child, { x: cell.x + 1, y: rowOf[child.category] }, node.id]);
-                queued.add(childId);
-            }
-            levels[cell.y][cell.x] = node.id;
-        }
-        maxX = Math.max(maxX, cell.x);
-        placed.set(node.id, {
-            node, cell,
-            origins: originId === -1 ? [] : [{ id: originId, split: [0, 0] }]
-        });
-    }
-
-    for (const [targetId, originId] of duplicates) {
-        const origin = placed.get(originId);
-        const target = placed.get(targetId);
-        if (!origin || !target) {
+    // 1. Cycle-break: iterative DFS (safe on deep graphs). An edge to a node
+    //    still on the stack is a back-edge; everything reached is `reachable`.
+    const backEdge = new Set<string>();
+    const reachable = new Set<number>([rootId]);
+    const visited = new Set<number>([rootId]);
+    const onStack = new Set<number>([rootId]);
+    const dfs: Array<[number, number]> = [[rootId, 0]]; // [nodeId, next child index]
+    while (dfs.length > 0) {
+        const frame = dfs[dfs.length - 1];
+        const kids = nodes.get(frame[0])!.nextId;
+        if (frame[1] >= kids.length) {
+            onStack.delete(frame[0]);
+            dfs.pop();
             continue;
         }
-        if (origin.cell.x >= target.cell.x) {
-            const behind = origin.cell.x - target.cell.x + 1;
-            const forward: number[] = [targetId];
-            const done = new Set<number>();
-            while (forward.length > 0) {
-                const id = forward.shift()!;
-                if (done.has(id)) {
-                    continue;
-                }
-                const p = placed.get(id);
-                if (!p) {
-                    continue;
-                }
-                if (levels[p.cell.y][p.cell.x] === id) {
-                    levels[p.cell.y][p.cell.x] = undefined;
-                }
-                p.cell.x += behind;
-                maxX = Math.max(maxX, p.cell.x);
-                levels[p.cell.y][p.cell.x] = id;
-                forward.push(...p.node.nextId);
-                done.add(id);
+        const child = kids[frame[1]++];
+        if (!nodes.has(child)) {
+            continue; // dangling edge — ignored
+        }
+        if (onStack.has(child)) {
+            backEdge.add(`${frame[0]}-${child}`);
+        } else if (!visited.has(child)) {
+            visited.add(child);
+            reachable.add(child);
+            onStack.add(child);
+            dfs.push([child, 0]);
+        }
+    }
+
+    // 2. Longest-path layer assignment over the forward (non-back) edges.
+    const forwardKids = (id: number): number[] =>
+        nodes.get(id)!.nextId.filter((t) => reachable.has(t) && !backEdge.has(`${id}-${t}`));
+    const indeg = new Map<number, number>();
+    reachable.forEach((id) => indeg.set(id, 0));
+    reachable.forEach((id) => forwardKids(id).forEach((t) => indeg.set(t, indeg.get(t)! + 1)));
+    const layer = new Map<number, number>();
+    const ready: number[] = [];
+    reachable.forEach((id) => { if (indeg.get(id) === 0) { layer.set(id, 0); ready.push(id); } });
+    while (ready.length > 0) {
+        const u = ready.shift()!;
+        for (const t of forwardKids(u)) {
+            layer.set(t, Math.max(layer.get(t) ?? 0, layer.get(u)! + 1));
+            indeg.set(t, indeg.get(t)! - 1);
+            if (indeg.get(t) === 0) {
+                ready.push(t);
             }
         }
-        target.origins.push({ id: originId, split: [0, 0] });
     }
+
+    // 3. Place nodes into (layer, row) cells; record every edge on its target.
+    const placed = new Map<number, Placed>();
+    const levels: Array<Array<number | undefined>> = categories.map(() => []);
+    let maxX = 0;
+    reachable.forEach((id) => {
+        const node = nodes.get(id)!;
+        const cell: Cell = { x: layer.get(id) ?? 0, y: rowOf[node.category] };
+        maxX = Math.max(maxX, cell.x);
+        levels[cell.y][cell.x] = id;
+        placed.set(id, { node, cell, origins: [] });
+    });
+    reachable.forEach((id) => {
+        for (const t of nodes.get(id)!.nextId) {
+            if (reachable.has(t)) {
+                placed.get(t)!.origins.push({ id, split: [0, 0] });
+            }
+        }
+    });
 
     for (const { cell, origins } of placed.values()) {
         let minNodeSplit = cell.x - 1;

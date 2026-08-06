@@ -8,6 +8,18 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Branching Diagram: layered layout (replaces BFS + forward-push)
+The layout is now **layered/Sugiyama-style**: a DFS cycle-break classifies
+back-edges, then **longest-path layer assignment** sets each node's column.
+The original BFS pushed a re-referenced node and its whole subtree right to
+keep every arrow pointing forward — a single rework loop inflated the graph
+(a long empty connector, nodes clustered far right). Longest-path keeps the
+layers compact and draws the loop as a backward connector (which already
+routes clear of intervening nodes). Same data contract and category→row
+model; only the column assignment changed. This is a deliberate divergence
+from the ported original (whose loop handling stays as-is). +1 jest case
+(a loop no longer inflates `maxX`); the existing demos render more compactly.
+
 ## [0.4.0] - 2026-08-05
 
 ### Branching Diagram (new component — migrated from ignition-mustry-ui)

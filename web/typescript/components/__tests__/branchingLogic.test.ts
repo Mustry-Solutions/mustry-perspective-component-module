@@ -65,9 +65,9 @@ describe('layoutTree — BFS placement', () => {
 });
 
 describe('layoutTree — duplicate forwarding', () => {
-    it('pushes a re-referenced node (and its subtree) right of its late origin', () => {
-        // 1 → 2 → 3, and 3 → 2 would be a cycle; instead: 1 → 2, 1 → 3, 3 → 2:
-        // BFS places 2 at x=1; the later edge 3→2 (3 also at x=1) must push 2 to x=2.
+    it('a re-referenced node takes its LONGEST forward path as its column', () => {
+        // 1 → 2, 1 → 3, 3 → 2: 3→2 is a forward cross-edge (not a loop), so 2's
+        // longest path is 1→3→2 and it lands at column 2 (past its second origin).
         const layout = layoutTree([
             n({ id: 1, category: 0, nextId: [2, 3] }),
             n({ id: 2, category: 0, nextId: [] }),
@@ -75,13 +75,13 @@ describe('layoutTree — duplicate forwarding', () => {
         ]);
         const c = cells(layout);
         expect(c[3]).toEqual([1, 1]);
-        expect(c[2][0]).toBe(2); // forwarded past its second origin
+        expect(c[2][0]).toBe(2);
         expect(layout.maxX).toBe(2);
         // Both edges into 2 exist.
         expect(layout.connections.filter((x) => x.toId === 2).map((x) => x.fromId).sort()).toEqual([1, 3]);
     });
 
-    it('forwarding carries the whole downstream subtree', () => {
+    it('the longest path carries the whole downstream subtree', () => {
         const layout = layoutTree([
             n({ id: 1, category: 0, nextId: [2, 3] }),
             n({ id: 2, category: 0, nextId: [4] }),
@@ -90,7 +90,26 @@ describe('layoutTree — duplicate forwarding', () => {
         ]);
         const c = cells(layout);
         expect(c[2][0]).toBe(2);
-        expect(c[4][0]).toBe(3); // child moved with its parent
+        expect(c[4][0]).toBe(3); // child sits one column past its parent
+    });
+
+    it('a true LOOP (back-edge) stays compact — the target is NOT pushed', () => {
+        // 1→2→3→4 with 4→2 a loop (2 is an ancestor of 4). The old algorithm
+        // shoved 2,3,4 right to keep arrows forward (maxX 6); longest-path keeps
+        // them at their forward layers (maxX 3) and draws 4→2 as a back-edge.
+        const layout = layoutTree([
+            n({ id: 1, category: 0, nextId: [2] }),
+            n({ id: 2, category: 0, nextId: [3] }),
+            n({ id: 3, category: 0, nextId: [4] }),
+            n({ id: 4, category: 1, nextId: [2] })
+        ]);
+        const c = cells(layout);
+        expect(c[1][0]).toBe(0);
+        expect(c[2][0]).toBe(1); // NOT pushed by the loop
+        expect(c[3][0]).toBe(2);
+        expect(c[4][0]).toBe(3);
+        expect(layout.maxX).toBe(3);
+        expect(layout.connections.some((x) => x.fromId === 4 && x.toId === 2)).toBe(true);
     });
 });
 
