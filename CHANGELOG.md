@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Branching Diagram: richer edge model (per-edge colour / style / width)
+`data.edgeLabels` entries now carry optional **`color`**, **`style`**
+(`solid`/`dashed`/`dotted`) and **`width`** alongside `label` — so an edge
+can be, say, a dashed red fallback branch instead of inheriting the source
+node's colour and the global `config.lineWidth`. Purely additive (existing
+`{from, to, label}` entries are unchanged; no override = the old defaults),
+so it passes the additive-only schema guard. Each connector SVG also gains a
+`data-edge="<from>-<to>"` attribute for targeting. Demo `/branching-labels`
+now colours/dashes its branches; +1 e2e.
+
 ### Branching Diagram: layered layout (replaces BFS + forward-push)
 The layout is now **layered/Sugiyama-style**: a DFS cycle-break classifies
 back-edges, then **longest-path layer assignment** sets each node's column.

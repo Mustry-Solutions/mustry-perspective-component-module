@@ -22,10 +22,22 @@ export interface BranchingProps {
     locale: string;
     labels: BranchingLabels;
     nodes: BranchNode[];
-    /** Optional per-edge labels, keyed `${fromId}-${toId}` ('' when none). */
-    edgeLabels: { [key: string]: string };
+    /** Per-edge overrides (label + styling), keyed `${fromId}-${toId}`. */
+    edges: { [key: string]: EdgeOverride };
     /** state.selectedNode (two-way) — the selected node's id, -1 = none. */
     selectedNode: number;
+}
+
+/** Per-edge visual overrides parsed from `data.edgeLabels`. */
+export interface EdgeOverride {
+    /** Text on the connector ('' = none). */
+    label: string;
+    /** Connector colour ('' = inherit the source node's colour). */
+    color: string;
+    /** Line style. */
+    style: 'solid' | 'dashed' | 'dotted';
+    /** Stroke width, px (0 = use config.lineWidth). */
+    width: number;
 }
 
 export function mapBranchingProps(tree: PropReader): BranchingProps {
@@ -50,22 +62,26 @@ export function mapBranchingProps(tree: PropReader): BranchingProps {
         locale,
         labels: labels as unknown as BranchingLabels,
         nodes: (tree.readArray('data.nodes', []) || []).map(normalizeBranchNode),
-        edgeLabels: buildEdgeLabels(tree.readArray('data.edgeLabels', []) || []),
+        edges: buildEdges(tree.readArray('data.edgeLabels', []) || []),
         selectedNode: tree.readNumber('state.selectedNode', -1)
     };
 }
 
-/** Turn the bound `data.edgeLabels` array into a `${from}-${to}` → text map. */
-function buildEdgeLabels(raw: any[]): { [key: string]: string } {
-    const out: { [key: string]: string } = {};
+/** Turn the bound `data.edgeLabels` array into a `${from}-${to}` → override map. */
+function buildEdges(raw: any[]): { [key: string]: EdgeOverride } {
+    const out: { [key: string]: EdgeOverride } = {};
     for (const e of raw) {
         if (!e || e.from == null || e.to == null) {
             continue;
         }
-        const label = e.label == null ? '' : String(e.label);
-        if (label !== '') {
-            out[`${Number(e.from)}-${Number(e.to)}`] = label;
-        }
+        const style = e.style === 'dashed' || e.style === 'dotted' ? e.style : 'solid';
+        const width = Number(e.width);
+        out[`${Number(e.from)}-${Number(e.to)}`] = {
+            label: e.label == null ? '' : String(e.label),
+            color: e.color == null ? '' : String(e.color),
+            style,
+            width: isFinite(width) && width > 0 ? width : 0
+        };
     }
     return out;
 }

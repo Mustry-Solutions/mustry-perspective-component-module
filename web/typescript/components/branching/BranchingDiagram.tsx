@@ -155,25 +155,32 @@ export class BranchingDiagram extends Component<ComponentProps<BranchingProps>, 
                         <div className="mustry-branch-empty">{this.emptyMessage()}</div>
                     ) : (
                         <div className="mustry-branch-canvas" style={{ transform: translate }}>
-                            {layout.connections.map((c) => (
-                                <BranchConnection
-                                    key={`${c.fromId}-${c.toId}`}
-                                    id={`${c.fromId}-${c.toId}`}
-                                    from={pos(c.from.x, c.from.y)}
-                                    to={pos(c.to.x, c.to.y)}
-                                    fromSplit={c.split[1] * flowSpacing}
-                                    toSplit={c.split[0] * flowSpacing}
-                                    curveSize={p.curveSize}
-                                    color={c.color}
-                                    lineWidth={p.lineWidth}
-                                    vertical={vertical}
-                                    arrow={p.showArrows}
-                                    nodeRadius={disposition}
-                                    haloPad={vertical ? 0 : PILL_PADDING}
-                                />
-                            ))}
                             {layout.connections.map((c) => {
-                                const label = p.edgeLabels[`${c.fromId}-${c.toId}`];
+                                // Per-edge overrides fall back to the connector's
+                                // inherited colour / config width / solid line.
+                                const ov = p.edges[`${c.fromId}-${c.toId}`];
+                                return (
+                                    <BranchConnection
+                                        key={`${c.fromId}-${c.toId}`}
+                                        id={`${c.fromId}-${c.toId}`}
+                                        from={pos(c.from.x, c.from.y)}
+                                        to={pos(c.to.x, c.to.y)}
+                                        fromSplit={c.split[1] * flowSpacing}
+                                        toSplit={c.split[0] * flowSpacing}
+                                        curveSize={p.curveSize}
+                                        color={(ov && ov.color) || c.color}
+                                        lineWidth={(ov && ov.width) || p.lineWidth}
+                                        dash={ov ? ov.style : 'solid'}
+                                        vertical={vertical}
+                                        arrow={p.showArrows}
+                                        nodeRadius={disposition}
+                                        haloPad={vertical ? 0 : PILL_PADDING}
+                                    />
+                                );
+                            })}
+                            {layout.connections.map((c) => {
+                                const ov = p.edges[`${c.fromId}-${c.toId}`];
+                                const label = ov && ov.label;
                                 if (!label) {
                                     return null;
                                 }

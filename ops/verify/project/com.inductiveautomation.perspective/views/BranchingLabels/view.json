@@ -20,7 +20,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Edge labels demo \u2014 data.edgeLabels tags decision branches (Yes/No/Wait/Cancel). Unlabelled edges stay bare.",
+          "text": "Edge labels + styling demo \u2014 data.edgeLabels tags branches (Yes/No/Wait/Cancel) and styles them: green \"Yes\", red \"No\", dotted \"Wait\", dashed-red \"Cancel\". Unstyled edges use the source-node colour + config.lineWidth, solid.",
           "style": {
             "fontSize": "13px"
           }
@@ -125,22 +125,27 @@
               {
                 "from": 2,
                 "to": 3,
-                "label": "Yes"
+                "label": "Yes",
+                "color": "#2e7d32"
               },
               {
                 "from": 2,
                 "to": 4,
-                "label": "No"
+                "label": "No",
+                "color": "#d32f2f"
               },
               {
                 "from": 4,
                 "to": 5,
-                "label": "Wait"
+                "label": "Wait",
+                "style": "dotted"
               },
               {
                 "from": 4,
                 "to": 6,
-                "label": "Cancel"
+                "label": "Cancel",
+                "color": "#d32f2f",
+                "style": "dashed"
               }
             ]
           }
