@@ -13,7 +13,7 @@ An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiv
 
 The components are **free and open-source** under the [Apache-2.0 License](LICENSE) — use them in any Perspective project, on any number of gateways, at no cost. The module is not license-gated: there's no trial or activation. Bundled open-source components are credited in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-Need more than the components? **Professional support, custom components, and integration work** are available from Mustry Solutions — email `sam.donche@mustrysolutions.com` or start a [Discussion](https://github.com/Mustry-Solutions/mustry-perspective-component-module/discussions).
+Need more than the components? **Professional support, custom components, and integration work** are available from Mustry Solutions — get in touch at [mustrysolutions.com/contact-us](https://mustrysolutions.com/contact-us) or start a [Discussion](https://github.com/Mustry-Solutions/mustry-perspective-component-module/discussions).
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and our [Code of Conduct](CODE_OF_CONDUCT.md).
 
