@@ -15,9 +15,14 @@ The project is now **open-source under the Apache-2.0 License** and public on
 GitHub (`Mustry-Solutions/mustry-perspective-component-module`). The module is
 free (`isFreeModule` = true), so source and binary are both open. The
 install-time notice (`license.html`) was rewritten to align with Apache-2.0
-(dropping the old no-redistribute / no-reverse-engineer clauses; keeping
-copyright, third-party-license notice, trademark, no-warranty, liability and
-safety language). Added community-health files (CONTRIBUTING with a DCO flow,
+(dropping the old no-redistribute / no-reverse-engineer clauses) and finalized:
+legal entity **Mustry Solutions BV** (BE 0790.722.422), professional/business
+use, sharpened safety-critical language (not certified for safety-instrumented
+/ life-safety functions), "to the maximum extent permitted by applicable law"
+and non-excludable-liability carve-outs, and a no-data-collection statement.
+Added **`THIRD-PARTY-NOTICES.md`** listing the ~222 bundled open-source
+components and their licenses (mostly MIT/BSD/ISC). Added community-health
+files (CONTRIBUTING with a DCO flow,
 CODE_OF_CONDUCT, SECURITY, issue/PR templates, CODEOWNERS), README badges and
 a "Licensing & support" section, Dependabot config (minor/patch + security;
 majors taken deliberately), and least-privilege CI permissions.
