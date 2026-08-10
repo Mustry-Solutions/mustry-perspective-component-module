@@ -154,13 +154,24 @@ isValid}`).
 
 ## 12b. Branching Diagram
 
-A left-to-right decision-tree / flow-path renderer. Feed `data.nodes` a
-flat array (`id`, `name`, `category`, `nextId[]`, colour, icon, tooltip);
-the root is inferred and the BFS layout places one column per depth and
-one row per category, pushing re-referenced nodes forward so arrows always
-point right. Clicking a node selects it (`state.selectedNode`, two-way)
-and fires `onNodeClick`. Columns stretch to the component's width and
-never compress below `config.minXOffset`. Theming: `--brn-*`.
+A decision-tree / flow-path renderer. Feed `data.nodes` a flat array
+(`id`, `name`, `category`, `nextId[]`, colour, icon, markdown tooltip); the
+root is inferred and a **layered (Sugiyama-style)** layout places each node
+by its longest path — one column per depth, one row per category — so a
+loop draws as a clean backward connector instead of shoving the rest of the
+graph sideways. Columns stretch to the component's width and never compress
+below `config.minXOffset`. Clicking a node selects it (`state.selectedNode`,
+two-way) and fires `onNodeClick`.
+
+Options worth knowing:
+
+- **`config.orientation`** — `horizontal` (default) or `vertical` (top-to-bottom).
+- **`config.showArrows`** — arrowheads at each connector's target (off by default).
+- **`data.edgeLabels`** — per-edge overrides `[{from, to, label?, color?, style?, width?}]`: a mid-point label plus optional colour, line `style` (`solid`/`dashed`/`dotted`) and width — e.g. a dashed red fallback branch.
+- **Hover info card** — a node's `tooltip` renders as markdown on hover.
+- **`output.warnings`** — when a dataset won't fully draw (no edges, a cycle, edges to unknown ids, nodes unreachable from the root) the reason is surfaced here and in the empty-state message, instead of a blank canvas.
+
+Theming: `--brn-*`.
 
 ## 13. The admin family
 
