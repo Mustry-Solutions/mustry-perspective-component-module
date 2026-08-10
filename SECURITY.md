@@ -9,7 +9,7 @@ Instead, use one of these private channels:
 
 - **GitHub Private Vulnerability Reporting** — on this repository, go to the
   **Security** tab → **Report a vulnerability** (preferred).
-- **Email** — `sam.donche@mustrysolutions.com` with the details below.
+- **Email** — `hello@mustrysolutions.com` with the details below.
 
 Please include:
 

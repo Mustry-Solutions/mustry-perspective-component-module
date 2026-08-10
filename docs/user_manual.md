@@ -254,4 +254,4 @@ tick so a save in one refreshes the others.
 ## 19. Support
 
 - Component reference and prop tables: `README.md` in the repository.
-- Questions: sam.donche@mustrysolutions.com
+- Questions: https://mustrysolutions.com/contact-us
