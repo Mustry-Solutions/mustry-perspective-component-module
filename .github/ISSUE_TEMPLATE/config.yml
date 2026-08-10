@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas (Discussions)
+    url: https://github.com/Mustry-Solutions/mustry-perspective-component-module/discussions
+    about: Ask a question, share how you're using the components, or float an idea before filing a feature request.
+  - name: Security vulnerability
+    url: https://github.com/Mustry-Solutions/mustry-perspective-component-module/security/advisories/new
+    about: Report a security issue privately (never in a public issue).

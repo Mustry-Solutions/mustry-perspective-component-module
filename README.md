@@ -1,9 +1,21 @@
 # Mustry Perspective Components
 
+[![CI](https://github.com/Mustry-Solutions/mustry-perspective-component-module/actions/workflows/ci.yml/badge.svg)](https://github.com/Mustry-Solutions/mustry-perspective-component-module/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Mustry-Solutions/mustry-perspective-component-module)](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships fourteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Branching Diagram**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
 
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
+
+## Licensing & support
+
+The components are **free and open-source** under the [Apache-2.0 License](LICENSE) — use them in any Perspective project, on any number of gateways, at no cost. The module is not license-gated: there's no trial or activation.
+
+Need more than the components? **Professional support, custom components, and integration work** are available from Mustry Solutions — email `sam.donche@mustrysolutions.com` or start a [Discussion](https://github.com/Mustry-Solutions/mustry-perspective-component-module/discussions).
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 

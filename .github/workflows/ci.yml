@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: CI only reads the repo (no writes, no packages, etc.).
+# Fork PRs already run without secrets — this keeps the token read-only too.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build & test

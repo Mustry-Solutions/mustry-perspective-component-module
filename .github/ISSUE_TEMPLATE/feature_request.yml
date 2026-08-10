@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a new component, option, or improvement
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The use case or pain point — not just the proposed solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would the component/option do? Which props/events?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives / workarounds
+      description: How do you handle this today (native Perspective, Exchange, hacks)?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - New component
+        - Branching Diagram
+        - Calendar / Timeline
+        - Data Grid
+        - Admin family
+        - Editors (Rich Text / Code)
+        - Other / cross-cutting

@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in a component doesn't work as expected
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! For **security** issues, do not file here — see SECURITY.md.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Branching Diagram
+        - Calendar / Scheduler
+        - Resource Timeline
+        - Data Grid
+        - Pan & Zoom View
+        - Rich Text Editor
+        - Code/JSON Editor
+        - Color Picker
+        - On-Screen Keyboard
+        - Schedule Manager
+        - Roster Manager
+        - User Manager
+        - Holiday Manager
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: module-version
+    attributes:
+      label: Module version
+      placeholder: "e.g. 0.4.0"
+    validations:
+      required: true
+  - type: input
+    id: ignition-version
+    attributes:
+      label: Ignition gateway version
+      placeholder: "e.g. 8.3.6"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / Perspective client
+      placeholder: "e.g. Chrome 125, Perspective mobile app, Designer preview"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal Perspective view JSON, prop config, or script helps a lot.
+      placeholder: |
+        1. Bind data.nodes to …
+        2. Set config.… to …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Logs / screenshots
+      description: Gateway logs, browser console errors, or screenshots.
