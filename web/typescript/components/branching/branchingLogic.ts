@@ -1,12 +1,13 @@
 // Pure layout logic for the Branching Diagram — no DOM, node-tested.
 //
-// Ported from ignition-mustry-ui's BranchingComponent (its one real asset):
-// a left-to-right directed tree laid out by BFS, with category→row mapping,
-// forward-pushing of nodes that are reached again later (so arrows always
-// point right), and connector split-point routing that prefers the midpoint
-// but detours around occupied cells. The original embedded this in the React
-// class; here it is extracted pure and returns positioned DATA — the shell
-// maps it to elements.
+// Originally ported from ignition-mustry-ui's BranchingComponent, then the
+// placement was rewritten from that BFS + forward-push scheme to a layered
+// ("Sugiyama-style") layout: a cycle-break pass classifies back-edges, then
+// longest-path layer assignment sets each node's column (category → row).
+// A loop no longer shoves its downstream subtree sideways — it just draws as
+// a backward connector. Connector split-point routing (kept from the port)
+// prefers the midpoint but detours around occupied cells. Returns positioned
+// DATA — the shell maps it to elements.
 
 export interface BranchNode {
     id: number;
@@ -19,7 +20,7 @@ export interface BranchNode {
     /** Fill the icon disc with the node colour (false = outline only). */
     fill: boolean;
     icon: { path: string; color: string } | null;
-    /** Info-card text shown on hover ('' = none). Plain text this milestone. */
+    /** Info-card text shown on hover ('' = none). Rendered as markdown. */
     tooltip: string;
     /** Per-node style passthroughs (open objects from the bound data). */
     style: object;
@@ -45,7 +46,7 @@ export function normalizeBranchNode(raw: any): BranchNode {
     };
 }
 
-/** Grid cell (x = BFS depth column, y = category row). */
+/** Grid cell (x = depth/layer column, y = category row). */
 export interface Cell {
     x: number;
     y: number;
@@ -110,7 +111,7 @@ export interface BranchDiagnosis {
  * instead of a silent empty canvas. Purely additive — it never changes what
  * renders; it just reports: no edges at all, a cycle (every node referenced,
  * so no entry point), edges pointing at unknown ids, and nodes unreachable
- * from the root (which the BFS layout silently drops).
+ * from the root (which the layout silently drops).
  */
 export function diagnose(nodes: BranchNode[]): BranchDiagnosis {
     const warnings: BranchWarning[] = [];
@@ -157,7 +158,7 @@ export function diagnose(nodes: BranchNode[]): BranchDiagnosis {
         return { rootId, warnings };
     }
 
-    // Reachability: the BFS layout only places nodes reachable from the root.
+    // Reachability: the layout only places nodes reachable from the root.
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const reached = new Set<number>([rootId]);
     const queue = [rootId];
