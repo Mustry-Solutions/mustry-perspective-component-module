@@ -1,0 +1,3 @@
+# Default owner for everything — auto-requests review on PRs.
+# TODO: switch to an org team (e.g. @Mustry-Solutions/maintainers) once one exists.
+* @sdonche
