@@ -43,7 +43,7 @@
     },
     "devDependencies": {
         "@types/jest": "^29.5.0",
-        "@types/node": "18.19.0",
+        "@types/node": "18.19.130",
         "@types/react": "16.14.34",
         "@types/react-dom": "16.9.17",
         "css-loader": "^6.7.3",
@@ -52,12 +52,12 @@
         "mini-css-extract-plugin": "^2.7.2",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",
-        "sass": "^1.58.0",
+        "sass": "^1.102.0",
         "sass-loader": "^12.6.0",
-        "ts-jest": "^29.1.0",
+        "ts-jest": "^29.4.12",
         "ts-loader": "^9.4.2",
         "typescript": "^4.9.5",
-        "webpack": "^5.76.0",
+        "webpack": "^5.109.2",
         "webpack-cli": "^4.10.0"
     }
 }
