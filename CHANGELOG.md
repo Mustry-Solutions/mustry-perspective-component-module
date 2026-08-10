@@ -1,12 +1,36 @@
 # Changelog
 
-All notable changes to the Mustry Solutions Ingots module.
+All notable changes to the Mustry Perspective Components module.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow
 semver. **Pre-1.0, the prop schemas may still change** — the CI schema guard
 (`ops/schema-guard.sh`) flags any removed/renamed key so breakage is always a
 deliberate decision, never an accident.
 
 ## [Unreleased]
+
+## [0.5.0] - 2026-08-10
+
+### Open-source: Apache-2.0 + public repository
+The project is now **open-source under the Apache-2.0 License** and public on
+GitHub (`Mustry-Solutions/mustry-perspective-component-module`). The module is
+free (`isFreeModule` = true), so source and binary are both open. The
+install-time notice (`license.html`) was rewritten to align with Apache-2.0
+(dropping the old no-redistribute / no-reverse-engineer clauses; keeping
+copyright, third-party-license notice, trademark, no-warranty, liability and
+safety language). Added community-health files (CONTRIBUTING with a DCO flow,
+CODE_OF_CONDUCT, SECURITY, issue/PR templates, CODEOWNERS), README badges and
+a "Licensing & support" section, Dependabot config (minor/patch + security;
+majors taken deliberately), and least-privilege CI permissions.
+
+### Documentation
+Refreshed the user manual (§ Branching) and code comments to match the current
+layered layout and feature set (arrows, orientation, edge styling, markdown
+info card, `output.warnings`); fixed stale identity/links.
+
+### Dependencies
+Gradle 8→9 (verified: signed build + e2e pass); GitHub Actions bumped
+(checkout/setup-java/cache/upload-artifact); `@inductiveautomation/perspective-client`
+2.3.7→2.3.8 and other npm minor/patch updates.
 
 ### Branching Diagram: richer edge model (per-edge colour / style / width)
 `data.edgeLabels` entries now carry optional **`color`**, **`style`**

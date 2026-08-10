@@ -15,7 +15,7 @@ A directed tree laid out horizontally from a flat node array (`id`,
 `category`, `nextId[]`, colour, icon, name, markdown tooltip): BFS layout
 with category→row mapping, duplicate-node forward-pushing, SVG connector
 routing, width-responsive re-layout, Ignition `IconRenderer` icons and
-markdown info-cards. **No overlap** with any of our thirteen components —
+markdown info-cards. **No overlap** with any of our other components —
 it lands next to Pan & Zoom in the display family and answers the
 "React-Flow-style node graph" demand noted in `component-ideas.md`
 (read-only half of it). The layout algorithm (~250 lines) is the real

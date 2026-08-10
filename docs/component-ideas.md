@@ -54,11 +54,10 @@ theming. Suggested libraries noted per item.
 
 ## Status
 
-The **Calendar / Scheduler** ([`calendar-component-plan.md`](calendar-component-plan.md))
-and the **Resource Timeline** ([`resource-timeline-plan.md`](resource-timeline-plan.md))
+The **Calendar / Scheduler** and the **Resource Timeline**
 are built and shipping in the module.
 
-The **editable data grid** ([`data-grid-plan.md`](data-grid-plan.md)) is
+The **editable data grid** is
 built and shipping (M0–M3 core; custom build — the AG-Grid note below is
 historical: its row grouping is Enterprise-only anyway).
 
@@ -67,4 +66,4 @@ idea, demand-validated (Canny "zoom and pan for large view", the 2019 pan/zoom
 container thread, the Exchange "Pan Zoom Frame" hack) — is built and shipping
 (M0–M2): embed any view by path + params and navigate it like a map, with
 scriptable two-way center/zoom (animated fly-to), pinch zoom, and localized
-controls. See [`panzoom-view-plan.md`](panzoom-view-plan.md).
+controls.
