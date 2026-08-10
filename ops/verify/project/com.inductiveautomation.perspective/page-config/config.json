@@ -92,10 +92,6 @@
    "viewPath": "BranchingVertical",
    "viewParams": {}
   },
-  "/branching-compare": {
-   "viewPath": "BranchingCompare",
-   "viewParams": {}
-  },
   "/branching-cycle": {
    "viewPath": "BranchingCycle",
    "viewParams": {}
