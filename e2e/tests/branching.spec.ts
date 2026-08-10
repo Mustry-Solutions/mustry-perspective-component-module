@@ -81,6 +81,19 @@ test.describe('Branching Diagram', () => {
         }
     });
 
+    test('per-edge styling: colour, dashed and dotted overrides render', async ({ page }) => {
+        const root = await openRoute(page, '/branching-labels', '.mustry-branching');
+        // Direct-child paths only — `> path` skips the arrow marker's path in <defs>.
+        const seg = (edge: string) => root.locator(`.mustry-branch-path[data-edge="${edge}"] > path`).first();
+        // 2→3 "Yes" is coloured green; 4→6 "Cancel" is a dashed red fallback.
+        await expect(seg('2-3')).toHaveAttribute('stroke', '#2e7d32');
+        await expect(seg('4-6')).toHaveAttribute('stroke', '#d32f2f');
+        await expect(seg('4-6')).toHaveAttribute('stroke-dasharray', /\d/);
+        // 4→5 "Wait" is dotted (round caps); the trunk 1→2 stays solid.
+        await expect(seg('4-5')).toHaveAttribute('stroke-linecap', 'round');
+        await expect(seg('1-2')).not.toHaveAttribute('stroke-dasharray', /\d/);
+    });
+
     test('vertical orientation lays the tree top-to-bottom without clipping labels', async ({ page }) => {
         const root = await openRoute(page, '/branching-vertical', '.mustry-branching');
         await expect(root.locator('.mustry-branch-node')).toHaveCount(6);

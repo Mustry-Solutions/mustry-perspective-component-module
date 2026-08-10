@@ -25,6 +25,19 @@ interface BranchConnectionProps {
     nodeRadius: number;
     /** Extra trim so the tip clears the node's pill halo on the approach axis. */
     haloPad: number;
+    /** Line style. */
+    dash: 'solid' | 'dashed' | 'dotted';
+}
+
+/** SVG dash pattern for a line style, scaled to the stroke width. */
+function dashArray(style: string, width: number): string | undefined {
+    if (style === 'dashed') {
+        return `${width * 3} ${width * 2}`;
+    }
+    if (style === 'dotted') {
+        return `${width} ${width * 2}`;
+    }
+    return undefined;
 }
 
 /**
@@ -45,9 +58,12 @@ export function BranchConnection(props: BranchConnectionProps): JSX.Element {
         props.arrow ? props.nodeRadius + props.haloPad + props.lineWidth : 0
     );
     const markerId = `brn-arrow-${props.id}`;
+    const dash = dashArray(props.dash, props.lineWidth);
+    const linecap = props.dash === 'dotted' ? 'round' : undefined;
     return (
         <svg
             className="mustry-branch-path"
+            data-edge={props.id}
             style={{ left: geo.left, top: geo.top, width: geo.width, height: geo.height }}
         >
             {props.arrow && (
@@ -71,6 +87,8 @@ export function BranchConnection(props: BranchConnectionProps): JSX.Element {
                     d={d}
                     stroke={stroke}
                     strokeWidth={props.lineWidth}
+                    strokeDasharray={dash}
+                    strokeLinecap={linecap}
                     fill="none"
                     markerEnd={props.arrow && i === geo.segments.length - 1 ? `url(#${markerId})` : undefined}
                 />

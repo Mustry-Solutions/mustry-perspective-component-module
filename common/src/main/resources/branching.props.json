@@ -104,21 +104,35 @@
         "edgeLabels": {
           "type": "array",
           "default": [],
-          "description": "Optional labels for connectors, e.g. Yes/No on a decision branch. Each item targets an existing edge by its endpoint ids; edges without an entry are unlabelled.",
+          "description": "Optional per-edge overrides — label and/or styling (colour, line style, width), e.g. a dashed red fallback branch or a Yes/No decision label. Each item targets an existing edge by its endpoint ids; edges without an entry use the defaults (source-node colour, config.lineWidth, solid).",
           "items": {
             "type": "object",
             "properties": {
               "from": {
                 "type": "number",
-                "description": "Source node id of the edge to label."
+                "description": "Source node id of the edge."
               },
               "to": {
                 "type": "number",
-                "description": "Target node id of the edge to label."
+                "description": "Target node id of the edge."
               },
               "label": {
                 "type": "string",
                 "description": "Text shown on the connector."
+              },
+              "color": {
+                "type": "string",
+                "format": "color",
+                "description": "Connector colour (any CSS colour). Empty = inherit the source node's colour."
+              },
+              "style": {
+                "type": "string",
+                "enum": ["solid", "dashed", "dotted"],
+                "description": "Line style. Default solid."
+              },
+              "width": {
+                "type": "number",
+                "description": "Stroke width, px. 0 or unset = use config.lineWidth."
               }
             }
           }
