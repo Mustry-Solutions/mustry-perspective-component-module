@@ -9,6 +9,14 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # React is pinned at 16 (Perspective's runtime). Several UI libs' latest
+      # majors need React 18 (react-markdown 5+) or are breaking rewrites
+      # (TipTap 3), and major dev-tooling bumps (jest 30, sass-loader 17, …)
+      # break the build. Take majors DELIBERATELY, not automatically — minor,
+      # patch, and security updates still flow.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Gradle (SDK plugin + module deps)
   - package-ecosystem: gradle
