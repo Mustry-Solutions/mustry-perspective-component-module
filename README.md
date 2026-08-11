@@ -11,6 +11,10 @@ An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiv
 
 ## Showcase
 
+![Resource Timeline — day view of a scheduling board: grouped lines and crews, production/maintenance/downtime bands, a live now-line and a category legend](docs/images/showcase-timeline.png)
+
+**Resource Timeline** — hour/day/shift/week scheduling board with grouped resources, status overlays and a live now-line
+
 | | |
 |---|---|
 | ![Branching Diagram — a decision tree with per-edge colour, dashed/dotted styling, and arrows](docs/images/showcase-branching.png) | ![Calendar / Scheduler — month view with events](docs/images/showcase-calendar.png) |
