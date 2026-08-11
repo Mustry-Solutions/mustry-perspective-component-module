@@ -21,6 +21,12 @@ web/.gradle/
 # --- Staged module artifacts for the local dev gateway ---
 ops/modules/*.modl
 
+# --- Designer write-back noise in the bind-mounted verify project ---
+# The dev gateway saves these on its own; none carry project content we keep.
+ops/verify/project/**/thumbnail.png
+ops/verify/project/com.inductiveautomation.perspective/session-props/
+ops/verify/project/com.inductiveautomation.vision/
+
 # --- Local dev signing material (NEVER commit keystores/certs/keys) ---
 ops/signing/
 # Belt-and-suspenders: any stray signing dir + common keystore/cert extensions.
