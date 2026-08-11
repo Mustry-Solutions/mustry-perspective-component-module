@@ -9,6 +9,25 @@ An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiv
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
 
+## Showcase
+
+| | |
+|---|---|
+| ![Branching Diagram — a decision tree with per-edge colour, dashed/dotted styling, and arrows](docs/images/showcase-branching.png) | ![Calendar / Scheduler — month view with events](docs/images/showcase-calendar.png) |
+| **Branching Diagram** — layered decision-tree / flow renderer | **Calendar / Scheduler** — month/week/day/list, editable |
+| ![Editable Data Grid — typed inline editing and conditional styling](docs/images/showcase-grid.png) | ![Admin family — Schedule, Roster, User and Holiday managers composed in a tab container](docs/images/admin-console.png) |
+| **Data Grid** — typed inline editing, validation, conditional styling | **Admin family** — schedules, rosters, users, holidays |
+
+## Install & quick start
+
+**Requirements:** an Ignition **8.3.6+** gateway.
+
+1. **Download** the latest `Mustry-Perspective-Components.modl` from the [Releases](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases) page.
+2. **Install** it on the gateway — in the Gateway web interface, open the **Modules** section of the config and install/upgrade with the `.modl`. Accept the signing certificate and the license when prompted; the module loads immediately (no gateway restart needed).
+3. **Use** the components — open a Perspective view in the Designer and find them in the palette under the **Mustry Solutions** category. Drag one in and bind its `data.*` props; components are controlled (they fire events like `onCellEdit` / `onScheduleSave` and never mutate your bound data), and expose read-only `output.*` and two-way `state.*` props for bindings and scripting.
+
+The module is **free** (Apache-2.0) — no trial, activation, or fees. Per-component props, events, and examples are documented below; each has a live demo in the bundled `ops/verify/` project.
+
 ## Licensing & support
 
 The components are **free and open-source** under the [Apache-2.0 License](LICENSE) — use them in any Perspective project, on any number of gateways, at no cost. The module is not license-gated: there's no trial or activation. Bundled open-source components are credited in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
