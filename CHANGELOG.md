@@ -8,6 +8,19 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Security
+Resolved all 46 open Dependabot alerts (23 high / 22 moderate / 1 low), all of
+them transitive npm dependencies in `web/package-lock.json`. Added an
+`overrides` block to `web/package.json` forcing patched versions (axios,
+lodash, js-yaml, fast-uri, postcss, immutable, brace-expansion,
+serialize-javascript, @babel/runtime, trim) and refreshed the lockfile —
+`npm audit` is clean. Only one alert touched the shipped bundle (`trim`,
+ReDoS, via `react-markdown` → `remark-parse`); the rest are build/test
+tooling or dependencies of `@inductiveautomation/perspective-client`, which
+is a webpack external and never bundled. The build's pinned Node moved
+18.20.4 → 22.23.2 LTS (Node 18 is EOL; serialize-javascript 7 needs the
+Web Crypto global from Node 19+).
+
 ## [0.5.0] - 2026-08-10
 
 ### Open-source: Apache-2.0 + public repository

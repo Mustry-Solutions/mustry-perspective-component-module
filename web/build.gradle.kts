@@ -10,7 +10,7 @@ val projectOutput: Provider<Directory> = layout.buildDirectory.dir("generated-re
 
 node {
     // A pinned Node is downloaded for the build, independent of any system Node.
-    version.set("18.20.4")
+    version.set("22.23.2")
     download.set(true)
     nodeProjectDir.set(file(project.projectDir))
 }
