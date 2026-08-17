@@ -12,7 +12,11 @@ test('picker: all layouts render', async ({ page }) => {
 
 test('picker: preset click arms the realtime window (two-way state)', async ({ page }) => {
     await openRoute(page, '/', '.mustry-datetime-range-picker');
-    await page.getByText('Last 7 days', { exact: true }).click();
+    // Scope to the Demo instance (first in the view): since disableDates
+    // defaults to 'none', the unconfigured instances also label their presets
+    // "Last …" (backward) instead of the old forward-mode "Next …".
+    await page.locator('.mustry-datetime-range-picker').first()
+        .getByText('Last 7 days', { exact: true }).click();
     // The view binds labels to the component's output props; "7 days" +
     // isRealtime true proves the write-back reached the Perspective store.
     await expect(page.getByText('7 days', { exact: true }).first()).toBeVisible();

@@ -10,7 +10,7 @@ describe('mapPickerProps (datetime picker reducer)', () => {
         expect(p.popoverCloseOnSelect).toBe(true);
         expect(p.popoverDateFormat).toBe('DD/MM/YYYY');
         expect(p.showClear).toBe(true);
-        expect(p.disableDates).toBe('past');
+        expect(p.disableDates).toBe('none');
         expect(p.granularity).toBe('second');
         expect(p.weekStart).toBe('monday');
         expect(p.timezone).toBe('');

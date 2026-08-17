@@ -26,7 +26,9 @@ export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
         popoverDateFormat: tree.readString('config.popover.dateFormat', 'DD/MM/YYYY'),
         showClear: tree.readBoolean('config.showClear', true),
         labels: labels as unknown as LabelConfig,
-        disableDates: tree.readString('config.disableDates', 'past') as DisableMode,
+        // 'none' by default: rolling presets/realtime look BACK (the historian
+        // case). 'past' (forward-only booking) flips them forward — opt-in.
+        disableDates: tree.readString('config.disableDates', 'none') as DisableMode,
         earliestDate: tree.readString('config.dateBounds.earliest', ''),
         latestDate: tree.readString('config.dateBounds.latest', ''),
         minSpanDays: tree.readNumber('config.spanDays.min', 0),

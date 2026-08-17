@@ -15,7 +15,7 @@
           "closeOnSelect": true,
           "dateFormat": "DD/MM/YYYY"
         },
-        "disableDates": "past",
+        "disableDates": "none",
         "dateBounds": {
           "earliest": "",
           "latest": ""
@@ -123,8 +123,8 @@
             "future",
             "none"
           ],
-          "default": "past",
-          "description": "Which dates are muted/non-clickable. 'past': dates before today are muted (forward-only booking). 'future': dates after today are muted (historical selection). 'none': nothing muted."
+          "default": "none",
+          "description": "Which dates are muted/non-clickable — this ALSO sets the direction of rolling presets and the realtime window. 'none' (default) and 'future' look BACK from now ('Last 24 hours'); 'past' mutes dates before today AND flips rolling windows FORWARD from now ('Next 24 hours' — forward-only booking). 'future' additionally mutes dates after today (historical selection)."
         },
         "dateBounds": {
           "type": "object",
