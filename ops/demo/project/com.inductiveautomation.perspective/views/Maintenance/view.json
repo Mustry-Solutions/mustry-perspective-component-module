@@ -1,0 +1,165 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Maintenance calendar",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Month / week / day / list \u00b7 drag events to move, drag edges to resize (week/day) \u00b7 drag empty time to create \u00b7 click an event to edit or delete \u00b7 the legend filters categories. Recurring series (\u21bb) support this-event / all-events edits.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.calendar",
+        "version": 0,
+        "meta": {
+          "name": "Calendar"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 1448,
+          "height": 800
+        },
+        "props": {
+          "config": {
+            "editable": true,
+            "selectable": true,
+            "builtInEditor": true,
+            "showMiniNav": true,
+            "showExport": true,
+            "showLegend": true,
+            "weekStart": "monday",
+            "refreshSeconds": 60,
+            "slotMinutes": 30,
+            "scrollToHour": 6,
+            "emptyMessage": "No work orders in this window",
+            "categories": [
+              {
+                "id": "pm",
+                "label": "Preventive",
+                "color": "#38bdf8",
+                "icon": "material/build"
+              },
+              {
+                "id": "insp",
+                "label": "Inspection",
+                "color": "#22c55e",
+                "icon": "material/fact_check"
+              },
+              {
+                "id": "calib",
+                "label": "Calibration",
+                "color": "#f59e0b",
+                "icon": "material/speed"
+              },
+              {
+                "id": "shut",
+                "label": "Shutdown",
+                "color": "#ef4444",
+                "icon": "material/block"
+              },
+              {
+                "id": "train",
+                "label": "Training",
+                "color": "#a78bfa",
+                "icon": "material/school"
+              }
+            ]
+          },
+          "state": {
+            "view": "month"
+          },
+          "data": {
+            "events": [],
+            "recurringEvents": []
+          }
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.maint"
+              }
+            }
+          },
+          "props.data.recurringEvents": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.maintRecurring"
+              }
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onChange": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# One handler persists every mutation (create/edit/delete/move/resize,\n\t# cross-row reassign, recurring series vs occurrence) into the session store.\n\tev = event.event\n\taction = event.action\n\tscope = getattr(event, \"scope\", None)\n\tseriesId = getattr(event, \"seriesId\", None)\n\toccDate = getattr(event, \"occurrenceDate\", None)\n\tevents = [dict(e) for e in self.session.custom.demo.maint]\n\trecurring = [dict(e) for e in self.session.custom.demo.maintRecurring]\n\t\n\tdef idx_of(lst, eid):\n\t\tfor i in range(len(lst)):\n\t\t\tif lst[i].get(\"id\") == eid:\n\t\t\t\treturn i\n\t\treturn -1\n\t\n\tdef row_from(e):\n\t\trow = {\"id\": e.id,         \"title\": getattr(e, \"title\", \"\"), \"start\": getattr(e, \"start\", \"\"),\n\t\t\t\"end\": getattr(e, \"end\", \"\"), \"category\": getattr(e, \"category\", \"\"),\n\t\t\t\"description\": getattr(e, \"description\", \"\"),\n\t\t\t\"allDay\": bool(getattr(e, \"allDay\", False))}\n\t\tfor k in (\"color\", \"status\", \"display\"):\n\t\t\tval = getattr(e, k, \"\")\n\t\t\tif val:\n\t\t\t\trow[k] = val\n\t\trr = getattr(e, \"rrule\", None)\n\t\tif rr is not None:\n\t\t\trow[\"rrule\"] = rr\n\t\treturn row\n\t\n\tdef upsert(lst, row, merge=False):\n\t\ti = idx_of(lst, row.get(\"id\"))\n\t\tif i >= 0:\n\t\t\tif merge:\n\t\t\t\tkept = dict(lst[i])\n\t\t\t\tkept.update(row)\n\t\t\t\tlst[i] = kept\n\t\t\telse:\n\t\t\t\tlst[i] = row\n\t\telse:\n\t\t\tlst.append(row)\n\t\n\tdef add_exdate(sid, dte):\n\t\tfor lst in (events, recurring):\n\t\t\ti = idx_of(lst, sid)\n\t\t\tif i >= 0:\n\t\t\t\tbase = dict(lst[i])\n\t\t\t\trr = dict(base.get(\"rrule\") or {})\n\t\t\t\tex = list(rr.get(\"exdate\") or [])\n\t\t\t\tif dte not in ex:\n\t\t\t\t\tex.append(dte)\n\t\t\t\trr[\"exdate\"] = ex\n\t\t\t\tbase[\"rrule\"] = rr\n\t\t\t\tlst[i] = base\n\t\t\t\treturn\n\t\n\tif scope == \"occurrence\":\n\t\tadd_exdate(seriesId, occDate)\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(events, row_from(ev))\n\telif scope == \"series\":\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != seriesId]\n\t\t\trecurring = [e for e in recurring if e.get(\"id\") != seriesId]\n\t\telse:\n\t\t\tif idx_of(recurring, seriesId) >= 0:\n\t\t\t\tupsert(recurring, row_from(ev))\n\t\t\telse:\n\t\t\t\tupsert(events, row_from(ev))\n\telse:\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(events, row_from(ev), merge=True)\n\t\n\tself.session.custom.demo.maint = events\n\tself.session.custom.demo.maintRecurring = recurring\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

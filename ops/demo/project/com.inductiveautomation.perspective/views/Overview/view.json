@@ -1,0 +1,602 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Plant overview",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "The floor plan below is a live, fully interactive Perspective view inside the Pan & Zoom component \u2014 drag to pan, wheel to zoom, or use the Go to\u2026 list.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "kpi_oee_bg"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 284,
+          "height": 104
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "kpi_oee_val"
+        },
+        "position": {
+          "x": 34,
+          "y": 80,
+          "width": 250,
+          "height": 46
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(83.5 + 4.5 * sin(toMillis(now(2000)) / 90000.0), '#0.0') + ' %'"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.accent"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "OEE \u2014 PLANT",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.14em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kpi_oee_cap"
+        },
+        "position": {
+          "x": 34,
+          "y": 132,
+          "width": 250,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "kpi_l1_bg"
+        },
+        "position": {
+          "x": 312,
+          "y": 64,
+          "width": 284,
+          "height": 104
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "kpi_l1_val"
+        },
+        "position": {
+          "x": 330,
+          "y": 80,
+          "width": 250,
+          "height": 46
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(round(11840 + 420 * sin(toMillis(now(1000)) / 60000.0), 0), '#,##0') + ' bph'"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.accent"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "LINE 1 \u2014 33CL GLASS",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.14em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kpi_l1_cap"
+        },
+        "position": {
+          "x": 330,
+          "y": 132,
+          "width": 250,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "kpi_l2_bg"
+        },
+        "position": {
+          "x": 608,
+          "y": 64,
+          "width": 284,
+          "height": 104
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "kpi_l2_val"
+        },
+        "position": {
+          "x": 626,
+          "y": 80,
+          "width": 250,
+          "height": 46
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, 'STOPPED', numberFormat(round(8950 + 380 * sin(toMillis(now(1000)) / 47000.0 + 2), 0), '#,##0') + ' bph')"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#ef4444', {session.custom.demo.accent})"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "LINE 2 \u2014 50CL PET",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.14em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kpi_l2_cap"
+        },
+        "position": {
+          "x": 626,
+          "y": 132,
+          "width": 250,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "kpi_jobs_bg"
+        },
+        "position": {
+          "x": 904,
+          "y": 64,
+          "width": 284,
+          "height": 104
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "kpi_jobs_val"
+        },
+        "position": {
+          "x": 922,
+          "y": 80,
+          "width": 250,
+          "height": 46
+        },
+        "propConfig": {
+          "props.style.color": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.accent"
+              }
+            }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.orders"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\treturn str(len(value)) if value else '0'\n"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "JOBS ON THE BOARD",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.14em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kpi_jobs_cap"
+        },
+        "position": {
+          "x": 922,
+          "y": 132,
+          "width": 250,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "kpi_qc_bg"
+        },
+        "position": {
+          "x": 1200,
+          "y": 64,
+          "width": 284,
+          "height": 104
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "kpi_qc_val"
+        },
+        "position": {
+          "x": 1218,
+          "y": 80,
+          "width": 250,
+          "height": 46
+        },
+        "propConfig": {
+          "props.style.color": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.accent"
+              }
+            }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.quality"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\tif not value:\n\t\treturn '0'\n\tfails = len([r for r in value if not r['passed']])\n\treturn '%d / %d fail' % (len(value), fails)\n"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "QC SAMPLES (48 H)",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.14em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kpi_qc_cap"
+        },
+        "position": {
+          "x": 1218,
+          "y": 132,
+          "width": 250,
+          "height": 16
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.panzoomview",
+        "version": 0,
+        "meta": {
+          "name": "pz"
+        },
+        "position": {
+          "x": 16,
+          "y": 182,
+          "width": 1448,
+          "height": 658
+        },
+        "props": {
+          "config": {
+            "viewPath": "PlantLayout",
+            "contentWidth": 0,
+            "contentHeight": 0,
+            "showMinimap": true,
+            "showPoiList": true,
+            "home": {
+              "x": -1,
+              "y": -1,
+              "zoom": 0
+            }
+          },
+          "data": {
+            "pois": [
+              {
+                "name": "Brewhouse",
+                "x": 235,
+                "y": 590,
+                "zoom": 1.0,
+                "flagged": false
+              },
+              {
+                "name": "Line 1 \u2014 Filler",
+                "x": 790,
+                "y": 300,
+                "zoom": 1.2,
+                "flagged": false
+              },
+              {
+                "name": "Line 2 \u2014 Filler",
+                "x": 790,
+                "y": 580,
+                "zoom": 1.2,
+                "flagged": false
+              },
+              {
+                "name": "Utilities",
+                "x": 640,
+                "y": 1000,
+                "zoom": 1.0,
+                "flagged": false
+              },
+              {
+                "name": "QA Lab",
+                "x": 1440,
+                "y": 1000,
+                "zoom": 1.2,
+                "flagged": false
+              },
+              {
+                "name": "Warehouse",
+                "x": 1900,
+                "y": 1070,
+                "zoom": 1.0,
+                "flagged": false
+              }
+            ]
+          }
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.pois[2].flagged": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "(toMillis(now(1000)) % 60000) < 12000"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Tip: click \u201cLog sample\u201d inside the QA lab \u2014 embedded views stay fully interactive. The pulsing marker is a flagged POI (bind it to an alarm).",
+          "style": {
+            "fontSize": "11px",
+            "color": "#64748b"
+          }
+        },
+        "meta": {
+          "name": "hint"
+        },
+        "position": {
+          "x": 16,
+          "y": 848,
+          "width": 1448,
+          "height": 20
+        }
+      }
+    ]
+  }
+}

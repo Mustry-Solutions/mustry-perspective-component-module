@@ -1,0 +1,20 @@
+{
+  "custom": {
+    "demo": {
+      "seeded": false,
+      "orders": [],
+      "ordersRecurring": [],
+      "maint": [],
+      "maintRecurring": [],
+      "quality": [],
+      "qWindow": {
+        "startMs": 0,
+        "endMs": 0
+      },
+      "handover": "",
+      "lineConfig": "",
+      "accent": "#38bdf8"
+    }
+  },
+  "props": {}
+}

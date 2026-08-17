@@ -1,0 +1,58 @@
+{
+ "pages": {
+  "/": {
+   "title": "Overview",
+   "viewPath": "Overview",
+   "viewParams": {}
+  },
+  "/schedule": {
+   "title": "Schedule",
+   "viewPath": "Schedule",
+   "viewParams": {}
+  },
+  "/maintenance": {
+   "title": "Maintenance",
+   "viewPath": "Maintenance",
+   "viewParams": {}
+  },
+  "/quality": {
+   "title": "Quality",
+   "viewPath": "Quality",
+   "viewParams": {}
+  },
+  "/triage": {
+   "title": "Triage",
+   "viewPath": "Triage",
+   "viewParams": {}
+  },
+  "/handover": {
+   "title": "Handover",
+   "viewPath": "Handover",
+   "viewParams": {}
+  },
+  "/admin": {
+   "title": "Admin",
+   "viewPath": "Admin",
+   "viewParams": {}
+  }
+ },
+ "sharedDocks": {
+  "cornerPriority": "top-bottom",
+  "top": [
+   {
+    "anchor": "fixed",
+    "autoBreakpoint": 480,
+    "content": "push",
+    "handle": "hide",
+    "iconUrl": "",
+    "id": "",
+    "modal": false,
+    "resizable": false,
+    "show": "visible",
+    "size": 64,
+    "viewParams": {},
+    "viewPath": "Nav"
+   }
+  ]
+ }
+}

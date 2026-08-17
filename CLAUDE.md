@@ -50,7 +50,14 @@ ops/e2e.sh --fresh   # recreate the gateway UNATTENDED (no wizard, fresh 2h tria
 ops/deploy.sh        # rebuild + reload into the running gateway
 ops/e2e.sh           # deploy + full e2e suite (18 tests, real Perspective sessions)
 ops/e2e.sh --no-deploy tests/grid.spec.ts   # quick re-run against what's deployed
+ops/demo.sh [--fresh]   # sales demo ("Mustry Bottling Co.", ops/demo/) — every
+                        # component in one story-driven app; see ops/demo/README.md
 ```
+
+The demo project's views are committed JSON generated data-free: they seed
+`session.custom.demo` relative to "today" on session start. **Project-file
+edits (ops/demo/, ops/verify/) are only read at gateway startup** on this
+Docker-for-Mac setup — restart the gateway after editing them.
 
 **Never call a component change done because the gateway returned 200.** Deploy
 and render it: `ops/e2e.sh` at minimum; look at it in a browser session

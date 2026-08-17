@@ -52,6 +52,8 @@ module with no prompt. You only commission again after `teardown.sh --purge`.
 | `status.sh` | Show container status, health, URL, and the staged `.modl`. |
 | `e2e.sh` | Rebuild + redeploy, then run the Playwright smoke suite (`e2e/`) against the verify project. |
 | `e2e.sh --fresh` | Wipe the gateway and bring it back **fully unattended** (no wizard, fresh 2h trial), then run the suite. What CI runs. |
+| `demo.sh` | Open the **sales demo** ("Mustry Bottling Co.", `ops/demo/`) in the browser, starting the gateway if needed. |
+| `demo.sh --fresh` | Pre-meeting ritual: wipe + unattended re-provision with a fresh 2h trial, then open the demo. See [`ops/demo/README.md`](demo/README.md). |
 
 ## Typical workflow
 

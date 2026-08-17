@@ -1,0 +1,2048 @@
+{
+  "custom": {
+    "samples": 0
+  },
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 2200,
+      "height": 1300
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "MUSTRY BOTTLING CO. \u2014 PLANT FLOOR",
+          "style": {
+            "fontSize": "34px",
+            "fontWeight": "800",
+            "letterSpacing": "0.04em",
+            "color": "#334155"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 60,
+          "y": 30,
+          "width": 1200,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "LIVE VIEW \u2014 equipment states and rates update continuously",
+          "style": {
+            "fontSize": "14px",
+            "letterSpacing": "0.08em",
+            "color": "#475569"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 60,
+          "y": 76,
+          "width": 900,
+          "height": 22
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "brewzone_box"
+        },
+        "position": {
+          "x": 60,
+          "y": 420,
+          "width": 350,
+          "height": 340
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "BREWHOUSE",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "brewzone_cap"
+        },
+        "position": {
+          "x": 74,
+          "y": 396,
+          "width": 330,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Mixer 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "mixer1"
+        },
+        "position": {
+          "x": 90,
+          "y": 450,
+          "width": 250,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "mixer1_dot"
+        },
+        "position": {
+          "x": 316,
+          "y": 460,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 0.4) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "mixer1_ro"
+        },
+        "position": {
+          "x": 100,
+          "y": 536,
+          "width": 230,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(55 + 25 * sin(toMillis(now(2000)) / 45000.0), '#0') + ' % level'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Mixer 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "mixer2"
+        },
+        "position": {
+          "x": 90,
+          "y": 600,
+          "width": 250,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "mixer2_dot"
+        },
+        "position": {
+          "x": 316,
+          "y": 610,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 2.1) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "mixer2_ro"
+        },
+        "position": {
+          "x": 100,
+          "y": 686,
+          "width": 230,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(40 + 30 * sin(toMillis(now(2000)) / 38000.0 + 1.3), '#0') + ' % level'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "line1_box"
+        },
+        "position": {
+          "x": 430,
+          "y": 210,
+          "width": 1450,
+          "height": 190
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "LINE 1 \u2014 33CL GLASS",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "line1_cap"
+        },
+        "position": {
+          "x": 444,
+          "y": 186,
+          "width": 1430,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Buffer T-101",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "buf1"
+        },
+        "position": {
+          "x": 460,
+          "y": 240,
+          "width": 170,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "buf1_dot"
+        },
+        "position": {
+          "x": 606,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 0.2) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Filler 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "filler1"
+        },
+        "position": {
+          "x": 680,
+          "y": 240,
+          "width": 220,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "filler1_dot"
+        },
+        "position": {
+          "x": 876,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 0.9) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Capper 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "capper1"
+        },
+        "position": {
+          "x": 950,
+          "y": 240,
+          "width": 170,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "capper1_dot"
+        },
+        "position": {
+          "x": 1096,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 1.6) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Labeller 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "labeller1"
+        },
+        "position": {
+          "x": 1170,
+          "y": 240,
+          "width": 180,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "labeller1_dot"
+        },
+        "position": {
+          "x": 1326,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 2.3) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Packer 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "packer1"
+        },
+        "position": {
+          "x": 1400,
+          "y": 240,
+          "width": 200,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "packer1_dot"
+        },
+        "position": {
+          "x": 1576,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 3.0) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Palletizer 1",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "pallet1"
+        },
+        "position": {
+          "x": 1650,
+          "y": 240,
+          "width": 200,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "pallet1_dot"
+        },
+        "position": {
+          "x": 1826,
+          "y": 250,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 3.7) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "filler1_ro"
+        },
+        "position": {
+          "x": 690,
+          "y": 366,
+          "width": 200,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(round(11840 + 420 * sin(toMillis(now(1000)) / 60000.0), 0), '#,##0') + ' bph'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv1_0"
+        },
+        "position": {
+          "x": 630,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv1_1"
+        },
+        "position": {
+          "x": 900,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv1_2"
+        },
+        "position": {
+          "x": 1120,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv1_3"
+        },
+        "position": {
+          "x": 1350,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv1_4"
+        },
+        "position": {
+          "x": 1600,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "line2_box"
+        },
+        "position": {
+          "x": 430,
+          "y": 490,
+          "width": 1450,
+          "height": 190
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "LINE 2 \u2014 50CL PET",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "line2_cap"
+        },
+        "position": {
+          "x": 444,
+          "y": 466,
+          "width": 1430,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Buffer T-201",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "buf2"
+        },
+        "position": {
+          "x": 460,
+          "y": 520,
+          "width": 170,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Filler 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "filler2"
+        },
+        "position": {
+          "x": 680,
+          "y": 520,
+          "width": 220,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Capper 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "capper2"
+        },
+        "position": {
+          "x": 950,
+          "y": 520,
+          "width": 170,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Labeller 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "labeller2"
+        },
+        "position": {
+          "x": 1170,
+          "y": 520,
+          "width": 180,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Packer 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "packer2"
+        },
+        "position": {
+          "x": 1400,
+          "y": 520,
+          "width": 200,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Palletizer 2",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "pallet2"
+        },
+        "position": {
+          "x": 1650,
+          "y": 520,
+          "width": 200,
+          "height": 120
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "filler2_dot"
+        },
+        "position": {
+          "x": 876,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#ef4444', '#22c55e')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "buf2_dot"
+        },
+        "position": {
+          "x": 606,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 1.1) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "capper2_dot"
+        },
+        "position": {
+          "x": 1096,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#f59e0b', if(sin(toMillis(now(2000)) / 15000.0 + 0.9) > -0.75, '#22c55e', '#f59e0b'))"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "labeller2_dot"
+        },
+        "position": {
+          "x": 1326,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#f59e0b', if(sin(toMillis(now(2000)) / 15000.0 + 0.9) > -0.75, '#22c55e', '#f59e0b'))"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "packer2_dot"
+        },
+        "position": {
+          "x": 1576,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#f59e0b', if(sin(toMillis(now(2000)) / 15000.0 + 0.9) > -0.75, '#22c55e', '#f59e0b'))"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "pallet2_dot"
+        },
+        "position": {
+          "x": 1826,
+          "y": 530,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#f59e0b', if(sin(toMillis(now(2000)) / 15000.0 + 0.9) > -0.75, '#22c55e', '#f59e0b'))"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "filler2_ro"
+        },
+        "position": {
+          "x": 690,
+          "y": 646,
+          "width": 200,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, 'FAULT \u2014 bearing temp high', numberFormat(round(8950 + 380 * sin(toMillis(now(1000)) / 47000.0 + 2), 0), '#,##0') + ' bph')"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, '#ef4444', '#7dd3fc')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv2_0"
+        },
+        "position": {
+          "x": 630,
+          "y": 575,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv2_1"
+        },
+        "position": {
+          "x": 900,
+          "y": 575,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv2_2"
+        },
+        "position": {
+          "x": 1120,
+          "y": 575,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv2_3"
+        },
+        "position": {
+          "x": 1350,
+          "y": 575,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "cv2_4"
+        },
+        "position": {
+          "x": 1600,
+          "y": 575,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "feed1"
+        },
+        "position": {
+          "x": 340,
+          "y": 505,
+          "width": 90,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "feed2"
+        },
+        "position": {
+          "x": 340,
+          "y": 655,
+          "width": 90,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "feedv"
+        },
+        "position": {
+          "x": 410,
+          "y": 300,
+          "width": 10,
+          "height": 360
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#26334f",
+            "borderRadius": "3px"
+          }
+        },
+        "meta": {
+          "name": "feedh"
+        },
+        "position": {
+          "x": 410,
+          "y": 295,
+          "width": 50,
+          "height": 10
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "util_box"
+        },
+        "position": {
+          "x": 60,
+          "y": 900,
+          "width": 1160,
+          "height": 200
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "UTILITIES",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "util_cap"
+        },
+        "position": {
+          "x": 74,
+          "y": 876,
+          "width": 1140,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Boiler",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "boiler"
+        },
+        "position": {
+          "x": 90,
+          "y": 930,
+          "width": 220,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "boiler_dot"
+        },
+        "position": {
+          "x": 286,
+          "y": 940,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 0.5) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Air compressor",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "aircomp"
+        },
+        "position": {
+          "x": 340,
+          "y": 930,
+          "width": 220,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "aircomp_dot"
+        },
+        "position": {
+          "x": 536,
+          "y": 940,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 1.8) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "CIP skid",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "cip"
+        },
+        "position": {
+          "x": 590,
+          "y": 930,
+          "width": 220,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "cip_dot"
+        },
+        "position": {
+          "x": 786,
+          "y": 940,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 3.1) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Water treatment",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "wtp"
+        },
+        "position": {
+          "x": 840,
+          "y": 930,
+          "width": 220,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "7px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "wtp_dot"
+        },
+        "position": {
+          "x": 1036,
+          "y": 940,
+          "width": 14,
+          "height": 14
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(sin(toMillis(now(2000)) / 15000.0 + 4.4) > -0.75, '#22c55e', '#f59e0b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "CO2 tanks",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "co2"
+        },
+        "position": {
+          "x": 1090,
+          "y": 930,
+          "width": 110,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "boiler_ro"
+        },
+        "position": {
+          "x": 100,
+          "y": 1006,
+          "width": 200,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(7.4 + 0.5 * sin(toMillis(now(2000)) / 33000.0), '#0.0') + ' bar'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#7dd3fc",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "co2_ro"
+        },
+        "position": {
+          "x": 1090,
+          "y": 1006,
+          "width": 110,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(62 + 6 * sin(toMillis(now(2000)) / 51000.0), '#0') + ' %'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "qa_box"
+        },
+        "position": {
+          "x": 1290,
+          "y": 900,
+          "width": 300,
+          "height": 200
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "QA LAB",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "qa_cap"
+        },
+        "position": {
+          "x": 1304,
+          "y": 876,
+          "width": 280,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "qalab"
+        },
+        "position": {
+          "x": 1310,
+          "y": 930,
+          "width": 260,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Log sample",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#1d4ed8",
+            "borderStyle": "none"
+          }
+        },
+        "meta": {
+          "name": "sampleBtn"
+        },
+        "position": {
+          "x": 1330,
+          "y": 950,
+          "width": 130,
+          "height": 40
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Proof that the embedded view stays fully interactive under pan & zoom.\n\tself.view.custom.samples = (self.view.custom.samples or 0) + 1\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "18px",
+            "fontWeight": "700",
+            "color": "#38bdf8",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "sampleCnt"
+        },
+        "position": {
+          "x": 1470,
+          "y": 950,
+          "width": 90,
+          "height": 40
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'\u00d7 ' + coalesce({view.custom.samples}, 0)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "rgba(30,41,59,0.22)",
+            "borderStyle": "dashed",
+            "borderWidth": "1px",
+            "borderColor": "#334155",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "wh_box"
+        },
+        "position": {
+          "x": 1660,
+          "y": 900,
+          "width": 480,
+          "height": 340
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "WAREHOUSE",
+          "style": {
+            "fontSize": "12px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "wh_cap"
+        },
+        "position": {
+          "x": 1674,
+          "y": 876,
+          "width": 460,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Finished goods",
+          "style": {
+            "backgroundColor": "#131f38",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#2b3a5c",
+            "borderRadius": "10px",
+            "color": "#dbe4f3",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "textAlign": "center",
+            "textAlignVertical": "center"
+          }
+        },
+        "meta": {
+          "name": "whblock"
+        },
+        "position": {
+          "x": 1690,
+          "y": 930,
+          "width": 420,
+          "height": 110
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace",
+            "color": "#94a3b8",
+            "textAlign": "center"
+          }
+        },
+        "meta": {
+          "name": "wh_ro"
+        },
+        "position": {
+          "x": 1700,
+          "y": 1046,
+          "width": 400,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(11240 + 40 * sin(toMillis(now(5000)) / 60000.0), '#,##0') + ' pallets on hand'"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

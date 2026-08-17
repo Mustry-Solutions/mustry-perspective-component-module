@@ -1,0 +1,232 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Production schedule \u2014 drag to replan",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Drag a bar to retime \u00b7 drag it onto another row to reassign \u00b7 drag an edge to resize \u00b7 drag empty track to create \u00b7 click to edit. One onChange script persists everything for this session.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "Timeline"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 1448,
+          "height": 800
+        },
+        "props": {
+          "config": {
+            "refreshSeconds": 60,
+            "editable": true,
+            "selectable": true,
+            "builtInEditor": true,
+            "showExport": true,
+            "weekStart": "monday",
+            "resources": [
+              {
+                "id": "m1",
+                "label": "Mixer 1",
+                "group": "Brewhouse",
+                "icon": "material/science",
+                "color": "#38bdf8"
+              },
+              {
+                "id": "m2",
+                "label": "Mixer 2",
+                "group": "Brewhouse",
+                "icon": "material/science",
+                "color": "#38bdf8"
+              },
+              {
+                "id": "f1",
+                "label": "Filler 1",
+                "group": "Line 1",
+                "color": "#22c55e"
+              },
+              {
+                "id": "k1",
+                "label": "Packer 1",
+                "group": "Line 1"
+              },
+              {
+                "id": "f2",
+                "label": "Filler 2",
+                "group": "Line 2",
+                "color": "#22c55e"
+              },
+              {
+                "id": "k2",
+                "label": "Packer 2",
+                "group": "Line 2"
+              },
+              {
+                "id": "ca",
+                "label": "Crew A",
+                "group": "Crews",
+                "icon": "material/groups",
+                "color": "#a78bfa"
+              },
+              {
+                "id": "cb",
+                "label": "Crew B",
+                "group": "Crews",
+                "icon": "material/groups",
+                "color": "#a78bfa"
+              },
+              {
+                "id": "mx",
+                "label": "Maintenance",
+                "group": "Crews",
+                "icon": "material/handyman",
+                "color": "#f59e0b"
+              }
+            ],
+            "categories": [
+              {
+                "id": "prod",
+                "label": "Production",
+                "color": "#38bdf8",
+                "icon": "material/build"
+              },
+              {
+                "id": "cip",
+                "label": "CIP / cleaning",
+                "color": "#a78bfa",
+                "icon": "material/invert_colors"
+              },
+              {
+                "id": "maint",
+                "label": "Maintenance",
+                "color": "#f59e0b",
+                "icon": "material/handyman"
+              },
+              {
+                "id": "down",
+                "label": "Downtime",
+                "color": "#ef4444"
+              },
+              {
+                "id": "shift",
+                "label": "Shifts",
+                "color": "#64748b",
+                "icon": "material/groups"
+              }
+            ],
+            "shifts": [
+              {
+                "label": "Early",
+                "start": "06:00"
+              },
+              {
+                "label": "Late",
+                "start": "14:00"
+              },
+              {
+                "label": "Night",
+                "start": "22:00"
+              }
+            ]
+          },
+          "state": {
+            "zoom": "day"
+          },
+          "data": {
+            "events": [],
+            "recurringEvents": []
+          }
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.orders"
+              }
+            }
+          },
+          "props.data.recurringEvents": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.ordersRecurring"
+              }
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onChange": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# One handler persists every mutation (create/edit/delete/move/resize,\n\t# cross-row reassign, recurring series vs occurrence) into the session store.\n\tev = event.event\n\taction = event.action\n\tscope = getattr(event, \"scope\", None)\n\tseriesId = getattr(event, \"seriesId\", None)\n\toccDate = getattr(event, \"occurrenceDate\", None)\n\tevents = [dict(e) for e in self.session.custom.demo.orders]\n\trecurring = [dict(e) for e in self.session.custom.demo.ordersRecurring]\n\t\n\tdef idx_of(lst, eid):\n\t\tfor i in range(len(lst)):\n\t\t\tif lst[i].get(\"id\") == eid:\n\t\t\t\treturn i\n\t\treturn -1\n\t\n\tdef row_from(e):\n\t\trow = {\"id\": e.id, \"resourceId\": getattr(e, \"resourceId\", \"\"),\n\t\t\t\"title\": getattr(e, \"title\", \"\"), \"start\": getattr(e, \"start\", \"\"),\n\t\t\t\"end\": getattr(e, \"end\", \"\"), \"category\": getattr(e, \"category\", \"\"),\n\t\t\t\"description\": getattr(e, \"description\", \"\")}\n\t\tfor k in (\"color\", \"status\", \"display\"):\n\t\t\tval = getattr(e, k, \"\")\n\t\t\tif val:\n\t\t\t\trow[k] = val\n\t\trr = getattr(e, \"rrule\", None)\n\t\tif rr is not None:\n\t\t\trow[\"rrule\"] = rr\n\t\treturn row\n\t\n\tdef upsert(lst, row, merge=False):\n\t\ti = idx_of(lst, row.get(\"id\"))\n\t\tif i >= 0:\n\t\t\tif merge:\n\t\t\t\tkept = dict(lst[i])\n\t\t\t\tkept.update(row)\n\t\t\t\tlst[i] = kept\n\t\t\telse:\n\t\t\t\tlst[i] = row\n\t\telse:\n\t\t\tlst.append(row)\n\t\n\tdef add_exdate(sid, dte):\n\t\tfor lst in (events, recurring):\n\t\t\ti = idx_of(lst, sid)\n\t\t\tif i >= 0:\n\t\t\t\tbase = dict(lst[i])\n\t\t\t\trr = dict(base.get(\"rrule\") or {})\n\t\t\t\tex = list(rr.get(\"exdate\") or [])\n\t\t\t\tif dte not in ex:\n\t\t\t\t\tex.append(dte)\n\t\t\t\trr[\"exdate\"] = ex\n\t\t\t\tbase[\"rrule\"] = rr\n\t\t\t\tlst[i] = base\n\t\t\t\treturn\n\t\n\tif scope == \"occurrence\":\n\t\tadd_exdate(seriesId, occDate)\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(events, row_from(ev))\n\telif scope == \"series\":\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != seriesId]\n\t\t\trecurring = [e for e in recurring if e.get(\"id\") != seriesId]\n\t\telse:\n\t\t\tif idx_of(recurring, seriesId) >= 0:\n\t\t\t\tupsert(recurring, row_from(ev))\n\t\t\telse:\n\t\t\t\tupsert(events, row_from(ev))\n\telse:\n\t\tif action == \"delete\":\n\t\t\tevents = [e for e in events if e.get(\"id\") != ev.id]\n\t\telse:\n\t\t\tupsert(events, row_from(ev), merge=True)\n\t\n\tself.session.custom.demo.orders = events\n\tself.session.custom.demo.ordersRecurring = recurring\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

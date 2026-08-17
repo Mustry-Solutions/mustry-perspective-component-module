@@ -1,0 +1,485 @@
+{
+  "custom": {
+    "sopTitle": "Click a node",
+    "sopBody": "Each node carries its standard operating procedure. Click one to read it here; hover a node for the quick info card."
+  },
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Downtime triage \u2014 unplanned line stop",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "The decision tree operators walk when a line stops. Click a node for its SOP \u00b7 hover for details \u00b7 the dashed red edge is the loop: a stop that recurs within 15 minutes goes back into triage.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.branching",
+        "version": 0,
+        "meta": {
+          "name": "Tree"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 1000,
+          "height": 796
+        },
+        "props": {
+          "config": {
+            "showArrows": true,
+            "backgroundColor": "#0b1220",
+            "yOffset": 220
+          },
+          "data": {
+            "nodes": [
+              {
+                "id": 1,
+                "name": "Line stopped",
+                "category": 1,
+                "nextId": [
+                  2
+                ],
+                "color": "#38bdf8",
+                "icon": {
+                  "path": "material/priority_high",
+                  "color": "#ffffff"
+                },
+                "tooltip": "**Start here.**\nConfirm the stop is real and note the time \u2014\nthe downtime clock starts now."
+              },
+              {
+                "id": 2,
+                "name": "Alarm active?",
+                "category": 1,
+                "nextId": [
+                  3,
+                  4
+                ],
+                "color": "#f59e0b",
+                "icon": {
+                  "path": "material/notifications_active",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Check the alarm summary first \u2014\nan active alarm usually names the cause."
+              },
+              {
+                "id": 3,
+                "name": "Work the alarm",
+                "category": 0,
+                "nextId": [
+                  9
+                ],
+                "color": "#f59e0b",
+                "icon": {
+                  "path": "material/playlist_add_check",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Follow the alarm response sheet.\nEscalate if it is unclear."
+              },
+              {
+                "id": 4,
+                "name": "Material present?",
+                "category": 1,
+                "nextId": [
+                  6,
+                  5
+                ],
+                "color": "#38bdf8",
+                "icon": {
+                  "path": "material/archive",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Bottles, caps, labels, CO2 \u2014\nstarvation looks like a breakdown."
+              },
+              {
+                "id": 5,
+                "name": "Refill / call logistics",
+                "category": 2,
+                "nextId": [
+                  9
+                ],
+                "color": "#22c55e",
+                "icon": {
+                  "path": "material/local_shipping",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Refill from the buffer\nor call intralogistics."
+              },
+              {
+                "id": 6,
+                "name": "Mechanical jam?",
+                "category": 1,
+                "nextId": [
+                  7,
+                  8
+                ],
+                "color": "#38bdf8",
+                "icon": {
+                  "path": "material/settings",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Look for a visible jam\nin guides, star wheels, conveyors."
+              },
+              {
+                "id": 7,
+                "name": "Clear jam \u2014 LOTO first",
+                "category": 2,
+                "nextId": [
+                  9
+                ],
+                "color": "#ef4444",
+                "icon": {
+                  "path": "material/lock",
+                  "color": "#ffffff"
+                },
+                "tooltip": "**Lock-out / tag-out before reaching in.**\nNo exceptions."
+              },
+              {
+                "id": 8,
+                "name": "Escalate to maintenance",
+                "category": 0,
+                "nextId": [
+                  9
+                ],
+                "color": "#a78bfa",
+                "icon": {
+                  "path": "material/engineering",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Raise a work order and attach photos.\nSee Admin > Rosters for the on-call chain."
+              },
+              {
+                "id": 9,
+                "name": "Restart & monitor 15 min",
+                "category": 1,
+                "nextId": [
+                  10,
+                  2
+                ],
+                "color": "#38bdf8",
+                "icon": {
+                  "path": "material/replay",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Ramp back up and watch the first\n15 minutes closely."
+              },
+              {
+                "id": 10,
+                "name": "Back to production",
+                "category": 1,
+                "nextId": [],
+                "color": "#22c55e",
+                "icon": {
+                  "path": "material/check_circle",
+                  "color": "#ffffff"
+                },
+                "tooltip": "Log the stop reason before closing \u2014\nthe Pareto is only as good as the codes."
+              }
+            ],
+            "edgeLabels": [
+              {
+                "from": 2,
+                "to": 3,
+                "label": "Yes",
+                "color": "#f59e0b"
+              },
+              {
+                "from": 2,
+                "to": 4,
+                "label": "No"
+              },
+              {
+                "from": 4,
+                "to": 5,
+                "label": "No",
+                "color": "#ef4444"
+              },
+              {
+                "from": 4,
+                "to": 6,
+                "label": "Yes"
+              },
+              {
+                "from": 6,
+                "to": 7,
+                "label": "Yes",
+                "color": "#ef4444"
+              },
+              {
+                "from": 6,
+                "to": 8,
+                "label": "No"
+              },
+              {
+                "from": 9,
+                "to": 10,
+                "label": "Stable",
+                "color": "#22c55e"
+              },
+              {
+                "from": 9,
+                "to": 2,
+                "label": "Recurs",
+                "color": "#ef4444",
+                "style": "dashed"
+              }
+            ]
+          }
+        },
+        "custom": {},
+        "events": {
+          "component": {
+            "onNodeClick": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t\t\tsops = {\n\t1: \"Confirm the stop is real: check the HMI banner and the andon. Note the time - the downtime clock starts now. Do not restart anything yet.\",\n\t2: \"Open the alarm summary. An active or recently cleared alarm usually names the root cause directly. If several alarms fired, work the FIRST one chronologically.\",\n\t3: \"Follow the response sheet for that alarm code. If the sheet does not resolve it in 10 minutes, escalate to maintenance and log the code.\",\n\t4: \"Check infeed and outfeed: bottles, caps, labels, glue, CO2. Starvation and blockage look identical to a breakdown from the HMI.\",\n\t5: \"Refill from the buffer or call intralogistics on ext. 4410. Log the starvation as a logistics stop, not an equipment fault.\",\n\t6: \"Inspect guides, star wheels and conveyor transfers for a visible jam. Use the flashlight, not your hands.\",\n\t7: \"LOCK-OUT / TAG-OUT before reaching into the machine. Clear the jam, check for damaged product upstream, remove debris, close guards.\",\n\t8: \"Raise a work order with photos. The on-call escalation order is maintained in Admin > Rosters. Stay with the machine until maintenance arrives.\",\n\t9: \"Ramp up stepwise and watch the first 15 minutes. If the same stop recurs, do NOT keep clearing it - go back into triage and escalate.\",\n\t10: \"Close the stop with an accurate reason code. The weekly Pareto in the morning meeting is built from these codes.\"\n\t\t\t}\n\t\t\tself.view.custom.sopTitle = event.name\n\t\t\tself.view.custom.sopBody = sops.get(event.id, 'No SOP on file for this step.')\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#111a2e",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "borderColor": "#1e293b",
+            "borderRadius": "10px"
+          }
+        },
+        "meta": {
+          "name": "sop_bg"
+        },
+        "position": {
+          "x": 1032,
+          "y": 64,
+          "width": 432,
+          "height": 796
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "STANDARD OPERATING PROCEDURE",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "sop_cap"
+        },
+        "position": {
+          "x": 1056,
+          "y": 88,
+          "width": 384,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "17px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "sop_title"
+        },
+        "position": {
+          "x": 1056,
+          "y": 112,
+          "width": 384,
+          "height": 56
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.sopTitle"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "color": "#cbd5e1"
+          }
+        },
+        "meta": {
+          "name": "sop_body"
+        },
+        "position": {
+          "x": 1056,
+          "y": 176,
+          "width": 384,
+          "height": 320
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.sopBody"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "ESCALATION",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "esc_cap"
+        },
+        "position": {
+          "x": 1056,
+          "y": 620,
+          "width": 384,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "0\u201315 min \u2014 operator triage (this tree)",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "esc_1"
+        },
+        "position": {
+          "x": 1056,
+          "y": 644,
+          "width": 384,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "15+ min \u2014 maintenance on-call (Admin \u203a Rosters)",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "esc_2"
+        },
+        "position": {
+          "x": 1056,
+          "y": 666,
+          "width": 384,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "45+ min \u2014 shift lead + planning (reschedule board)",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "esc_3"
+        },
+        "position": {
+          "x": 1056,
+          "y": 688,
+          "width": 384,
+          "height": 18
+        }
+      }
+    ]
+  }
+}
