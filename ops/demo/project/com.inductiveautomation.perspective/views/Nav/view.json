@@ -41,6 +41,16 @@
           "y": 12,
           "width": 220,
           "height": 22
+        },
+        "propConfig": {
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -70,7 +80,7 @@
         "props": {
           "text": "Overview",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -82,7 +92,7 @@
         "position": {
           "x": 250,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -106,6 +116,14 @@
                 "expression": "if({page.props.path} = '/', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navOverview"
+              }
+            }
           }
         }
       },
@@ -115,7 +133,7 @@
         "props": {
           "text": "Schedule",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -125,9 +143,9 @@
           "name": "nav_schedule"
         },
         "position": {
-          "x": 354,
+          "x": 362,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -151,6 +169,14 @@
                 "expression": "if({page.props.path} = '/schedule', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navSchedule"
+              }
+            }
           }
         }
       },
@@ -160,7 +186,7 @@
         "props": {
           "text": "Maintenance",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -170,9 +196,9 @@
           "name": "nav_maintenance"
         },
         "position": {
-          "x": 458,
+          "x": 474,
           "y": 15,
-          "width": 112,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -196,6 +222,14 @@
                 "expression": "if({page.props.path} = '/maintenance', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navMaintenance"
+              }
+            }
           }
         }
       },
@@ -205,7 +239,7 @@
         "props": {
           "text": "Quality",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -215,9 +249,9 @@
           "name": "nav_quality"
         },
         "position": {
-          "x": 578,
+          "x": 586,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -241,6 +275,14 @@
                 "expression": "if({page.props.path} = '/quality', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navQuality"
+              }
+            }
           }
         }
       },
@@ -250,7 +292,7 @@
         "props": {
           "text": "Triage",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -260,9 +302,9 @@
           "name": "nav_triage"
         },
         "position": {
-          "x": 682,
+          "x": 698,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -286,6 +328,14 @@
                 "expression": "if({page.props.path} = '/triage', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navTriage"
+              }
+            }
           }
         }
       },
@@ -295,7 +345,7 @@
         "props": {
           "text": "Handover",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -305,9 +355,9 @@
           "name": "nav_handover"
         },
         "position": {
-          "x": 786,
+          "x": 810,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -331,6 +381,14 @@
                 "expression": "if({page.props.path} = '/handover', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navHandover"
+              }
+            }
           }
         }
       },
@@ -340,7 +398,7 @@
         "props": {
           "text": "Admin",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "borderRadius": "6px",
             "borderStyle": "none",
             "color": "#e2e8f0"
@@ -350,9 +408,9 @@
           "name": "nav_admin"
         },
         "position": {
-          "x": 890,
+          "x": 922,
           "y": 15,
-          "width": 96,
+          "width": 106,
           "height": 34
         },
         "events": {
@@ -376,34 +434,119 @@
                 "expression": "if({page.props.path} = '/admin', '#1d4ed8', '#1e293b')"
               }
             }
+          },
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.navAdmin"
+              }
+            }
           }
         }
       },
       {
-        "type": "ia.display.label",
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "props": {
+          "options": [
+            {
+              "value": "en",
+              "label": "EN"
+            },
+            {
+              "value": "fr",
+              "label": "FR"
+            },
+            {
+              "value": "de",
+              "label": "DE"
+            },
+            {
+              "value": "nl",
+              "label": "NL"
+            },
+            {
+              "value": "es",
+              "label": "ES"
+            },
+            {
+              "value": "it",
+              "label": "IT"
+            },
+            {
+              "value": "pt",
+              "label": "PT"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              },
+              "bidirectional": true
+            },
+            "onChange": {
+              "enabled": true,
+              "script": "\tval = currentValue.value if currentValue else None\n\tif val and val != self.session.custom.demo.locale:\n\t\t# swap the whole shell-string dict in one write\n\t\ttr = system.util.jsonDecode(\"{\\\"en\\\": {\\\"navOverview\\\": \\\"Overview\\\", \\\"navSchedule\\\": \\\"Schedule\\\", \\\"navMaintenance\\\": \\\"Maintenance\\\", \\\"navQuality\\\": \\\"Quality\\\", \\\"navTriage\\\": \\\"Triage\\\", \\\"navHandover\\\": \\\"Handover\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Reset demo\\\", \\\"themeLight\\\": \\\"Light\\\", \\\"themeDark\\\": \\\"Dark\\\", \\\"ovTitle\\\": \\\"Plant overview\\\", \\\"ovSubtitle\\\": \\\"The floor plan below is a live, fully interactive Perspective view inside the Pan & Zoom component \\\\u2014 drag to pan, wheel to zoom, or use the Go to\\\\u2026 list.\\\", \\\"ovHint\\\": \\\"Tip: click \\\\u201cLog sample\\\\u201d inside the QA lab \\\\u2014 embedded views stay fully interactive. The pulsing marker is a flagged POI (bind it to an alarm).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 PLANT\\\", \\\"kL1\\\": \\\"LINE 1 \\\\u2014 33CL GLASS\\\", \\\"kL2\\\": \\\"LINE 2 \\\\u2014 50CL PET\\\", \\\"kJobs\\\": \\\"JOBS ON THE BOARD\\\", \\\"kQc\\\": \\\"QC SAMPLES (48 H)\\\", \\\"kStopped\\\": \\\"STOPPED\\\", \\\"kFail\\\": \\\"fail\\\", \\\"schTitle\\\": \\\"Production schedule \\\\u2014 drag to replan\\\", \\\"schSubtitle\\\": \\\"Drag a bar to retime \\\\u00b7 drag it onto another row to reassign \\\\u00b7 drag an edge to resize \\\\u00b7 drag empty track to create \\\\u00b7 click to edit. One onChange script persists everything for this session.\\\", \\\"mntTitle\\\": \\\"Maintenance calendar\\\", \\\"mntSubtitle\\\": \\\"Month / week / day / list \\\\u00b7 drag events to move, drag edges to resize (week/day) \\\\u00b7 drag empty time to create \\\\u00b7 click an event to edit or delete \\\\u00b7 the legend filters categories. Recurring series (\\\\u21bb) support this-event / all-events edits.\\\", \\\"mntEmpty\\\": \\\"No work orders in this window\\\", \\\"qTitle\\\": \\\"Quality \\\\u2014 fill checks\\\", \\\"qSubtitle\\\": \\\"Spec: 500 ml \\\\u00b1 5. Out-of-spec cells highlight; double-click any cell to edit (typed editors + validation). The window picker is LIVE \\\\u2014 a rolling window that re-derives every minute.\\\", \\\"qNew\\\": \\\"+ New sample\\\", \\\"qBatchOn\\\": \\\"Batch edit: ON\\\", \\\"qBatchOff\\\": \\\"Batch edit: OFF\\\", \\\"qLive\\\": \\\"\\\\u25cf LIVE \\\\u2014 window slides with now\\\", \\\"qEmpty\\\": \\\"No samples in the selected window\\\", \\\"trTitle\\\": \\\"Downtime triage \\\\u2014 unplanned line stop\\\", \\\"trSubtitle\\\": \\\"The decision tree operators walk when a line stops. Click a node for its SOP \\\\u00b7 hover for details \\\\u00b7 the dashed red edge is the loop: a stop that recurs within 15 minutes goes back into triage.\\\", \\\"trSopCap\\\": \\\"STANDARD OPERATING PROCEDURE\\\", \\\"trEscCap\\\": \\\"ESCALATION\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 operator triage (this tree)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 maintenance on-call (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 shift lead + planning (reschedule board)\\\", \\\"trEscBtn\\\": \\\"Escalate \\\\u2192 create work order\\\", \\\"hTitle\\\": \\\"Shift handover\\\", \\\"hSubtitle\\\": \\\"Left: the outgoing shift writes the note (full editor, dirty badge, Save fires one onSave). Right: what the incoming shift sees \\\\u2014 same document in display mode, with the checklist still interactive.\\\", \\\"hDisp\\\": \\\"WHAT THE NEXT SHIFT SEES\\\", \\\"hKbd\\\": \\\"END-OF-SHIFT COUNT \\\\u2014 touch numpad, no OS keyboard\\\", \\\"hCnt\\\": \\\"COMMITTED COUNT\\\", \\\"hSign\\\": \\\"SIGN-OFF (POPOVER KEYBOARD)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Production\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / cleaning\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Maintenance\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Downtime\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Shifts\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Preventive\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspection\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Calibration\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Shutdown\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Training\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Corrective\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Mixer 1\\\", \\\"group\\\": \\\"Brewhouse\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Mixer 2\\\", \\\"group\\\": \\\"Brewhouse\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Filler 1\\\", \\\"group\\\": \\\"Line 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Packer 1\\\", \\\"group\\\": \\\"Line 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Filler 2\\\", \\\"group\\\": \\\"Line 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Packer 2\\\", \\\"group\\\": \\\"Line 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Crew A\\\", \\\"group\\\": \\\"Crews\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Crew B\\\", \\\"group\\\": \\\"Crews\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Maintenance\\\", \\\"group\\\": \\\"Crews\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Sample time\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Line\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Product\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Fill (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"Pass\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Operator\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Note\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"fr\\\": {\\\"navOverview\\\": \\\"Aper\\\\u00e7u\\\", \\\"navSchedule\\\": \\\"Planning\\\", \\\"navMaintenance\\\": \\\"Maintenance\\\", \\\"navQuality\\\": \\\"Qualit\\\\u00e9\\\", \\\"navTriage\\\": \\\"Triage\\\", \\\"navHandover\\\": \\\"Rel\\\\u00e8ve\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Reset d\\\\u00e9mo\\\", \\\"themeLight\\\": \\\"Clair\\\", \\\"themeDark\\\": \\\"Sombre\\\", \\\"ovTitle\\\": \\\"Vue d'ensemble de l'usine\\\", \\\"ovSubtitle\\\": \\\"Le plan ci-dessous est une vue Perspective vivante et interactive dans le composant Pan & Zoom \\\\u2014 glissez pour naviguer, molette pour zoomer, ou utilisez la liste Aller \\\\u00e0\\\\u2026.\\\", \\\"ovHint\\\": \\\"Astuce : cliquez \\\\u00ab Log sample \\\\u00bb dans le labo QA \\\\u2014 les vues int\\\\u00e9gr\\\\u00e9es restent interactives. Le marqueur pulsant est un POI signal\\\\u00e9 (liez-le \\\\u00e0 une alarme).\\\", \\\"kOee\\\": \\\"TRS \\\\u2014 USINE\\\", \\\"kL1\\\": \\\"LIGNE 1 \\\\u2014 VERRE 33CL\\\", \\\"kL2\\\": \\\"LIGNE 2 \\\\u2014 PET 50CL\\\", \\\"kJobs\\\": \\\"ORDRES AU PLANNING\\\", \\\"kQc\\\": \\\"\\\\u00c9CHANT. QC (48 H)\\\", \\\"kStopped\\\": \\\"ARR\\\\u00caT\\\\u00c9E\\\", \\\"kFail\\\": \\\"rejets\\\", \\\"schTitle\\\": \\\"Planning de production \\\\u2014 glisser pour replanifier\\\", \\\"schSubtitle\\\": \\\"Glissez une barre pour d\\\\u00e9caler \\\\u00b7 d\\\\u00e9posez-la sur une autre ligne pour r\\\\u00e9affecter \\\\u00b7 \\\\u00e9tirez un bord pour redimensionner \\\\u00b7 tracez sur une piste vide pour cr\\\\u00e9er \\\\u00b7 cliquez pour \\\\u00e9diter. Un seul script onChange persiste tout.\\\", \\\"mntTitle\\\": \\\"Calendrier de maintenance\\\", \\\"mntSubtitle\\\": \\\"Mois / semaine / jour / liste \\\\u00b7 glissez un \\\\u00e9v\\\\u00e9nement pour le d\\\\u00e9placer, un bord pour redimensionner \\\\u00b7 tracez une plage vide pour cr\\\\u00e9er \\\\u00b7 cliquez pour \\\\u00e9diter ou supprimer \\\\u00b7 la l\\\\u00e9gende filtre les cat\\\\u00e9gories. Les s\\\\u00e9ries r\\\\u00e9currentes (\\\\u21bb) g\\\\u00e8rent cet-\\\\u00e9v\\\\u00e9nement / toute-la-s\\\\u00e9rie.\\\", \\\"mntEmpty\\\": \\\"Aucun OT dans cette fen\\\\u00eatre\\\", \\\"qTitle\\\": \\\"Qualit\\\\u00e9 \\\\u2014 contr\\\\u00f4les de remplissage\\\", \\\"qSubtitle\\\": \\\"Sp\\\\u00e9c : 500 ml \\\\u00b1 5. Les cellules hors sp\\\\u00e9c s'illuminent ; double-clic pour \\\\u00e9diter (\\\\u00e9diteurs typ\\\\u00e9s + validation). Le s\\\\u00e9lecteur est EN DIRECT \\\\u2014 fen\\\\u00eatre glissante recalcul\\\\u00e9e chaque minute.\\\", \\\"qNew\\\": \\\"+ Nouvel \\\\u00e9chantillon\\\", \\\"qBatchOn\\\": \\\"\\\\u00c9dition lot : ON\\\", \\\"qBatchOff\\\": \\\"\\\\u00c9dition lot : OFF\\\", \\\"qLive\\\": \\\"\\\\u25cf EN DIRECT \\\\u2014 fen\\\\u00eatre glissante\\\", \\\"qEmpty\\\": \\\"Aucun \\\\u00e9chantillon dans la fen\\\\u00eatre choisie\\\", \\\"trTitle\\\": \\\"Triage d'arr\\\\u00eat \\\\u2014 arr\\\\u00eat non planifi\\\\u00e9\\\", \\\"trSubtitle\\\": \\\"L'arbre de d\\\\u00e9cision suivi par les op\\\\u00e9rateurs quand une ligne s'arr\\\\u00eate. Cliquez un n\\\\u0153ud pour son mode op\\\\u00e9ratoire \\\\u00b7 survolez pour les d\\\\u00e9tails \\\\u00b7 l'ar\\\\u00eate rouge pointill\\\\u00e9e est la boucle : un arr\\\\u00eat qui r\\\\u00e9cidive sous 15 minutes repart en triage.\\\", \\\"trSopCap\\\": \\\"MODE OP\\\\u00c9RATOIRE\\\", \\\"trEscCap\\\": \\\"ESCALADE\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 triage op\\\\u00e9rateur (cet arbre)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 astreinte maintenance (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 chef de poste + planning (replanifier)\\\", \\\"trEscBtn\\\": \\\"Escalader \\\\u2192 cr\\\\u00e9er un OT\\\", \\\"hTitle\\\": \\\"Rel\\\\u00e8ve de poste\\\", \\\"hSubtitle\\\": \\\"\\\\u00c0 gauche : l'\\\\u00e9quipe sortante r\\\\u00e9dige la note (\\\\u00e9diteur complet, badge de brouillon, Save d\\\\u00e9clenche un seul onSave). \\\\u00c0 droite : ce que voit l'\\\\u00e9quipe entrante \\\\u2014 le m\\\\u00eame document en mode affichage, checklist toujours interactive.\\\", \\\"hDisp\\\": \\\"CE QUE VOIT L'\\\\u00c9QUIPE SUIVANTE\\\", \\\"hKbd\\\": \\\"COMPTAGE FIN DE POSTE \\\\u2014 pav\\\\u00e9 tactile, sans clavier OS\\\", \\\"hCnt\\\": \\\"COMPTAGE VALID\\\\u00c9\\\", \\\"hSign\\\": \\\"SIGNATURE (CLAVIER POPOVER)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Production\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / nettoyage\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Maintenance\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Arr\\\\u00eats\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Postes\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Pr\\\\u00e9ventif\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspection\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"\\\\u00c9talonnage\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Arr\\\\u00eat\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Formation\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Correctif\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"M\\\\u00e9langeur 1\\\", \\\"group\\\": \\\"Brasserie\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"M\\\\u00e9langeur 2\\\", \\\"group\\\": \\\"Brasserie\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Remplisseuse 1\\\", \\\"group\\\": \\\"Ligne 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Encaisseuse 1\\\", \\\"group\\\": \\\"Ligne 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Remplisseuse 2\\\", \\\"group\\\": \\\"Ligne 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Encaisseuse 2\\\", \\\"group\\\": \\\"Ligne 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"\\\\u00c9quipe A\\\", \\\"group\\\": \\\"\\\\u00c9quipes\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"\\\\u00c9quipe B\\\", \\\"group\\\": \\\"\\\\u00c9quipes\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Maintenance\\\", \\\"group\\\": \\\"\\\\u00c9quipes\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Heure pr\\\\u00e9l.\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Ligne\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Produit\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Rempl. (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Op\\\\u00e9rateur\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Note\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"de\\\": {\\\"navOverview\\\": \\\"\\\\u00dcbersicht\\\", \\\"navSchedule\\\": \\\"Planung\\\", \\\"navMaintenance\\\": \\\"Wartung\\\", \\\"navQuality\\\": \\\"Qualit\\\\u00e4t\\\", \\\"navTriage\\\": \\\"Triage\\\", \\\"navHandover\\\": \\\"\\\\u00dcbergabe\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Demo-Reset\\\", \\\"themeLight\\\": \\\"Hell\\\", \\\"themeDark\\\": \\\"Dunkel\\\", \\\"ovTitle\\\": \\\"Werks\\\\u00fcbersicht\\\", \\\"ovSubtitle\\\": \\\"Der Grundriss unten ist eine live gerenderte, voll interaktive Perspective-View im Pan-&-Zoom-Komponente \\\\u2014 ziehen zum Verschieben, Mausrad zum Zoomen, oder die Gehe-zu-Liste nutzen.\\\", \\\"ovHint\\\": \\\"Tipp: \\\\u201eLog sample\\\\u201c im QA-Labor anklicken \\\\u2014 eingebettete Views bleiben interaktiv. Der pulsierende Marker ist ein markierter POI (an einen Alarm binden).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 WERK\\\", \\\"kL1\\\": \\\"LINIE 1 \\\\u2014 33CL GLAS\\\", \\\"kL2\\\": \\\"LINIE 2 \\\\u2014 50CL PET\\\", \\\"kJobs\\\": \\\"AUFTR\\\\u00c4GE IM PLAN\\\", \\\"kQc\\\": \\\"QS-PROBEN (48 H)\\\", \\\"kStopped\\\": \\\"GESTOPPT\\\", \\\"kFail\\\": \\\"Fehler\\\", \\\"schTitle\\\": \\\"Produktionsplan \\\\u2014 zum Umplanen ziehen\\\", \\\"schSubtitle\\\": \\\"Balken ziehen zum Verschieben \\\\u00b7 auf andere Zeile ziehen zum Umbuchen \\\\u00b7 Kante ziehen zum \\\\u00c4ndern der Dauer \\\\u00b7 leere Spur ziehen zum Anlegen \\\\u00b7 Klick zum Bearbeiten. Ein onChange-Skript persistiert alles.\\\", \\\"mntTitle\\\": \\\"Wartungskalender\\\", \\\"mntSubtitle\\\": \\\"Monat / Woche / Tag / Liste \\\\u00b7 Termine ziehen zum Verschieben, Kanten zum \\\\u00c4ndern \\\\u00b7 leere Zeit ziehen zum Anlegen \\\\u00b7 Klick zum Bearbeiten oder L\\\\u00f6schen \\\\u00b7 die Legende filtert Kategorien. Serien (\\\\u21bb) unterst\\\\u00fctzen nur-dieser / alle-Termine.\\\", \\\"mntEmpty\\\": \\\"Keine Auftr\\\\u00e4ge in diesem Zeitraum\\\", \\\"qTitle\\\": \\\"Qualit\\\\u00e4t \\\\u2014 F\\\\u00fcllkontrollen\\\", \\\"qSubtitle\\\": \\\"Spez.: 500 ml \\\\u00b1 5. Zellen au\\\\u00dferhalb der Spezifikation leuchten; Doppelklick zum Bearbeiten (typisierte Editoren + Validierung). Der Zeitw\\\\u00e4hler ist LIVE \\\\u2014 rollierendes Fenster, jede Minute neu.\\\", \\\"qNew\\\": \\\"+ Neue Probe\\\", \\\"qBatchOn\\\": \\\"Stapel: EIN\\\", \\\"qBatchOff\\\": \\\"Stapel: AUS\\\", \\\"qLive\\\": \\\"\\\\u25cf LIVE \\\\u2014 Fenster folgt jetzt\\\", \\\"qEmpty\\\": \\\"Keine Proben im gew\\\\u00e4hlten Zeitraum\\\", \\\"trTitle\\\": \\\"St\\\\u00f6rungstriage \\\\u2014 ungeplanter Stopp\\\", \\\"trSubtitle\\\": \\\"Der Entscheidungsbaum der Bediener bei Linienstopp. Knoten anklicken f\\\\u00fcr die Anweisung \\\\u00b7 Hover f\\\\u00fcr Details \\\\u00b7 die gestrichelte rote Kante ist die Schleife: ein Stopp, der binnen 15 Minuten wiederkehrt, geht zur\\\\u00fcck in die Triage.\\\", \\\"trSopCap\\\": \\\"STANDARDARBEITSANWEISUNG\\\", \\\"trEscCap\\\": \\\"ESKALATION\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 Min \\\\u2014 Bediener-Triage (dieser Baum)\\\", \\\"trEsc2\\\": \\\"15+ Min \\\\u2014 Instandhaltungs-Bereitschaft (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ Min \\\\u2014 Schichtleiter + Planung (umplanen)\\\", \\\"trEscBtn\\\": \\\"Eskalieren \\\\u2192 Auftrag anlegen\\\", \\\"hTitle\\\": \\\"Schicht\\\\u00fcbergabe\\\", \\\"hSubtitle\\\": \\\"Links: die abgehende Schicht schreibt die Notiz (voller Editor, Entwurfs-Badge, Save l\\\\u00f6st ein onSave aus). Rechts: was die kommende Schicht sieht \\\\u2014 dasselbe Dokument im Anzeigemodus, die Checkliste bleibt interaktiv.\\\", \\\"hDisp\\\": \\\"WAS DIE N\\\\u00c4CHSTE SCHICHT SIEHT\\\", \\\"hKbd\\\": \\\"ENDSCHICHT-Z\\\\u00c4HLUNG \\\\u2014 Touch-Ziffernblock, keine OS-Tastatur\\\", \\\"hCnt\\\": \\\"BEST\\\\u00c4TIGTE ZAHL\\\", \\\"hSign\\\": \\\"FREIGABE (POPOVER-TASTATUR)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Produktion\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / Reinigung\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Instandhaltung\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Stillst\\\\u00e4nde\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Schichten\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Pr\\\\u00e4ventiv\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspektion\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Kalibrierung\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Stillstand\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Schulung\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Korrektiv\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Mischer 1\\\", \\\"group\\\": \\\"Sudhaus\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Mischer 2\\\", \\\"group\\\": \\\"Sudhaus\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"F\\\\u00fcller 1\\\", \\\"group\\\": \\\"Linie 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Packer 1\\\", \\\"group\\\": \\\"Linie 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"F\\\\u00fcller 2\\\", \\\"group\\\": \\\"Linie 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Packer 2\\\", \\\"group\\\": \\\"Linie 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Team A\\\", \\\"group\\\": \\\"Teams\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Team B\\\", \\\"group\\\": \\\"Teams\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Instandhaltung\\\", \\\"group\\\": \\\"Teams\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Probenzeit\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Linie\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Produkt\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"F\\\\u00fcllung (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Bediener\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Notiz\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"nl\\\": {\\\"navOverview\\\": \\\"Overzicht\\\", \\\"navSchedule\\\": \\\"Planning\\\", \\\"navMaintenance\\\": \\\"Onderhoud\\\", \\\"navQuality\\\": \\\"Kwaliteit\\\", \\\"navTriage\\\": \\\"Triage\\\", \\\"navHandover\\\": \\\"Overdracht\\\", \\\"navAdmin\\\": \\\"Beheer\\\", \\\"reset\\\": \\\"Demo-reset\\\", \\\"themeLight\\\": \\\"Licht\\\", \\\"themeDark\\\": \\\"Donker\\\", \\\"ovTitle\\\": \\\"Fabrieksoverzicht\\\", \\\"ovSubtitle\\\": \\\"De plattegrond hieronder is een live, volledig interactieve Perspective-view in het Pan & Zoom-component \\\\u2014 sleep om te pannen, scroll om te zoomen, of gebruik de Ga naar\\\\u2026-lijst.\\\", \\\"ovHint\\\": \\\"Tip: klik op \\\\u201cLog sample\\\\u201d in het QA-lab \\\\u2014 ingebedde views blijven interactief. De pulserende marker is een gemarkeerde POI (koppel hem aan een alarm).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 FABRIEK\\\", \\\"kL1\\\": \\\"LIJN 1 \\\\u2014 33CL GLAS\\\", \\\"kL2\\\": \\\"LIJN 2 \\\\u2014 50CL PET\\\", \\\"kJobs\\\": \\\"ORDERS OP DE PLANNING\\\", \\\"kQc\\\": \\\"QC-MONSTERS (48 U)\\\", \\\"kStopped\\\": \\\"GESTOPT\\\", \\\"kFail\\\": \\\"afkeur\\\", \\\"schTitle\\\": \\\"Productieplanning \\\\u2014 sleep om te herplannen\\\", \\\"schSubtitle\\\": \\\"Sleep een balk om te verschuiven \\\\u00b7 sleep naar een andere rij om toe te wijzen \\\\u00b7 sleep een rand om te verlengen \\\\u00b7 sleep op een lege baan om aan te maken \\\\u00b7 klik om te bewerken. E\\\\u00e9n onChange-script bewaart alles.\\\", \\\"mntTitle\\\": \\\"Onderhoudskalender\\\", \\\"mntSubtitle\\\": \\\"Maand / week / dag / lijst \\\\u00b7 sleep events om te verplaatsen, randen om te verlengen \\\\u00b7 sleep lege tijd om aan te maken \\\\u00b7 klik om te bewerken of verwijderen \\\\u00b7 de legenda filtert categorie\\\\u00ebn. Reeksen (\\\\u21bb) ondersteunen dit-event / alle-events.\\\", \\\"mntEmpty\\\": \\\"Geen werkorders in dit venster\\\", \\\"qTitle\\\": \\\"Kwaliteit \\\\u2014 vulcontroles\\\", \\\"qSubtitle\\\": \\\"Spec: 500 ml \\\\u00b1 5. Cellen buiten spec lichten op; dubbelklik om te bewerken (getypte editors + validatie). De periodekiezer is LIVE \\\\u2014 rollend venster, elke minuut opnieuw berekend.\\\", \\\"qNew\\\": \\\"+ Nieuw monster\\\", \\\"qBatchOn\\\": \\\"Batch: AAN\\\", \\\"qBatchOff\\\": \\\"Batch: UIT\\\", \\\"qLive\\\": \\\"\\\\u25cf LIVE \\\\u2014 venster schuift mee\\\", \\\"qEmpty\\\": \\\"Geen monsters in het gekozen venster\\\", \\\"trTitle\\\": \\\"Storingstriage \\\\u2014 ongeplande stop\\\", \\\"trSubtitle\\\": \\\"De beslisboom die operators volgen bij een lijnstop. Klik een knoop voor de werkwijze \\\\u00b7 hover voor details \\\\u00b7 de gestippelde rode lijn is de lus: een stop die binnen 15 minuten terugkeert, gaat terug de triage in.\\\", \\\"trSopCap\\\": \\\"STANDAARDWERKWIJZE\\\", \\\"trEscCap\\\": \\\"ESCALATIE\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 operatortriage (deze boom)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 onderhoud oproepdienst (Beheer \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 ploegleider + planning (herplannen)\\\", \\\"trEscBtn\\\": \\\"Escaleren \\\\u2192 werkorder aanmaken\\\", \\\"hTitle\\\": \\\"Ploegoverdracht\\\", \\\"hSubtitle\\\": \\\"Links: de vertrekkende ploeg schrijft de notitie (volledige editor, concept-badge, Save vuurt \\\\u00e9\\\\u00e9n onSave). Rechts: wat de aankomende ploeg ziet \\\\u2014 hetzelfde document in weergavemodus, met de checklist nog interactief.\\\", \\\"hDisp\\\": \\\"WAT DE VOLGENDE PLOEG ZIET\\\", \\\"hKbd\\\": \\\"EINDTELLING PLOEG \\\\u2014 touch-numpad, geen OS-toetsenbord\\\", \\\"hCnt\\\": \\\"BEVESTIGDE TELLING\\\", \\\"hSign\\\": \\\"AFTEKENEN (POPOVER-TOETSENBORD)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Productie\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / reiniging\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Onderhoud\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Stilstand\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Ploegen\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Preventief\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspectie\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Kalibratie\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Stilstand\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Training\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Correctief\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Menger 1\\\", \\\"group\\\": \\\"Brouwhuis\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Menger 2\\\", \\\"group\\\": \\\"Brouwhuis\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Vuller 1\\\", \\\"group\\\": \\\"Lijn 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Verpakker 1\\\", \\\"group\\\": \\\"Lijn 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Vuller 2\\\", \\\"group\\\": \\\"Lijn 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Verpakker 2\\\", \\\"group\\\": \\\"Lijn 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Ploeg A\\\", \\\"group\\\": \\\"Ploegen\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Ploeg B\\\", \\\"group\\\": \\\"Ploegen\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Onderhoud\\\", \\\"group\\\": \\\"Ploegen\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Monstertijd\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Lijn\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Product\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Vulling (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Operator\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Notitie\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"es\\\": {\\\"navOverview\\\": \\\"Resumen\\\", \\\"navSchedule\\\": \\\"Programa\\\", \\\"navMaintenance\\\": \\\"Mantenimiento\\\", \\\"navQuality\\\": \\\"Calidad\\\", \\\"navTriage\\\": \\\"Triaje\\\", \\\"navHandover\\\": \\\"Relevo\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Reiniciar demo\\\", \\\"themeLight\\\": \\\"Claro\\\", \\\"themeDark\\\": \\\"Oscuro\\\", \\\"ovTitle\\\": \\\"Resumen de planta\\\", \\\"ovSubtitle\\\": \\\"El plano de abajo es una vista Perspective viva y totalmente interactiva dentro del componente Pan & Zoom \\\\u2014 arrastre para mover, rueda para zoom, o use la lista Ir a\\\\u2026.\\\", \\\"ovHint\\\": \\\"Consejo: haga clic en \\\\u201cLog sample\\\\u201d en el laboratorio QA \\\\u2014 las vistas integradas siguen interactivas. El marcador pulsante es un POI se\\\\u00f1alado (vinc\\\\u00falelo a una alarma).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 PLANTA\\\", \\\"kL1\\\": \\\"L\\\\u00cdNEA 1 \\\\u2014 VIDRIO 33CL\\\", \\\"kL2\\\": \\\"L\\\\u00cdNEA 2 \\\\u2014 PET 50CL\\\", \\\"kJobs\\\": \\\"\\\\u00d3RDENES EN EL PLAN\\\", \\\"kQc\\\": \\\"MUESTRAS QC (48 H)\\\", \\\"kStopped\\\": \\\"PARADA\\\", \\\"kFail\\\": \\\"fallos\\\", \\\"schTitle\\\": \\\"Plan de producci\\\\u00f3n \\\\u2014 arrastre para replanificar\\\", \\\"schSubtitle\\\": \\\"Arrastre una barra para mover \\\\u00b7 su\\\\u00e9ltela en otra fila para reasignar \\\\u00b7 arrastre un borde para redimensionar \\\\u00b7 arrastre en vac\\\\u00edo para crear \\\\u00b7 clic para editar. Un solo script onChange lo persiste todo.\\\", \\\"mntTitle\\\": \\\"Calendario de mantenimiento\\\", \\\"mntSubtitle\\\": \\\"Mes / semana / d\\\\u00eda / lista \\\\u00b7 arrastre eventos para mover, bordes para redimensionar \\\\u00b7 arrastre tiempo vac\\\\u00edo para crear \\\\u00b7 clic para editar o borrar \\\\u00b7 la leyenda filtra categor\\\\u00edas. Las series (\\\\u21bb) admiten este-evento / toda-la-serie.\\\", \\\"mntEmpty\\\": \\\"Sin \\\\u00f3rdenes en esta ventana\\\", \\\"qTitle\\\": \\\"Calidad \\\\u2014 controles de llenado\\\", \\\"qSubtitle\\\": \\\"Espec.: 500 ml \\\\u00b1 5. Las celdas fuera de espec. se resaltan; doble clic para editar (editores tipados + validaci\\\\u00f3n). El selector est\\\\u00e1 EN VIVO \\\\u2014 ventana deslizante recalculada cada minuto.\\\", \\\"qNew\\\": \\\"+ Nueva muestra\\\", \\\"qBatchOn\\\": \\\"Lote: ON\\\", \\\"qBatchOff\\\": \\\"Lote: OFF\\\", \\\"qLive\\\": \\\"\\\\u25cf EN VIVO \\\\u2014 ventana deslizante\\\", \\\"qEmpty\\\": \\\"Sin muestras en la ventana elegida\\\", \\\"trTitle\\\": \\\"Triaje de paradas \\\\u2014 parada no planificada\\\", \\\"trSubtitle\\\": \\\"El \\\\u00e1rbol de decisi\\\\u00f3n que siguen los operadores cuando se para una l\\\\u00ednea. Clic en un nodo para su procedimiento \\\\u00b7 pase el rat\\\\u00f3n para detalles \\\\u00b7 la arista roja discontinua es el bucle: una parada que se repite en 15 minutos vuelve al triaje.\\\", \\\"trSopCap\\\": \\\"PROCEDIMIENTO EST\\\\u00c1NDAR\\\", \\\"trEscCap\\\": \\\"ESCALADO\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 triaje del operador (este \\\\u00e1rbol)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 mantenimiento de guardia (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 jefe de turno + planificaci\\\\u00f3n (replanificar)\\\", \\\"trEscBtn\\\": \\\"Escalar \\\\u2192 crear orden\\\", \\\"hTitle\\\": \\\"Relevo de turno\\\", \\\"hSubtitle\\\": \\\"Izquierda: el turno saliente escribe la nota (editor completo, distintivo de borrador, Save dispara un onSave). Derecha: lo que ve el turno entrante \\\\u2014 el mismo documento en modo lectura, con la checklist interactiva.\\\", \\\"hDisp\\\": \\\"LO QUE VE EL SIGUIENTE TURNO\\\", \\\"hKbd\\\": \\\"RECUENTO FIN DE TURNO \\\\u2014 teclado t\\\\u00e1ctil, sin teclado del SO\\\", \\\"hCnt\\\": \\\"RECUENTO CONFIRMADO\\\", \\\"hSign\\\": \\\"FIRMA (TECLADO EMERGENTE)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Producci\\\\u00f3n\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / limpieza\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Mantenimiento\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Paradas\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Turnos\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Preventivo\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspecci\\\\u00f3n\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Calibraci\\\\u00f3n\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Parada\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Formaci\\\\u00f3n\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Correctivo\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Mezclador 1\\\", \\\"group\\\": \\\"Cocci\\\\u00f3n\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Mezclador 2\\\", \\\"group\\\": \\\"Cocci\\\\u00f3n\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Llenadora 1\\\", \\\"group\\\": \\\"L\\\\u00ednea 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Empacadora 1\\\", \\\"group\\\": \\\"L\\\\u00ednea 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Llenadora 2\\\", \\\"group\\\": \\\"L\\\\u00ednea 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Empacadora 2\\\", \\\"group\\\": \\\"L\\\\u00ednea 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Equipo A\\\", \\\"group\\\": \\\"Equipos\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Equipo B\\\", \\\"group\\\": \\\"Equipos\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Mantenimiento\\\", \\\"group\\\": \\\"Equipos\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Hora muestra\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"L\\\\u00ednea\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Producto\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Llenado (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Operador\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Nota\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"it\\\": {\\\"navOverview\\\": \\\"Sintesi\\\", \\\"navSchedule\\\": \\\"Programma\\\", \\\"navMaintenance\\\": \\\"Manutenzione\\\", \\\"navQuality\\\": \\\"Qualit\\\\u00e0\\\", \\\"navTriage\\\": \\\"Triage\\\", \\\"navHandover\\\": \\\"Consegna\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Reset demo\\\", \\\"themeLight\\\": \\\"Chiaro\\\", \\\"themeDark\\\": \\\"Scuro\\\", \\\"ovTitle\\\": \\\"Panoramica impianto\\\", \\\"ovSubtitle\\\": \\\"La planimetria sotto \\\\u00e8 una vista Perspective viva e completamente interattiva nel componente Pan & Zoom \\\\u2014 trascina per spostare, rotella per lo zoom, o usa l'elenco Vai a\\\\u2026.\\\", \\\"ovHint\\\": \\\"Suggerimento: clicca \\\\u201cLog sample\\\\u201d nel laboratorio QA \\\\u2014 le viste integrate restano interattive. Il marcatore pulsante \\\\u00e8 un POI segnalato (collegalo a un allarme).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 IMPIANTO\\\", \\\"kL1\\\": \\\"LINEA 1 \\\\u2014 VETRO 33CL\\\", \\\"kL2\\\": \\\"LINEA 2 \\\\u2014 PET 50CL\\\", \\\"kJobs\\\": \\\"ORDINI IN PROGRAMMA\\\", \\\"kQc\\\": \\\"CAMPIONI QC (48 H)\\\", \\\"kStopped\\\": \\\"FERMA\\\", \\\"kFail\\\": \\\"scarti\\\", \\\"schTitle\\\": \\\"Programma di produzione \\\\u2014 trascina per ripianificare\\\", \\\"schSubtitle\\\": \\\"Trascina una barra per spostare \\\\u00b7 su un'altra riga per riassegnare \\\\u00b7 un bordo per ridimensionare \\\\u00b7 su una traccia vuota per creare \\\\u00b7 clic per modificare. Un solo script onChange salva tutto.\\\", \\\"mntTitle\\\": \\\"Calendario manutenzione\\\", \\\"mntSubtitle\\\": \\\"Mese / settimana / giorno / elenco \\\\u00b7 trascina gli eventi per spostare, i bordi per ridimensionare \\\\u00b7 trascina il vuoto per creare \\\\u00b7 clic per modificare o eliminare \\\\u00b7 la legenda filtra le categorie. Le serie (\\\\u21bb) supportano questo-evento / tutta-la-serie.\\\", \\\"mntEmpty\\\": \\\"Nessun ordine in questa finestra\\\", \\\"qTitle\\\": \\\"Qualit\\\\u00e0 \\\\u2014 controlli riempimento\\\", \\\"qSubtitle\\\": \\\"Spec.: 500 ml \\\\u00b1 5. Le celle fuori specifica si evidenziano; doppio clic per modificare (editor tipizzati + validazione). Il selettore \\\\u00e8 LIVE \\\\u2014 finestra scorrevole ricalcolata ogni minuto.\\\", \\\"qNew\\\": \\\"+ Nuovo campione\\\", \\\"qBatchOn\\\": \\\"Batch: ON\\\", \\\"qBatchOff\\\": \\\"Batch: OFF\\\", \\\"qLive\\\": \\\"\\\\u25cf LIVE \\\\u2014 finestra scorrevole\\\", \\\"qEmpty\\\": \\\"Nessun campione nella finestra scelta\\\", \\\"trTitle\\\": \\\"Triage fermate \\\\u2014 arresto non pianificato\\\", \\\"trSubtitle\\\": \\\"L'albero decisionale seguito dagli operatori quando una linea si ferma. Clicca un nodo per la procedura \\\\u00b7 passa il mouse per i dettagli \\\\u00b7 l'arco rosso tratteggiato \\\\u00e8 il ciclo: un arresto che si ripete entro 15 minuti torna in triage.\\\", \\\"trSopCap\\\": \\\"PROCEDURA OPERATIVA\\\", \\\"trEscCap\\\": \\\"ESCALATION\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 triage operatore (questo albero)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 reperibilit\\\\u00e0 manutenzione (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 capoturno + pianificazione (ripianificare)\\\", \\\"trEscBtn\\\": \\\"Escalare \\\\u2192 crea ordine\\\", \\\"hTitle\\\": \\\"Consegna turno\\\", \\\"hSubtitle\\\": \\\"A sinistra: il turno uscente scrive la nota (editor completo, badge bozza, Save genera un solo onSave). A destra: cosa vede il turno entrante \\\\u2014 lo stesso documento in modalit\\\\u00e0 lettura, con la checklist ancora interattiva.\\\", \\\"hDisp\\\": \\\"COSA VEDE IL TURNO SUCCESSIVO\\\", \\\"hKbd\\\": \\\"CONTEGGIO FINE TURNO \\\\u2014 tastierino touch, senza tastiera OS\\\", \\\"hCnt\\\": \\\"CONTEGGIO CONFERMATO\\\", \\\"hSign\\\": \\\"FIRMA (TASTIERA POPOVER)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Produzione\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / pulizia\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Manutenzione\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Fermate\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Turni\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Preventiva\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Ispezione\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Taratura\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Fermata\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Formazione\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Correttiva\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Miscelatore 1\\\", \\\"group\\\": \\\"Sala cottura\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Miscelatore 2\\\", \\\"group\\\": \\\"Sala cottura\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Riempitrice 1\\\", \\\"group\\\": \\\"Linea 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Confezionatrice 1\\\", \\\"group\\\": \\\"Linea 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Riempitrice 2\\\", \\\"group\\\": \\\"Linea 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Confezionatrice 2\\\", \\\"group\\\": \\\"Linea 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Squadra A\\\", \\\"group\\\": \\\"Squadre\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Squadra B\\\", \\\"group\\\": \\\"Squadre\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Manutenzione\\\", \\\"group\\\": \\\"Squadre\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Ora campione\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Linea\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Prodotto\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Riempim. (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Operatore\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Nota\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}, \\\"pt\\\": {\\\"navOverview\\\": \\\"Resumo\\\", \\\"navSchedule\\\": \\\"Programa\\\", \\\"navMaintenance\\\": \\\"Manuten\\\\u00e7\\\\u00e3o\\\", \\\"navQuality\\\": \\\"Qualidade\\\", \\\"navTriage\\\": \\\"Triagem\\\", \\\"navHandover\\\": \\\"Passagem\\\", \\\"navAdmin\\\": \\\"Admin\\\", \\\"reset\\\": \\\"Repor demo\\\", \\\"themeLight\\\": \\\"Claro\\\", \\\"themeDark\\\": \\\"Escuro\\\", \\\"ovTitle\\\": \\\"Vis\\\\u00e3o geral da f\\\\u00e1brica\\\", \\\"ovSubtitle\\\": \\\"A planta abaixo \\\\u00e9 uma vista Perspective viva e totalmente interativa no componente Pan & Zoom \\\\u2014 arraste para mover, use a roda para zoom, ou a lista Ir para\\\\u2026.\\\", \\\"ovHint\\\": \\\"Dica: clique em \\\\u201cLog sample\\\\u201d no laborat\\\\u00f3rio QA \\\\u2014 as vistas incorporadas continuam interativas. O marcador pulsante \\\\u00e9 um POI sinalizado (vincule-o a um alarme).\\\", \\\"kOee\\\": \\\"OEE \\\\u2014 F\\\\u00c1BRICA\\\", \\\"kL1\\\": \\\"LINHA 1 \\\\u2014 VIDRO 33CL\\\", \\\"kL2\\\": \\\"LINHA 2 \\\\u2014 PET 50CL\\\", \\\"kJobs\\\": \\\"ORDENS NO PLANO\\\", \\\"kQc\\\": \\\"AMOSTRAS QC (48 H)\\\", \\\"kStopped\\\": \\\"PARADA\\\", \\\"kFail\\\": \\\"falhas\\\", \\\"schTitle\\\": \\\"Plano de produ\\\\u00e7\\\\u00e3o \\\\u2014 arraste para replanejar\\\", \\\"schSubtitle\\\": \\\"Arraste uma barra para mover \\\\u00b7 solte em outra linha para reatribuir \\\\u00b7 arraste uma borda para redimensionar \\\\u00b7 arraste no vazio para criar \\\\u00b7 clique para editar. Um s\\\\u00f3 script onChange persiste tudo.\\\", \\\"mntTitle\\\": \\\"Calend\\\\u00e1rio de manuten\\\\u00e7\\\\u00e3o\\\", \\\"mntSubtitle\\\": \\\"M\\\\u00eas / semana / dia / lista \\\\u00b7 arraste eventos para mover, bordas para redimensionar \\\\u00b7 arraste tempo vazio para criar \\\\u00b7 clique para editar ou excluir \\\\u00b7 a legenda filtra categorias. S\\\\u00e9ries (\\\\u21bb) suportam este-evento / todos-os-eventos.\\\", \\\"mntEmpty\\\": \\\"Sem ordens nesta janela\\\", \\\"qTitle\\\": \\\"Qualidade \\\\u2014 controles de enchimento\\\", \\\"qSubtitle\\\": \\\"Espec.: 500 ml \\\\u00b1 5. C\\\\u00e9lulas fora de especifica\\\\u00e7\\\\u00e3o destacam-se; duplo clique para editar (editores tipados + valida\\\\u00e7\\\\u00e3o). O seletor est\\\\u00e1 AO VIVO \\\\u2014 janela deslizante recalculada a cada minuto.\\\", \\\"qNew\\\": \\\"+ Nova amostra\\\", \\\"qBatchOn\\\": \\\"Lote: ON\\\", \\\"qBatchOff\\\": \\\"Lote: OFF\\\", \\\"qLive\\\": \\\"\\\\u25cf AO VIVO \\\\u2014 janela deslizante\\\", \\\"qEmpty\\\": \\\"Sem amostras na janela selecionada\\\", \\\"trTitle\\\": \\\"Triagem de paradas \\\\u2014 parada n\\\\u00e3o planejada\\\", \\\"trSubtitle\\\": \\\"A \\\\u00e1rvore de decis\\\\u00e3o que os operadores seguem quando uma linha para. Clique num n\\\\u00f3 para o procedimento \\\\u00b7 passe o mouse para detalhes \\\\u00b7 a aresta vermelha tracejada \\\\u00e9 o la\\\\u00e7o: uma parada que se repete em 15 minutos volta \\\\u00e0 triagem.\\\", \\\"trSopCap\\\": \\\"PROCEDIMENTO PADR\\\\u00c3O\\\", \\\"trEscCap\\\": \\\"ESCALONAMENTO\\\", \\\"trEsc1\\\": \\\"0\\\\u201315 min \\\\u2014 triagem do operador (esta \\\\u00e1rvore)\\\", \\\"trEsc2\\\": \\\"15+ min \\\\u2014 manuten\\\\u00e7\\\\u00e3o de plant\\\\u00e3o (Admin \\\\u203a Rosters)\\\", \\\"trEsc3\\\": \\\"45+ min \\\\u2014 l\\\\u00edder de turno + planejamento (replanejar)\\\", \\\"trEscBtn\\\": \\\"Escalar \\\\u2192 criar ordem\\\", \\\"hTitle\\\": \\\"Passagem de turno\\\", \\\"hSubtitle\\\": \\\"\\\\u00c0 esquerda: o turno que sai escreve a nota (editor completo, selo de rascunho, Save dispara um onSave). \\\\u00c0 direita: o que o turno que entra v\\\\u00ea \\\\u2014 o mesmo documento em modo leitura, com a checklist ainda interativa.\\\", \\\"hDisp\\\": \\\"O QUE O PR\\\\u00d3XIMO TURNO V\\\\u00ca\\\", \\\"hKbd\\\": \\\"CONTAGEM DE FIM DE TURNO \\\\u2014 teclado t\\\\u00e1til, sem teclado do SO\\\", \\\"hCnt\\\": \\\"CONTAGEM CONFIRMADA\\\", \\\"hSign\\\": \\\"ASSINATURA (TECLADO POPOVER)\\\", \\\"tlCats\\\": [{\\\"id\\\": \\\"prod\\\", \\\"label\\\": \\\"Produ\\\\u00e7\\\\u00e3o\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"cip\\\", \\\"label\\\": \\\"CIP / limpeza\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/invert_colors\\\"}, {\\\"id\\\": \\\"maint\\\", \\\"label\\\": \\\"Manuten\\\\u00e7\\\\u00e3o\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/handyman\\\"}, {\\\"id\\\": \\\"down\\\", \\\"label\\\": \\\"Paradas\\\", \\\"color\\\": \\\"#ef4444\\\"}, {\\\"id\\\": \\\"shift\\\", \\\"label\\\": \\\"Turnos\\\", \\\"color\\\": \\\"#64748b\\\", \\\"icon\\\": \\\"material/groups\\\"}], \\\"calCats\\\": [{\\\"id\\\": \\\"pm\\\", \\\"label\\\": \\\"Preventiva\\\", \\\"color\\\": \\\"#38bdf8\\\", \\\"icon\\\": \\\"material/build\\\"}, {\\\"id\\\": \\\"insp\\\", \\\"label\\\": \\\"Inspe\\\\u00e7\\\\u00e3o\\\", \\\"color\\\": \\\"#22c55e\\\", \\\"icon\\\": \\\"material/fact_check\\\"}, {\\\"id\\\": \\\"calib\\\", \\\"label\\\": \\\"Calibra\\\\u00e7\\\\u00e3o\\\", \\\"color\\\": \\\"#f59e0b\\\", \\\"icon\\\": \\\"material/speed\\\"}, {\\\"id\\\": \\\"shut\\\", \\\"label\\\": \\\"Parada\\\", \\\"color\\\": \\\"#ef4444\\\", \\\"icon\\\": \\\"material/block\\\"}, {\\\"id\\\": \\\"train\\\", \\\"label\\\": \\\"Treinamento\\\", \\\"color\\\": \\\"#a78bfa\\\", \\\"icon\\\": \\\"material/school\\\"}, {\\\"id\\\": \\\"corr\\\", \\\"label\\\": \\\"Corretiva\\\", \\\"color\\\": \\\"#fb923c\\\", \\\"icon\\\": \\\"material/engineering\\\"}], \\\"tlRes\\\": [{\\\"id\\\": \\\"m1\\\", \\\"label\\\": \\\"Misturador 1\\\", \\\"group\\\": \\\"Brassagem\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"m2\\\", \\\"label\\\": \\\"Misturador 2\\\", \\\"group\\\": \\\"Brassagem\\\", \\\"icon\\\": \\\"material/science\\\", \\\"color\\\": \\\"#38bdf8\\\"}, {\\\"id\\\": \\\"f1\\\", \\\"label\\\": \\\"Enchedora 1\\\", \\\"group\\\": \\\"Linha 1\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k1\\\", \\\"label\\\": \\\"Empacotadora 1\\\", \\\"group\\\": \\\"Linha 1\\\"}, {\\\"id\\\": \\\"f2\\\", \\\"label\\\": \\\"Enchedora 2\\\", \\\"group\\\": \\\"Linha 2\\\", \\\"color\\\": \\\"#22c55e\\\"}, {\\\"id\\\": \\\"k2\\\", \\\"label\\\": \\\"Empacotadora 2\\\", \\\"group\\\": \\\"Linha 2\\\"}, {\\\"id\\\": \\\"ca\\\", \\\"label\\\": \\\"Equipe A\\\", \\\"group\\\": \\\"Equipes\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"cb\\\", \\\"label\\\": \\\"Equipe B\\\", \\\"group\\\": \\\"Equipes\\\", \\\"icon\\\": \\\"material/groups\\\", \\\"color\\\": \\\"#a78bfa\\\"}, {\\\"id\\\": \\\"mx\\\", \\\"label\\\": \\\"Manuten\\\\u00e7\\\\u00e3o\\\", \\\"group\\\": \\\"Equipes\\\", \\\"icon\\\": \\\"material/handyman\\\", \\\"color\\\": \\\"#f59e0b\\\"}], \\\"gridCols\\\": [{\\\"field\\\": \\\"ts\\\", \\\"header\\\": \\\"Hora amostra\\\", \\\"type\\\": \\\"datetime\\\", \\\"width\\\": 160, \\\"pinned\\\": true, \\\"editable\\\": false}, {\\\"field\\\": \\\"line\\\", \\\"header\\\": \\\"Linha\\\", \\\"width\\\": 90, \\\"options\\\": [\\\"Line 1\\\", \\\"Line 2\\\"]}, {\\\"field\\\": \\\"product\\\", \\\"header\\\": \\\"Produto\\\", \\\"width\\\": 150}, {\\\"field\\\": \\\"fillMl\\\", \\\"header\\\": \\\"Enchim. (ml)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 110, \\\"required\\\": true, \\\"min\\\": 400, \\\"max\\\": 600, \\\"aggregate\\\": \\\"avg\\\", \\\"cellStyles\\\": [{\\\"lt\\\": 495, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}, {\\\"gt\\\": 505, \\\"background\\\": \\\"#7f1d1d\\\", \\\"color\\\": \\\"#fecaca\\\"}]}, {\\\"field\\\": \\\"tempC\\\", \\\"header\\\": \\\"Temp (\\\\u00b0C)\\\", \\\"type\\\": \\\"number\\\", \\\"decimals\\\": 1, \\\"align\\\": \\\"right\\\", \\\"width\\\": 100, \\\"cellStyles\\\": [{\\\"gt\\\": 4.4, \\\"color\\\": \\\"#f59e0b\\\"}]}, {\\\"field\\\": \\\"passed\\\", \\\"header\\\": \\\"OK\\\", \\\"type\\\": \\\"boolean\\\", \\\"align\\\": \\\"center\\\", \\\"width\\\": 80, \\\"aggregate\\\": \\\"count\\\"}, {\\\"field\\\": \\\"operator\\\", \\\"header\\\": \\\"Operador\\\", \\\"width\\\": 130, \\\"options\\\": [\\\"A. Janssens\\\", \\\"M. Peeters\\\", \\\"S. Willems\\\", \\\"K. De Smet\\\"]}, {\\\"field\\\": \\\"note\\\", \\\"header\\\": \\\"Nota\\\", \\\"width\\\": 420, \\\"cellStyles\\\": [{\\\"contains\\\": \\\"hold\\\", \\\"color\\\": \\\"#fca5a5\\\"}]}]}}\")\n\t\tif val in tr:\n\t\t\tself.session.custom.demo.i18n = tr[val]\n\t\tself.session.custom.demo.locale = val\n"
+            }
+          }
+        },
+        "meta": {
+          "name": "localeDd"
+        },
+        "position": {
+          "x": 1036,
+          "y": 16,
+          "width": 70,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
         "version": 0,
         "props": {
           "text": "",
           "style": {
-            "borderRadius": "5px",
-            "backgroundColor": "#22c55e"
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#1e293b",
+            "borderStyle": "none",
+            "color": "#cbd5e1"
           }
         },
         "meta": {
-          "name": "liveDot"
+          "name": "themeBtn"
         },
         "position": {
-          "x": 1096,
-          "y": 27,
-          "width": 10,
-          "height": 10
+          "x": 1112,
+          "y": 15,
+          "width": 58,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tcur = str(self.session.props.theme or '')\n\tself.session.props.theme = 'light' if cur.startswith('dark') else 'dark'\n"
+                }
+              }
+            ]
+          }
         },
         "propConfig": {
-          "props.style.backgroundColor": {
+          "props.text": {
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "if(getSecond(now(1000)) % 2 = 0, '#22c55e', '#14532d')"
+                "expression": "if(left({session.props.theme}, 4) = 'dark', {session.custom.demo.i18n.themeLight}, {session.custom.demo.i18n.themeDark})"
               }
             }
           }
@@ -415,7 +558,7 @@
         "props": {
           "text": "",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "11px",
             "fontFamily": "monospace",
             "color": "#94a3b8"
           }
@@ -424,9 +567,9 @@
           "name": "clock"
         },
         "position": {
-          "x": 1114,
-          "y": 22,
-          "width": 196,
+          "x": 1178,
+          "y": 23,
+          "width": 158,
           "height": 20
         },
         "propConfig": {
@@ -434,7 +577,15 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "dateFormat(now(1000), 'EEE dd MMM  HH:mm:ss')"
+                "expression": "dateFormat(now(1000), 'EEE dd MMM HH:mm:ss')"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
               }
             }
           }
@@ -457,9 +608,9 @@
           "name": "resetBtn"
         },
         "position": {
-          "x": 1330,
+          "x": 1344,
           "y": 15,
-          "width": 118,
+          "width": 120,
           "height": 34
         },
         "events": {
@@ -473,6 +624,16 @@
                 }
               }
             ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.reset"
+              }
+            }
           }
         }
       },
@@ -509,6 +670,24 @@
           }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0f172a', '#ffffff')"
+          }
+        }
+      },
+      "props.style.borderBottom": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '1px solid #1e293b', '1px solid #e2e8f0')"
+          }
+        }
+      }
+    }
   }
 }

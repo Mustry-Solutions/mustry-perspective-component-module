@@ -21,10 +21,23 @@ full-screen (Cmd-Ctrl-F in Chrome).
 | **Overview** | KPI cards tick live; drag/zoom the plant floor; pick "Line 2 — Filler" from *Go to…*; every ~minute Filler 2 faults: the KPI flips to STOPPED, the POI pulses, downstream equipment starves to amber. Click **Log sample** inside the QA lab — embedded views stay fully interactive. | Pan & Zoom View |
 | **Schedule** | The scheduling board: grouped resources, categories + legend, live now-line. **Drag an order to another row** (reassign), resize one, click one to edit, switch to the Shift zoom preset. Navigate away and back — the change persisted (one `onChange` script). | Resource Timeline |
 | **Maintenance** | Month view: recurring line walk-downs (↻), a multi-day shutdown bar, done/cancelled styling. Drag the PM to another day; week view for the time grid. Same data philosophy: one `onChange`. | Calendar / Scheduler |
-| **Quality** | Live rolling window (the picker re-derives every minute — alarm-journal style). Out-of-spec fills glow red; double-click a cell: typed editors + validation; **+ New sample** pushes a row. CSV export on the toolbar. | Date/Time Range Picker + Data Grid |
-| **Triage** | The downtime decision tree: Yes/No edge labels, the dashed red *Recurs* loop, hover info cards. Click *Clear jam* → the LOTO SOP loads beside it. | Branching Diagram |
+| **Quality** | Live rolling window (the picker re-derives every minute — alarm-journal style). Out-of-spec fills glow red; double-click a cell: typed editors + validation; **+ New sample** pushes a row. Flip **Batch edit ON** to accumulate dirty cells and Save once (`onBatchSave`). CSV export on the toolbar. | Date/Time Range Picker + Data Grid |
+| **Triage** | The downtime decision tree: Yes/No edge labels, the dashed red *Recurs* loop, hover info cards. Click *Clear jam* → the LOTO SOP loads beside it. Then the closer: **Escalate → create work order** — the WO instantly appears on the Schedule board *and* the Maintenance calendar (the components compose through one session store). | Branching Diagram |
 | **Handover** | Write in the editor, **Save**, and the display copy updates; tick a checklist step on the *display* side — it fires an event and persists. The numpad is the no-OS-keyboard answer for panel PCs. | Rich Text Editor + On-Screen Keyboard |
 | **Admin** | Schedules / rosters / users / holidays over the *real* gateway user source — the screens every integrator rebuilds. Last tab: a validated JSON config (invalid JSON cannot be saved) and the brand accent — change it and revisit Overview. | Admin family + Code Editor + Color Picker |
+
+Two one-click moments from the top bar, any time they land well:
+
+- **Language dropdown** (EN/FR/DE/NL/ES/IT/PT) — the WHOLE app relocalizes in
+  one click: component UI (label packs + dates via `config.locale`) and the
+  shell (titles, nav, KPI captions, category legends, board resources, grid
+  headers — all bound to a `session.custom.demo.i18n` dict the dropdown
+  swaps). Seeded event titles, SOP texts and the plant-floor signage stay
+  English on purpose: they're content, not chrome.
+- **Light/Dark** — the full app follows the Perspective theme: components
+  restyle themselves, and every shell colour carries a theme-conditional
+  binding (dark ↔ light palette pairs, applied by the generator's theme
+  pass).
 
 Closer: "Everything you dragged, edited and saved went through the same
 pattern — components fire events, one small script persists. Bind them to your

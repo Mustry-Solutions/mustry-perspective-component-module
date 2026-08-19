@@ -1,7 +1,8 @@
 {
   "custom": {
     "sopTitle": "Click a node",
-    "sopBody": "Each node carries its standard operating procedure. Click one to read it here; hover a node for the quick info card."
+    "sopBody": "Each node carries its standard operating procedure. Click one to read it here; hover a node for the quick info card.",
+    "lastWo": ""
   },
   "params": {},
   "props": {
@@ -42,6 +43,24 @@
           "y": 8,
           "width": 1048,
           "height": 26
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -62,6 +81,24 @@
           "y": 36,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trSubtitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -278,6 +315,24 @@
           }
         },
         "custom": {},
+        "propConfig": {
+          "props.config.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+              }
+            }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
+          }
+        },
         "events": {
           "component": {
             "onNodeClick": [
@@ -313,6 +368,24 @@
           "y": 64,
           "width": 432,
           "height": 796
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -335,6 +408,16 @@
           "y": 88,
           "width": 384,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trSopCap"
+              }
+            }
+          }
         }
       },
       {
@@ -363,6 +446,14 @@
               "type": "property",
               "config": {
                 "path": "view.custom.sopTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
               }
             }
           }
@@ -395,6 +486,14 @@
                 "path": "view.custom.sopBody"
               }
             }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#cbd5e1', '#334155')"
+              }
+            }
           }
         }
       },
@@ -418,6 +517,16 @@
           "y": 620,
           "width": 384,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEscCap"
+              }
+            }
+          }
         }
       },
       {
@@ -438,6 +547,24 @@
           "y": 644,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc1"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -458,6 +585,24 @@
           "y": 666,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc2"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -478,8 +623,111 @@
           "y": 688,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc3"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Escalate \u2192 create work order",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#1d4ed8",
+            "borderStyle": "none"
+          }
+        },
+        "meta": {
+          "name": "escBtn"
+        },
+        "position": {
+          "x": 1056,
+          "y": 720,
+          "width": 250,
+          "height": 36
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Create a corrective WO in the shared session store: it appears on\n\t# the Schedule board (Maintenance row) and the Maintenance calendar.\n\td = self.session.custom.demo\n\tnow = system.date.now()\n\tms = system.date.toMillis(now)\n\th = system.date.getHour24(now)\n\td0 = system.date.midnight(now)\n\tstart = system.date.addHours(d0, 21 if h >= 21 else h + 1)\n\tend = system.date.addHours(start, 2)\n\tdef iso(dt):\n\t\treturn system.date.format(dt, \"yyyy-MM-dd'T'HH:mm:ss\")\n\two = 'WO-%04d' % (2300 + (ms / 60000) % 1000)\n\ttitle = wo + ' - Downtime escalation'\n\torders = [dict(e) for e in d.orders]\n\torders.append({'id': 'esc-%d' % ms, 'resourceId': 'mx', 'title': title,\n\t\t'start': iso(start), 'end': iso(end), 'category': 'maint',\n\t\t'description': 'Escalated from the downtime triage tree (step: '\n\t\t\t+ str(self.view.custom.sopTitle) + ').'})\n\td.orders = orders\n\tmaint = [dict(e) for e in d.maint]\n\tmaint.append({'id': 'escm-%d' % ms, 'title': title, 'start': iso(start),\n\t\t'end': iso(end), 'category': 'corr',\n\t\t'description': 'Escalated from the downtime triage tree.'})\n\td.maint = maint\n\tself.view.custom.lastWo = (wo + ' created - now on the Schedule board '\n\t\t'(Maintenance row) and the Maintenance calendar.')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEscBtn"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "color": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "escMsg"
+        },
+        "position": {
+          "x": 1056,
+          "y": 764,
+          "width": 384,
+          "height": 64
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.lastWo"
+              }
+            }
+          }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

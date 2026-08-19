@@ -48,6 +48,16 @@
           "y": 8,
           "width": 1448,
           "height": 48
+        },
+        "propConfig": {
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -101,6 +111,14 @@
                           "code": "\t# Reference binding: the gateway's real schedules mapped to the component's\n\t# flat BasicScheduleModel mirror, plus two synthetic demo shifts appended\n\t# when no gateway schedule already has their name (a save persists them for\n\t# real, after which the gateway copy wins). refreshTick in the expression\n\t# refetches immediately after each save/delete.\n\tDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']\n\tdef mapSched(s):\n\t\td = {'name': str(s.name), 'description': str(getattr(s, 'description', '') or '')}\n\t\tfor k in ['observeHolidays', 'allDays', 'repeatAlternating']:\n\t\t\td[k] = bool(getattr(s, k, False))\n\t\tsa = getattr(s, 'startingAt', None)\n\t\td['startingAt'] = system.date.format(sa, 'yyyy-MM-dd') if sa else ''\n\t\tfor day in DAYS:\n\t\t\td[day] = bool(getattr(s, day, False))\n\t\t\td[day + 'Time'] = str(getattr(s, day + 'Time', '') or '')\n\t\treturn d\n\tout = []\n\tfor s in system.user.getSchedules():\n\t\ttry:\n\t\t\tout.append(mapSched(s))\n\t\texcept Exception:\n\t\t\tpass\n\texisting = set(d['name'] for d in out)\n\tday = {'name': 'Demo Day Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': True, 'allDays': False, 'repeatAlternating': False, 'startingAt': ''}\n\tnight = {'name': 'Demo Night Shift', 'description': 'Synthetic (added by the view binding)', 'observeHolidays': False, 'allDays': False, 'repeatAlternating': True, 'startingAt': ''}\n\tfor d in DAYS:\n\t\tweekday = d not in ('saturday', 'sunday')\n\t\tday[d] = weekday\n\t\tday[d + 'Time'] = '8:00-12:00, 12:30-17:00' if weekday else ''\n\t\tnight[d] = weekday\n\t\tnight[d + 'Time'] = '0:00-6:00, 22:00-24:00' if weekday else ''\n\treturn out + [s for s in [day, night] if s['name'] not in existing]\n"
                         }
                       ]
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
                     }
                   }
                 },
@@ -244,6 +262,14 @@
                           "code": "\t# The 'default' user source as the picker directory. First ensure three demo\n\t# users exist (idempotent; kpatel deliberately has NO contact info so the\n\t# roster rows can show the warning) \u2014 a dev-gateway convenience, remove for\n\t# production bindings. NOTE: bare except on purpose \u2014 Jython's 'except\n\t# Exception' does not catch Java exceptions from system.user.\n\timport sys\n\tlog = system.util.getLogger('RosterDemo')\n\tSRC = 'default'\n\tdef ensure(username, first, last, contacts):\n\t\ttry:\n\t\t\tif system.user.getUser(SRC, username) is None:\n\t\t\t\tu = system.user.getNewUser(SRC, username)\n\t\t\t\tu.set('firstname', first)\n\t\t\t\tu.set('lastname', last)\n\t\t\t\tu.set('password', 'Demo-1234!')\n\t\t\t\tfor t, v in contacts:\n\t\t\t\t\tu.addContactInfo(t, v)\n\t\t\t\tresp = system.user.addUser(SRC, u)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addUser(' + username + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + username + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('jdoe', 'Jane', 'Doe', [('email', 'jane.doe@example.com')])\n\tensure('mvermeer', 'Mia', 'Vermeer', [('email', 'mia@example.com'), ('sms', '+31600000001')])\n\tensure('kpatel', 'Kiran', 'Patel', [])\n\tout = []\n\tfor u in system.user.getUsers(SRC):\n\t\ttry:\n\t\t\tci = []\n\t\t\tfor c in u.contactInfo:\n\t\t\t\tci.append({'contactType': str(c.contactType), 'value': str(c.value)})\n\t\t\tout.append({'username': str(u.get('username') or ''), 'firstName': str(u.get('firstname') or ''), 'lastName': str(u.get('lastname') or ''), 'contactInfo': ci})\n\t\texcept:\n\t\t\tlog.warn('map user failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
                         }
                       ]
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
                     }
                   }
                 },
@@ -405,6 +431,14 @@
                         }
                       ]
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -555,6 +589,14 @@
                         }
                       ]
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -683,6 +725,16 @@
                   "y": 8,
                   "width": 920,
                   "height": 20
+                },
+                "propConfig": {
+                  "props.style.color": {
+                    "binding": {
+                      "type": "expr",
+                      "config": {
+                        "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+                      }
+                    }
+                  }
                 }
               },
               {
@@ -711,6 +763,14 @@
                       "type": "property",
                       "config": {
                         "path": "session.custom.demo.lineConfig"
+                      }
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
                       }
                     }
                   }
@@ -829,6 +889,14 @@
                         "path": "session.custom.demo.accent"
                       }
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -877,6 +945,14 @@
                         "path": "session.custom.demo.accent"
                       }
                     }
+                  },
+                  "props.style.backgroundColor": {
+                    "binding": {
+                      "type": "expr",
+                      "config": {
+                        "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+                      }
+                    }
                   }
                 }
               }
@@ -884,6 +960,16 @@
           }
         ]
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

@@ -1,5 +1,7 @@
 {
-  "custom": {},
+  "custom": {
+    "batch": false
+  },
   "params": {},
   "props": {
     "defaultSize": {
@@ -39,6 +41,24 @@
           "y": 8,
           "width": 1048,
           "height": 26
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -59,6 +79,24 @@
           "y": 36,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qSubtitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -145,6 +183,16 @@
               }
             ]
           }
+        },
+        "propConfig": {
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
+          }
         }
       },
       {
@@ -172,7 +220,53 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "if({../Picker.props.output.isRealtime}, '\u25cf LIVE \u2014 window slides with now', '')"
+                "expression": "if({../Picker.props.output.isRealtime}, {session.custom.demo.i18n.qLive}, '')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#334155",
+            "borderStyle": "none",
+            "color": "#cbd5e1"
+          }
+        },
+        "meta": {
+          "name": "batchBtn"
+        },
+        "position": {
+          "x": 1180,
+          "y": 64,
+          "width": 134,
+          "height": 38
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Cell mode fires onCellEdit per commit; batch mode accumulates dirty\n\t# cells and fires ONE onBatchSave from the toolbar's Save.\n\tself.view.custom.batch = not self.view.custom.batch\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.batch}, {session.custom.demo.i18n.qBatchOn}, {session.custom.demo.i18n.qBatchOff})"
               }
             }
           }
@@ -210,6 +304,16 @@
                 }
               }
             ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qNew"
+              }
+            }
           }
         }
       },
@@ -334,6 +438,30 @@
         },
         "custom": {},
         "propConfig": {
+          "props.config.editMode": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.batch}, 'batch', 'cell')"
+              }
+            }
+          },
+          "props.config.columns": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.gridCols"
+              }
+            }
+          },
+          "props.config.emptyMessage": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qEmpty"
+              }
+            }
+          },
           "props.data.rows": {
             "binding": {
               "type": "property",
@@ -347,6 +475,14 @@
                 }
               ]
             }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
           }
         },
         "events": {
@@ -357,6 +493,15 @@
                 "scope": "G",
                 "config": {
                   "script": "\t# Persist a validated cell edit by row id; the binding refilters.\n\trows = [dict(r) for r in self.session.custom.demo.quality]\n\tfor i in range(len(rows)):\n\t\tif rows[i].get('id') == event.rowId:\n\t\t\trows[i] = dict(event.row)\n\t\t\tbreak\n\tself.session.custom.demo.quality = rows\n"
+                }
+              }
+            ],
+            "onBatchSave": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# One event for every dirty cell: apply the changed rows by id.\n\trows = [dict(r) for r in self.session.custom.demo.quality]\n\tchanged = {str(r['id']): dict(r) for r in event.rows}\n\tfor i in range(len(rows)):\n\t\tk = str(rows[i].get('id'))\n\t\tif k in changed:\n\t\t\trows[i] = changed[k]\n\tself.session.custom.demo.quality = rows\n"
                 }
               }
             ],
@@ -372,6 +517,16 @@
           }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }
