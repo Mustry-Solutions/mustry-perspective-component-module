@@ -1,0 +1,514 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 64
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0f172a",
+        "borderBottom": "1px solid #1e293b"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "MUSTRY BOTTLING CO.",
+          "style": {
+            "fontSize": "15px",
+            "fontWeight": "800",
+            "letterSpacing": "0.06em",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "brand"
+        },
+        "position": {
+          "x": 16,
+          "y": 12,
+          "width": 220,
+          "height": 22
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Plant Operations",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.18em",
+            "color": "#64748b"
+          }
+        },
+        "meta": {
+          "name": "brandSub"
+        },
+        "position": {
+          "x": 16,
+          "y": 34,
+          "width": 220,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Overview",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_overview"
+        },
+        "position": {
+          "x": 250,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Schedule",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_schedule"
+        },
+        "position": {
+          "x": 354,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/schedule')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/schedule', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Maintenance",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_maintenance"
+        },
+        "position": {
+          "x": 458,
+          "y": 15,
+          "width": 112,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/maintenance')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/maintenance', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Quality",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_quality"
+        },
+        "position": {
+          "x": 578,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/quality')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/quality', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Triage",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_triage"
+        },
+        "position": {
+          "x": 682,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/triage')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/triage', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Handover",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_handover"
+        },
+        "position": {
+          "x": 786,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/handover')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/handover', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Admin",
+          "style": {
+            "fontSize": "13px",
+            "borderRadius": "6px",
+            "borderStyle": "none",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "nav_admin"
+        },
+        "position": {
+          "x": 890,
+          "y": 15,
+          "width": 96,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page='/admin')\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({page.props.path} = '/admin', '#1d4ed8', '#1e293b')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "borderRadius": "5px",
+            "backgroundColor": "#22c55e"
+          }
+        },
+        "meta": {
+          "name": "liveDot"
+        },
+        "position": {
+          "x": 1096,
+          "y": 27,
+          "width": 10,
+          "height": 10
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(getSecond(now(1000)) % 2 = 0, '#22c55e', '#14532d')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "13px",
+            "fontFamily": "monospace",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "clock"
+        },
+        "position": {
+          "x": 1114,
+          "y": 22,
+          "width": 196,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "dateFormat(now(1000), 'EEE dd MMM  HH:mm:ss')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "Reset demo",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#334155",
+            "borderStyle": "none",
+            "color": "#cbd5e1"
+          }
+        },
+        "meta": {
+          "name": "resetBtn"
+        },
+        "position": {
+          "x": 1330,
+          "y": 15,
+          "width": 118,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Reseed everything (relative to today) and go home.\n\tself.session.custom.demo.seeded = False\n\tsystem.perspective.navigate(page='/')\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "color": "rgba(0,0,0,0)"
+          }
+        },
+        "meta": {
+          "name": "seeder"
+        },
+        "position": {
+          "x": 0,
+          "y": 62,
+          "width": 2,
+          "height": 2
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.seeded"
+              }
+            },
+            "onChange": {
+              "enabled": true,
+              "script": "\t# Seed evergreen demo data into session.custom.demo, relative to today, in\n\t# the GATEWAY's timezone (ops/demo.sh pins that to the host's zone). Runs on\n\t# session start (the binding delivers the initial seeded=False) and again\n\t# after \"Reset demo\" flips it back.\n\tval = currentValue.value if currentValue else None\n\tif val:\n\t\treturn\n\tfrom java.text import SimpleDateFormat\n\tfrom java.util import Calendar, Date\n\tfmt = SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss\")\n\tcal = Calendar.getInstance()\n\tcal.set(Calendar.HOUR_OF_DAY, 0)\n\tcal.set(Calendar.MINUTE, 0)\n\tcal.set(Calendar.SECOND, 0)\n\tcal.set(Calendar.MILLISECOND, 0)\n\tbase = cal.getTimeInMillis()\n\tHOUR = 3600000\n\tdef at(n, h, m=0):\n\t\treturn base + ((n * 24 + h) * 60 + m) * 60000\n\tdef iso(ms):\n\t\treturn fmt.format(Date(ms))\n\tdef day(n):\n\t\treturn iso(at(n, 0))[:10]\n\t\n\t# --- production schedule (resource timeline) ---\n\to = []\n\tdef ev(eid, res, title, s, e, cat, **kw):\n\t\trow = {'id': eid, 'resourceId': res, 'title': title, 'start': iso(s), 'category': cat}\n\t\tif e is not None:\n\t\t\trow['end'] = iso(e)\n\t\trow.update(kw)\n\t\to.append(row)\n\tfor n in (-1, 0, 1):\n\t\tp = 'd%d' % (n + 1)\n\t\tev(p+'m1a', 'm1', 'Brew 4711 - Pils', at(n,6), at(n,10), 'prod')\n\t\tev(p+'m1b', 'm1', 'Brew 4712 - Wheat', at(n,10,30), at(n,14), 'prod')\n\t\tev(p+'m1c', 'm1', 'Brew 4713 - IPA', at(n,14,30), at(n,18,30), 'prod')\n\t\tev(p+'m2a', 'm2', 'Brew 4720 - Lager', at(n,7), at(n,12), 'prod')\n\t\tev(p+'f1c', 'f1', 'CIP - caustic + rinse', at(n,5), at(n,6,45), 'cip')\n\t\tev(p+'f1a', 'f1', 'Fill Pils 33cl', at(n,7), at(n,12), 'prod')\n\t\tev(p+'f1b', 'f1', 'Fill Wheat 50cl', at(n,12,30), at(n,16,30), 'prod')\n\t\tev(p+'k1a', 'k1', 'Pack order 55212', at(n,8), at(n,13), 'prod')\n\t\tev(p+'k1b', 'k1', 'Pack order 55219', at(n,13,30), at(n,17), 'prod')\n\t\tev(p+'f2c', 'f2', 'CIP - caustic + rinse', at(n,4), at(n,5,45), 'cip')\n\t\tev(p+'f2a', 'f2', 'Fill Lager 50cl PET', at(n,6), at(n,13), 'prod')\n\t\tev(p+'k2a', 'k2', 'Pack order 55214', at(n,7), at(n,14), 'prod')\n\t\tev(p+'ca', 'ca', 'Early shift', at(n,6), at(n,14), 'shift')\n\t\tev(p+'cb', 'cb', 'Late shift', at(n,14), at(n,22), 'shift')\n\tev('rush', 'm2', 'Rush order - Radler', at(0,13), at(0,16), 'prod', status='tentative',\n\tdescription='Awaiting material confirmation from planning.')\n\tev('jam', 'k2', 'Label jam', at(0,9,15), at(0,10), 'down',\n\tdescription='Cleared by the operator; 45 min lost.')\n\tev('wo1', 'mx', 'WO-2231 Filler 2 bearing', at(0,13), at(0,15), 'maint',\n\tdescription='Vibration trending up - swap the bearing cartridge.')\n\tev('wo2', 'mx', 'WO-2228 Conveyor guard', at(-1,9), at(-1,11), 'maint', status='done')\n\tev('bgm', 'k2', 'Planned maintenance window', at(1,14), at(1,17), 'maint', display='background')\n\tev('s1', 'f2', 'RUNNING', at(0,0), at(0,4), 'prod', display='state')\n\tev('s2', 'f2', 'FAULT', at(0,4), at(0,4,45), 'down', display='state')\n\tev('s3', 'f2', 'RUNNING', at(0,4,45), None, 'prod', display='state')\n\torec = [\n\t\t{'id': 'rh1', 'resourceId': 'ca', 'title': 'Handover', 'start': iso(at(-30,5,45)),\n\t\t'end': iso(at(-30,6)), 'category': 'shift', 'rrule': {'freq': 'daily'}},\n\t\t{'id': 'rh2', 'resourceId': 'cb', 'title': 'Handover', 'start': iso(at(-30,13,45)),\n\t\t'end': iso(at(-30,14)), 'category': 'shift', 'rrule': {'freq': 'daily'}},\n\t]\n\t\n\t# --- maintenance calendar ---\n\tm = []\n\tdef cev(eid, title, n, h1, mi1, h2, mi2, cat, **kw):\n\t\trow = {'id': eid, 'title': title, 'start': iso(at(n,h1,mi1)), 'end': iso(at(n,h2,mi2)), 'category': cat}\n\t\trow.update(kw)\n\t\tm.append(row)\n\tcev('pm1', 'PM - Mixer 1 gearbox', -9, 8,0, 12,0, 'pm', status='done')\n\tcev('cal1', 'Calibrate flow meters', -6, 9,0, 11,0, 'calib', status='done')\n\tcev('ins1', 'Pressure vessel inspection', -3, 13,0, 16,0, 'insp', status='done')\n\tcev('pm2', 'PM - Filler 2 bearing swap', 0, 13,0, 15,0, 'pm',\n\t\tdescription='WO-2231. Coordinate with production; Line 2 is buffered.')\n\tcev('cal2', 'Calibrate checkweigher', 1, 9,0, 10,30, 'calib')\n\tcev('vnd', 'Vendor visit - seamer OEM', 3, 10,0, 12,0, 'insp', status='cancelled')\n\tcev('pm3', 'PM - Packer 1 chains', 8, 6,0, 10,0, 'pm')\n\tcev('trn', 'Training - new CIP recipe', 10, 14,0, 16,0, 'train')\n\tm.append({'id': 'aud', 'title': 'External audit - ISO 22000', 'start': day(2),\n\t\t\t'allDay': True, 'category': 'insp', 'status': 'tentative'})\n\tm.append({'id': 'shut', 'title': 'Annual shutdown - Line 2', 'start': day(4), 'end': day(7),\n\t\t\t'allDay': True, 'category': 'shut',\n\t\t\t'description': 'Contractors on site. Permit-to-work required.'})\n\tmrec = [\n\t\t{'id': 'walk', 'title': 'Line walk-down', 'start': iso(at(-28,8,0)), 'end': iso(at(-28,8,30)),\n\t\t'category': 'insp', 'rrule': {'freq': 'weekly', 'byweekday': [1]}},\n\t\t{'id': 'saf', 'title': 'Safety committee', 'start': iso(at(-28,15,0)), 'end': iso(at(-28,16,0)),\n\t\t'category': 'train', 'rrule': {'freq': 'monthly'}},\n\t]\n\t\n\t# --- quality samples (deterministic pseudo-random, last 48 h) ---\n\tq = []\n\topnames = ['A. Janssens', 'M. Peeters', 'S. Willems', 'K. De Smet']\n\tprods = [('Pils 33cl', 'Line 1'), ('Wheat 50cl', 'Line 1'), ('Lager 50cl PET', 'Line 2')]\n\tnowms = system.date.toMillis(system.date.now())\n\tfor i in range(40):\n\t\tts = nowms - i * 73 * 60000\n\t\tdev = ((i * 37) % 11) - 5\n\t\tfill = 500 + dev * 0.6\n\t\tif i in (3, 11, 26):\n\t\t\tfill = 500 + (8.5 if i % 2 else -9.2)\n\t\ttemp = 3.8 + ((i * 13) % 9) * 0.1\n\t\tpr = prods[(i * 7) % 3]\n\t\tpassed = 495.0 <= fill <= 505.0\n\t\tq.append({'id': 'S-%04d' % (9000 - i), 'tsMs': ts, 'ts': iso(ts),\n\t\t\t\t'line': pr[1], 'product': pr[0],\n\t\t\t\t'fillMl': round(fill * 10) / 10.0, 'tempC': round(temp * 10) / 10.0,\n\t\t\t\t'passed': passed, 'operator': opnames[(i * 5) % 4],\n\t\t\t\t'note': '' if passed else 'Out of spec - hold pallet'})\n\t\n\t# --- shift handover note (rich text) ---\n\thand = (u'<h2>Shift handover - Early to Late</h2>'\n\t\t\tu'<p><strong>Line 1</strong> ran at 96% of plan; brew 4712 finished early. '\n\t\t\tu'<strong>Line 2</strong> lost 45 min to a label jam on Packer 2 (cleared).</p>'\n\t\t\tu'<h3>Watch items</h3><ul>'\n\t\t\tu'<li>Filler 2 bearing - vibration trending up, PM planned 13:00 (WO-2231).</li>'\n\t\t\tu'<li>CO2 delivery moved to 16:00 - keep an eye on tank level.</li></ul>'\n\t\t\tu'<h3>Actions for the late shift</h3>'\n\t\t\tu'<ul data-type=\"taskList\">'\n\t\t\tu'<li data-type=\"taskItem\" data-checked=\"true\">Confirm CIP on Filler 1 completed</li>'\n\t\t\tu'<li data-type=\"taskItem\" data-checked=\"false\">Verify label reel splice on Packer 2</li>'\n\t\t\tu'<li data-type=\"taskItem\" data-checked=\"false\">Sign off WO-2231 after the bearing swap</li>'\n\t\t\tu'</ul>')\n\t\n\tcfgtxt = ('{\\n'\n\t\t\t'  \"plant\": \"Mustry Bottling Co.\",\\n'\n\t\t\t'  \"lines\": {\\n'\n\t\t\t'    \"line1\": { \"product\": \"Pils 33cl\", \"targetBph\": 12000, \"cip\": { \"hour\": 5, \"durationMin\": 105 } },\\n'\n\t\t\t'    \"line2\": { \"product\": \"Lager 50cl PET\", \"targetBph\": 9000, \"cip\": { \"hour\": 4, \"durationMin\": 105 } }\\n'\n\t\t\t'  },\\n'\n\t\t\t'  \"quality\": { \"fillTargetMl\": 500, \"toleranceMl\": 5, \"sampleEveryMin\": 75 },\\n'\n\t\t\t'  \"statusColors\": { \"running\": \"#22c55e\", \"idle\": \"#f59e0b\", \"fault\": \"#ef4444\" }\\n'\n\t\t\t'}')\n\t\n\td = self.session.custom.demo\n\td.orders = o\n\td.ordersRecurring = orec\n\td.maint = m\n\td.maintRecurring = mrec\n\td.quality = q\n\td.qWindow = {'startMs': nowms - 24 * HOUR, 'endMs': nowms + HOUR}\n\td.handover = hand\n\td.lineConfig = cfgtxt\n\tif self.session.props.theme != 'dark':\n\t\tself.session.props.theme = 'dark'\n\td.seeded = True\n"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

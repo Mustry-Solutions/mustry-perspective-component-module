@@ -1,0 +1,7 @@
+{
+  "title": "demo",
+  "description": "Mustry Bottling Co. — sales demo. A story-driven plant-operations app that shows every component of the module in context. Data is seeded relative to 'today' on session start (Reset demo in the top bar reseeds). Launch with ops/demo.sh.",
+  "enabled": true,
+  "inheritable": false,
+  "parent": ""
+}

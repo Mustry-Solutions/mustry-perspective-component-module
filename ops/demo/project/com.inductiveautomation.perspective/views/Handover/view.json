@@ -1,0 +1,324 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Shift handover",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Left: the outgoing shift writes the note (full editor, dirty badge, Save fires one onSave). Right: what the incoming shift sees \u2014 same document in display mode, with the checklist still interactive.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.richtexteditor",
+        "version": 0,
+        "meta": {
+          "name": "Editor"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 880,
+          "height": 800
+        },
+        "props": {
+          "config": {
+            "mode": "edit",
+            "placeholder": "Write the handover note\u2026"
+          },
+          "data": {}
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.content": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.handover"
+              }
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onSave": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Persist; the binding round-trips it into both instances and\n\t# clears the editor's dirty state.\n\tself.session.custom.demo.handover = event.content\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "WHAT THE NEXT SHIFT SEES",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "disp_cap"
+        },
+        "position": {
+          "x": 912,
+          "y": 64,
+          "width": 552,
+          "height": 16
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.richtexteditor",
+        "version": 0,
+        "meta": {
+          "name": "Display"
+        },
+        "position": {
+          "x": 912,
+          "y": 86,
+          "width": 552,
+          "height": 470
+        },
+        "props": {
+          "config": {
+            "mode": "display"
+          },
+          "data": {}
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.content": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.handover"
+              }
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onTaskToggle": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# The incoming operator ticked a step; persist the same document.\n\tself.session.custom.demo.handover = event.content\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "END-OF-SHIFT COUNT \u2014 touch numpad, no OS keyboard",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "kbd_cap"
+        },
+        "position": {
+          "x": 912,
+          "y": 576,
+          "width": 552,
+          "height": 16
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.keyboard",
+        "version": 0,
+        "meta": {
+          "name": "Keypad"
+        },
+        "position": {
+          "x": 912,
+          "y": 600,
+          "width": 300,
+          "height": 264
+        },
+        "props": {
+          "config": {
+            "layout": "numpad",
+            "min": 0,
+            "max": 500000,
+            "decimals": 0,
+            "units": "btl",
+            "enforceRange": true
+          },
+          "value": {
+            "value": 184320
+          }
+        },
+        "custom": {}
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "COMMITTED COUNT",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "cnt_cap"
+        },
+        "position": {
+          "x": 1240,
+          "y": 600,
+          "width": 224,
+          "height": 16
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "26px",
+            "fontWeight": "700",
+            "color": "#38bdf8"
+          }
+        },
+        "meta": {
+          "name": "cnt_val"
+        },
+        "position": {
+          "x": 1240,
+          "y": 620,
+          "width": 224,
+          "height": 40
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat({../Keypad.props.value.value}, '#,##0') + ' btl'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "SIGN-OFF (POPOVER KEYBOARD)",
+          "style": {
+            "fontSize": "10px",
+            "letterSpacing": "0.16em",
+            "color": "#64748b",
+            "fontWeight": "700"
+          }
+        },
+        "meta": {
+          "name": "sign_cap"
+        },
+        "position": {
+          "x": 1240,
+          "y": 700,
+          "width": 224,
+          "height": 16
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.keyboard",
+        "version": 0,
+        "meta": {
+          "name": "SignOff"
+        },
+        "position": {
+          "x": 1240,
+          "y": 720,
+          "width": 224,
+          "height": 40
+        },
+        "props": {
+          "config": {
+            "layout": "text",
+            "mode": "popover",
+            "placeholder": "Tap to sign\u2026",
+            "maxLength": 24
+          },
+          "value": {
+            "text": ""
+          }
+        },
+        "custom": {}
+      }
+    ]
+  }
+}

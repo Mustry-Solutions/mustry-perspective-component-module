@@ -46,7 +46,11 @@ services:
       GATEWAY_ADMIN_PASSWORD: "password"
       # "standard" edition includes Perspective (runs in trial mode without a license).
       IGNITION_EDITION: "standard"
-      TZ: "UTC"
+      # Default UTC (what CI runs). The sales demo sets GATEWAY_TZ to the
+      # host's zone via .env (ops/demo.sh --fresh) so gateway-seeded wall-clock
+      # times line up with the presenter's laptop. Applies on container
+      # (re)creation, not restart.
+      TZ: "${GATEWAY_TZ:-UTC}"
     volumes:
       # Persists gateway configuration/state across restarts (survives `up`/`down`,
       # removed by `teardown.sh --purge`). Holds the one-time module cert acceptance.
@@ -58,6 +62,10 @@ services:
       # module's components) mounted in so a browser session can render it. Edits
       # saved in the Designer write straight back into the repo.
       - ./ops/verify/project:/usr/local/bin/ignition/data/projects/verify
+      # Sales demo: a story-driven Perspective project ("Mustry Bottling Co.")
+      # showing every component in a plant-operations narrative. Driven by
+      # ops/demo.sh; same bind-mount mechanics as the verify project.
+      - ./ops/demo/project:/usr/local/bin/ignition/data/projects/demo
     # Everything after "--" is passed to the JVM / service wrapper.
     #   externalModulesFolder -> where the gateway looks for third-party modules.
     command:

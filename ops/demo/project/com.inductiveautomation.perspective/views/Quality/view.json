@@ -1,0 +1,377 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1480,
+      "height": 880
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "mode": "fixed",
+      "style": {
+        "backgroundColor": "#0b1220"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Quality \u2014 fill checks",
+          "style": {
+            "fontSize": "19px",
+            "fontWeight": "700",
+            "color": "#e2e8f0"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 16,
+          "y": 8,
+          "width": 1048,
+          "height": 26
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Spec: 500 ml \u00b1 5. Out-of-spec cells highlight; double-click any cell to edit (typed editors + validation). The window picker is LIVE \u2014 a rolling window that re-derives every minute.",
+          "style": {
+            "fontSize": "12px",
+            "color": "#94a3b8"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 16,
+          "y": 36,
+          "width": 1448,
+          "height": 20
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
+        "version": 0,
+        "meta": {
+          "name": "Picker"
+        },
+        "position": {
+          "x": 16,
+          "y": 64,
+          "width": 330,
+          "height": 38
+        },
+        "props": {
+          "config": {
+            "display": "popover",
+            "granularity": "minute",
+            "disableDates": "future",
+            "popover": {
+              "placeholder": "Filter window\u2026"
+            },
+            "presets": [
+              {
+                "label": "Last 8 hours",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 8,
+                  "unit": "hours"
+                }
+              },
+              {
+                "label": "Last 24 hours",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 24,
+                  "unit": "hours"
+                }
+              },
+              {
+                "label": "Last 48 hours",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 48,
+                  "unit": "hours"
+                }
+              },
+              {
+                "label": "Last 7 days",
+                "type": "rolling",
+                "rolling": {
+                  "amount": 7,
+                  "unit": "days"
+                }
+              },
+              {
+                "label": "Today",
+                "type": "calendar",
+                "calendar": {
+                  "period": "today"
+                }
+              }
+            ],
+            "realtime": {
+              "enabled": true,
+              "refreshSeconds": 60
+            }
+          },
+          "selection": {
+            "rollingAmount": 24,
+            "rollingUnit": "hours"
+          }
+        },
+        "custom": {},
+        "events": {
+          "component": {
+            "onRangeChanged": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Publish the window; the grid's binding refilters on any change.\n\tself.session.custom.demo.qWindow = {\n\t\t'startMs': event.startEpochMs, 'endMs': event.endEpochMs}\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "11px",
+            "color": "#22c55e",
+            "fontFamily": "monospace"
+          }
+        },
+        "meta": {
+          "name": "liveBadge"
+        },
+        "position": {
+          "x": 360,
+          "y": 74,
+          "width": 250,
+          "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({../Picker.props.output.isRealtime}, '\u25cf LIVE \u2014 window slides with now', '')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "+ New sample",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#1d4ed8",
+            "borderStyle": "none"
+          }
+        },
+        "meta": {
+          "name": "newSample"
+        },
+        "position": {
+          "x": 1330,
+          "y": 64,
+          "width": 134,
+          "height": 38
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Simulate the lab pushing a new fill-check sample.\n\tms = system.date.toMillis(system.date.now())\n\tsec = int(ms / 1000)\n\tdev = (sec % 13) - 6\n\tfill = 500 + dev * 0.7\n\tif sec % 9 == 0:\n\t\tfill = 507.8\n\tpassed = 495.0 <= fill <= 505.0\n\trows = [dict(r) for r in self.session.custom.demo.quality]\n\trows.insert(0, {'id': 'S-%d' % (sec % 1000000), 'tsMs': ms,\n\t\t'ts': system.date.format(system.date.now(), \"yyyy-MM-dd'T'HH:mm:ss\"),\n\t\t'line': 'Line 1' if sec % 2 else 'Line 2',\n\t\t'product': 'Pils 33cl' if sec % 2 else 'Lager 50cl PET',\n\t\t'fillMl': round(fill * 10) / 10.0, 'tempC': 3.9 + (sec % 8) * 0.1,\n\t\t'passed': passed, 'operator': 'S. Willems',\n\t\t'note': '' if passed else 'Out of spec - hold pallet'})\n\tself.session.custom.demo.quality = rows\n"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.datagrid",
+        "version": 0,
+        "meta": {
+          "name": "Grid"
+        },
+        "position": {
+          "x": 16,
+          "y": 112,
+          "width": 1448,
+          "height": 752
+        },
+        "props": {
+          "config": {
+            "rowHeight": 32,
+            "idField": "id",
+            "editable": true,
+            "allowAdd": false,
+            "allowDelete": true,
+            "rowSelect": "multi",
+            "showExport": true,
+            "emptyMessage": "No samples in the selected window",
+            "columns": [
+              {
+                "field": "ts",
+                "header": "Sample time",
+                "type": "datetime",
+                "width": 160,
+                "pinned": true,
+                "editable": false
+              },
+              {
+                "field": "line",
+                "header": "Line",
+                "width": 90,
+                "options": [
+                  "Line 1",
+                  "Line 2"
+                ]
+              },
+              {
+                "field": "product",
+                "header": "Product",
+                "width": 150
+              },
+              {
+                "field": "fillMl",
+                "header": "Fill (ml)",
+                "type": "number",
+                "decimals": 1,
+                "align": "right",
+                "width": 110,
+                "required": true,
+                "min": 400,
+                "max": 600,
+                "aggregate": "avg",
+                "cellStyles": [
+                  {
+                    "lt": 495,
+                    "background": "#7f1d1d",
+                    "color": "#fecaca"
+                  },
+                  {
+                    "gt": 505,
+                    "background": "#7f1d1d",
+                    "color": "#fecaca"
+                  }
+                ]
+              },
+              {
+                "field": "tempC",
+                "header": "Temp (\u00b0C)",
+                "type": "number",
+                "decimals": 1,
+                "align": "right",
+                "width": 100,
+                "cellStyles": [
+                  {
+                    "gt": 4.4,
+                    "color": "#f59e0b"
+                  }
+                ]
+              },
+              {
+                "field": "passed",
+                "header": "Pass",
+                "type": "boolean",
+                "align": "center",
+                "width": 80,
+                "aggregate": "count"
+              },
+              {
+                "field": "operator",
+                "header": "Operator",
+                "width": 130,
+                "options": [
+                  "A. Janssens",
+                  "M. Peeters",
+                  "S. Willems",
+                  "K. De Smet"
+                ]
+              },
+              {
+                "field": "note",
+                "header": "Note",
+                "width": 420,
+                "cellStyles": [
+                  {
+                    "contains": "hold",
+                    "color": "#fca5a5"
+                  }
+                ]
+              }
+            ]
+          },
+          "data": {
+            "rows": []
+          }
+        },
+        "custom": {},
+        "propConfig": {
+          "props.data.rows": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\tif value is None:\n\t\treturn []\n\ttry:\n\t\trows = [dict(r) for r in value['quality']]\n\texcept:\n\t\treturn []\n\ts = 0\n\te = 0\n\ttry:\n\t\tw = value['qWindow']\n\t\ts = long(w['startMs'])\n\t\te = long(w['endMs'])\n\texcept:\n\t\tpass\n\tif e <= 0:\n\t\treturn rows\n\t# Pad the end: a sample added between realtime ticks must\n\t# show immediately, not at the next window re-derive.\n\te = e + 300000\n\treturn [r for r in rows if s <= long(r.get('tsMs', 0)) <= e]\n"
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onCellEdit": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Persist a validated cell edit by row id; the binding refilters.\n\trows = [dict(r) for r in self.session.custom.demo.quality]\n\tfor i in range(len(rows)):\n\t\tif rows[i].get('id') == event.rowId:\n\t\t\trows[i] = dict(event.row)\n\t\t\tbreak\n\tself.session.custom.demo.quality = rows\n"
+                }
+              }
+            ],
+            "onRowsDelete": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tdoomed = set([str(i) for i in event.rowIds])\n\tself.session.custom.demo.quality = [\n\t\tdict(r) for r in self.session.custom.demo.quality\n\t\tif str(r.get('id')) not in doomed]\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
