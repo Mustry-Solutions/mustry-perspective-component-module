@@ -102,6 +102,14 @@
                         }
                       ]
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -244,6 +252,14 @@
                           "code": "\t# The 'default' user source as the picker directory. First ensure three demo\n\t# users exist (idempotent; kpatel deliberately has NO contact info so the\n\t# roster rows can show the warning) \u2014 a dev-gateway convenience, remove for\n\t# production bindings. NOTE: bare except on purpose \u2014 Jython's 'except\n\t# Exception' does not catch Java exceptions from system.user.\n\timport sys\n\tlog = system.util.getLogger('RosterDemo')\n\tSRC = 'default'\n\tdef ensure(username, first, last, contacts):\n\t\ttry:\n\t\t\tif system.user.getUser(SRC, username) is None:\n\t\t\t\tu = system.user.getNewUser(SRC, username)\n\t\t\t\tu.set('firstname', first)\n\t\t\t\tu.set('lastname', last)\n\t\t\t\tu.set('password', 'Demo-1234!')\n\t\t\t\tfor t, v in contacts:\n\t\t\t\t\tu.addContactInfo(t, v)\n\t\t\t\tresp = system.user.addUser(SRC, u)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addUser(' + username + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + username + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('jdoe', 'Jane', 'Doe', [('email', 'jane.doe@example.com')])\n\tensure('mvermeer', 'Mia', 'Vermeer', [('email', 'mia@example.com'), ('sms', '+31600000001')])\n\tensure('kpatel', 'Kiran', 'Patel', [])\n\tout = []\n\tfor u in system.user.getUsers(SRC):\n\t\ttry:\n\t\t\tci = []\n\t\t\tfor c in u.contactInfo:\n\t\t\t\tci.append({'contactType': str(c.contactType), 'value': str(c.value)})\n\t\t\tout.append({'username': str(u.get('username') or ''), 'firstName': str(u.get('firstname') or ''), 'lastName': str(u.get('lastname') or ''), 'contactInfo': ci})\n\t\texcept:\n\t\t\tlog.warn('map user failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
                         }
                       ]
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
                     }
                   }
                 },
@@ -405,6 +421,14 @@
                         }
                       ]
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -554,6 +578,14 @@
                           "code": "\t# The gateway's holidays, seeded with two demo entries (idempotent). Bare\n\t# except on purpose \u2014 Jython's 'except Exception' misses Java exceptions.\n\timport sys\n\tlog = system.util.getLogger('HolidayDemo')\n\tfrom com.inductiveautomation.ignition.common.user.schedule import HolidayModel\n\tdef ensure(name, dateStr, repeat):\n\t\ttry:\n\t\t\tif name not in [str(n) for n in system.user.getHolidayNames()]:\n\t\t\t\td = system.date.parse(dateStr, 'yyyy-MM-dd')\n\t\t\t\ttry:\n\t\t\t\t\tm = HolidayModel(name, d, repeat)\n\t\t\t\texcept:\n\t\t\t\t\tm = HolidayModel()\n\t\t\t\t\tm.name = name\n\t\t\t\t\tm.date = d\n\t\t\t\t\tm.repeatAnnually = repeat\n\t\t\t\tresp = system.user.addHoliday(m)\n\t\t\t\tfor err in resp.getErrors():\n\t\t\t\t\tlog.warn('addHoliday(' + name + '): ' + str(err))\n\t\texcept:\n\t\t\tlog.warn('ensure(' + name + ') failed: ' + str(sys.exc_info()[1]))\n\tensure('Demo New Year', '2020-01-01', True)\n\tensure('Demo Founders Day', '2026-09-01', False)\n\tout = []\n\tfor h in system.user.getHolidays():\n\t\ttry:\n\t\t\tout.append({'name': str(h.name), 'date': system.date.format(h.date, 'yyyy-MM-dd') if h.date else '', 'repeatAnnually': bool(h.repeatAnnually)})\n\t\texcept:\n\t\t\tlog.warn('map holiday failed: ' + str(sys.exc_info()[1]))\n\treturn out\n"
                         }
                       ]
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
                     }
                   }
                 },
@@ -713,6 +745,14 @@
                         "path": "session.custom.demo.lineConfig"
                       }
                     }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
+                      }
+                    }
                   }
                 },
                 "events": {
@@ -827,6 +867,14 @@
                       "type": "property",
                       "config": {
                         "path": "session.custom.demo.accent"
+                      }
+                    }
+                  },
+                  "props.config.locale": {
+                    "binding": {
+                      "type": "property",
+                      "config": {
+                        "path": "session.custom.demo.locale"
                       }
                     }
                   }

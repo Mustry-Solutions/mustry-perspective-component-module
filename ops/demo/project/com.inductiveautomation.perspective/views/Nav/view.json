@@ -380,6 +380,113 @@
         }
       },
       {
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "props": {
+          "options": [
+            {
+              "value": "en",
+              "label": "EN"
+            },
+            {
+              "value": "fr",
+              "label": "FR"
+            },
+            {
+              "value": "de",
+              "label": "DE"
+            },
+            {
+              "value": "nl",
+              "label": "NL"
+            },
+            {
+              "value": "es",
+              "label": "ES"
+            },
+            {
+              "value": "it",
+              "label": "IT"
+            },
+            {
+              "value": "pt",
+              "label": "PT"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              },
+              "bidirectional": true
+            },
+            "onChange": {
+              "enabled": true,
+              "script": "\tval = currentValue.value if currentValue else None\n\tif val and val != self.session.custom.demo.locale:\n\t\tself.session.custom.demo.locale = val\n"
+            }
+          }
+        },
+        "meta": {
+          "name": "localeDd"
+        },
+        "position": {
+          "x": 1002,
+          "y": 16,
+          "width": 74,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "borderRadius": "6px",
+            "backgroundColor": "#1e293b",
+            "borderStyle": "none",
+            "color": "#cbd5e1"
+          }
+        },
+        "meta": {
+          "name": "themeBtn"
+        },
+        "position": {
+          "x": 1084,
+          "y": 15,
+          "width": 66,
+          "height": 34
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tcur = str(self.session.props.theme or '')\n\tself.session.props.theme = 'light' if cur.startswith('dark') else 'dark'\n"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', 'Light', 'Dark')"
+              }
+            }
+          }
+        }
+      },
+      {
         "type": "ia.display.label",
         "version": 0,
         "props": {
@@ -393,7 +500,7 @@
           "name": "liveDot"
         },
         "position": {
-          "x": 1096,
+          "x": 1160,
           "y": 27,
           "width": 10,
           "height": 10
@@ -415,7 +522,7 @@
         "props": {
           "text": "",
           "style": {
-            "fontSize": "13px",
+            "fontSize": "12px",
             "fontFamily": "monospace",
             "color": "#94a3b8"
           }
@@ -424,9 +531,9 @@
           "name": "clock"
         },
         "position": {
-          "x": 1114,
-          "y": 22,
-          "width": 196,
+          "x": 1176,
+          "y": 23,
+          "width": 168,
           "height": 20
         },
         "propConfig": {
@@ -434,7 +541,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "dateFormat(now(1000), 'EEE dd MMM  HH:mm:ss')"
+                "expression": "dateFormat(now(1000), 'EEE dd MMM HH:mm:ss')"
               }
             }
           }
@@ -457,9 +564,9 @@
           "name": "resetBtn"
         },
         "position": {
-          "x": 1330,
+          "x": 1352,
           "y": 15,
-          "width": 118,
+          "width": 112,
           "height": 34
         },
         "events": {

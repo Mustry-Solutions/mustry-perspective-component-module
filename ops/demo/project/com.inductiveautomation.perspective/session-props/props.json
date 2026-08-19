@@ -13,7 +13,8 @@
       },
       "handover": "",
       "lineConfig": "",
-      "accent": "#38bdf8"
+      "accent": "#38bdf8",
+      "locale": "en"
     }
   },
   "props": {}

@@ -211,6 +211,14 @@
                 "path": "session.custom.demo.ordersRecurring"
               }
             }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
           }
         },
         "events": {

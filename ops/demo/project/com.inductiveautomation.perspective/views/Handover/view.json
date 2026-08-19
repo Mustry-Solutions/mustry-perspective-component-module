@@ -89,6 +89,14 @@
                 "path": "session.custom.demo.handover"
               }
             }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
           }
         },
         "events": {
@@ -154,6 +162,14 @@
                 "path": "session.custom.demo.handover"
               }
             }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
           }
         },
         "events": {
@@ -217,7 +233,17 @@
             "value": 184320
           }
         },
-        "custom": {}
+        "custom": {},
+        "propConfig": {
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
+          }
+        }
       },
       {
         "type": "ia.display.label",
@@ -317,7 +343,17 @@
             "text": ""
           }
         },
-        "custom": {}
+        "custom": {},
+        "propConfig": {
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
+          }
+        }
       }
     ]
   }

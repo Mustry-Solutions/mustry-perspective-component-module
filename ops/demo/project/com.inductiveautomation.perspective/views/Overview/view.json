@@ -574,6 +574,14 @@
                 "expression": "(toMillis(now(1000)) % 60000) < 12000"
               }
             }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
           }
         }
       },

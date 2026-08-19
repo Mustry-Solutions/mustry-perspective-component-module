@@ -75,6 +75,32 @@ test('demo handover: editor and display instance share the seeded note', async (
     await expect(page.locator('.mustry-kbd--numpad').first()).toBeVisible();
 });
 
+test('demo triage: escalate creates a WO on the schedule board (cross-component)', async ({ page }) => {
+    await openDemo(page, '/triage', '.mustry-branching');
+    await page.getByRole('button', { name: 'Escalate → create work order' }).click();
+    await expect(page.getByText('created - now on the Schedule board', { exact: false })).toBeVisible();
+    // Same session, other page: the WO must be on the timeline's Maintenance row.
+    await openDemo(page, '/schedule', '.mustry-timeline');
+    await expect(page.getByText('Downtime escalation', { exact: false }).first()).toBeVisible();
+});
+
+test('demo nav: language switcher relocalizes the components', async ({ page }) => {
+    await openDemo(page, '/maintenance', '.mustry-calendar');
+    await expect(page.getByText('Today', { exact: true })).toBeVisible();
+    // The Nav dropdown writes session.custom.demo.locale; every component
+    // binds config.locale to it.
+    await page.locator('.ia_dropdown').first().click();
+    await page.getByText('FR', { exact: true }).click();
+    await expect(page.getByText("Aujourd'hui", { exact: true })).toBeVisible();
+});
+
+test('demo quality: batch toggle switches the grid edit mode', async ({ page }) => {
+    await openDemo(page, '/quality', '.mustry-datagrid');
+    const toggle = page.getByRole('button', { name: 'Batch edit: OFF' });
+    await toggle.click();
+    await expect(page.getByRole('button', { name: 'Batch edit: ON' })).toBeVisible();
+});
+
 test('demo admin: all four managers plus the Line config tab', async ({ page }) => {
     await openDemo(page, '/admin', '.mustry-schedmgr');
     for (const tab of ['Rosters', 'Users', 'Holidays', 'Line config']) {
