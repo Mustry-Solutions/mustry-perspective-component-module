@@ -41,6 +41,24 @@
           "y": 8,
           "width": 1048,
           "height": 26
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -61,6 +79,24 @@
           "y": 36,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qSubtitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -184,7 +220,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "if({../Picker.props.output.isRealtime}, '\u25cf LIVE \u2014 window slides with now', '')"
+                "expression": "if({../Picker.props.output.isRealtime}, {session.custom.demo.i18n.qLive}, '')"
               }
             }
           }
@@ -230,7 +266,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "if({view.custom.batch}, 'Batch edit: ON', 'Batch edit: OFF')"
+                "expression": "if({view.custom.batch}, {session.custom.demo.i18n.qBatchOn}, {session.custom.demo.i18n.qBatchOff})"
               }
             }
           }
@@ -268,6 +304,16 @@
                 }
               }
             ]
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qNew"
+              }
+            }
           }
         }
       },
@@ -400,6 +446,22 @@
               }
             }
           },
+          "props.config.columns": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.gridCols"
+              }
+            }
+          },
+          "props.config.emptyMessage": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.qEmpty"
+              }
+            }
+          },
           "props.data.rows": {
             "binding": {
               "type": "property",
@@ -455,6 +517,16 @@
           }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

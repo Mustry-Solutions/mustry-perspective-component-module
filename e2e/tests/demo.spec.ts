@@ -91,7 +91,18 @@ test('demo nav: language switcher relocalizes the components', async ({ page }) 
     // binds config.locale to it.
     await page.locator('.ia_dropdown').first().click();
     await page.getByText('FR', { exact: true }).click();
+    // Component chrome flips via config.locale…
     await expect(page.getByText("Aujourd'hui", { exact: true })).toBeVisible();
+    // …and the SHELL flips via the swapped i18n dict: page title + nav.
+    await expect(page.getByText('Calendrier de maintenance')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Qualité' })).toBeVisible();
+});
+
+test('demo nav: theme toggle flips the whole app', async ({ page }) => {
+    await openDemo(page, '/', '.mustry-panzoom');
+    await page.getByRole('button', { name: 'Light', exact: true }).click();
+    // Button label shows the next target once the session theme is light.
+    await expect(page.getByRole('button', { name: 'Dark', exact: true })).toBeVisible();
 });
 
 test('demo quality: batch toggle switches the grid edit mode', async ({ page }) => {

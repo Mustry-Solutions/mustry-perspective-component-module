@@ -43,6 +43,24 @@
           "y": 8,
           "width": 1048,
           "height": 26
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -63,6 +81,24 @@
           "y": 36,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trSubtitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -279,6 +315,24 @@
           }
         },
         "custom": {},
+        "propConfig": {
+          "props.config.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+              }
+            }
+          },
+          "props.config.locale": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.locale"
+              }
+            }
+          }
+        },
         "events": {
           "component": {
             "onNodeClick": [
@@ -290,16 +344,6 @@
                 }
               }
             ]
-          }
-        },
-        "propConfig": {
-          "props.config.locale": {
-            "binding": {
-              "type": "property",
-              "config": {
-                "path": "session.custom.demo.locale"
-              }
-            }
           }
         }
       },
@@ -324,6 +368,24 @@
           "y": 64,
           "width": 432,
           "height": 796
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -346,6 +408,16 @@
           "y": 88,
           "width": 384,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trSopCap"
+              }
+            }
+          }
         }
       },
       {
@@ -374,6 +446,14 @@
               "type": "property",
               "config": {
                 "path": "view.custom.sopTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
               }
             }
           }
@@ -406,6 +486,14 @@
                 "path": "view.custom.sopBody"
               }
             }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#cbd5e1', '#334155')"
+              }
+            }
           }
         }
       },
@@ -429,6 +517,16 @@
           "y": 620,
           "width": 384,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEscCap"
+              }
+            }
+          }
         }
       },
       {
@@ -449,6 +547,24 @@
           "y": 644,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc1"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -469,6 +585,24 @@
           "y": 666,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc2"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -489,6 +623,24 @@
           "y": 688,
           "width": 384,
           "height": 18
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEsc3"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -524,6 +676,16 @@
               }
             ]
           }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.trEscBtn"
+              }
+            }
+          }
         }
       },
       {
@@ -556,6 +718,16 @@
           }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

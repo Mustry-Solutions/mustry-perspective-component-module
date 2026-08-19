@@ -28,10 +28,16 @@ full-screen (Cmd-Ctrl-F in Chrome).
 
 Two one-click moments from the top bar, any time they land well:
 
-- **Language dropdown** (EN/FR/DE/NL/ES/IT/PT) — every component ships all
-  seven label packs; the whole app relocalizes instantly (dates included).
-- **Light/Dark** — the components follow the Perspective theme live; the app
-  shell deliberately stays control-room dark.
+- **Language dropdown** (EN/FR/DE/NL/ES/IT/PT) — the WHOLE app relocalizes in
+  one click: component UI (label packs + dates via `config.locale`) and the
+  shell (titles, nav, KPI captions, category legends, board resources, grid
+  headers — all bound to a `session.custom.demo.i18n` dict the dropdown
+  swaps). Seeded event titles, SOP texts and the plant-floor signage stay
+  English on purpose: they're content, not chrome.
+- **Light/Dark** — the full app follows the Perspective theme: components
+  restyle themselves, and every shell colour carries a theme-conditional
+  binding (dark ↔ light palette pairs, applied by the generator's theme
+  pass).
 
 Closer: "Everything you dragged, edited and saved went through the same
 pattern — components fire events, one small script persists. Bind them to your

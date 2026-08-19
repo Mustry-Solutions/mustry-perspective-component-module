@@ -39,6 +39,24 @@
           "y": 8,
           "width": 1048,
           "height": 26
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.ovTitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#e2e8f0', '#0f172a')"
+              }
+            }
+          }
         }
       },
       {
@@ -59,6 +77,24 @@
           "y": 36,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.ovSubtitle"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -82,6 +118,24 @@
           "y": 64,
           "width": 284,
           "height": 104
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -143,6 +197,16 @@
           "y": 132,
           "width": 250,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.kOee"
+              }
+            }
+          }
         }
       },
       {
@@ -166,6 +230,24 @@
           "y": 64,
           "width": 284,
           "height": 104
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -227,6 +309,16 @@
           "y": 132,
           "width": 250,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.kL1"
+              }
+            }
+          }
         }
       },
       {
@@ -250,6 +342,24 @@
           "y": 64,
           "width": 284,
           "height": 104
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -277,7 +387,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "if((toMillis(now(1000)) % 60000) < 12000, 'STOPPED', numberFormat(round(8950 + 380 * sin(toMillis(now(1000)) / 47000.0 + 2), 0), '#,##0') + ' bph')"
+                "expression": "if((toMillis(now(1000)) % 60000) < 12000, {session.custom.demo.i18n.kStopped}, numberFormat(round(8950 + 380 * sin(toMillis(now(1000)) / 47000.0 + 2), 0), '#,##0') + ' bph')"
               }
             }
           },
@@ -311,6 +421,16 @@
           "y": 132,
           "width": 250,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.kL2"
+              }
+            }
+          }
         }
       },
       {
@@ -334,6 +454,24 @@
           "y": 64,
           "width": 284,
           "height": 104
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -401,6 +539,16 @@
           "y": 132,
           "width": 250,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.kJobs"
+              }
+            }
+          }
         }
       },
       {
@@ -424,6 +572,24 @@
           "y": 64,
           "width": 284,
           "height": 104
+        },
+        "propConfig": {
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+              }
+            }
+          },
+          "props.style.borderColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#1e293b', '#d8e0ea')"
+              }
+            }
+          }
         }
       },
       {
@@ -464,7 +630,7 @@
               "transforms": [
                 {
                   "type": "script",
-                  "code": "\tif not value:\n\t\treturn '0'\n\tfails = len([r for r in value if not r['passed']])\n\treturn '%d / %d fail' % (len(value), fails)\n"
+                  "code": "\tif not value:\n\t\treturn '0'\n\tfails = len([r for r in value if not r['passed']])\n\tword = str(self.session.custom.demo.i18n.kFail)\n\treturn '%d / %d %s' % (len(value), fails, word)\n"
                 }
               ]
             }
@@ -491,6 +657,16 @@
           "y": 132,
           "width": 250,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.kQc"
+              }
+            }
+          }
         }
       },
       {
@@ -603,8 +779,28 @@
           "y": 848,
           "width": 1448,
           "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.custom.demo.i18n.ovHint"
+              }
+            }
+          }
         }
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

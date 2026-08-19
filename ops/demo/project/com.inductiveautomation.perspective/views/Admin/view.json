@@ -48,6 +48,16 @@
           "y": 8,
           "width": 1448,
           "height": 48
+        },
+        "propConfig": {
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+              }
+            }
+          }
         }
       },
       {
@@ -715,6 +725,16 @@
                   "y": 8,
                   "width": 920,
                   "height": 20
+                },
+                "propConfig": {
+                  "props.style.color": {
+                    "binding": {
+                      "type": "expr",
+                      "config": {
+                        "expression": "if(left({session.props.theme}, 4) = 'dark', '#94a3b8', '#526075')"
+                      }
+                    }
+                  }
                 }
               },
               {
@@ -925,6 +945,14 @@
                         "path": "session.custom.demo.accent"
                       }
                     }
+                  },
+                  "props.style.backgroundColor": {
+                    "binding": {
+                      "type": "expr",
+                      "config": {
+                        "expression": "if(left({session.props.theme}, 4) = 'dark', '#111a2e', '#ffffff')"
+                      }
+                    }
                   }
                 }
               }
@@ -932,6 +960,16 @@
           }
         ]
       }
-    ]
+    ],
+    "propConfig": {
+      "props.style.backgroundColor": {
+        "binding": {
+          "type": "expr",
+          "config": {
+            "expression": "if(left({session.props.theme}, 4) = 'dark', '#0b1220', '#eef2f6')"
+          }
+        }
+      }
+    }
   }
 }

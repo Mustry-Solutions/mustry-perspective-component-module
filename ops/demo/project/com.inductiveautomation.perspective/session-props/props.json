@@ -14,7 +14,275 @@
       "handover": "",
       "lineConfig": "",
       "accent": "#38bdf8",
-      "locale": "en"
+      "locale": "en",
+      "i18n": {
+        "navOverview": "Overview",
+        "navSchedule": "Schedule",
+        "navMaintenance": "Maintenance",
+        "navQuality": "Quality",
+        "navTriage": "Triage",
+        "navHandover": "Handover",
+        "navAdmin": "Admin",
+        "reset": "Reset demo",
+        "themeLight": "Light",
+        "themeDark": "Dark",
+        "ovTitle": "Plant overview",
+        "ovSubtitle": "The floor plan below is a live, fully interactive Perspective view inside the Pan & Zoom component \u2014 drag to pan, wheel to zoom, or use the Go to\u2026 list.",
+        "ovHint": "Tip: click \u201cLog sample\u201d inside the QA lab \u2014 embedded views stay fully interactive. The pulsing marker is a flagged POI (bind it to an alarm).",
+        "kOee": "OEE \u2014 PLANT",
+        "kL1": "LINE 1 \u2014 33CL GLASS",
+        "kL2": "LINE 2 \u2014 50CL PET",
+        "kJobs": "JOBS ON THE BOARD",
+        "kQc": "QC SAMPLES (48 H)",
+        "kStopped": "STOPPED",
+        "kFail": "fail",
+        "schTitle": "Production schedule \u2014 drag to replan",
+        "schSubtitle": "Drag a bar to retime \u00b7 drag it onto another row to reassign \u00b7 drag an edge to resize \u00b7 drag empty track to create \u00b7 click to edit. One onChange script persists everything for this session.",
+        "mntTitle": "Maintenance calendar",
+        "mntSubtitle": "Month / week / day / list \u00b7 drag events to move, drag edges to resize (week/day) \u00b7 drag empty time to create \u00b7 click an event to edit or delete \u00b7 the legend filters categories. Recurring series (\u21bb) support this-event / all-events edits.",
+        "mntEmpty": "No work orders in this window",
+        "qTitle": "Quality \u2014 fill checks",
+        "qSubtitle": "Spec: 500 ml \u00b1 5. Out-of-spec cells highlight; double-click any cell to edit (typed editors + validation). The window picker is LIVE \u2014 a rolling window that re-derives every minute.",
+        "qNew": "+ New sample",
+        "qBatchOn": "Batch edit: ON",
+        "qBatchOff": "Batch edit: OFF",
+        "qLive": "\u25cf LIVE \u2014 window slides with now",
+        "qEmpty": "No samples in the selected window",
+        "trTitle": "Downtime triage \u2014 unplanned line stop",
+        "trSubtitle": "The decision tree operators walk when a line stops. Click a node for its SOP \u00b7 hover for details \u00b7 the dashed red edge is the loop: a stop that recurs within 15 minutes goes back into triage.",
+        "trSopCap": "STANDARD OPERATING PROCEDURE",
+        "trEscCap": "ESCALATION",
+        "trEsc1": "0\u201315 min \u2014 operator triage (this tree)",
+        "trEsc2": "15+ min \u2014 maintenance on-call (Admin \u203a Rosters)",
+        "trEsc3": "45+ min \u2014 shift lead + planning (reschedule board)",
+        "trEscBtn": "Escalate \u2192 create work order",
+        "hTitle": "Shift handover",
+        "hSubtitle": "Left: the outgoing shift writes the note (full editor, dirty badge, Save fires one onSave). Right: what the incoming shift sees \u2014 same document in display mode, with the checklist still interactive.",
+        "hDisp": "WHAT THE NEXT SHIFT SEES",
+        "hKbd": "END-OF-SHIFT COUNT \u2014 touch numpad, no OS keyboard",
+        "hCnt": "COMMITTED COUNT",
+        "hSign": "SIGN-OFF (POPOVER KEYBOARD)",
+        "tlCats": [
+          {
+            "id": "prod",
+            "label": "Production",
+            "color": "#38bdf8",
+            "icon": "material/build"
+          },
+          {
+            "id": "cip",
+            "label": "CIP / cleaning",
+            "color": "#a78bfa",
+            "icon": "material/invert_colors"
+          },
+          {
+            "id": "maint",
+            "label": "Maintenance",
+            "color": "#f59e0b",
+            "icon": "material/handyman"
+          },
+          {
+            "id": "down",
+            "label": "Downtime",
+            "color": "#ef4444"
+          },
+          {
+            "id": "shift",
+            "label": "Shifts",
+            "color": "#64748b",
+            "icon": "material/groups"
+          }
+        ],
+        "calCats": [
+          {
+            "id": "pm",
+            "label": "Preventive",
+            "color": "#38bdf8",
+            "icon": "material/build"
+          },
+          {
+            "id": "insp",
+            "label": "Inspection",
+            "color": "#22c55e",
+            "icon": "material/fact_check"
+          },
+          {
+            "id": "calib",
+            "label": "Calibration",
+            "color": "#f59e0b",
+            "icon": "material/speed"
+          },
+          {
+            "id": "shut",
+            "label": "Shutdown",
+            "color": "#ef4444",
+            "icon": "material/block"
+          },
+          {
+            "id": "train",
+            "label": "Training",
+            "color": "#a78bfa",
+            "icon": "material/school"
+          },
+          {
+            "id": "corr",
+            "label": "Corrective",
+            "color": "#fb923c",
+            "icon": "material/engineering"
+          }
+        ],
+        "tlRes": [
+          {
+            "id": "m1",
+            "label": "Mixer 1",
+            "group": "Brewhouse",
+            "icon": "material/science",
+            "color": "#38bdf8"
+          },
+          {
+            "id": "m2",
+            "label": "Mixer 2",
+            "group": "Brewhouse",
+            "icon": "material/science",
+            "color": "#38bdf8"
+          },
+          {
+            "id": "f1",
+            "label": "Filler 1",
+            "group": "Line 1",
+            "color": "#22c55e"
+          },
+          {
+            "id": "k1",
+            "label": "Packer 1",
+            "group": "Line 1"
+          },
+          {
+            "id": "f2",
+            "label": "Filler 2",
+            "group": "Line 2",
+            "color": "#22c55e"
+          },
+          {
+            "id": "k2",
+            "label": "Packer 2",
+            "group": "Line 2"
+          },
+          {
+            "id": "ca",
+            "label": "Crew A",
+            "group": "Crews",
+            "icon": "material/groups",
+            "color": "#a78bfa"
+          },
+          {
+            "id": "cb",
+            "label": "Crew B",
+            "group": "Crews",
+            "icon": "material/groups",
+            "color": "#a78bfa"
+          },
+          {
+            "id": "mx",
+            "label": "Maintenance",
+            "group": "Crews",
+            "icon": "material/handyman",
+            "color": "#f59e0b"
+          }
+        ],
+        "gridCols": [
+          {
+            "field": "ts",
+            "header": "Sample time",
+            "type": "datetime",
+            "width": 160,
+            "pinned": true,
+            "editable": false
+          },
+          {
+            "field": "line",
+            "header": "Line",
+            "width": 90,
+            "options": [
+              "Line 1",
+              "Line 2"
+            ]
+          },
+          {
+            "field": "product",
+            "header": "Product",
+            "width": 150
+          },
+          {
+            "field": "fillMl",
+            "header": "Fill (ml)",
+            "type": "number",
+            "decimals": 1,
+            "align": "right",
+            "width": 110,
+            "required": true,
+            "min": 400,
+            "max": 600,
+            "aggregate": "avg",
+            "cellStyles": [
+              {
+                "lt": 495,
+                "background": "#7f1d1d",
+                "color": "#fecaca"
+              },
+              {
+                "gt": 505,
+                "background": "#7f1d1d",
+                "color": "#fecaca"
+              }
+            ]
+          },
+          {
+            "field": "tempC",
+            "header": "Temp (\u00b0C)",
+            "type": "number",
+            "decimals": 1,
+            "align": "right",
+            "width": 100,
+            "cellStyles": [
+              {
+                "gt": 4.4,
+                "color": "#f59e0b"
+              }
+            ]
+          },
+          {
+            "field": "passed",
+            "header": "Pass",
+            "type": "boolean",
+            "align": "center",
+            "width": 80,
+            "aggregate": "count"
+          },
+          {
+            "field": "operator",
+            "header": "Operator",
+            "width": 130,
+            "options": [
+              "A. Janssens",
+              "M. Peeters",
+              "S. Willems",
+              "K. De Smet"
+            ]
+          },
+          {
+            "field": "note",
+            "header": "Note",
+            "width": 420,
+            "cellStyles": [
+              {
+                "contains": "hold",
+                "color": "#fca5a5"
+              }
+            ]
+          }
+        ]
+      }
     }
   },
   "props": {}
