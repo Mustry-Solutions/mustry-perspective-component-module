@@ -65,7 +65,14 @@ test('demo triage: decision tree renders and node click loads the SOP', async ({
     await openDemo(page, '/triage', '.mustry-branching');
     await expect(page.locator('.mustry-branch-node')).toHaveCount(10);
     await page.getByText('Clear jam', { exact: false }).first().click();
-    await expect(page.getByText('LOCK-OUT / TAG-OUT', { exact: false })).toBeVisible();
+    // Match the SOP body, not just "LOCK-OUT / TAG-OUT": the node's own hover
+    // card says "Lock-out / tag-out before reaching in.", so the short text is
+    // ambiguous the moment the SOP lands (getByText is case-insensitive here).
+    // Whichever arrived first used to decide whether this passed or threw a
+    // strict-mode violation — locally the card won and the SOP went unchecked.
+    await expect(
+        page.getByText('LOCK-OUT / TAG-OUT before reaching into the machine', { exact: false })
+    ).toBeVisible();
 });
 
 test('demo handover: editor and display instance share the seeded note', async ({ page }) => {
