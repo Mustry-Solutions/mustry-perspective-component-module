@@ -1,0 +1,67 @@
+{
+ "custom": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1100,
+   "height": 650
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Composition pattern (#37): a Branching Diagram wrapped in a Pan & Zoom View. The diagram has no pan/zoom of its own \u2014 the wrapper supplies it. BranchingCanvas (2100\u00d7840) holds nothing but the diagram, sized so the whole tree fits without the component growing its own scrollbars; Pan & Zoom measures that view (contentWidth/Height = 0) and makes it navigable: drag to pan, wheel to zoom, +/\u2212/home/fit, minimap. Clicking a node still selects it through the wrapper.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 8,
+     "width": 1050,
+     "height": 58
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.panzoomview",
+    "version": 0,
+    "props": {
+     "config": {
+      "viewPath": "BranchingCanvas",
+      "contentWidth": 0,
+      "contentHeight": 0,
+      "showControls": true,
+      "wheelZoom": true,
+      "showMinimap": true,
+      "home": {
+       "x": -1,
+       "y": -1,
+       "zoom": 0
+      }
+     }
+    },
+    "meta": {
+     "name": "panzoom"
+    },
+    "position": {
+     "x": 16,
+     "y": 74,
+     "width": 1050,
+     "height": 540
+    }
+   }
+  ]
+ }
+}

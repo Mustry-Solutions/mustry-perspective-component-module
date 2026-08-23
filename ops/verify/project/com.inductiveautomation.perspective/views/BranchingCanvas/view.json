@@ -1,0 +1,328 @@
+{
+ "custom": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 2100,
+   "height": 840
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "events": {
+     "component": {
+      "onNodeClick": {
+       "config": {
+        "script": "\tself.view.custom.lastEvent = 'onNodeClick id=' + str(event.id) + ' name=\"' + str(event.name) + '\" category=' + str(event.category)"
+       },
+       "scope": "G",
+       "type": "script"
+      }
+     }
+    },
+    "meta": {
+     "name": "branching"
+    },
+    "position": {
+     "x": 24,
+     "y": 16,
+     "width": 2028,
+     "height": 800
+    },
+    "props": {
+     "data": {
+      "nodes": [
+       {
+        "id": 1,
+        "name": "Line stop",
+        "category": 0,
+        "nextId": [
+         2
+        ],
+        "color": "#ed6c02",
+        "icon": {
+         "path": "material/report",
+         "color": "#ffffff"
+        },
+        "tooltip": "Line has stopped.\nStart here."
+       },
+       {
+        "id": 2,
+        "name": "Alarm present?",
+        "category": 0,
+        "nextId": [
+         3,
+         10
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/notifications",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 3,
+        "name": "Read alarm",
+        "category": 0,
+        "nextId": [
+         4
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/list_alt",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 4,
+        "name": "Filler fault?",
+        "category": 0,
+        "nextId": [
+         5,
+         7
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/opacity",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 5,
+        "name": "Check fill valves",
+        "category": 0,
+        "nextId": [
+         6
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/tune",
+         "color": "#ffffff"
+        },
+        "tooltip": "Inspect the valve bank\nfor stuck actuators."
+       },
+       {
+        "id": 6,
+        "name": "Clear jam",
+        "category": 0,
+        "nextId": [
+         16
+        ],
+        "color": "#d32f2f",
+        "icon": {
+         "path": "material/build",
+         "color": "#d32f2f"
+        },
+        "fill": false,
+        "tooltip": "LOCK-OUT / TAG-OUT before reaching in."
+       },
+       {
+        "id": 7,
+        "name": "Capper fault?",
+        "category": 2,
+        "nextId": [
+         8,
+         9
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/lock",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 8,
+        "name": "Re-seat capper",
+        "category": 2,
+        "nextId": [
+         16
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/autorenew",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 9,
+        "name": "Torque check",
+        "category": 3,
+        "nextId": [
+         16
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/speed",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 10,
+        "name": "Upstream starved?",
+        "category": 1,
+        "nextId": [
+         11,
+         13
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/input",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 11,
+        "name": "Check conveyor",
+        "category": 1,
+        "nextId": [
+         12
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/linear_scale",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 12,
+        "name": "Restart conveyor",
+        "category": 1,
+        "nextId": [
+         16
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/play_arrow",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 13,
+        "name": "Downstream block?",
+        "category": 4,
+        "nextId": [
+         14,
+         15
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/block",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 14,
+        "name": "Clear accumulator",
+        "category": 4,
+        "nextId": [
+         16
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/archive",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 15,
+        "name": "Call palletiser",
+        "category": 5,
+        "nextId": [
+         16
+        ],
+        "color": "#ed6c02",
+        "icon": {
+         "path": "material/support_agent",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 16,
+        "name": "Line running?",
+        "category": 0,
+        "nextId": [
+         17,
+         18
+        ],
+        "color": "#0a66c2",
+        "icon": {
+         "path": "material/fact_check",
+         "color": "#ffffff"
+        }
+       },
+       {
+        "id": 17,
+        "name": "Log + resume",
+        "category": 0,
+        "nextId": [],
+        "color": "#2e7d32",
+        "icon": {
+         "path": "material/check_circle",
+         "color": "#ffffff"
+        },
+        "tooltip": "Record the cause,\nresume production."
+       },
+       {
+        "id": 18,
+        "name": "Escalate",
+        "category": 2,
+        "nextId": [
+         19
+        ],
+        "color": "#d32f2f",
+        "icon": {
+         "path": "material/priority_high",
+         "color": "#d32f2f"
+        },
+        "fill": false
+       },
+       {
+        "id": 19,
+        "name": "Maintenance call",
+        "category": 2,
+        "nextId": [
+         20
+        ],
+        "color": "#d32f2f",
+        "icon": {
+         "path": "material/engineering",
+         "color": "#d32f2f"
+        },
+        "fill": false
+       },
+       {
+        "id": 20,
+        "name": "Root cause review",
+        "category": 2,
+        "nextId": [],
+        "color": "#2e7d32",
+        "icon": {
+         "path": "material/science",
+         "color": "#ffffff"
+        }
+       }
+      ]
+     },
+     "output": {
+      "count": 20,
+      "hasRoot": true
+     },
+     "config": {
+      "minXOffset": 170,
+      "yOffset": 120,
+      "nodeSize": 28,
+      "showArrows": true
+     }
+    },
+    "type": "mustrysolutions.perspective.display.branching"
+   }
+  ]
+ }
+}
