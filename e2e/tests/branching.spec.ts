@@ -121,6 +121,9 @@ test.describe('Branching Diagram', () => {
         const root = page.locator('.mustry-branching');
         await expect(root).toBeVisible();
         await expect(root.locator('.mustry-branch-node')).toHaveCount(20);
+        // The wrapper is doing the navigating — without this, swapping the Pan &
+        // Zoom View for a plain container would still satisfy everything below.
+        await expect(page.locator('.mustry-panzoom')).toContainText('%');
 
         // The embedded diagram fits its canvas view — nothing to scroll.
         const overflow = await root.evaluate((el) => ({
@@ -148,8 +151,11 @@ test.describe('Branching Diagram', () => {
         await openRoute(page, '/branching-panzoom', '.mustry-panzoom');
         const root = page.locator('.mustry-branching');
         await root.getByRole('button', { name: 'Clear jam', exact: true }).click();
-        await expect(
-            root.locator('.mustry-branch-node--selected').getByText('Clear jam')
-        ).toBeVisible();
+        // Assert the accessible name, not text content: a node's markdown card is
+        // part of its subtree, so getByText would also pass on a different node
+        // whose tooltip happened to mention this one.
+        const selected = root.locator('.mustry-branch-node--selected');
+        await expect(selected).toHaveCount(1);
+        await expect(selected).toHaveAccessibleName('Clear jam');
     });
 });
