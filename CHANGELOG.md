@@ -8,6 +8,21 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: the module now actually ships as free
+`build.gradle.kts` never set `freeModule`, and the Ignition module plugin
+defaults it to `false` — so every release up to and including 0.5.0 packaged a
+`module.xml` saying `<freeModule>false</freeModule>`, opting the module into
+Ignition's trial/activation flow. Nothing in the code responded to it: the
+gateway hook takes a `LicenseState` and ignores it, so there was no feature
+gate and no trial-expiry handling. That contradicted what we tell users in
+three places — the README ("no trial, activation, or fees"), `license.html` §1
+("there is no trial period, activation, per-seat, or per-gateway fee"), and the
+0.5.0 notes below, which already claimed `isFreeModule` = true. The build now
+sets `freeModule.set(true)` explicitly, with a comment saying why, so the
+packaged artifact matches the licence the user accepts at install time. The
+EULA is unaffected — it ships via the `<license>` element and is still shown
+and required at install.
+
 ### Security
 Resolved all 46 open Dependabot alerts (23 high / 22 moderate / 1 low), all of
 them transitive npm dependencies in `web/package-lock.json`. Added an

@@ -132,6 +132,18 @@ ignitionModule {
     // documentationIndex.set("index.html")
 
     /*
+     * The module is free: Apache-2.0, no trial, activation, or per-gateway fee
+     * (README "Licensing & support" and license.html §1 both say so in as many
+     * words). The plugin defaults this to `false`, which would opt the module
+     * into Ignition's trial/activation flow and contradict the EULA we ask the
+     * user to accept at install time — so set it explicitly rather than
+     * inheriting a default that means the opposite of what we promise.
+     * The EULA itself is unaffected: acceptance is driven by the <license>
+     * element staged below, not by this flag.
+     */
+    freeModule.set(true)
+
+    /*
      * Sign the module only when signing credentials are supplied via -Pignition.signing.*
      * (the ops/ dev scripts pass them, pointing at a local self-signed dev keystore).
      * A plain `./gradlew build` with no signing properties stays unsigned.
@@ -139,10 +151,11 @@ ignitionModule {
     skipModlSigning.set(!project.hasProperty("ignition.signing.keystoreFile"))
 }
 
-// A licensed module needs its EULA inside the .modl. The plugin has no
-// `license` property, so the file is staged into the module content and
-// referenced from module.xml — the gateway shows it at install time and
-// requires acceptance. (Pattern proven in the AMQP + observability modules.)
+// The EULA ships inside the .modl and is shown at install time — independent of
+// `freeModule` above: a free module still states its terms, it just doesn't run
+// a trial. The plugin has no `license` property, so the file is staged into the
+// module content and referenced from module.xml, where the gateway picks it up
+// and requires acceptance. (Pattern proven in the AMQP + observability modules.)
 tasks.named("assembleModlStructure") {
     doLast {
         copy {
