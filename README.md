@@ -280,6 +280,8 @@ Embeds any Perspective view and navigates it like a map. Component id `mustrysol
 Override the `--pz-*` variables via a style class / project stylesheet: `--pz-accent`, `--pz-alert`, `--pz-text`, `--pz-muted`, `--pz-border`, `--pz-bg`, `--pz-canvas`.
 
 > Manual test checklist: [`docs/panzoom-manual-test.md`](docs/panzoom-manual-test.md).
+>
+> Wrapping a [Branching Diagram](#branching-diagram) is a common case and has its own notes: [Panning and zooming a large tree](#panning-and-zooming-a-large-tree).
 
 ---
 
@@ -297,6 +299,25 @@ A left-to-right decision-tree / flow-path renderer, migrated from `ignition-must
 - **Width-responsive** — columns stretch to fill the component and never compress below `config.minXOffset` (then it scrolls). Node discs take Ignition icons (`{path, color}` — the path must exist in the gateway's icon library, see the calendar's icon note) and show a **markdown** hover info card (react-markdown@4, React-16 compatible) that stays open while hovered.
 - **Selection + events** — clicking a node writes `state.selectedNode` (two-way, drives a highlight) and fires **`onNodeClick`** `{id, name, category}`. Display-only: the component never mutates `data.nodes`.
 - **Validation feedback** — when a dataset won't fully draw, the reason is surfaced instead of a blank canvas: the empty state distinguishes *no nodes* / *cycle (no entry point)* / *no root*, and **`output.warnings`** lists machine-readable issues (no edges, cycle, edges to unknown ids, nodes unreachable from the root and silently dropped). Empty `output.warnings` = clean.
+
+### Panning and zooming a large tree
+
+The Branching Diagram has **no pan/zoom of its own, by design** — wrap it in a [Pan & Zoom View](#pan--zoom-view) instead of duplicating a second gesture stack inside it. Live example: `/branching-panzoom` in the verify project (`BranchingPanZoom` → `BranchingCanvas`).
+
+The pattern is two views:
+
+1. **An inner "canvas" view holding nothing but the diagram.** No help labels, no readouts — Pan & Zoom measures the *whole* embedded view, so any chrome becomes part of the pannable content and scrolls away with the tree.
+2. **The wrapper**, a Pan & Zoom View whose `config.viewPath` points at that canvas view, with `config.contentWidth`/`contentHeight` left at `0`. The canvas view's **`defaultSize` is then the content coordinate space** — the wrapper's fit/home/minimap all work off it.
+
+Three things decide whether this feels right:
+
+- **Size the canvas view so the whole tree fits inside it.** The diagram fills its container and scrolls internally when the layout doesn't fit (`config.minXOffset` is the floor for column width). Left too small, you get the component's own scrollbars *inside* the wrapper — two nested ways to move the same picture. Give it room and the wrapper becomes the only navigation.
+- **Leave a right-hand margin** — roughly 30 px at default label sizes. The last column's labels are centred on their nodes and overhang the final column, which is enough on its own to raise a horizontal scrollbar in an otherwise exactly-sized canvas.
+- **Give parallel branches different `category` values.** Category is the row and the layer is the column, so two nodes sharing a (layer, category) cell are drawn on top of each other. A decision whose branches both sit in the same category renders as one overlapping smudge; the fix is a distinct category per branch, not more spacing.
+
+Selection survives the wrapper: clicking a node inside the embedded view still writes `state.selectedNode` and fires `onNodeClick` as usual, and pan/zoom gestures don't swallow the click.
+
+> Sizing that canvas view is manual today — the diagram doesn't measure itself to its content, so you pick a `defaultSize` that fits the tree you expect. Native auto-size-to-content is tracked in [#37](https://github.com/Mustry-Solutions/mustry-perspective-component-module/issues/37).
 
 ### Theming
 

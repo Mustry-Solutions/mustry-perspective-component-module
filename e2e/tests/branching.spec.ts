@@ -109,4 +109,47 @@ test.describe('Branching Diagram', () => {
         expect(ship!.y).toBeGreaterThan(intake!.y);
         expect(rework!.x).toBeGreaterThan(assemble!.x);
     });
+
+    // Composition pattern (#37): the diagram has no pan/zoom of its own, so a
+    // large tree is wrapped in a Pan & Zoom View. What this guards is the part
+    // that is easy to break silently by resizing the canvas view: the diagram
+    // must fit inside it, because a diagram that overflows grows the
+    // component's OWN scrollbars inside the wrapper and you end up with two
+    // nested ways to move the same picture.
+    test('wrapped in a Pan & Zoom View: whole tree fits, no scrollbars of its own', async ({ page }) => {
+        await openRoute(page, '/branching-panzoom', '.mustry-panzoom');
+        const root = page.locator('.mustry-branching');
+        await expect(root).toBeVisible();
+        await expect(root.locator('.mustry-branch-node')).toHaveCount(20);
+
+        // The embedded diagram fits its canvas view — nothing to scroll.
+        const overflow = await root.evaluate((el) => ({
+            x: el.scrollWidth - el.clientWidth,
+            y: el.scrollHeight - el.clientHeight,
+        }));
+        expect(overflow.x).toBeLessThanOrEqual(2);
+        expect(overflow.y).toBeLessThanOrEqual(2);
+
+        // Category is the row and the layer is the column, so parallel branches
+        // need distinct categories or they are drawn on top of each other.
+        const boxes = await root.locator('.mustry-branch-node').evaluateAll((els) =>
+            els.map((e) => {
+                const r = e.getBoundingClientRect();
+                return { x: Math.round(r.x), y: Math.round(r.y) };
+            })
+        );
+        const overlapping = boxes.filter((a, i) =>
+            boxes.some((b, j) => j > i && Math.abs(a.x - b.x) < 6 && Math.abs(a.y - b.y) < 6)
+        );
+        expect(overlapping).toEqual([]);
+    });
+
+    test('wrapped in a Pan & Zoom View: node clicks survive the wrapper', async ({ page }) => {
+        await openRoute(page, '/branching-panzoom', '.mustry-panzoom');
+        const root = page.locator('.mustry-branching');
+        await root.getByRole('button', { name: 'Clear jam', exact: true }).click();
+        await expect(
+            root.locator('.mustry-branch-node--selected').getByText('Clear jam')
+        ).toBeVisible();
+    });
 });

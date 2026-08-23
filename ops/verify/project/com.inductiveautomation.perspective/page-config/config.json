@@ -99,6 +99,10 @@
   "/branching-labels": {
    "viewPath": "BranchingLabels",
    "viewParams": {}
+  },
+  "/branching-panzoom": {
+   "viewPath": "BranchingPanZoom",
+   "viewParams": {}
   }
  },
  "shared": {},

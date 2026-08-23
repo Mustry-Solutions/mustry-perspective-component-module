@@ -8,6 +8,22 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Docs: composing the Branching Diagram with Pan & Zoom
+The Branching Diagram deliberately has no pan/zoom of its own — the supported
+way to navigate a large tree is to wrap it in a Pan & Zoom View. README now
+documents that pattern, along with the three things that decide whether it
+works: the inner view must hold *only* the diagram (Pan & Zoom measures the
+whole embedded view), it must be sized so the tree fits — otherwise the diagram
+grows its own scrollbars inside the wrapper and you get two nested ways to move
+the same picture — and parallel branches need distinct `category` values,
+because category is the row and the layer is the column, so two nodes sharing a
+cell are drawn on top of each other. Added a worked reference at
+`/branching-panzoom` in the verify project (`BranchingPanZoom` wrapping a
+20-node `BranchingCanvas`) and e2e coverage asserting the tree fits without
+internal scrollbars, that no two nodes overlap, and that node clicks still
+select through the wrapper. Sizing the canvas view stays manual for now;
+native auto-size-to-content remains open on #37.
+
 ### Fixed: the module now actually ships as free
 `build.gradle.kts` never set `freeModule`, and the Ignition module plugin
 defaults it to `false` — so every release up to and including 0.5.0 packaged a
