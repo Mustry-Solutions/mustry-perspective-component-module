@@ -91,7 +91,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         }
     }
 
-    componentDidUpdate(prevProps: ComponentProps<GridProps>): void {
+    componentDidUpdate(): void {
         if (this.state.filterDraft !== null && this.state.filterDraft === this.props.props.quickFilter) {
             this.setState({ filterDraft: null });   // the write echoed back; the prop leads again
         }

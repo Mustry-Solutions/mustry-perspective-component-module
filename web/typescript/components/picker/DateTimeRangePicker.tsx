@@ -27,17 +27,8 @@ import {
     today
 } from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
-import {
-    DisableMode,
-    Granularity,
-    LayoutMode,
-    ResolvedLayout,
-    PresetUnit,
-    PresetType,
-    PresetPeriod,
-    PresetDef
-} from './pickerLogic';
-import { DateTimeRangePickerProps, DisplayMode, WeekStart } from './pickerTypes';
+import { ResolvedLayout, PresetDef } from './pickerLogic';
+import { DateTimeRangePickerProps } from './pickerTypes';
 import { mapPickerProps } from './pickerProps';
 import { DayState, PickerCalendarPane } from './PickerCalendarPane';
 import { PickerPresets } from './PickerPresets';

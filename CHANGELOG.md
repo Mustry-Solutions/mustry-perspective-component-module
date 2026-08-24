@@ -8,6 +8,20 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Tooling: the build now fails on unused locals and parameters
+`tsc --strict` does not flag dead references, and nothing else was watching, so
+they accumulated — eight unused type imports had stacked up in
+`DateTimeRangePicker.tsx` alone. `web/tsconfig.json` now sets `noUnusedLocals`
+and `noUnusedParameters`, and the thirteen findings that surfaced are cleared.
+No new dependency: `tsconfig.test.json` extends the same config, so ts-jest
+enforces it under `./gradlew build` and ts-loader enforces it in the webpack
+build. Every removal is inert — stale imports of `findRoot` and
+`normalizeRoster` (both functions still live and tested), type imports the
+picker no longer references, an unused `const` in the pan/zoom glide loop, an
+unread `prevProps` on `DataGrid.componentDidUpdate`, and a positional `g` that
+becomes `_g` in `ScheduleManager`. First step of the linting work tracked on
+#78; ESLint itself is not in here.
+
 ### Docs: composing the Branching Diagram with Pan & Zoom
 The Branching Diagram deliberately has no pan/zoom of its own — the supported
 way to navigate a large tree is to wrap it in a Pan & Zoom View. README now
