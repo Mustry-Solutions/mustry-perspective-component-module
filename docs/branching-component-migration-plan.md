@@ -1,13 +1,37 @@
 # Branching Component — migration plan (from ignition-mustry-ui)
 
-**Status (2026-08-04): PLANNING — nothing migrated.** Source repo:
+**Status (2026-08-24): BUILT AND SHIPPING.** Migrated as planned: id
+`mustrysolutions.perspective.display.branching`, display name **"Branching
+Diagram"**, sources in `web/typescript/components/branching/`, seven views in
+the verify project (`/branching` plus the arrows, cycle, labels, pan/zoom,
+vertical and canvas variants) and 11 e2e tests. The plan below is kept for
+the decisions and their rationale; deviations that emerged during the build
+are listed next.
+
+**Deviations from the original plan:**
+- The layout algorithm — called out below as "the real asset" — is the one
+  thing that did *not* survive the port. The BFS + duplicate-node
+  forward-push scheme was rewritten as a layered ("Sugiyama-style") layout
+  (#39): a cycle-break pass classifies back-edges, then longest-path layer
+  assignment sets each node's column, so a loop draws as a backward connector
+  instead of shoving its downstream subtree sideways. Connector split-point
+  routing was kept from the port.
+- Gained an edge model the source had no notion of: optional per-edge labels
+  via `data.edgeLabels` (#31) and per-edge colour / style / width (#40), plus
+  loop-edge routing that clears nodes and halos (#32).
+- No pan/zoom of its own — deliberately decided against (#37). The supported
+  way to navigate a large tree is to wrap the diagram in a Pan & Zoom View;
+  README documents the composition and its three constraints.
+
+Source repo:
 `github.com/Mustry-Solutions/ignition-mustry-ui`. Despite its "Mustry UI /
 compilation of components" framing, that repo ships **exactly one**
 registered Perspective component — the **Branching Component**
 (`mustryui.display.branching`), a left-to-right decision-tree / flow-path
 diagram — plus four internal presentational children (Node, Connection,
-Icon, InfoCard). Surveyed 2026-08-04; decisions below are proposals to
-settle with Sam.
+Icon, InfoCard). Surveyed 2026-08-04; the decisions below were proposals at
+the time and have all since been settled — see the status above for where the
+build diverged from them.
 
 ## What it is & why migrate it
 
