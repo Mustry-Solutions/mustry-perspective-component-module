@@ -276,7 +276,6 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
             const fy = glideFrame(vy, dt);
             vx = fx.v;
             vy = fy.v;
-            const p = this.props.props;
             const c = this.cs();
             const cur = this.vp();
             const un = panBy(cur, fx.dist, fy.dist);

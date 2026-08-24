@@ -7,7 +7,7 @@ import {
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { columnOffset, diagnose, findRoot, layoutTree } from './branchingLogic';
+import { columnOffset, diagnose, layoutTree } from './branchingLogic';
 import { BranchingProps, mapBranchingProps } from './branchingProps';
 import { BranchNode } from './BranchNode';
 import { BranchConnection } from './BranchConnection';

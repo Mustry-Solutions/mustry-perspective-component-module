@@ -254,7 +254,7 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         });
     };
 
-    private onGestureCommit = (kind: ScheduleGestureKind, g: ScheduleGesture, preview: ScheduleGesturePreview | null): void => {
+    private onGestureCommit = (kind: ScheduleGestureKind, _g: ScheduleGesture, preview: ScheduleGesturePreview | null): void => {
         const draft = this.state.draft;
         if (!draft || !preview) {
             return;

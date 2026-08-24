@@ -10,7 +10,7 @@ import {
 import { reorder, uniqueCopyName, validateName } from '../../shared/adminCommon';
 import { AdminUser } from '../../shared/adminUsers';
 import {
-    RosterDraft, RosterItem, addUserToDraft, normalizeRoster, removeUserFromDraft,
+    RosterDraft, RosterItem, addUserToDraft, removeUserFromDraft,
     rosterDraftEquals, rosterDraftFromItem
 } from './rosterLogic';
 import { ReorderGesture, ReorderPreview, RosterReorderController } from './rosterGestureController';
