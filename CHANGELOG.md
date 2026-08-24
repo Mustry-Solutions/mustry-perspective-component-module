@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Tooling: the unused-code gate now guards itself
+The gate added below rests on config that nothing asserted: if
+`web/tsconfig.json` lost the two flags, or `tsconfig.test.json` stopped
+extending it, the gate would switch off **silently** — no test fails, dead code
+just starts compiling again. `web/typescript/__tests__/buildGate.test.ts` now
+asserts both. Verified against the regressions it claims to catch: dropping a
+flag, flattening `tsconfig.test.json` so it no longer extends, and re-disabling
+a flag in the test config each turn it red. The third leg — `ts-loader` running
+without `transpileOnly` — can't be read off a JSON file and stays a review
+concern. Part of #78.
+
 ### Tooling: the build now fails on unused locals and parameters
 `tsc --strict` does not flag dead references, and nothing else was watching, so
 they accumulated — eight unused type imports had stacked up in
