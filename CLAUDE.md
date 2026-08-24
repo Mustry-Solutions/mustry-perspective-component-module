@@ -16,10 +16,14 @@ gateway/designer registration. See README.md for the component reference.
    must pass.
 4. Squash-merge into `main`, delete the branch.
 
-This is **convention, not enforced** — the repo is private on a free plan, where
-GitHub gates branch protection/rulesets behind Pro (the owner has deferred
-paying). Because nothing *stops* a direct push, the discipline is on you: follow
-it anyway. `main` must always stay releasable.
+This is **enforced** by an active GitHub ruleset (`main-protection`): direct
+pushes to `main` are blocked, changes must come through a PR, both required
+checks must pass with the **strict** up-to-date policy, and history must stay
+linear (no force-pushes, no branch deletion). The strict policy has a workflow
+consequence: a PR that is behind `main` cannot merge even with green checks —
+after another PR lands, update the branch (`gh pr update-branch`), let CI
+re-run, then merge. Parallel PRs therefore merge serially. `main` must always
+stay releasable.
 
 Verify before opening the PR: `cd web && npx tsc --noEmit && npm test`, and
 `ops/e2e.sh --fresh` for anything with a runtime surface.
