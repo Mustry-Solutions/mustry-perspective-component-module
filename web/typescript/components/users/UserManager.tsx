@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { uniqueCopyName, validateName } from '../../shared/adminCommon';
+import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
+import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { AdminUser, displayName, filterUsers } from '../../shared/adminUsers';
 import { AdminFooter } from '../../shared/AdminFooter';
 import {
@@ -20,18 +20,9 @@ import { UserDetailForm } from './UserDetailForm';
 // Must match UserManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.usermanager';
 
-/** How long the Delete button stays in its confirm step before reverting. */
-const CONFIRM_DELETE_MS = 4000;
-
-interface UserManagerState {
-    draft: UserDraft | null;
-    /** Which username the draft belongs to (selection-change detection). */
-    draftFor: string;
-    creating: boolean;
-    usernameDraft: string;
+interface UserManagerState extends AdminDraftState<UserDraft> {
     /** The rail's filter query (client-side, never persisted). */
     filter: string;
-    confirmingDelete: boolean;
 }
 
 /**
@@ -46,152 +37,59 @@ interface UserManagerState {
  * author's script persists via system.user.addUser/editUser. AD/LDAP
  * sources are read-only — set config.editable false to degrade to a
  * directory viewer. Controlled; selection is two-way via state.selectedUser.
+ * The draft/select/save/delete machine lives in the AdminManagerBase; this
+ * class owns the form, the role catalog and the password staging.
  */
-export class UserManager extends Component<ComponentProps<UserManagerProps>, UserManagerState> {
+export class UserManager extends AdminManagerBase<AdminUser, UserDraft, UserManagerProps, UserManagerState> {
 
-    private confirmTimer: number | null = null;
+    protected readonly descriptor: AdminManagerDescriptor<AdminUser, UserDraft> = {
+        keyOf: (u) => u.username,
+        draftFromItem: userDraftFromItem,
+        emptyDraft: emptyUserDraft,
+        draftEquals: userDraftEquals,
+        selectionPath: 'state.selectedUser',
+        deleteEvent: 'onUserDelete',
+        deleteKeyField: 'username',
+        // usernames don't rename in v1 (moving history/auth is a gateway decision)
+        renameEnabled: false,
+        copyNameStyle: 'dash',
+        nameErrorCodes: { empty: 'usernameRequired', duplicate: 'usernameTaken' }
+    };
 
     constructor(props: ComponentProps<UserManagerProps>) {
         super(props);
         this.state = {
-            draft: null, draftFor: '', creating: false, usernameDraft: '', filter: '', confirmingDelete: false
+            draft: null, draftFor: '', creating: false, nameDraft: '', filter: '', confirmingDelete: false
         };
     }
 
-    componentDidMount(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
+    // --- machine wiring -----------------------------------------------------
+
+    protected items(): AdminUser[] {
+        return this.props.props.users;
     }
 
-    componentDidUpdate(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
+    protected selectedKey(): string {
+        return this.props.props.selectedUser;
     }
 
-    componentWillUnmount(): void {
-        this.clearConfirmTimer();
+    protected saveBlocked(): boolean {
+        return super.saveBlocked() || this.adjustmentsInvalid();
     }
 
-    // --- draft lifecycle ----------------------------------------------------
-
-    private syncDraft(): void {
-        if (this.state.creating) {
-            return;
+    protected validationErrors(): string[] {
+        const errors = super.validationErrors();
+        if (this.adjustmentsInvalid()) {
+            errors.push('adjustmentInvalid');
         }
-        const item = this.selected();
-        if (!item) {
-            if (this.state.draft !== null) {
-                this.setState({ draft: null, draftFor: '', usernameDraft: '', confirmingDelete: false });
-            }
-            return;
-        }
-        const selectionChanged = item.username !== this.state.draftFor;
-        if (selectionChanged || (this.state.draft && !this.isDirty() && !userDraftEquals(this.state.draft, userDraftFromItem(item)))) {
-            this.setState({
-                draft: userDraftFromItem(item), draftFor: item.username, usernameDraft: item.username, confirmingDelete: false
-            });
-        } else if (this.state.draft === null) {
-            this.setState({ draft: userDraftFromItem(item), draftFor: item.username, usernameDraft: item.username });
-        }
+        return errors;
     }
 
-    private isDirty(): boolean {
-        if (this.state.creating) {
-            return true;
-        }
-        const item = this.selected();
-        if (!item || !this.state.draft || item.username !== this.state.draftFor) {
-            return false;
-        }
-        return !userDraftEquals(this.state.draft, userDraftFromItem(item));
-    }
-
-    private usernameError(): 'empty' | 'duplicate' | null {
-        if (!this.state.creating) {
-            return null; // usernames don't rename in v1 (moving history/auth is a gateway decision)
-        }
-        return validateName(this.state.usernameDraft, this.props.props.users.map((u) => u.username), '');
-    }
-
-    // --- outputs / selection ------------------------------------------------
+    // --- user-specific editing ----------------------------------------------
 
     private adjustmentsInvalid(): boolean {
         return !!this.state.draft && invalidAdjustments(this.state.draft).length > 0;
     }
-
-    private writeOutputs(): void {
-        const w = this.props.store.props;
-        const err = this.usernameError();
-        const errors: string[] = [];
-        if (err !== null) {
-            errors.push(err === 'empty' ? 'usernameRequired' : 'usernameTaken');
-        }
-        if (this.adjustmentsInvalid()) {
-            errors.push('adjustmentInvalid');
-        }
-        w.write('output.count', this.props.props.users.length);
-        w.write('output.isDirty', this.isDirty());
-        w.write('output.validationErrors', errors);
-    }
-
-    private ensureSelection(): void {
-        const p = this.props.props;
-        if (p.users.length === 0 || this.state.creating || p.selectedUser !== '') {
-            return;
-        }
-        this.props.store.props.write('state.selectedUser', p.users[0].username);
-    }
-
-    private onSelect = (username: string): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', usernameDraft: '' });
-        }
-        this.props.store.props.write('state.selectedUser', username);
-    };
-
-    private selected(): AdminUser | undefined {
-        const p = this.props.props;
-        return p.users.find((u) => u.username === p.selectedUser);
-    }
-
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
-    }
-
-    // --- editing actions ----------------------------------------------------
-
-    private onDuplicate = (username: string): void => {
-        const source = this.props.props.users.find((u) => u.username === username);
-        if (!source) {
-            return;
-        }
-        // Copies roles/schedule/contacts/adjustments but never the password —
-        // the source's policy may demand staging one before the save succeeds.
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: userDraftFromItem(source), draftFor: '',
-            usernameDraft: uniqueCopyName(username, this.props.props.users.map((u) => u.username), 'dash'),
-            confirmingDelete: false
-        });
-    };
-
-    private onMenuDelete = (username: string): void => {
-        this.fireEvent('onUserDelete', { username });
-        if (username === this.props.props.selectedUser) {
-            this.props.store.props.write('state.selectedUser', '');
-        }
-    };
-
-    private onCreate = (): void => {
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: emptyUserDraft(), draftFor: '', usernameDraft: '', confirmingDelete: false
-        });
-    };
 
     private onDraftChange = (draft: UserDraft): void => {
         this.setState({ draft });
@@ -213,12 +111,12 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
     };
 
     private onSave = (): void => {
-        const draft = this.state.draft;
-        if (!draft || this.usernameError() !== null || this.adjustmentsInvalid() || !this.isDirty()) {
+        const draft = this.saveableDraft();
+        if (!draft) {
             return;
         }
         const creating = this.state.creating;
-        const username = creating ? this.state.usernameDraft.trim() : (this.selected() as AdminUser).username;
+        const username = creating ? this.state.nameDraft.trim() : (this.selected() as AdminUser).username;
         const payload: { [key: string]: any } = {
             user: userDraftToFlat(username, draft),
             isNew: creating
@@ -229,49 +127,12 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
         }
         this.fireEvent('onUserSave', payload);
         if (creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', usernameDraft: '' });
-            this.props.store.props.write('state.selectedUser', username);
+            this.finishCreate(username);
         } else {
             // Clear the staged password; everything else re-syncs on refetch.
             this.setState({ draft: { ...draft, password: '' } });
         }
     };
-
-    private onDiscard = (): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', usernameDraft: '' });
-            return;
-        }
-        const item = this.selected();
-        if (item) {
-            this.setState({
-                draft: userDraftFromItem(item), draftFor: item.username, usernameDraft: item.username, confirmingDelete: false
-            });
-        }
-    };
-
-    private onDelete = (): void => {
-        const item = this.selected();
-        if (!item || this.state.creating) {
-            return;
-        }
-        if (!this.state.confirmingDelete) {
-            this.setState({ confirmingDelete: true });
-            this.clearConfirmTimer();
-            this.confirmTimer = window.setTimeout(() => this.setState({ confirmingDelete: false }), CONFIRM_DELETE_MS);
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({ confirmingDelete: false });
-        this.fireEvent('onUserDelete', { username: item.username });
-    };
-
-    private clearConfirmTimer(): void {
-        if (this.confirmTimer !== null) {
-            window.clearTimeout(this.confirmTimer);
-            this.confirmTimer = null;
-        }
-    }
 
     // --- render -------------------------------------------------------------
 
@@ -348,7 +209,7 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
             );
         }
         const draft = p.editable ? this.state.draft : null;
-        const usernameError = this.usernameError();
+        const usernameError = this.nameError();
         return (
             <div className="mustry-roster-detail">
                 <div className="mustry-roster-detail-head">
@@ -357,10 +218,10 @@ export class UserManager extends Component<ComponentProps<UserManagerProps>, Use
                             <input
                                 className={'mustry-sched-name-input' + (usernameError ? ' mustry-sched-name-input--invalid' : '')}
                                 type="text"
-                                value={this.state.usernameDraft}
+                                value={this.state.nameDraft}
                                 placeholder={p.labels.username}
                                 aria-label={p.labels.username}
-                                onChange={(e) => this.setState({ usernameDraft: e.target.value })}
+                                onChange={(e) => this.setState({ nameDraft: e.target.value })}
                             />
                             {usernameError && (
                                 <span className="mustry-sched-name-error">
