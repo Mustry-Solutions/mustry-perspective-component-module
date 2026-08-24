@@ -1,18 +1,18 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { uniqueCopyName } from '../../shared/adminCommon';
+import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
+import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { weekdayHeaders } from '../../shared/dateUtils';
 import { dayRanges, isActiveAt, orderedDays, DAY_KEYS, DayKey, MINUTES_PER_DAY, ScheduleItem } from './scheduleLogic';
 import {
     applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, emptyDraft, newScheduleToFlat,
-    removeRange, validateName, ScheduleDraft
+    removeRange, ScheduleDraft
 } from './scheduleEditLogic';
 import {
     ScheduleGesture, ScheduleGestureController, ScheduleGestureKind, ScheduleGesturePreview
@@ -27,23 +27,11 @@ import { WeekGrid, WeekGridDay } from './WeekGrid';
 // Must match ScheduleManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.schedulemanager';
 
-/** How long the Delete button stays in its confirm step before reverting. */
-const CONFIRM_DELETE_MS = 4000;
-
 /** The preview strip / now-line / active dots re-evaluate on this cadence. */
 const NOW_TICK_MS = 30_000;
 
-interface ScheduleManagerState {
-    /** The editable draft of the selected schedule (null = nothing selected). */
-    draft: ScheduleDraft | null;
-    /** Which schedule name the draft belongs to (selection-change detection). */
-    draftFor: string;
-    /** Create flow: editing a brand-new schedule not yet on the gateway. */
-    creating: boolean;
-    /** The name under edit (rename for existing, initial name when creating). */
-    nameDraft: string;
+interface ScheduleManagerState extends AdminDraftState<ScheduleDraft> {
     preview: ScheduleGesturePreview | null;
-    confirmingDelete: boolean;
 }
 
 /**
@@ -56,12 +44,27 @@ interface ScheduleManagerState {
  * onScheduleSave ({schedule, isNew, oldName?}) — the author's script
  * persists via system.user and refreshes the binding. The preview strip
  * answers "active now? until when?" on a 30s tick. Controlled throughout;
- * selection is two-way via state.selectedSchedule.
+ * selection is two-way via state.selectedSchedule. The draft/select/save/
+ * delete machine lives in the AdminManagerBase; this class owns the paint
+ * surface and the now-tracking.
  */
-export class ScheduleManager extends Component<ComponentProps<ScheduleManagerProps>, ScheduleManagerState> {
+export class ScheduleManager
+    extends AdminManagerBase<ScheduleItem, ScheduleDraft, ScheduleManagerProps, ScheduleManagerState> {
+
+    protected readonly descriptor: AdminManagerDescriptor<ScheduleItem, ScheduleDraft> = {
+        keyOf: (s) => s.name,
+        draftFromItem,
+        emptyDraft,
+        draftEquals,
+        selectionPath: 'state.selectedSchedule',
+        deleteEvent: 'onScheduleDelete',
+        deleteKeyField: 'name',
+        renameEnabled: true,
+        copyNameStyle: 'paren',
+        nameErrorCodes: { empty: 'nameRequired', duplicate: 'nameTaken' }
+    };
 
     private gestures: ScheduleGestureController;
-    private confirmTimer: number | null = null;
     private nowTimer: number | null = null;
 
     constructor(props: ComponentProps<ScheduleManagerProps>) {
@@ -84,76 +87,43 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
     }
 
     componentDidMount(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
+        super.componentDidMount();
         // Keep "now" honest: dots, the now-line and the preview strip drift
         // with the clock even when nothing else re-renders.
         this.nowTimer = window.setInterval(() => this.forceUpdate(() => this.writeOutputs()), NOW_TICK_MS);
     }
 
-    componentDidUpdate(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
-    }
-
     componentWillUnmount(): void {
         this.gestures.dispose();
-        this.clearConfirmTimer();
+        super.componentWillUnmount();
         if (this.nowTimer !== null) {
             window.clearInterval(this.nowTimer);
         }
     }
 
-    // --- draft lifecycle ----------------------------------------------------
+    // --- machine wiring -----------------------------------------------------
 
-    /**
-     * Keep the draft in step with props: a selection change always resets it;
-     * a bound-data change only refreshes it while it is NOT dirty (an author's
-     * polling binding must never clobber an operator's in-progress edit). The
-     * create flow owns its draft entirely — props never touch it.
-     */
-    private syncDraft(): void {
-        if (this.state.creating) {
-            return;
-        }
+    protected items(): ScheduleItem[] {
+        return this.props.props.schedules;
+    }
+
+    protected selectedKey(): string {
+        return this.props.props.selectedSchedule;
+    }
+
+    protected resetExtras(): Partial<ScheduleManagerState> {
+        return { preview: null };
+    }
+
+    protected writeExtraOutputs(): void {
         const item = this.selected();
-        if (!item) {
-            if (this.state.draft !== null) {
-                this.setState({ draft: null, draftFor: '', nameDraft: '', confirmingDelete: false });
-            }
-            return;
-        }
-        const selectionChanged = item.name !== this.state.draftFor;
-        if (selectionChanged || (this.state.draft && !this.isDirty() && !draftEquals(this.state.draft, draftFromItem(item)))) {
-            this.setState({
-                draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
-            });
-        } else if (this.state.draft === null) {
-            this.setState({ draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name });
-        }
+        const { dayIndex, minute } = this.now();
+        this.props.store.props.write(
+            'output.isActiveNow', !this.state.creating && !!item && isActiveAt(item, dayIndex, minute)
+        );
     }
 
-    private isDirty(): boolean {
-        if (this.state.creating) {
-            return true;
-        }
-        const item = this.selected();
-        if (!item || !this.state.draft || item.name !== this.state.draftFor) {
-            return false;
-        }
-        return this.state.nameDraft !== item.name || !draftEquals(this.state.draft, draftFromItem(item));
-    }
-
-    private nameError(): 'empty' | 'duplicate' | null {
-        if (!this.props.props.editable) {
-            return null;
-        }
-        const names = this.props.props.schedules.map((s) => s.name);
-        const current = this.state.creating ? '' : this.state.draftFor;
-        return validateName(this.state.nameDraft, names, current);
-    }
+    // --- schedule-specific editing ------------------------------------------
 
     private patchDraft = (patch: Partial<ScheduleDraft>): void => {
         if (this.state.draft) {
@@ -172,87 +142,10 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         this.setState({ nameDraft: name });
     };
 
-    // --- outputs / selection ------------------------------------------------
-
-    private writeOutputs(): void {
-        const w = this.props.store.props;
-        const item = this.selected();
-        const { dayIndex, minute } = this.now();
-        const err = this.nameError();
-        w.write('output.count', this.props.props.schedules.length);
-        w.write('output.isDirty', this.isDirty());
-        w.write('output.isActiveNow', !this.state.creating && !!item && isActiveAt(item, dayIndex, minute));
-        w.write('output.validationErrors', err === null ? [] : [err === 'empty' ? 'nameRequired' : 'nameTaken']);
-    }
-
-    /**
-     * Auto-select the first schedule when the selection is EMPTY. A non-empty
-     * name that's missing from the list is left alone — it may be a create or
-     * rename racing the binding refetch, and stomping it would deselect the
-     * schedule the user just saved.
-     */
-    private ensureSelection(): void {
-        const p = this.props.props;
-        if (p.schedules.length === 0 || this.state.creating || p.selectedSchedule !== '') {
-            return;
-        }
-        this.props.store.props.write('state.selectedSchedule', p.schedules[0].name);
-    }
-
-    private onSelect = (name: string): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-        }
-        this.props.store.props.write('state.selectedSchedule', name);
-    };
-
-    private selected(): ScheduleItem | undefined {
-        const p = this.props.props;
-        return p.schedules.find((s) => s.name === p.selectedSchedule);
-    }
-
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
-    }
-
     private now(): { dayIndex: number; minute: number } {
         const d = new Date();
         return { dayIndex: (d.getDay() + 6) % 7, minute: d.getHours() * 60 + d.getMinutes() };
     }
-
-    // --- editing actions ----------------------------------------------------
-
-    private onDuplicate = (name: string): void => {
-        const source = this.props.props.schedules.find((sch) => sch.name === name);
-        if (!source) {
-            return;
-        }
-        // Duplicate = the create flow prefilled from the source (week A for
-        // alternating schedules); Save fires onScheduleSave with isNew: true.
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: draftFromItem(source), draftFor: '',
-            nameDraft: uniqueCopyName(name, this.props.props.schedules.map((sch) => sch.name)),
-            confirmingDelete: false, preview: null
-        });
-    };
-
-    private onMenuDelete = (name: string): void => {
-        this.fireEvent('onScheduleDelete', { name });
-        if (name === this.props.props.selectedSchedule) {
-            this.props.store.props.write('state.selectedSchedule', '');
-        }
-    };
-
-    private onCreate = (): void => {
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: emptyDraft(), draftFor: '', nameDraft: '',
-            confirmingDelete: false, preview: null
-        });
-    };
 
     private onGestureCommit = (kind: ScheduleGestureKind, _g: ScheduleGesture, preview: ScheduleGesturePreview | null): void => {
         const draft = this.state.draft;
@@ -275,17 +168,14 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
     };
 
     private onSave = (): void => {
-        const draft = this.state.draft;
-        if (!draft || this.nameError() !== null || !this.isDirty()) {
+        const draft = this.saveableDraft();
+        if (!draft) {
             return;
         }
         if (this.state.creating) {
             const name = this.state.nameDraft.trim();
             this.fireEvent('onScheduleSave', { schedule: newScheduleToFlat(name, draft), isNew: true });
-            // Leave the create flow and follow the new schedule; the refreshed
-            // binding will contain it and the draft re-syncs from there.
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-            this.props.store.props.write('state.selectedSchedule', name);
+            this.finishCreate(name);
             return;
         }
         const item = this.selected();
@@ -298,46 +188,10 @@ export class ScheduleManager extends Component<ComponentProps<ScheduleManagerPro
         if (newName !== item.name) {
             payload.oldName = item.name;
             // Follow the rename so the refreshed list keeps this schedule selected.
-            this.props.store.props.write('state.selectedSchedule', newName);
+            this.writeSelection(newName);
         }
         this.fireEvent('onScheduleSave', payload);
     };
-
-    private onDiscard = (): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '', confirmingDelete: false });
-            return;
-        }
-        const item = this.selected();
-        if (item) {
-            this.setState({
-                draft: draftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
-            });
-        }
-    };
-
-    private onDelete = (): void => {
-        const item = this.selected();
-        if (!item || this.state.creating) {
-            return;
-        }
-        if (!this.state.confirmingDelete) {
-            this.setState({ confirmingDelete: true });
-            this.clearConfirmTimer();
-            this.confirmTimer = window.setTimeout(() => this.setState({ confirmingDelete: false }), CONFIRM_DELETE_MS);
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({ confirmingDelete: false });
-        this.fireEvent('onScheduleDelete', { name: item.name });
-    };
-
-    private clearConfirmTimer(): void {
-        if (this.confirmTimer !== null) {
-            window.clearTimeout(this.confirmTimer);
-            this.confirmTimer = null;
-        }
-    }
 
     // --- render -------------------------------------------------------------
 

@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { uniqueCopyName, validateName } from '../../shared/adminCommon';
+import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
+import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { AdminFooter } from '../../shared/AdminFooter';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
@@ -19,16 +19,7 @@ import { HolidayManagerProps, mapHolidayProps } from './holidayProps';
 // Must match HolidayManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.holidaymanager';
 
-/** How long the Delete button stays in its confirm step before reverting. */
-const CONFIRM_DELETE_MS = 4000;
-
-interface HolidayManagerState {
-    draft: HolidayDraft | null;
-    draftFor: string;
-    creating: boolean;
-    nameDraft: string;
-    confirmingDelete: boolean;
-}
+type HolidayManagerState = AdminDraftState<HolidayDraft>;
 
 /**
  * Holiday Manager — fourth of the admin family. Master-detail over the
@@ -40,125 +31,63 @@ interface HolidayManagerState {
  * draft-only until Save fires onHolidaySave {holiday, isNew, oldName?};
  * Delete (two-step) fires onHolidayDelete {name}; the author's script
  * persists via system.user.addHoliday/editHoliday/removeHoliday.
- * Controlled; selection is two-way via state.selectedHoliday.
+ * Controlled; selection is two-way via state.selectedHoliday. The draft/
+ * select/save/delete machine lives in the AdminManagerBase; this class owns
+ * the date validation and the next-occurrence sorting.
  */
-export class HolidayManager extends Component<ComponentProps<HolidayManagerProps>, HolidayManagerState> {
+export class HolidayManager
+    extends AdminManagerBase<HolidayItem, HolidayDraft, HolidayManagerProps, HolidayManagerState> {
 
-    private confirmTimer: number | null = null;
+    protected readonly descriptor: AdminManagerDescriptor<HolidayItem, HolidayDraft> = {
+        keyOf: (h) => h.name,
+        draftFromItem: holidayDraftFromItem,
+        emptyDraft: emptyHolidayDraft,
+        draftEquals: holidayDraftEquals,
+        selectionPath: 'state.selectedHoliday',
+        deleteEvent: 'onHolidayDelete',
+        deleteKeyField: 'name',
+        renameEnabled: true,
+        copyNameStyle: 'paren',
+        nameErrorCodes: { empty: 'nameRequired', duplicate: 'nameTaken' }
+    };
 
     constructor(props: ComponentProps<HolidayManagerProps>) {
         super(props);
         this.state = { draft: null, draftFor: '', creating: false, nameDraft: '', confirmingDelete: false };
     }
 
-    componentDidMount(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
+    // --- machine wiring -----------------------------------------------------
+
+    protected items(): HolidayItem[] {
+        return this.props.props.holidays;
     }
 
-    componentDidUpdate(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
+    protected selectedKey(): string {
+        return this.props.props.selectedHoliday;
     }
 
-    componentWillUnmount(): void {
-        this.clearConfirmTimer();
+    /** The rail is sorted by next occurrence, so auto-select follows it. */
+    protected firstSelectableKey(): string {
+        return this.sorted()[0].name;
     }
 
-    // --- draft lifecycle ----------------------------------------------------
-
-    private syncDraft(): void {
-        if (this.state.creating) {
-            return;
-        }
-        const item = this.selected();
-        if (!item) {
-            if (this.state.draft !== null) {
-                this.setState({ draft: null, draftFor: '', nameDraft: '', confirmingDelete: false });
-            }
-            return;
-        }
-        const selectionChanged = item.name !== this.state.draftFor;
-        if (selectionChanged || (this.state.draft && !this.isDirty() && !holidayDraftEquals(this.state.draft, holidayDraftFromItem(item)))) {
-            this.setState({
-                draft: holidayDraftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
-            });
-        } else if (this.state.draft === null) {
-            this.setState({ draft: holidayDraftFromItem(item), draftFor: item.name, nameDraft: item.name });
-        }
+    protected saveBlocked(): boolean {
+        return super.saveBlocked() || this.dateError();
     }
 
-    private isDirty(): boolean {
-        if (this.state.creating) {
-            return true;
+    protected validationErrors(): string[] {
+        const errors = super.validationErrors();
+        if (this.state.draft && this.dateError() && (this.state.creating || this.isDirty())) {
+            errors.push('dateInvalid');
         }
-        const item = this.selected();
-        if (!item || !this.state.draft || item.name !== this.state.draftFor) {
-            return false;
-        }
-        return this.state.nameDraft !== item.name || !holidayDraftEquals(this.state.draft, holidayDraftFromItem(item));
+        return errors;
     }
 
-    private nameError(): 'empty' | 'duplicate' | null {
-        if (!this.props.props.editable) {
-            return null;
-        }
-        const names = this.props.props.holidays.map((h) => h.name);
-        return validateName(this.state.nameDraft, names, this.state.creating ? '' : this.state.draftFor);
-    }
+    // --- holiday-specific editing -------------------------------------------
 
     private dateError(): boolean {
         const draft = this.state.draft;
         return !!draft && parseIsoDate(draft.date) === null;
-    }
-
-    private saveBlocked(): boolean {
-        return this.nameError() !== null || this.dateError();
-    }
-
-    // --- outputs / selection ------------------------------------------------
-
-    private writeOutputs(): void {
-        const w = this.props.store.props;
-        const errors: string[] = [];
-        const nameErr = this.nameError();
-        if (nameErr !== null) {
-            errors.push(nameErr === 'empty' ? 'nameRequired' : 'nameTaken');
-        }
-        if (this.state.draft && this.dateError() && (this.state.creating || this.isDirty())) {
-            errors.push('dateInvalid');
-        }
-        w.write('output.count', this.props.props.holidays.length);
-        w.write('output.isDirty', this.isDirty());
-        w.write('output.validationErrors', errors);
-    }
-
-    private ensureSelection(): void {
-        const p = this.props.props;
-        if (p.holidays.length === 0 || this.state.creating || p.selectedHoliday !== '') {
-            return;
-        }
-        this.props.store.props.write('state.selectedHoliday', this.sorted()[0].name);
-    }
-
-    private onSelect = (name: string): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-        }
-        this.props.store.props.write('state.selectedHoliday', name);
-    };
-
-    private selected(): HolidayItem | undefined {
-        const p = this.props.props;
-        return p.holidays.find((h) => h.name === p.selectedHoliday);
-    }
-
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
     }
 
     private todayIso(): string {
@@ -172,45 +101,15 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
         return sortHolidays(this.props.props.holidays, this.todayIso());
     }
 
-    // --- editing actions ----------------------------------------------------
-
-    private onDuplicate = (name: string): void => {
-        const source = this.props.props.holidays.find((h) => h.name === name);
-        if (!source) {
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: holidayDraftFromItem(source), draftFor: '',
-            nameDraft: uniqueCopyName(name, this.props.props.holidays.map((h) => h.name)),
-            confirmingDelete: false
-        });
-    };
-
-    private onMenuDelete = (name: string): void => {
-        this.fireEvent('onHolidayDelete', { name });
-        if (name === this.props.props.selectedHoliday) {
-            this.props.store.props.write('state.selectedHoliday', '');
-        }
-    };
-
-    private onCreate = (): void => {
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: emptyHolidayDraft(), draftFor: '', nameDraft: '', confirmingDelete: false
-        });
-    };
-
     private onSave = (): void => {
-        const draft = this.state.draft;
-        if (!draft || this.saveBlocked() || !this.isDirty()) {
+        const draft = this.saveableDraft();
+        if (!draft) {
             return;
         }
         if (this.state.creating) {
             const name = this.state.nameDraft.trim();
             this.fireEvent('onHolidaySave', { holiday: holidayDraftToFlat(name, draft), isNew: true });
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-            this.props.store.props.write('state.selectedHoliday', name);
+            this.finishCreate(name);
             return;
         }
         const item = this.selected();
@@ -221,46 +120,11 @@ export class HolidayManager extends Component<ComponentProps<HolidayManagerProps
         const payload: { [key: string]: any } = { holiday: holidayDraftToFlat(newName, draft), isNew: false };
         if (newName !== item.name) {
             payload.oldName = item.name;
-            this.props.store.props.write('state.selectedHoliday', newName);
+            // Follow the rename so the refreshed list keeps this holiday selected.
+            this.writeSelection(newName);
         }
         this.fireEvent('onHolidaySave', payload);
     };
-
-    private onDiscard = (): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-            return;
-        }
-        const item = this.selected();
-        if (item) {
-            this.setState({
-                draft: holidayDraftFromItem(item), draftFor: item.name, nameDraft: item.name, confirmingDelete: false
-            });
-        }
-    };
-
-    private onDelete = (): void => {
-        const item = this.selected();
-        if (!item || this.state.creating) {
-            return;
-        }
-        if (!this.state.confirmingDelete) {
-            this.setState({ confirmingDelete: true });
-            this.clearConfirmTimer();
-            this.confirmTimer = window.setTimeout(() => this.setState({ confirmingDelete: false }), CONFIRM_DELETE_MS);
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({ confirmingDelete: false });
-        this.fireEvent('onHolidayDelete', { name: item.name });
-    };
-
-    private clearConfirmTimer(): void {
-        if (this.confirmTimer !== null) {
-            window.clearTimeout(this.confirmTimer);
-            this.confirmTimer = null;
-        }
-    }
 
     // --- render -------------------------------------------------------------
 

@@ -1,13 +1,14 @@
 import * as React from 'react';
 import {
-    Component,
     ComponentMeta,
     ComponentProps,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
-import { reorder, uniqueCopyName, validateName } from '../../shared/adminCommon';
+import { reorder } from '../../shared/adminCommon';
+import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
+import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { AdminUser } from '../../shared/adminUsers';
 import {
     RosterDraft, RosterItem, addUserToDraft, removeUserFromDraft,
@@ -23,19 +24,9 @@ import { AdminFooter } from '../../shared/AdminFooter';
 // Must match RosterManager.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.rostermanager';
 
-/** How long the Delete button stays in its confirm step before reverting. */
-const CONFIRM_DELETE_MS = 4000;
-
-interface RosterManagerState {
-    draft: RosterDraft | null;
-    /** Which roster name the draft belongs to (selection-change detection). */
-    draftFor: string;
-    /** Create flow: naming a brand-new roster not yet on the gateway. */
-    creating: boolean;
-    nameDraft: string;
+interface RosterManagerState extends AdminDraftState<RosterDraft> {
     pickerOpen: boolean;
     preview: ReorderPreview | null;
-    confirmingDelete: boolean;
 }
 
 /**
@@ -48,12 +39,26 @@ interface RosterManagerState {
  * draft-only until Save fires onRosterSave {name, users, isNew} — the
  * author's script reconciles via system.roster (removeUsers + addUsers;
  * the API is append-only, so ordering is re-written wholesale). Controlled
- * throughout; selection is two-way via state.selectedRoster.
+ * throughout; selection is two-way via state.selectedRoster. The draft/
+ * select/save/delete machine lives in the AdminManagerBase; this class owns
+ * the ordered-user editing.
  */
-export class RosterManager extends Component<ComponentProps<RosterManagerProps>, RosterManagerState> {
+export class RosterManager extends AdminManagerBase<RosterItem, RosterDraft, RosterManagerProps, RosterManagerState> {
+
+    protected readonly descriptor: AdminManagerDescriptor<RosterItem, RosterDraft> = {
+        keyOf: (r) => r.name,
+        draftFromItem: rosterDraftFromItem,
+        emptyDraft: () => ({ users: [] }),
+        draftEquals: rosterDraftEquals,
+        selectionPath: 'state.selectedRoster',
+        deleteEvent: 'onRosterDelete',
+        deleteKeyField: 'name',
+        renameEnabled: false, // existing rosters don't rename (no gateway API)
+        copyNameStyle: 'paren',
+        nameErrorCodes: { empty: 'nameRequired', duplicate: 'nameTaken' }
+    };
 
     private gestures: RosterReorderController;
-    private confirmTimer: number | null = null;
 
     constructor(props: ComponentProps<RosterManagerProps>) {
         super(props);
@@ -67,102 +72,26 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
         });
     }
 
-    componentDidMount(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
-    }
-
-    componentDidUpdate(): void {
-        this.syncDraft();
-        this.writeOutputs();
-        this.ensureSelection();
-    }
-
     componentWillUnmount(): void {
         this.gestures.dispose();
-        this.clearConfirmTimer();
+        super.componentWillUnmount();
     }
 
-    // --- draft lifecycle ----------------------------------------------------
+    // --- machine wiring -----------------------------------------------------
 
-    private syncDraft(): void {
-        if (this.state.creating) {
-            return;
-        }
-        const item = this.selected();
-        if (!item) {
-            if (this.state.draft !== null) {
-                this.setState({ draft: null, draftFor: '', nameDraft: '', confirmingDelete: false, pickerOpen: false });
-            }
-            return;
-        }
-        const selectionChanged = item.name !== this.state.draftFor;
-        if (selectionChanged || (this.state.draft && !this.isDirty() && !rosterDraftEquals(this.state.draft, rosterDraftFromItem(item)))) {
-            this.setState({
-                draft: rosterDraftFromItem(item), draftFor: item.name, nameDraft: item.name,
-                confirmingDelete: false, pickerOpen: false
-            });
-        } else if (this.state.draft === null) {
-            this.setState({ draft: rosterDraftFromItem(item), draftFor: item.name, nameDraft: item.name });
-        }
+    protected items(): RosterItem[] {
+        return this.props.props.rosters;
     }
 
-    private isDirty(): boolean {
-        if (this.state.creating) {
-            return true;
-        }
-        const item = this.selected();
-        if (!item || !this.state.draft || item.name !== this.state.draftFor) {
-            return false;
-        }
-        return !rosterDraftEquals(this.state.draft, rosterDraftFromItem(item));
+    protected selectedKey(): string {
+        return this.props.props.selectedRoster;
     }
 
-    private nameError(): 'empty' | 'duplicate' | null {
-        if (!this.state.creating) {
-            return null; // existing rosters don't rename (no gateway API)
-        }
-        return validateName(this.state.nameDraft, this.props.props.rosters.map((r) => r.name), '');
+    protected resetExtras(): Partial<RosterManagerState> {
+        return { pickerOpen: false, preview: null };
     }
 
-    // --- outputs / selection ------------------------------------------------
-
-    private writeOutputs(): void {
-        const w = this.props.store.props;
-        const err = this.nameError();
-        w.write('output.count', this.props.props.rosters.length);
-        w.write('output.isDirty', this.isDirty());
-        w.write('output.validationErrors', err === null ? [] : [err === 'empty' ? 'nameRequired' : 'nameTaken']);
-    }
-
-    /** Auto-select the first roster only when the selection is EMPTY (a
-     *  just-created roster racing the refetch must not be deselected). */
-    private ensureSelection(): void {
-        const p = this.props.props;
-        if (p.rosters.length === 0 || this.state.creating || p.selectedRoster !== '') {
-            return;
-        }
-        this.props.store.props.write('state.selectedRoster', p.rosters[0].name);
-    }
-
-    private onSelect = (name: string): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-        }
-        this.props.store.props.write('state.selectedRoster', name);
-    };
-
-    private selected(): RosterItem | undefined {
-        const p = this.props.props;
-        return p.rosters.find((r) => r.name === p.selectedRoster);
-    }
-
-    private fireEvent(name: string, payload: object): void {
-        if (this.props.eventsEnabled) {
-            this.props.componentEvents.fireComponentEvent(name, payload);
-        }
-    }
+    // --- roster-specific editing --------------------------------------------
 
     private directory(): { [username: string]: AdminUser } {
         const out: { [username: string]: AdminUser } = {};
@@ -171,36 +100,6 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
         }
         return out;
     }
-
-    // --- editing actions ----------------------------------------------------
-
-    private onDuplicate = (name: string): void => {
-        const source = this.props.props.rosters.find((r) => r.name === name);
-        if (!source) {
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: { users: [...source.users] }, draftFor: '',
-            nameDraft: uniqueCopyName(name, this.props.props.rosters.map((r) => r.name)),
-            confirmingDelete: false, pickerOpen: false, preview: null
-        });
-    };
-
-    private onMenuDelete = (name: string): void => {
-        this.fireEvent('onRosterDelete', { name });
-        if (name === this.props.props.selectedRoster) {
-            this.props.store.props.write('state.selectedRoster', '');
-        }
-    };
-
-    private onCreate = (): void => {
-        this.clearConfirmTimer();
-        this.setState({
-            creating: true, draft: { users: [] }, draftFor: '', nameDraft: '',
-            confirmingDelete: false, pickerOpen: false, preview: null
-        });
-    };
 
     private onReorderCommit = (_kind: 'reorder', _g: ReorderGesture, preview: ReorderPreview | null): void => {
         const draft = this.state.draft;
@@ -223,15 +122,14 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
     };
 
     private onSave = (): void => {
-        const draft = this.state.draft;
-        if (!draft || this.nameError() !== null || !this.isDirty()) {
+        const draft = this.saveableDraft();
+        if (!draft) {
             return;
         }
         if (this.state.creating) {
             const name = this.state.nameDraft.trim();
             this.fireEvent('onRosterSave', { name, users: draft.users, isNew: true });
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '' });
-            this.props.store.props.write('state.selectedRoster', name);
+            this.finishCreate(name);
             return;
         }
         const item = this.selected();
@@ -239,43 +137,6 @@ export class RosterManager extends Component<ComponentProps<RosterManagerProps>,
             this.fireEvent('onRosterSave', { name: item.name, users: draft.users, isNew: false });
         }
     };
-
-    private onDiscard = (): void => {
-        if (this.state.creating) {
-            this.setState({ creating: false, draft: null, draftFor: '', nameDraft: '', pickerOpen: false });
-            return;
-        }
-        const item = this.selected();
-        if (item) {
-            this.setState({
-                draft: rosterDraftFromItem(item), draftFor: item.name, nameDraft: item.name,
-                confirmingDelete: false, pickerOpen: false
-            });
-        }
-    };
-
-    private onDelete = (): void => {
-        const item = this.selected();
-        if (!item || this.state.creating) {
-            return;
-        }
-        if (!this.state.confirmingDelete) {
-            this.setState({ confirmingDelete: true });
-            this.clearConfirmTimer();
-            this.confirmTimer = window.setTimeout(() => this.setState({ confirmingDelete: false }), CONFIRM_DELETE_MS);
-            return;
-        }
-        this.clearConfirmTimer();
-        this.setState({ confirmingDelete: false });
-        this.fireEvent('onRosterDelete', { name: item.name });
-    };
-
-    private clearConfirmTimer(): void {
-        if (this.confirmTimer !== null) {
-            window.clearTimeout(this.confirmTimer);
-            this.confirmTimer = null;
-        }
-    }
 
     // --- render -------------------------------------------------------------
 
