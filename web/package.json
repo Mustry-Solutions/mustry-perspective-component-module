@@ -9,7 +9,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@codemirror/commands": "^6.10.4",
+        "@codemirror/commands": "^6.11.0",
         "@codemirror/lang-json": "^6.0.2",
         "@codemirror/lang-python": "^6.2.1",
         "@codemirror/lang-sql": "^6.10.0",
