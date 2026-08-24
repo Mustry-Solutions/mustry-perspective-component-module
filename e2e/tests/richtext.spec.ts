@@ -144,3 +144,54 @@ test('richtext: font picker applies an allowlisted family end-to-end', async ({ 
     const styled = page.locator('.mustry-rte--display [style*="Courier New"]').first();
     await expect(styled).toBeVisible();
 });
+
+// --- link URL policy (#76) -------------------------------------------------
+// The controller hands `sanitizeUrl` to TipTap's Link extension. It used to do
+// that via `validate`, which extension-link only forwards to `shouldAutoLink`
+// when that option is unset — and it defaults to a function, so the forward
+// never happened. Our policy was wired to nothing: both parsed hrefs and
+// autolinks fell back to TipTap's own allowlist, which adds ftp, ftps, callto,
+// sms, cid and xmpp to ours. Both tests below fail against that wiring, and
+// neither can be expressed in the node-env jest suite, which has no DOM to
+// mount TipTap in.
+
+test('richtext: pasted HTML with a disallowed scheme keeps the text, drops the link', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.click();
+
+    // Paste goes through ProseMirror's parseHTML — the path `isAllowedUri`
+    // gates and `validate` never did.
+    await editor.evaluate((el) => {
+        const dt = new DataTransfer();
+        dt.setData('text/html',
+            '<p><a href="ftp://files.example/report.pdf">ftp doc</a> '
+            + '<a href="https://example.com/ok">https doc</a></p>');
+        el.dispatchEvent(new ClipboardEvent('paste', {
+            clipboardData: dt, bubbles: true, cancelable: true
+        }));
+    });
+
+    // Text survives either way; the mark is what must not.
+    await expect(editor).toContainText('ftp doc');
+    await expect(editor.locator('a[href^="ftp:"]')).toHaveCount(0);
+    // The allowlisted sibling in the same paste still links, so this is the
+    // policy at work and not the paste being dropped wholesale.
+    await expect(editor.locator('a[href="https://example.com/ok"]')).toHaveCount(1);
+});
+
+test('richtext: typing a disallowed scheme does not autolink', async ({ page }) => {
+    await openRoute(page, '/rte', '.mustry-rte');
+    const editor = page.locator('.mustry-rte:not(.mustry-rte--display) .ProseMirror');
+    await editor.click();
+    await page.keyboard.press('End');
+
+    // autolink fires on the word boundary after a URL-shaped token.
+    await page.keyboard.type(' ftp://files.example/report.pdf ');
+    await expect(editor.locator('a[href^="ftp:"]')).toHaveCount(0);
+
+    // Same gesture with an allowlisted scheme still autolinks, so the
+    // assertion above is the policy and not autolink being off.
+    await page.keyboard.type('https://example.com/ok ');
+    await expect(editor.locator('a[href^="https://example.com/ok"]')).toHaveCount(1);
+});

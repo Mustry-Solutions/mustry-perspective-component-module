@@ -25,6 +25,20 @@ describe('sanitizeUrl', () => {
         expect(sanitizeUrl('file:///etc/passwd')).toBeNull();
     });
 
+    // These are the schemes TipTap's OWN default allowlist permits. Our policy
+    // is narrower, but until the controller passed `isAllowedUri` (it passed
+    // the deprecated `validate`) the default was what actually governed hrefs
+    // arriving from bound content or a paste. Pinned here so the policy and
+    // the wiring can't drift apart again unnoticed.
+    it('rejects the extra schemes TipTap would allow by default', () => {
+        expect(sanitizeUrl('ftp://files.example/report.pdf')).toBeNull();
+        expect(sanitizeUrl('ftps://files.example/report.pdf')).toBeNull();
+        expect(sanitizeUrl('callto:+3212345678')).toBeNull();
+        expect(sanitizeUrl('sms:+3212345678')).toBeNull();
+        expect(sanitizeUrl('cid:part1.example')).toBeNull();
+        expect(sanitizeUrl('xmpp:ops@plant.example')).toBeNull();
+    });
+
     it('handles empty input', () => {
         expect(sanitizeUrl('')).toBeNull();
         expect(sanitizeUrl('   ')).toBeNull();

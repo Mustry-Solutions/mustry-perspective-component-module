@@ -8,6 +8,21 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: the Rich Text Editor's link URL policy was wired to nothing
+`richTextController.ts` handed `sanitizeUrl` to TipTap's Link extension via the
+`validate` option. `extension-link` only forwards `validate` to
+`shouldAutoLink` when that option is unset — and it defaults to a function, so
+the forward never happened. The policy was inert: hrefs arriving from bound
+`data.content` or a paste, and autolinked text, were all gated by TipTap's own
+allowlist, which permits `ftp`, `ftps`, `callto`, `sms`, `cid` and `xmpp` on
+top of the `http`/`https`/`mailto`/`tel` we document. Not a script-execution
+hole — `javascript:` and `vbscript:` are refused by that default too — but the
+narrower policy we advertise was never actually applied. Now passed as
+`isAllowedUri`, the gate `parseHTML`, `setLink` and the autolink plugin all
+consult. Covered by two e2e tests (pasted markup, and typed autolink), each
+confirmed to fail against the old wiring; the pure-logic suite can't reach
+this, having no DOM to mount TipTap in.
+
 ### Docs: correct three stale claims
 `CLAUDE.md` is loaded into context at the start of every session, so a wrong
 number there gets read as fact on every task. It said **nine** components
