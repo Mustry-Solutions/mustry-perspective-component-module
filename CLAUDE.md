@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-Ignition 8.3 Perspective module: nine custom components (date/time range
-picker, calendar/scheduler, resource timeline, data grid, pan & zoom view, rich
-text editor, code/JSON editor, colour picker, on-screen keyboard). React 16
-class components + TypeScript (full strict) on the web side; Java scopes for
-gateway/designer registration. See README.md for the component reference.
+Ignition 8.3 Perspective module: fourteen custom components (date/time range
+picker, calendar/scheduler, resource timeline, data grid, pan & zoom view,
+branching diagram, rich text editor, code/JSON editor, colour picker,
+on-screen keyboard, and the admin family: schedule, roster, user and holiday
+managers). React 16 class components + TypeScript (full strict) on the web
+side; Java scopes for gateway/designer registration. See README.md for the
+component reference.
 
 ## Source-control workflow — READ FIRST
 
@@ -52,7 +54,7 @@ cd web && npx tsc --noEmit
 ops/e2e.sh --fresh   # recreate the gateway UNATTENDED (no wizard, fresh 2h trial)
                      # + run the Playwright suite. Also the fix for an expired trial.
 ops/deploy.sh        # rebuild + reload into the running gateway
-ops/e2e.sh           # deploy + full e2e suite (18 tests, real Perspective sessions)
+ops/e2e.sh           # deploy + full e2e suite (real Perspective sessions)
 ops/e2e.sh --no-deploy tests/grid.spec.ts   # quick re-run against what's deployed
 ops/demo.sh [--fresh]   # sales demo ("Mustry Bottling Co.", ops/demo/) — every
                         # component in one story-driven app; see ops/demo/README.md

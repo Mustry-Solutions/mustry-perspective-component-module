@@ -8,6 +8,24 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Docs: correct three stale claims
+`CLAUDE.md` is loaded into context at the start of every session, so a wrong
+number there gets read as fact on every task. It said **nine** components
+(there are fourteen — the Branching Diagram and the four admin managers
+postdate that sentence) and put the e2e suite at **18 tests** (it is 96,
+across 17 spec files; "18" looks like a stale file count that was never a test
+count). The component list is now complete, and the test count is dropped
+rather than corrected — it would only go stale again on the next spec.
+
+`docs/branching-component-migration-plan.md` still opened with "Status
+(2026-08-04): PLANNING — nothing migrated", which is the answer someone gets
+when they open it to ask whether the work ever happened. Restated in the shape
+`docs/admin-components-plan.md` uses: built and shipping, plan kept for its
+rationale, deviations listed — the layout algorithm the plan called "the real
+asset" is in fact the one piece that did not survive the port (#39 replaced
+BFS + forward-push with a layered Sugiyama-style pass), against an edge model
+(#31, #40) and a no-pan/zoom decision (#37) that the plan never anticipated.
+
 ### Tooling: the unused-code gate now guards itself
 The gate added below rests on config that nothing asserted: if
 `web/tsconfig.json` lost the two flags, or `tsconfig.test.json` stopped
