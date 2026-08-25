@@ -90,7 +90,12 @@ jobs:
   e2e:
     name: E2E smoke (Playwright)
     runs-on: ubuntu-latest
-    needs: build
+    # Gated on lint as well as build: this is the expensive job (boots a real
+    # gateway, ~6 min), and there's no sense spending it on a branch that
+    # can't merge. Lint is a required check in its own right, so a lint
+    # failure blocks the PR visibly via Lint going red — this `needs` only
+    # saves the runner, it isn't the gate.
+    needs: [build, lint]
     # Normal runs finish in ~6 min (gateway boot + suite); cap well above
     # that so a hung boot fails fast instead of running for hours.
     timeout-minutes: 30
