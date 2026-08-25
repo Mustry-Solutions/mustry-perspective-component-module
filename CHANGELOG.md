@@ -8,6 +8,33 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Tooling: ESLint, as its own CI step, over both npm projects
+Step 2 of the linting work (#78). A root lint-only workspace (`package.json` +
+`eslint.config.js`) runs one rule set over the components in `web/typescript`
+**and** the Playwright suite in `e2e/tests` — 183 files. It reports from its own
+CI job rather than inside `./gradlew build`: lint takes seconds and needs no
+JDK, so it lands independently of the ~2 min build and leaves the local inner
+loop alone.
+
+Not type-aware, deliberately: the rule that would justify the project-service
+cost is `no-floating-promises`, and the entire codebase contains one
+`async`/`await`/`.then`. No Prettier either — there are no formatting
+complaints to solve, and adopting it would mean one commit reformatting ~27k
+lines.
+
+The rule set was chosen from measurement, not defaults. `recommended` alone
+reported 83 problems, 76 of them `no-explicit-any` on prop readers where the
+type is load-bearing, and 5 on a deliberate mid-test `require()` idiom — both
+switched off with the reasoning recorded in the config, so a future reader can
+tell a considered exemption from an inconvenient one. That left five real
+findings, all fixed here: three SVG presentation attributes written in HTML
+kebab-case rather than JSX camelCase (`stroke-width`, `stroke-linecap`) in the
+on-screen keyboard's trigger icon, and two redundant escapes in `dateUtils`
+date-offset regexes. Neither changes what renders — React 16 emits byte-identical
+markup for both attribute forms (checked against `react-dom/server`), and the
+regexes were verified to match identically before and after. What the first one
+removes is an `Invalid DOM property` warning React logs in development builds.
+
 ### Fixed: the Rich Text Editor's link URL policy was wired to nothing
 `richTextController.ts` handed `sanitizeUrl` to TipTap's Link extension via the
 `validate` option. `extension-link` only forwards `validate` to

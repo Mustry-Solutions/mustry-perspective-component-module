@@ -1,5 +1,13 @@
 version: 2
 updates:
+  # Root lint workspace (ESLint + typescript-eslint). Separate from /web: it
+  # ships nothing, so majors here are safe to take automatically.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
   # Web components (React / TypeScript / webpack toolchain)
   - package-ecosystem: npm
     directory: /web
