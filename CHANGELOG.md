@@ -8,6 +8,15 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Tooling: E2E waits on lint
+`e2e` now declares `needs: [build, lint]`. Lint and build still run in
+parallel, so one round of CI reports both rather than making you fix a lint nit
+and wait another ~8 minutes to find a test failure; E2E additionally waits on
+lint because it is the expensive job — it boots a real gateway for ~6 minutes —
+and there is no sense spending that on a branch that cannot merge. The `needs`
+is an economy, not the gate: `Lint` is a required check in the
+`main-protection` ruleset, so a lint failure blocks the PR on Lint itself.
+
 ### Tooling: ESLint, as its own CI step, over both npm projects
 Step 2 of the linting work (#78). A root lint-only workspace (`package.json` +
 `eslint.config.js`) runs one rule set over the components in `web/typescript`
