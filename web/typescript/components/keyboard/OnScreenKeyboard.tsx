@@ -416,8 +416,8 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
             >
                 <span className="mustry-kbd-trigger-text">{empty ? p.placeholder : text}</span>
                 <svg className="mustry-kbd-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                    <path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 13.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+                    <path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 13.5h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
                 </svg>
             </div>
         );

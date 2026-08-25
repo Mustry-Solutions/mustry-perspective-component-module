@@ -11,6 +11,32 @@ permissions:
   contents: read
 
 jobs:
+  # Its own step rather than folded into `./gradlew build`: lint is seconds and
+  # needs no JDK, so it reports independently of the ~2 min build and keeps the
+  # local inner loop unchanged. Scope is both npm projects — the components AND
+  # the Playwright suite — driven from the root lint workspace (eslint.config.js).
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          # Matches the Node the Gradle node plugin pins for the web build
+          # (web/build.gradle.kts), so lint and build never disagree on syntax.
+          node-version: "22.23.2"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
   build:
     name: Build & test
     runs-on: ubuntu-latest

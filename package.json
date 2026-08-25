@@ -1,0 +1,15 @@
+{
+    "name": "mustry-perspective-component-module-lint",
+    "description": "Lint-only workspace: one ESLint config over both npm projects (web/ and e2e/). Not a build — the module is built by Gradle, see web/build.gradle.kts.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "lint": "eslint web/typescript e2e/tests"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "eslint": "^9.39.1",
+        "eslint-plugin-react": "^7.37.5",
+        "typescript-eslint": "^8.46.4"
+    }
+}

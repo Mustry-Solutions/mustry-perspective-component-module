@@ -260,7 +260,7 @@ export function instantToZonedIso(raw: string, timeZone: string): string {
     let instant: Date | null = null;
     if (/^\d{12,}$/.test(s)) {
         instant = new Date(Number(s));                       // epoch ms
-    } else if (s.indexOf('T') >= 0 && /(Z|[+\-]\d\d:?\d\d)$/.test(s)) {
+    } else if (s.indexOf('T') >= 0 && /(Z|[+-]\d\d:?\d\d)$/.test(s)) {
         instant = new Date(s);                               // ISO with offset / Z
     }
     if (!instant || isNaN(instant.getTime())) {
@@ -325,7 +325,7 @@ export function toEpochMs(raw: string, timeZone: string): number | null {
     if (/^\d{12,}$/.test(s)) {
         return Number(s);                                    // epoch ms
     }
-    if (s.indexOf('T') >= 0 && /(Z|[+\-]\d\d:?\d\d)$/.test(s)) {
+    if (s.indexOf('T') >= 0 && /(Z|[+-]\d\d:?\d\d)$/.test(s)) {
         const d = new Date(s);                               // ISO with offset / Z
         return isNaN(d.getTime()) ? null : d.getTime();
     }
