@@ -71,7 +71,16 @@ export class RichTextController {
                     autolink: true,
                     linkOnPaste: true,
                     HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' },
-                    validate: (href: string) => sanitizeUrl(href) !== null
+                    // `isAllowedUri`, NOT the older `validate`. This is the
+                    // gate parseHTML, setLink and the autolink plugin all
+                    // consult. `validate` was worse than merely deprecated
+                    // here: extension-link only forwards it to shouldAutoLink
+                    // when that option is unset, and it defaults to a
+                    // function, so the branch never runs — our sanitizeUrl was
+                    // wired to nothing at all and links fell back to TipTap's
+                    // own allowlist (ftp, ftps, callto, sms, cid, xmpp beyond
+                    // ours).
+                    isAllowedUri: (href: string) => sanitizeUrl(href) !== null
                 })] : []),
                 ...(f.table ? [
                     Table.configure({ resizable: false }),
