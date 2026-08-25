@@ -1,12 +1,28 @@
 version: 2
 updates:
-  # Root lint workspace (ESLint + typescript-eslint). Separate from /web: it
-  # ships nothing, so majors here are safe to take automatically.
+  # Root lint workspace (ESLint + typescript-eslint + plugins). Separate from
+  # /web: it ships nothing, so majors here are safe to take automatically — a
+  # breaking one is a red Lint check, not a shipped regression.
+  #
+  # Grouped because these packages are peer-locked to each other and CANNOT
+  # move independently: `@eslint/js@10` declares `peerDependencies:
+  # {eslint: ^10.0.0}`, so a lone bump of either is unmergeable by
+  # construction, and eslint-plugin-react's peer range gates the whole set.
+  # Ungrouped, dependabot opened two permanently-red PRs (#86, #88) for one
+  # upgrade. One PR that goes green when the ecosystem is ready is the point.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      eslint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+          - "eslint-plugin-*"
 
   # Web components (React / TypeScript / webpack toolchain)
   - package-ecosystem: npm
