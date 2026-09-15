@@ -19,7 +19,7 @@
         "@codemirror/search": "^6.7.1",
         "@codemirror/state": "^6.7.1",
         "@codemirror/view": "^6.43.9",
-        "@inductiveautomation/perspective-client": "^2.3.8",
+        "@inductiveautomation/perspective-client": "^2.3.9",
         "@lezer/highlight": "^1.2.3",
         "@tiptap/core": "^2.27.2",
         "@tiptap/extension-character-count": "^2.27.2",
