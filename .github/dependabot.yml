@@ -33,6 +33,15 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+      # TipTap ships every @tiptap/* package in lockstep (core, starter-kit and
+      # each extension get the same version on every release). Ungrouped,
+      # dependabot bumps them one package per PR and the /web PR cap of 5
+      # means a release lands as a trickle of partial bumps over several
+      # weeks, leaving the editor on mixed patch versions in between. One PR
+      # that moves the whole set together is the point.
+      tiptap:
+        patterns:
+          - "@tiptap/*"
     ignore:
       # React is pinned at 16 (Perspective's runtime). Several UI libs' latest
       # majors need React 18 (react-markdown 5+) or are breaking rewrites
