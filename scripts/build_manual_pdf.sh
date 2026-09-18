@@ -39,7 +39,9 @@ mkdir -p "$(dirname "$OUT")"
 SRC_DIR="$(cd "$(dirname "$SRC")" && pwd)"
 TMP="$SRC_DIR/.user_manual.build.md"
 TMP_PDF="$SRC_DIR/.user_manual.build.pdf"
-STAMP_JS="$SRC_DIR/.stamp_footer.js"
+# .cjs, not .js: the repo root package.json declares "type": "module", so Node
+# reads a generated .js as ESM and the CommonJS require() below throws.
+STAMP_JS="$SRC_DIR/.stamp_footer.cjs"
 cleanup() { rm -f "$TMP" "$TMP_PDF" "$STAMP_JS"; }
 trap cleanup EXIT
 
