@@ -45,6 +45,11 @@
     box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
 }
 
+.mustry-pz-content.mustry-pz-unsized {
+    background: transparent;
+    box-shadow: none;
+}
+
 .mustry-pz-placeholder {
     display: flex;
     align-items: center;
