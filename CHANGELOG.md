@@ -8,6 +8,21 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-18
+
+### Fixed: Pan & Zoom framed the content in an invented 1600x1200 canvas
+`config.contentWidth` / `config.contentHeight` default to `0`, which asks the
+component to adopt the size the embedded view reports. A view that never
+reports one — a coordinate container in `fixed` mode, for instance — left the
+component on a hardcoded 1600x1200 stand-in, so `fit` and `home` resolved
+against a canvas that does not exist and the drawing sat in the corner of an
+empty sheet. That sheet is the box people saw around the view.
+
+Until a real size is known the viewport now stands in, so `fit` resolves to 1:1
+and nothing is framed, and `.mustry-pz-content` drops its background and shadow
+while the size is a stand-in (`.mustry-pz-unsized`). Setting the sizes
+explicitly is unaffected, and so is auto-sizing once the view does report.
+
 ### Tooling: E2E waits on lint
 `e2e` now declares `needs: [build, lint]`. Lint and build still run in
 parallel, so one round of CI reports both rather than making you fix a lint nit
