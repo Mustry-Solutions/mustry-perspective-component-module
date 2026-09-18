@@ -158,13 +158,25 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         }
     }
 
+    /** True once the content size is known: either configured, or reported by the
+     *  embedded view. Auto-sizing depends on the view reporting a size, and a
+     *  fixed-mode coordinate container may never do so. */
+    private measured(): boolean {
+        const p = this.props.props;
+        return (p.contentWidth > 0 || this.state.measuredW > 0)
+            && (p.contentHeight > 0 || this.state.measuredH > 0);
+    }
+
     /** The effective content size: the configured one, or — when configured 0
-     *  (auto) — the size the embedded view reported (fallback until it does). */
+     *  (auto) — the size the embedded view reported. Until a size is known the
+     *  viewport stands in, so fit resolves to 1:1 and the content is not framed
+     *  inside an invented canvas. A fixed guess here is what drew an empty box
+     *  around views that never report a size. */
     private cs(): { w: number; h: number } {
         const p = this.props.props;
         return {
-            w: p.contentWidth > 0 ? p.contentWidth : (this.state.measuredW || 1600),
-            h: p.contentHeight > 0 ? p.contentHeight : (this.state.measuredH || 1200)
+            w: p.contentWidth > 0 ? p.contentWidth : (this.state.measuredW || this.state.viewportW || 1),
+            h: p.contentHeight > 0 ? p.contentHeight : (this.state.measuredH || this.state.viewportH || 1)
         };
     }
 
@@ -545,7 +557,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     onDoubleClick={this.gestures.doubleClick}
                 >
                     <div
-                        className="mustry-pz-content"
+                        className={`mustry-pz-content${this.measured() ? '' : ' mustry-pz-unsized'}`}
                         style={{
                             width: c.w,
                             height: c.h,
