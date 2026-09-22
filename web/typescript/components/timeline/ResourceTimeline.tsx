@@ -9,7 +9,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { CSV_BOM } from '../../shared/csv';
-import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, todayInZone, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
+import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents } from '../../shared/recurrence';
 import { resolveColor } from '../../shared/eventStyle';
 import { EnterTracker } from '../../shared/enterAnimation';
@@ -19,9 +19,9 @@ import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
-    buildRows, buildTicks, followAnchorMs, followDisarms, followScrollLeft, followTickMs, isConfiguredEmpty,
-    layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, resolveSnapMinutes,
-    scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
+    buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
+    isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, resolveSnapMinutes,
+    rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
@@ -50,9 +50,11 @@ interface ResourceTimelineState {
     mini: MiniNav | null;                // mini month navigator (from the title)
 }
 
-/** Epoch ms of today's zone-local midnight. */
-function todayAnchorMs(timezone: string): number {
-    return resolveZoned(todayInZone(timezone), timezone).epochMs;
+/** The Today anchor: the window containing "now" — today's zone-local midnight
+ *  at the calendar presets, the current stride of the day at the sub-day ones
+ *  (so a 2-minute 'second' window opens on the current cycle, not on 00:00). */
+function todayAnchorMs(zoom: TimelineZoom, timezone: string): number {
+    return containingAnchorMs(Date.now(), zoom, timezone);
 }
 
 export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, ResourceTimelineState> {
@@ -93,7 +95,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     constructor(props: ComponentProps<TimelineProps>) {
         super(props);
         this.state = {
-            anchorMs: todayAnchorMs(props.props.timezone),
+            anchorMs: todayAnchorMs(props.props.zoom, props.props.timezone),
             hover: null, preview: null, editor: null, mini: null
         };
     }
@@ -103,6 +105,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         this.syncOutput();
         this.setupRefreshTimer();
         this.setupFollowTimer();
+        // The initial window contains now (see todayAnchorMs); bring the line on
+        // screen too, since the window is wider than the viewport.
+        this.scrollNowIntoView();
     }
 
     componentDidUpdate(prevProps: ComponentProps<TimelineProps>): void {
@@ -121,9 +126,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         } else if (this.props.props.followNow
                 && (prevProps.props.zoom !== this.props.props.zoom
                     || prevProps.props.timezone !== this.props.props.timezone)) {
-            // A zoom/timezone change moves the follow anchor (hour zoom pages within
-            // the day) — re-anchor immediately instead of waiting out the next tick.
+            // A zoom/timezone change moves the follow anchor (the sub-day presets
+            // page within the day) — re-anchor immediately instead of waiting out
+            // the next tick.
             this.tickFollow();
+        } else if (prevProps.props.zoom !== this.props.props.zoom) {
+            // Not following: keep the user where they were — on "now" if it was in
+            // view, else on the window containing the old window's start.
+            this.setState({
+                anchorMs: rezoomAnchorMs(this.state.anchorMs, prevProps.props.zoom, this.props.props.zoom, Date.now(), this.props.props.timezone)
+            });
         }
     }
 
@@ -244,10 +256,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
     }
 
-    /** While follow-now is armed, keep the now-line inside the visible scroll —
-     *  the window is usually wider than the viewport, so a correct window alone
-     *  doesn't put the line on screen. Only scrolls when the line drifted out,
-     *  so armed mode doesn't fight the user while the line is visible. */
+    /** Keep the now-line inside the visible scroll (follow-now ticks, Today, the
+     *  initial mount) — the window is usually wider than the viewport, so a
+     *  correct window alone doesn't put the line on screen. Only scrolls when the
+     *  line is off-screen, so armed mode doesn't fight the user while it's visible. */
     private scrollNowIntoView(): void {
         const scroller = this.scrollRef.current;
         const s = this.scale();
@@ -508,7 +520,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     private prev = (): void => this.step(-1);
     private next = (): void => this.step(1);
-    private goToday = (): void => this.setState({ anchorMs: todayAnchorMs(this.props.props.timezone) });
+    private goToday = (): void => this.setState(
+        { anchorMs: todayAnchorMs(this.props.props.zoom, this.props.props.timezone) }, () => this.scrollNowIntoView());
 
     // `state.zoom` is two-way: the toolbar writes the user's choice back.
     private setZoom = (zoom: TimelineZoom): void => {
@@ -645,20 +658,22 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     private renderToolbar(): React.ReactNode {
-        const { labels, zoom, shifts, followNow } = this.props.props;
+        const { labels, zoom, followNow } = this.props.props;
         const p = this.props.props;
         // No events configured at all (neither source) and not mid-fetch -> the badge.
         const emptyLabel = isConfiguredEmpty(p.loading, p.events, p.recurringEvents)
             ? emptyMessageText(p.emptyMessage, labels.noEvents) : '';
-        const zooms: Array<{ id: TimelineZoom; label: string }> = [
-            { id: 'hour', label: labels.zoomHour },
-            { id: 'day', label: labels.zoomDay },
-            // Only offered when shifts are configured (config.shifts).
-            ...(shifts.length ? [{ id: 'shift' as TimelineZoom, label: labels.zoomShift }] : []),
-            { id: 'week', label: labels.zoomWeek }
-        ];
-        const title = zonedFormat(this.props.props.locale, this.props.props.timezone,
-            { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
+        const zoomLabels: { [z in TimelineZoom]: string } = {
+            second: labels.zoomSecond, minute: labels.zoomMinute, hour: labels.zoomHour,
+            day: labels.zoomDay, shift: labels.zoomShift, week: labels.zoomWeek
+        };
+        // config.zooms picks the buttons (the mapper already dropped 'shift' when
+        // config.shifts is empty and fell back to the default set when empty).
+        const zooms = p.zooms.map((id) => ({ id, label: zoomLabels[id] }));
+        // A sub-hour window is a slice of a day, so the title names its start time too.
+        const title = zonedFormat(this.props.props.locale, this.props.props.timezone, isSubHourZoom(zoom)
+            ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }
+            : { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
         return (
             <TimelineToolbar
                 title={title}

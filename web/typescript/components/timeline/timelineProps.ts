@@ -4,12 +4,27 @@ import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
 import { ShiftDef, parseShifts } from '../../shared/shifts';
-import { TimelineEvent, TimelineResource, TimelineZoom } from './timelineLogic';
+import { TimelineEvent, TimelineResource, TimelineZoom, isTimelineZoom } from './timelineLogic';
+
+/** The toolbar's zoom buttons when config.zooms is unset: the scheduling-board
+ *  set. 'second'/'minute' are opt-in — they exist for cycle/step views. */
+export const DEFAULT_TIMELINE_ZOOMS: TimelineZoom[] = ['hour', 'day', 'shift', 'week'];
+
+/** The zoom buttons to offer: config.zooms (unknown entries and duplicates
+ *  dropped, 'shift' only with shifts configured), else the default set. */
+export function resolveZooms(configured: unknown[], hasShifts: boolean): TimelineZoom[] {
+    const pick = (list: unknown[]) => list
+        .filter(isTimelineZoom)
+        .filter((z, i, arr) => arr.indexOf(z) === i && (z !== 'shift' || hasShifts));
+    const chosen = pick(configured || []);
+    return chosen.length ? chosen : pick(DEFAULT_TIMELINE_ZOOMS);
+}
 
 export type { TimelineEvent };
 
 export interface TimelineProps {
     zoom: TimelineZoom;      // two-way (state.zoom): the toolbar writes the choice back
+    zooms: TimelineZoom[];   // toolbar zoom buttons, in order (config.zooms; resolved)
     showToolbar: boolean;
     showMiniNav: boolean;    // title opens the mini month navigator (false = plain title)
     showLegend: boolean;
@@ -66,9 +81,11 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
     });
     const shifts: ShiftDef[] = parseShifts(tree.readArray('config.shifts', []));
     return {
-        // 'shift' is only meaningful when shifts are configured; else fall back to day.
-        zoom: ((z) => (z === 'hour' || z === 'week' || (z === 'shift' && shifts.length) ? z : 'day'))(
+        // 'shift' is only meaningful when shifts are configured; unknown values and
+        // a shift zoom without shifts fall back to day.
+        zoom: ((z) => (isTimelineZoom(z) && (z !== 'shift' || shifts.length) ? z : 'day'))(
             tree.readString('state.zoom', 'day')) as TimelineZoom,
+        zooms: resolveZooms(tree.readArray('config.zooms', []) || [], shifts.length > 0),
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showMiniNav: tree.readBoolean('config.showMiniNav', true),
         showLegend: tree.readBoolean('config.showLegend', true),
@@ -79,6 +96,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         weekStart: (tree.readString('config.weekStart', 'monday') === 'sunday' ? 'sunday' : 'monday'),
         shifts,
         // 0 = keep each zoom preset's built-in snap; anything non-finite/non-positive -> 0.
+        // Fractional minutes are allowed (0.25 = 15 s) for the sub-hour presets.
         snapMinutes: ((n) => (Number.isFinite(n) && n > 0 ? n : 0))(tree.readNumber('config.snapMinutes', 0)),
         collapsedGroups: (tree.readArray('state.collapsedGroups', []) || []).map((g: any) => String(g)).filter((g: string) => g),
         hiddenCategories: (tree.readArray('state.hiddenCategories', []) || []).map((c: any) => String(c)).filter((c: string) => c),

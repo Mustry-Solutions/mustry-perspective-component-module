@@ -30,16 +30,29 @@ export interface TimelineEvent {
     rrule?: RRule;         // expanded per visible window (display-only in v1)
 }
 
-export type TimelineZoom = 'hour' | 'day' | 'shift' | 'week';
+export type TimelineZoom = 'second' | 'minute' | 'hour' | 'day' | 'shift' | 'week';
+
+export const TIMELINE_ZOOMS: TimelineZoom[] = ['second', 'minute', 'hour', 'day', 'shift', 'week'];
+
+export function isTimelineZoom(z: unknown): z is TimelineZoom {
+    return TIMELINE_ZOOMS.indexOf(z as TimelineZoom) >= 0;
+}
 
 export interface ZoomPreset {
     pxPerHour: number;    // horizontal density
-    spanHours: number;    // window span; prev/next page by this
-    snapMinutes: number;  // gesture snap granularity (editing milestone)
-    lowerStepMin: number; // lower tick-row step, minutes
+    spanHours: number;    // window span; prev/next page by this (fractional below an hour)
+    snapMinutes: number;  // gesture snap granularity (fractional below a minute: 0.25 = 15 s)
+    lowerStepMin: number; // lower tick-row step, minutes (fractional below a minute)
 }
 
+// Every preset renders to roughly the same width (~1440px): the sub-day presets
+// trade span for density, so drilling from a shift into one machine cycle keeps
+// the board the same size and only the axis changes. The sub-hour ones exist
+// for cycle-time / step-sequence views (issue #117) where whole phases last
+// seconds: 'minute' gives ~48px per minute, 'second' 12px per second.
 export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
+    second: { pxPerHour: 43200, spanHours: 2 / 60, snapMinutes: 1 / 60, lowerStepMin: 5 / 60 },
+    minute: { pxPerHour: 2880, spanHours: 0.5, snapMinutes: 0.25, lowerStepMin: 1 },
     hour: { pxPerHour: 180, spanHours: 8, snapMinutes: 5, lowerStepMin: 15 },
     day: { pxPerHour: 60, spanHours: 24, snapMinutes: 15, lowerStepMin: 60 },
     // Same day-wide window as 'day', but the lower tick row (and the gridlines
@@ -48,17 +61,40 @@ export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
     week: { pxPerHour: 12, spanHours: 168, snapMinutes: 60, lowerStepMin: 360 }
 };
 
+/** Whether a preset's window is a plain epoch span (narrower than a day) rather
+ *  than whole wall-calendar days: those windows/pages by pure epoch time. */
+export function isSubDayZoom(zoom: TimelineZoom): boolean {
+    return ZOOM_PRESETS[zoom].spanHours < 24;
+}
+
+/** Whether a preset is finer than an hour — its axis and title must show the
+ *  time of day (and, at 'second', the seconds) or every label reads the same. */
+export function isSubHourZoom(zoom: TimelineZoom): boolean {
+    return ZOOM_PRESETS[zoom].spanHours < 1;
+}
+
+/** Floor for any snap step, minutes (= 1 second): a snap can be sub-minute at
+ *  the fine presets, but never sub-second — the editor's inputs and the ISO
+ *  event times are second-resolution. */
+export const MIN_SNAP_MINUTES = 1 / 60;
+
 /** The effective gesture snap step: config.snapMinutes when set (> 0), else the
  *  zoom preset's built-in granularity. Non-finite / non-positive overrides mean
  *  "no override" — the mapper normalises those to 0, but re-check here so every
  *  caller gets a sane step regardless. */
 export function resolveSnapMinutes(zoom: TimelineZoom, overrideMinutes: number): number {
     return Number.isFinite(overrideMinutes) && overrideMinutes > 0
-        ? overrideMinutes
+        ? Math.max(MIN_SNAP_MINUTES, overrideMinutes)
         : ZOOM_PRESETS[zoom].snapMinutes;
 }
 
 export const MS_PER_HOUR = 3600000;
+
+/** A preset's window span in whole ms (the fractional spans are ratios, so the
+ *  product is rounded rather than carrying a float epsilon into every anchor). */
+export function zoomSpanMs(zoom: TimelineZoom): number {
+    return Math.round(ZOOM_PRESETS[zoom].spanHours * MS_PER_HOUR);
+}
 
 /** The visible window and density; everything renders through this. */
 export interface TimeScale {
@@ -78,12 +114,12 @@ export function zoneMidnightMs(ms: number, timeZone: string, addDaysBy = 0): num
 /**
  * The visible window for an anchor + zoom. Day/week windows span whole
  * wall-calendar days (a DST day really is 23/25 hours wide on the epoch-linear
- * scale); the hour window is a plain epoch span.
+ * scale); the sub-day windows (hour, minute, second) are plain epoch spans.
  */
 export function windowFor(anchorMs: number, zoom: TimelineZoom, timeZone: string): TimeScale {
     const preset = ZOOM_PRESETS[zoom];
-    const endMs = zoom === 'hour'
-        ? anchorMs + preset.spanHours * MS_PER_HOUR
+    const endMs = isSubDayZoom(zoom)
+        ? anchorMs + zoomSpanMs(zoom)
         : zoneMidnightMs(anchorMs, timeZone, Math.round(preset.spanHours / 24));
     return { startMs: anchorMs, endMs, pxPerHour: preset.pxPerHour };
 }
@@ -104,14 +140,43 @@ export function windowOutputs(scale: TimeScale): {
 /**
  * The anchor after paging by one window. Day/week page by wall-calendar days and
  * re-anchor on the zone-local midnight (paging across a 23/25h DST day must not
- * leave every later window anchored at 23:00/01:00); hour pages by plain epoch.
+ * leave every later window anchored at 23:00/01:00); the sub-day presets page
+ * by plain epoch.
  */
 export function pageAnchorMs(anchorMs: number, dir: number, zoom: TimelineZoom, timeZone: string): number {
     const preset = ZOOM_PRESETS[zoom];
-    if (zoom === 'hour') {
-        return anchorMs + dir * preset.spanHours * MS_PER_HOUR;
+    if (isSubDayZoom(zoom)) {
+        return anchorMs + dir * zoomSpanMs(zoom);
     }
     return zoneMidnightMs(anchorMs, timeZone, dir * Math.round(preset.spanHours / 24));
+}
+
+/**
+ * The anchor of the window that CONTAINS `ms` at a zoom: the zone-local midnight
+ * of its day for the calendar presets, and for the sub-day presets that midnight
+ * paged forward by whole window strides (the same stride prev/next use) until
+ * the window covers `ms`. Today, follow-now and zoom changes all land here, so a
+ * 2-minute 'second' window opened on "today" shows the current cycle, not 00:00.
+ */
+export function containingAnchorMs(ms: number, zoom: TimelineZoom, timeZone: string): number {
+    const midnight = zoneMidnightMs(ms, timeZone);
+    if (!isSubDayZoom(zoom)) {
+        return midnight;
+    }
+    const stride = zoomSpanMs(zoom);
+    return midnight + Math.floor((ms - midnight) / stride) * stride;
+}
+
+/**
+ * Where the window goes when the zoom changes: if "now" was in view it stays in
+ * view (drilling into the live cycle keeps following it); otherwise the new
+ * window is the one containing the old window's start, so zooming in and back
+ * out returns to the same place.
+ */
+export function rezoomAnchorMs(anchorMs: number, fromZoom: TimelineZoom, toZoom: TimelineZoom, nowMs: number, timeZone: string): number {
+    const old = windowFor(anchorMs, fromZoom, timeZone);
+    const target = nowMs >= old.startMs && nowMs < old.endMs ? nowMs : anchorMs;
+    return containingAnchorMs(target, toZoom, timeZone);
 }
 
 // --- follow-now (live) mode ----------------------------------------------------
@@ -125,17 +190,13 @@ export function followTickMs(refreshSeconds: number): number {
 }
 
 /**
- * The anchor a follow-now tick should re-anchor to: today's zone-local midnight,
- * exactly like the Today button. At hour zoom (whose window is narrower than a
- * day) it then pages forward by the prev/next stride until the window actually
- * contains `nowMs`, so the now-line stays in view all day.
+ * The anchor a follow-now tick should re-anchor to: the window containing now,
+ * exactly like the Today button — today's zone-local midnight at the calendar
+ * presets, and at the sub-day presets the stride within the day that covers
+ * `nowMs`, so the now-line stays in view all day.
  */
 export function followAnchorMs(nowMs: number, zoom: TimelineZoom, timeZone: string): number {
-    let anchor = zoneMidnightMs(nowMs, timeZone);
-    for (let i = 0; windowFor(anchor, zoom, timeZone).endMs <= nowMs && i < 24; i++) {
-        anchor = pageAnchorMs(anchor, 1, zoom, timeZone);
-    }
-    return anchor;
+    return containingAnchorMs(nowMs, zoom, timeZone);
 }
 
 /** Where a follow tick should scroll the board so the now-line stays in view: a
@@ -210,10 +271,16 @@ export interface TickRows {
  */
 export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string, shifts?: ShiftDef[]): TickRows {
     const preset = ZOOM_PRESETS[zoom];
-    const upperFmt = zonedFormat(locale, timezone, { weekday: 'short', day: 'numeric', month: 'short' });
+    // Sub-hour windows start mid-day, so the upper (day) label carries the time
+    // of the window edge too — at 'second' the whole window is two minutes.
+    const upperFmt = zonedFormat(locale, timezone, isSubHourZoom(zoom)
+        ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }
+        : { weekday: 'short', day: 'numeric', month: 'short' });
     const lowerFmt = zoom === 'week'
         ? zonedFormat(locale, timezone, { hour: '2-digit', hour12: false })
-        : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
+        : zoom === 'second'
+            ? zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+            : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
 
     // Zone-local midnights covering the window (starting at the day containing start).
     const dayStarts: number[] = [];
@@ -224,7 +291,7 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
 
     const upper: Tick[] = [];
     if (dayStarts.length && dayStarts[0] < scale.startMs) {
-        // Window starts mid-day (hour zoom): label the partial day at the window edge.
+        // Window starts mid-day (sub-day zoom): label the partial day at the window edge.
         upper.push({ ms: scale.startMs, px: 0, label: upperFmt.format(new Date(scale.startMs)) });
     }
     for (const d of dayStarts) {
@@ -252,11 +319,12 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
             }
             continue;
         }
-        const step = preset.lowerStepMin * 60000;
-        for (let ms = dayStarts[i]; ms < dayEnd; ms += step) {
-            if (ms >= scale.startMs) {
-                lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });
-            }
+        // Step from the day's midnight, but start at the first step inside the
+        // window: a 'second' window is 24 five-second steps, not 17,280.
+        const step = Math.round(preset.lowerStepMin * 60000);
+        const first = dayStarts[i] + Math.max(0, Math.ceil((scale.startMs - dayStarts[i]) / step)) * step;
+        for (let ms = first; ms < dayEnd; ms += step) {
+            lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });
         }
     }
     return { upper, lower };

@@ -1,10 +1,10 @@
 import {
-    BAR_HANDLES_MIN_PX, MIN_BAR_PX, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
-    barGeom, buildRows, buildTicks, followAnchorMs, followDisarms, followTickMs,
-    isConfiguredEmpty, layoutRowBands, layoutRowBars, msToPx, pxToMs, resolveSnapMinutes,
-    scaleWidth, timelineEventsToCsv, windowOutputs
+    BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
+    barGeom, buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followTickMs,
+    isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, pxToMs,
+    resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
 } from '../timeline/timelineLogic';
-import { mapTimelineProps } from '../timeline/timelineProps';
+import { DEFAULT_TIMELINE_ZOOMS, mapTimelineProps, resolveZooms } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
 import { stubReader } from './_stubReader';
 
@@ -63,6 +63,9 @@ describe('toEpochMs', () => {
         expect(toEpochMs(String(Date.UTC(2026, 5, 17, 14)), 'UTC')).toBe(Date.UTC(2026, 5, 17, 14));
         expect(toEpochMs('2026-06-17T14:00:00Z', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 14));
         expect(toEpochMs('2026-06-17T14:00:00+02:00', 'UTC')).toBe(Date.UTC(2026, 5, 17, 12));
+        // Naive times keep fractional seconds (sub-second cycle phases at 'second' zoom).
+        expect(toEpochMs('2026-06-17T14:00:07.250', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 0, 7, 250));
+        expect(toEpochMs('2026-06-17T14:00:07.5', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 19, 0, 7, 500));
     });
     it('naive datetimes and date-only strings are wall clock in the zone', () => {
         expect(toEpochMs('2026-06-17T09:00:00', 'UTC')).toBe(Date.UTC(2026, 5, 17, 9));
@@ -245,7 +248,100 @@ describe('shift zoom', () => {
     });
 });
 
+// --- sub-hour zoom presets (issue #117: cycle-time / step-sequence views) --------
+
+describe('sub-hour zoom presets', () => {
+    const T = Date.UTC(2026, 5, 17, 14, 37, 45);   // 14:37:45Z
+
+    it('spans are whole ms and every preset renders to about the same width', () => {
+        expect(zoomSpanMs('second')).toBe(2 * 60000);
+        expect(zoomSpanMs('minute')).toBe(30 * 60000);
+        expect(zoomSpanMs('hour')).toBe(8 * MS_PER_HOUR);
+        for (const z of ['second', 'minute', 'hour', 'day'] as const) {
+            expect(ZOOM_PRESETS[z].spanHours * ZOOM_PRESETS[z].pxPerHour).toBe(1440);
+        }
+        expect(isSubDayZoom('second') && isSubDayZoom('minute') && isSubDayZoom('hour')).toBe(true);
+        expect(isSubDayZoom('day') || isSubDayZoom('shift') || isSubDayZoom('week')).toBe(false);
+        expect(isSubHourZoom('second') && isSubHourZoom('minute')).toBe(true);
+        expect(isSubHourZoom('hour')).toBe(false);
+    });
+
+    it('windowFor / pageAnchorMs: plain epoch spans, like hour', () => {
+        const m = windowFor(T, 'minute', 'America/Chicago');
+        expect(m.endMs - m.startMs).toBe(30 * 60000);
+        expect(m.pxPerHour).toBe(ZOOM_PRESETS.minute.pxPerHour);
+        const sec = windowFor(T, 'second', 'America/Chicago');
+        expect(sec.endMs - sec.startMs).toBe(2 * 60000);
+        expect(pageAnchorMs(T, 1, 'minute', 'UTC')).toBe(T + 30 * 60000);
+        expect(pageAnchorMs(T, -1, 'second', 'UTC')).toBe(T - 2 * 60000);
+    });
+
+    it('containingAnchorMs: the stride of the day that covers the instant', () => {
+        expect(containingAnchorMs(T, 'minute', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 30));
+        expect(containingAnchorMs(T, 'second', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
+        expect(containingAnchorMs(T, 'hour', 'UTC')).toBe(Date.UTC(2026, 5, 17, 8));
+        expect(containingAnchorMs(T, 'day', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        expect(containingAnchorMs(T, 'week', 'UTC')).toBe(Date.UTC(2026, 5, 17));
+        // Strides count from the ZONE's midnight: 14:37:45Z is 09:37:45 CDT.
+        expect(containingAnchorMs(T, 'minute', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 14, 30));
+        expect(containingAnchorMs(T, 'hour', 'America/Chicago')).toBe(Date.UTC(2026, 5, 17, 13));   // 08:00 CDT
+        // On a boundary the half-open window starts there.
+        expect(containingAnchorMs(Date.UTC(2026, 5, 17, 14, 30), 'minute', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 30));
+        // followAnchorMs is the same rule applied to now.
+        expect(followAnchorMs(T, 'second', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
+    });
+
+    it('rezoomAnchorMs: keeps now in view when it was visible, else the old start', () => {
+        const dayAnchor = Date.UTC(2026, 5, 17);
+        // Now is inside today's day window -> drilling in lands on the current stride.
+        expect(rezoomAnchorMs(dayAnchor, 'day', 'minute', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 30));
+        expect(rezoomAnchorMs(dayAnchor, 'day', 'second', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
+        // Looking at yesterday: now is not in view -> the window containing the old start.
+        const yesterday = Date.UTC(2026, 5, 16);
+        expect(rezoomAnchorMs(yesterday, 'day', 'minute', T, 'UTC')).toBe(yesterday);
+        expect(rezoomAnchorMs(yesterday, 'day', 'hour', T, 'UTC')).toBe(yesterday);
+        // Zooming back out from a mid-day slice returns to that day.
+        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'day', T, 'UTC')).toBe(yesterday);
+        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'hour', T, 'UTC')).toBe(Date.UTC(2026, 5, 16, 8));
+    });
+
+    it('buildTicks: minute zoom = one tick per minute from the window start, day label with time', () => {
+        const w = windowFor(Date.UTC(2026, 5, 17, 14, 30), 'minute', 'UTC');
+        const { upper, lower } = buildTicks(w, 'minute', 'UTC', 'en-US');
+        expect(lower).toHaveLength(30);
+        expect(lower[0]).toMatchObject({ ms: w.startMs, px: 0, label: '14:30' });
+        expect(lower[1].px).toBe(ZOOM_PRESETS.minute.pxPerHour / 60);
+        expect(lower[29].label).toBe('14:59');
+        expect(upper).toHaveLength(1);
+        expect(upper[0].label).toMatch(/Jun 17/);
+        expect(upper[0].label).toMatch(/14:30/);
+    });
+
+    it('buildTicks: second zoom = five-second ticks labelled to the second', () => {
+        const w = windowFor(Date.UTC(2026, 5, 17, 14, 36), 'second', 'UTC');
+        const { lower } = buildTicks(w, 'second', 'UTC', 'en-US');
+        expect(lower).toHaveLength(24);
+        expect(lower[0].label).toBe('14:36:00');
+        expect(lower[1].label).toBe('14:36:05');
+        expect(lower[1].px).toBe(5 * ZOOM_PRESETS.second.pxPerHour / 3600);
+        expect(lower[23].label).toBe('14:37:55');
+    });
+
+    it('buildTicks: a window starting off the tick grid starts at the next step', () => {
+        const w = windowFor(Date.UTC(2026, 5, 17, 14, 36, 3), 'second', 'UTC');
+        const { lower } = buildTicks(w, 'second', 'UTC', 'en-US');
+        expect(lower[0].label).toBe('14:36:05');
+        expect(lower[0].px).toBe(2 * ZOOM_PRESETS.second.pxPerHour / 3600);
+    });
+});
+
 describe('resolveSnapMinutes', () => {
+    it('sub-hour presets snap below a minute; overrides floor at one second', () => {
+        expect(resolveSnapMinutes('second', 0)).toBe(1 / 60);
+        expect(resolveSnapMinutes('minute', 0)).toBe(0.25);
+        expect(resolveSnapMinutes('second', 0.5)).toBe(0.5);           // 30 s override
+        expect(resolveSnapMinutes('second', 0.001)).toBe(MIN_SNAP_MINUTES);
+    });
     it('0 keeps each zoom preset\'s built-in snap', () => {
         expect(resolveSnapMinutes('hour', 0)).toBe(ZOOM_PRESETS.hour.snapMinutes);
         expect(resolveSnapMinutes('day', 0)).toBe(ZOOM_PRESETS.day.snapMinutes);
@@ -379,9 +475,25 @@ describe('mapTimelineProps', () => {
             data: { events: [{ id: 'e1', resourceId: 'm1', title: 'Job', start: '2026-06-17T08:00:00', rrule: { freq: 'daily' } }] }
         }));
         expect(p.zoom).toBe('day');            // unknown -> default
+        expect(mapTimelineProps(stubReader({ state: { zoom: 'second' } })).zoom).toBe('second');
+        expect(mapTimelineProps(stubReader({ state: { zoom: 'minute' } })).zoom).toBe('minute');
+        expect(mapTimelineProps(stubReader({ state: { zoom: 'shift' } })).zoom).toBe('day');   // no shifts
         expect(p.rowHeight).toBe(120);         // clamped
         expect(p.resources).toEqual([{ id: 'm1', label: 'm1', group: 'Line 1', color: undefined, icon: undefined }]);
         expect(p.events[0]).toMatchObject({ id: 'e1', resourceId: 'm1', rrule: { freq: 'daily' } });
+    });
+
+    it('config.zooms picks the toolbar presets; unset = the scheduling set', () => {
+        expect(resolveZooms([], true)).toEqual(DEFAULT_TIMELINE_ZOOMS);
+        expect(resolveZooms([], false)).toEqual(['hour', 'day', 'week']);          // shift needs config.shifts
+        expect(resolveZooms(['second', 'minute', 'hour'], false)).toEqual(['second', 'minute', 'hour']);
+        expect(resolveZooms(['minute', 'bogus', 'minute', 'shift'], false)).toEqual(['minute']);
+        expect(resolveZooms(['bogus'], false)).toEqual(['hour', 'day', 'week']);   // nothing valid -> default
+        expect(mapTimelineProps(stubReader({})).zooms).toEqual(['hour', 'day', 'week']);
+        expect(mapTimelineProps(stubReader({ config: { zooms: ['second', 'minute'] } })).zooms).toEqual(['second', 'minute']);
+        expect(mapTimelineProps(stubReader({ config: { shifts: [{ label: 'A', start: '06:00' }] } })).zooms)
+            .toEqual(['hour', 'day', 'shift', 'week']);
+        expect(mapTimelineProps(stubReader({ config: { locale: 'de' } })).labels.zoomSecond).toBe('Sekunde');
     });
 
     it('labels: config.locale selects the pack; materialized English does not shadow it', () => {

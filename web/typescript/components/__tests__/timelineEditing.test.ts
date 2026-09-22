@@ -27,6 +27,12 @@ describe('gesture preview math', () => {
         expect(snapMs(T0 + 7 * MIN, 15)).toBe(T0);                 // 08:07 -> 08:00
         expect(snapMs(T0 + 8 * MIN, 15)).toBe(T0 + 15 * MIN);      // 08:08 -> 08:15
         expect(snapMs(T0 + 7 * MIN, 5)).toBe(T0 + 5 * MIN);        // 08:07 -> 08:05
+        // Sub-minute steps (the second/minute presets): 15 s and 1 s; never below 1 s.
+        expect(snapMs(T0 + 7000, 0.25)).toBe(T0);                   // 08:00:07 -> 08:00:00
+        expect(snapMs(T0 + 8000, 0.25)).toBe(T0 + 15000);           // 08:00:08 -> 08:00:15
+        expect(snapMs(T0 + 1400, 1 / 60)).toBe(T0 + 1000);          // 1 s step is exactly 1000 ms
+        expect(snapMs(T0 + 1400, 0.001)).toBe(T0 + 1000);           // floor at 1 s
+        expect(createPreviewMs(T0 + 300, T0 + 300, 1 / 60)).toEqual({ startMs: T0, endMs: T0 + 1000 });
     });
     it('move preserves duration and snaps the start', () => {
         const r = movePreviewMs(T0, T0 + 90 * MIN, 22 * MIN, 15);
