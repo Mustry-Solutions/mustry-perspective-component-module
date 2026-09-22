@@ -25,12 +25,19 @@ visible** (drilling from a shift into the running cycle lands on the cycle),
 else the window containing the previous window's start. At `hour` this means
 Today now opens the current 8-hour stride rather than 00:00–08:00.
 
-Also: naive event times accept fractional seconds (`…T14:36:07.250`) for
-sub-second phases; `config.snapMinutes` may be fractional (`0.5` = 30 s, floored
-at one second); the hover popover shows seconds when an instant has them; the
-title and day-row label of a sub-hour window include its start time. New label
+Also: naive event times accept fractional seconds (`…T14:36:07.250`);
+`config.snapMinutes` may be fractional (`0.5` = 30 s, floored at one second);
+the hover popover shows seconds when an instant has them; the title and
+day-row label of a sub-hour window include its start time; at the sub-hour
+presets the now-line refreshes every second regardless of
+`config.refreshSeconds` and glides between ticks instead of hopping. New label
 keys `zoomSecond` / `zoomMinute` in all seven packs. Live fixture:
 `/timeline-cycle` in the verify project.
+
+Known limits: bars keep their 12 px clickable floor, so at `second` (12 px/s)
+a sub-second phase renders as one second; the built-in editor's inputs are
+minute-resolution, so editing a second-level event through it truncates the
+seconds.
 
 ## [0.5.2] - 2026-09-18
 
