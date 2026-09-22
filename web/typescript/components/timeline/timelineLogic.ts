@@ -179,6 +179,18 @@ export function rezoomAnchorMs(anchorMs: number, fromZoom: TimelineZoom, toZoom:
     return containingAnchorMs(target, toZoom, timeZone);
 }
 
+/** How often the now-line re-renders, ms (0 = never; config.refreshSeconds off).
+ *  At the sub-hour presets the line covers 12 px/s, so a 5- or 60-second refresh
+ *  reads as hopping: the tick is capped at one second there (the line also
+ *  glides between ticks via a CSS transition of the same length). */
+export function nowTickMs(zoom: TimelineZoom, refreshSeconds: number): number {
+    if (!(refreshSeconds > 0)) {
+        return 0;
+    }
+    const ms = Math.max(1, refreshSeconds) * 1000;
+    return isSubHourZoom(zoom) ? Math.min(ms, 1000) : ms;
+}
+
 // --- follow-now (live) mode ----------------------------------------------------
 
 export const FOLLOW_DEFAULT_TICK_MS = 60000;

@@ -20,7 +20,7 @@ import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
     buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
-    isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, resolveSnapMinutes,
+    isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, resolveSnapMinutes,
     rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
@@ -117,8 +117,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (!this.gestures.active) {
             this.enter.detect(this.allEvents(), () => this.forceUpdate());
         }
-        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
-            this.setupRefreshTimer();
+        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
+                || prevProps.props.zoom !== this.props.props.zoom) {
+            this.setupRefreshTimer();   // the tick is zoom-dependent (nowTickMs)
         }
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
                 || prevProps.props.followNow !== this.props.props.followNow) {
@@ -211,8 +212,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             window.clearInterval(this.refreshTimer);
             this.refreshTimer = 0;
         }
-        const sec = this.props.props.refreshSeconds;
-        if (sec && sec > 0) {
+        const tick = nowTickMs(this.props.props.zoom, this.props.props.refreshSeconds);
+        if (tick > 0) {
             this.refreshTimer = window.setInterval(() => {
                 // Don't re-render mid-interaction — pointless during a drag, and it
                 // could disturb an open native picker in the editor.
@@ -220,7 +221,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     return;
                 }
                 this.forceUpdate();
-            }, Math.max(1, sec) * 1000);
+            }, tick);
         }
     }
 
@@ -811,9 +812,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             <div key={`gl-${t.ms}`} className="mustry-tml-gridcol" style={{ left: LABEL_COL_PX + t.px, top: AXIS_PX }} />
                         ))}
                         {nowVisible && (
+                            // Keyed on the window so a page/zoom/follow re-anchor remounts
+                            // the line instead of gliding it across the board; between
+                            // refresh ticks it glides by exactly one tick's worth.
                             <div
+                                key={`now-${scale.startMs}-${p.zoom}`}
                                 className="mustry-tml-now"
-                                style={{ left: LABEL_COL_PX + msToPx(scale, nowMs), top: AXIS_PX }}
+                                style={{
+                                    left: LABEL_COL_PX + msToPx(scale, nowMs), top: AXIS_PX,
+                                    ['--tml-now-tick' as string]: `${nowTickMs(p.zoom, p.refreshSeconds)}ms`
+                                } as React.CSSProperties}
                             />
                         )}
                     </div>

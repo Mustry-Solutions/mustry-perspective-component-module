@@ -1,7 +1,7 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent, ZOOM_PRESETS,
     barGeom, buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followTickMs,
-    isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, pageAnchorMs, pxToMs,
+    isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
     resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
 } from '../timeline/timelineLogic';
 import { DEFAULT_TIMELINE_ZOOMS, mapTimelineProps, resolveZooms } from '../timeline/timelineProps';
@@ -386,6 +386,17 @@ describe('barGeom', () => {
 });
 
 describe('follow-now (live) mode', () => {
+    it('nowTickMs: refreshSeconds, capped at 1s at the sub-hour zooms; 0 = off', () => {
+        expect(nowTickMs('day', 5)).toBe(5000);
+        expect(nowTickMs('hour', 60)).toBe(60000);
+        expect(nowTickMs('minute', 5)).toBe(1000);
+        expect(nowTickMs('second', 60)).toBe(1000);
+        expect(nowTickMs('second', 0.5)).toBe(1000);     // 1 s floor, like the raw timer
+        expect(nowTickMs('second', 0)).toBe(0);
+        expect(nowTickMs('day', -1)).toBe(0);
+        expect(nowTickMs('day', NaN)).toBe(0);
+    });
+
     it('followTickMs: refreshSeconds when > 0, 60s fallback, 1s floor', () => {
         expect(followTickMs(30)).toBe(30000);
         expect(followTickMs(1)).toBe(1000);
