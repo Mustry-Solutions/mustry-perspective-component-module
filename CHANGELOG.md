@@ -8,6 +8,30 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: Resource Timeline `second` and `minute` zoom presets (#117)
+The finest preset was `hour` (8-hour window, 15-minute ticks), which flattens a
+machine cycle whose phases last seconds into a stack of slivers. Two presets
+below it: **`minute`** (30-minute window, one-minute ticks, 15 s snap) and
+**`second`** (2-minute window, 5-second ticks labelled `HH:mm:ss`, 1 s snap).
+Both are opt-in on the toolbar through the new **`config.zooms`** list, which
+picks and orders the zoom buttons (`["second", "minute", "hour"]` for a
+cycle-time board; unset keeps hour / day / shift / week). `state.zoom` accepts
+every preset regardless, so a binding can drive it.
+
+With windows that narrow, "today at 00:00" is the wrong place to land, so the
+anchoring rule changed for every sub-day preset: **Today** and follow-now open
+the window *containing now*, and a **zoom change keeps now in view when it was
+visible** (drilling from a shift into the running cycle lands on the cycle),
+else the window containing the previous window's start. At `hour` this means
+Today now opens the current 8-hour stride rather than 00:00–08:00.
+
+Also: naive event times accept fractional seconds (`…T14:36:07.250`) for
+sub-second phases; `config.snapMinutes` may be fractional (`0.5` = 30 s, floored
+at one second); the hover popover shows seconds when an instant has them; the
+title and day-row label of a sub-hour window include its start time. New label
+keys `zoomSecond` / `zoomMinute` in all seven packs. Live fixture:
+`/timeline-cycle` in the verify project.
+
 ## [0.5.2] - 2026-09-18
 
 ### Fixed: Pan & Zoom framed the content in an invented 1600x1200 canvas

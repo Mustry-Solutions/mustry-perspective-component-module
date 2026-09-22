@@ -1,0 +1,127 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1100,
+      "height": 600
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Cycle-time fixture (issue #117) \u2014 machine cycles with phases lasting seconds, seeded around NOW on view load. The toolbar offers the 'second' and 'minute' presets (config.zooms); the view opens at 'second' on the window containing now. Zoom out to 'hour' and back: the current cycle stays in view.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 1060,
+          "height": 40
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "props": {
+          "config": {
+            "zooms": [
+              "second",
+              "minute",
+              "hour",
+              "day"
+            ],
+            "refreshSeconds": 5,
+            "resources": [
+              {
+                "id": "stationA",
+                "label": "Station A",
+                "group": "Cell 3",
+                "icon": "material/settings"
+              },
+              {
+                "id": "stationB",
+                "label": "Station B",
+                "group": "Cell 3",
+                "icon": "material/settings"
+              }
+            ],
+            "categories": [
+              {
+                "id": "move",
+                "label": "Motion",
+                "color": "#0c7bb3"
+              },
+              {
+                "id": "process",
+                "label": "Process",
+                "color": "#8e44ad"
+              },
+              {
+                "id": "check",
+                "label": "Inspection",
+                "color": "#16a34a"
+              },
+              {
+                "id": "run",
+                "label": "Running",
+                "color": "#16a34a"
+              },
+              {
+                "id": "down",
+                "label": "Fault",
+                "color": "#e11d48"
+              }
+            ]
+          },
+          "data": {
+            "events": []
+          },
+          "state": {
+            "zoom": "second"
+          }
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(0)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# Cycle-time fixture (issue #117): one machine cycle per station, repeated over\n\t# the last and next ten minutes, with phases that last seconds \u2014 and some that\n\t# last a fraction of a second, so the 'second' preset has something to show.\n\t# now(0) = seeded once per view load, relative to the moment the view opened.\n\t# Emitted WITH the offset (absolute instants): a naive time would be read as\n\t# browser wall clock, and the gateway container's zone (UTC by default) is\n\t# not the operator's \u2014 at this zoom a two-hour skew empties the board.\n\tt0 = system.date.addMinutes(value, -10)\n\tdef iso(d):\n\t\treturn system.date.format(d, \"yyyy-MM-dd'T'HH:mm:ss.SSSXXX\")\n\tdef at(ms):\n\t\treturn system.date.addMillis(t0, int(ms))\n\tout = []\n\tdef ev(eid, res, title, s_ms, e_ms, cat, **kw):\n\t\trow = {\"id\": eid, \"resourceId\": res, \"title\": title, \"start\": iso(at(s_ms)), \"end\": iso(at(e_ms)), \"category\": cat}\n\t\trow.update(kw)\n\t\tout.append(row)\n\t# Station A: 20 s cycle. Station B: 12 s cycle with an occasional fault.\n\tcycles = {\n\t\t\"stationA\": [(\"Clamp\", 2500, \"move\"), (\"Inject\", 4000, \"process\"), (\"Cool\", 12000, \"process\"), (\"Eject\", 1500, \"move\")],\n\t\t\"stationB\": [(\"Pick\", 800, \"move\"), (\"Place\", 600, \"move\"), (\"Weld\", 9400, \"process\"), (\"Inspect\", 1200, \"check\")],\n\t}\n\tspan_ms = 20 * 60 * 1000\n\tfor res, phases in cycles.items():\n\t\tperiod = sum(p[1] for p in phases)\n\t\tn = 0\n\t\tt = 0\n\t\twhile t < span_ms:\n\t\t\toff = 0\n\t\t\tfor (name, dur, cat) in phases:\n\t\t\t\tev(\"%s-%d-%s\" % (res, n, name.lower()), res, name, t + off, t + off + dur, cat)\n\t\t\t\toff += dur\n\t\t\t# every 7th cycle of station B stalls in a fault for 6 seconds\n\t\t\tif res == \"stationB\" and n % 7 == 6:\n\t\t\t\tev(\"%s-%d-fault\" % (res, n), res, \"FAULT\", t + period, t + period + 6000, \"down\", display=\"state\",\n\t\t\t\t\tdescription=\"Stall - the state band is 6 s long.\")\n\t\t\t\tt += 6000\n\t\t\tt += period\n\t\t\tn += 1\n\t# Machine-state bands for station A: RUNNING the whole span.\n\tev(\"stateA\", \"stationA\", \"RUNNING\", 0, span_ms, \"run\", display=\"state\")\n\treturn out\n"
+                }
+              ]
+            }
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "timeline"
+        },
+        "position": {
+          "x": 16,
+          "y": 56,
+          "width": 1068,
+          "height": 520
+        }
+      }
+    ]
+  }
+}

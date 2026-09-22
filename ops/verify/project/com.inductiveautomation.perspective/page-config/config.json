@@ -44,6 +44,10 @@
    "viewPath": "TimelineEmpty",
    "viewParams": {}
   },
+  "/timeline-cycle": {
+   "viewPath": "TimelineCycle",
+   "viewParams": {}
+  },
   "/rte": {
    "viewPath": "RteDemo",
    "viewParams": {}
