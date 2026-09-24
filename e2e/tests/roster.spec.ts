@@ -30,7 +30,12 @@ test.describe('Roster Manager', () => {
 
     test('renders the escalation order with names, ordinals and contact warnings', async ({ page }) => {
         const root = await openPopulated(page);
-        await root.locator('.mustry-sched-item').filter({ hasText: 'Demo Escalation' }).click();
+        const demoRow = root.locator('.mustry-sched-item').filter({ hasText: 'Demo Escalation' });
+        await demoRow.hover();
+        // aria-label must include the roster name (not the literal "r.name").
+        await expect(demoRow.getByRole('button', { name: 'More actions Demo Escalation', exact: true }))
+            .toBeVisible();
+        await demoRow.click();
         const rows = root.locator('.mustry-roster-row');
         await expect(rows).toHaveCount(3);
         // Ordinals are the escalation sequence; the directory resolves names.

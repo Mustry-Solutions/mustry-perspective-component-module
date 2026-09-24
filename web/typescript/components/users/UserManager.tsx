@@ -181,7 +181,7 @@ export class UserManager extends AdminManagerBase<AdminUser, UserDraft, UserMana
                         </span>
                         {p.editable && (p.allowCreate || p.allowDelete) && (
                             <RowMenu
-                                moreActionsLabel={`${p.labels.moreActions} u.username`}
+                                moreActionsLabel={`${p.labels.moreActions} ${u.username}`}
                                 duplicateLabel={p.labels.duplicate}
                                 deleteLabel={p.labels.delete}
                                 confirmDeleteLabel={p.labels.confirmDelete}
