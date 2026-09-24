@@ -8,6 +8,12 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: CSV export treated negative numbers as formulas
+`csvCell` prefixed a leading apostrophe to any cell starting with `+` or `-`,
+including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
+grid / calendar / timeline exports loaded deltas and quantities as text. Plain
+numbers now skip the formula guard; real formula-looking cells are unchanged.
+
 ### Fixed: Admin row-menu aria-labels showed literal `u.username` / `h.name` / `r.name`
 User, Holiday, and Roster managers were missing `${}` around the row identifier in
 the `moreActionsLabel` template, so every ⋯ button's accessible name was the
