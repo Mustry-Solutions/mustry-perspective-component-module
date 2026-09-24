@@ -293,7 +293,7 @@ export function layoutTree(input: BranchNode[]): Layout {
             let maxOriginSplit = originCell.x + 1;
             while (
                 maxOriginSplit < levels[originCell.y].length
-                && maxOriginSplit < cell.y
+                && maxOriginSplit < cell.x
                 && levels[originCell.y][maxOriginSplit] === undefined
             ) {
                 maxOriginSplit++;
