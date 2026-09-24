@@ -117,6 +117,10 @@ export class RichTextController {
                 // The font allowlist is an EDITING constraint; a read-only
                 // display renders whatever fonts the saved document carries.
                 ...((opts.fonts.length || !opts.editable) ? [TextStyle, FontFamily] : []),
+                // CharacterCount is only for limit enforcement while typing.
+                // output.charCount is derived from plainTextOf in the component —
+                // this extension is absent when unlimited, and even when present
+                // it reads the live draft, not the bound/saved doc outputs track.
                 ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit })] : []),
                 ...(opts.editable && opts.placeholder
                     ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
@@ -233,12 +237,6 @@ export class RichTextController {
         if (safe) {
             this.editor.chain().focus().setImage({ src: safe }).run();
         }
-    }
-
-    /** Characters in the document (CharacterCount extension; 0 when unlimited+absent). */
-    charCount(): number {
-        const s = (this.editor.storage as { characterCount?: { characters(): number } }).characterCount;
-        return s ? s.characters() : 0;
     }
 
     /** The current selection's link href, '' when none. */

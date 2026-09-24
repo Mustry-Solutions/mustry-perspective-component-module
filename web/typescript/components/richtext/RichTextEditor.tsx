@@ -81,11 +81,14 @@ export class RichTextEditor extends ControlledDraftHost<RichTextProps, RichTextE
     protected setEditorDoc(doc: string): void { this.ctrl?.setContent(doc); }
 
     protected deriveOutputs(html: string): Record<string, unknown> {
+        // charCount from the plain-text mirror (same doc argument as
+        // plainText/wordCount) — not TipTap's CharacterCount storage, which is
+        // only mounted when charLimit > 0 and always reads the live draft.
         const plain = plainTextOf(html);
         return {
             plainText: plain,
             wordCount: wordCountOf(plain),
-            charCount: this.ctrl ? this.ctrl.charCount() : plain.length
+            charCount: plain.length
         };
     }
 
