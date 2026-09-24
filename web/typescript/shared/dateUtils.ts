@@ -357,11 +357,34 @@ export function msToZonedIso(ms: number, timeZone: string): string {
     return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}${fracStr}${offsetToStr(off)}`;
 }
 
-/** An epoch instant as a zone-local 'YYYY-MM-DDTHH:mm' — the value format of a
- *  native <input type="datetime-local"> showing times in `timeZone`. */
+/**
+ * An epoch instant as a zone-local 'YYYY-MM-DDTHH:mm(:ss(.SSS))' — the value
+ * format of a native <input type="datetime-local"> showing times in `timeZone`.
+ *
+ * Seconds (and milliseconds) appear ONLY when the instant carries them, because
+ * the value's precision is what makes the browser render the matching field: an
+ * ordinary 08:00 shift event keeps today's plain hh:mm control, while a cycle
+ * phase at 08:00:07.250 gets a seconds/ms field instead of being silently
+ * truncated on save. Pair with `wallInputStep` on the input's `step`.
+ */
 export function msToWallInput(ms: number, timeZone: string): string {
     const w = zoneWallClock(new Date(ms), timeZone);
-    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}`;
+    const base = `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}`;
+    const frac = ((ms % 1000) + 1000) % 1000;
+    if (!w.s && !frac) {
+        return base;
+    }
+    return `${base}:${pad2(w.s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
+}
+
+/** The `step` a datetime-local input needs to ACCEPT the precision in `value`
+ *  (a browser silently rounds a value finer than its step to it, and only shows
+ *  the seconds/ms field when the step asks for one). '' = leave it unset. */
+export function wallInputStep(value: string): string {
+    if (/T\d\d:\d\d:\d\d\.\d/.test(value)) {
+        return '0.001';
+    }
+    return /T\d\d:\d\d:\d\d/.test(value) ? '1' : '';
 }
 
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */

@@ -1,4 +1,4 @@
-import { msToWallInput, msToZonedIso, toEpochMs } from '../../shared/dateUtils';
+import { msToWallInput, msToZonedIso, toEpochMs, wallInputStep } from '../../shared/dateUtils';
 import {
     createPreviewMs, isNoopMove, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision, TlGestureFlags
 } from '../timeline/timelineGestureLogic';
@@ -23,6 +23,19 @@ describe('epoch emit helpers', () => {
         expect(msToZonedIso(T0, 'UTC')).toBe('2026-07-03T08:00:00+00:00');
         // Round-trips back through the parser.
         expect(toEpochMs(msToZonedIso(T0 + 250, 'America/Chicago'), 'UTC')).toBe(T0 + 250);
+    });
+    it('msToWallInput keeps sub-minute precision so the editor cannot truncate it', () => {
+        // Whole minutes are unchanged: an ordinary shift event keeps the plain
+        // hh:mm control, no seconds spinner.
+        expect(msToWallInput(T0, 'UTC')).toBe('2026-07-03T08:00');
+        expect(wallInputStep(msToWallInput(T0, 'UTC'))).toBe('');
+        // Seconds / milliseconds survive the round trip into the input and back.
+        expect(msToWallInput(T0 + 7000, 'UTC')).toBe('2026-07-03T08:00:07');
+        expect(wallInputStep(msToWallInput(T0 + 7000, 'UTC'))).toBe('1');
+        expect(msToWallInput(T0 + 7250, 'UTC')).toBe('2026-07-03T08:00:07.250');
+        expect(wallInputStep(msToWallInput(T0 + 7250, 'UTC'))).toBe('0.001');
+        expect(msToWallInput(T0 + 250, 'UTC')).toBe('2026-07-03T08:00:00.250');
+        expect(toEpochMs(msToWallInput(T0 + 7250, 'America/Chicago'), 'America/Chicago')).toBe(T0 + 7250);
     });
     it('msToWallInput emits a datetime-local value in the zone', () => {
         expect(msToWallInput(T0, 'UTC')).toBe('2026-07-03T08:00');
@@ -120,6 +133,26 @@ describe('editor logic', () => {
         const edited = tlSaveSpec(tlEditorForEvent(ev, TZ), TZ);
         expect(edited.action).toBe('edit');
         expect(edited.event).toMatchObject({ id: 'e1', title: 'Job' });
+    });
+
+    it('save: an untouched sub-minute event keeps its seconds and milliseconds', () => {
+        // The bug this pins: opening a cycle phase to fix its title and saving
+        // used to rewrite 08:00:07.250 -> 08:00:00, silently retiming the event.
+        const phase: TimelineEvent = {
+            id: 'p1', resourceId: 'm1', title: 'Vent',
+            start: '2026-07-03T08:00:07.250Z', end: '2026-07-03T08:00:07.290Z'
+        };
+        const editor = tlEditorForEvent(phase, TZ);
+        expect(editor.start).toBe('2026-07-03T08:00:07.250');
+        expect(editor.end).toBe('2026-07-03T08:00:07.290');
+        const saved = tlSaveSpec({ ...editor, title: 'Vent (fixed)' }, TZ);
+        expect(saved.event).toMatchObject({
+            id: 'p1', title: 'Vent (fixed)',
+            start: '2026-07-03T08:00:07.250+00:00', end: '2026-07-03T08:00:07.290+00:00'
+        });
+        // A 40ms phase must still be 40ms after the round trip.
+        const out = saved.event as unknown as TimelineEvent;
+        expect(toEpochMs(out.end!, TZ)! - toEpochMs(out.start, TZ)!).toBe(40);
     });
 
     it('delete: null while creating; id + resourceId when editing', () => {

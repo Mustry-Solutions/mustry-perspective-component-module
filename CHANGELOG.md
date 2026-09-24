@@ -50,9 +50,16 @@ floor. Emitted instants (`msToZonedIso`) now carry milliseconds when they have
 them, which also stops a drag at any zoom from silently truncating the
 sub-second part of an event it did not intend to change.
 
-Known limit: the built-in editor's inputs are minute-resolution, so editing a
-second- or millisecond-level event through the editor truncates the seconds.
-Gestures (drag/resize) are unaffected.
+**The built-in editor no longer truncates sub-minute times.** Its Start/End
+fields are native `datetime-local` inputs, whose precision follows the value
+they are given — so opening a cycle phase to fix its title and saving used to
+rewrite `08:00:07.250` to `08:00:00`, silently retiming an event the operator
+never meant to move. This predates the fine zooms (any historian-sourced event
+with seconds hit it) but was easy to trip once phases lasted milliseconds.
+`msToWallInput` now keeps seconds and milliseconds when the instant carries
+them, and the inputs get a matching `step`. Whole-minute events are unchanged:
+an ordinary shift event still shows the plain hh:mm control, with no seconds
+field.
 
 ## [0.5.2] - 2026-09-18
 

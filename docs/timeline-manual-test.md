@@ -35,6 +35,13 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       a 1 s one). With Live armed the window re-anchors at least every 2.5 s so
       the now-line cannot run off it. Set `config.editable: true` and the bars
       go back to the 12 px grabbable floor — deliberate, so they can be dragged.
+- [ ] **Editor keeps sub-minute times** — with `config.editable` +
+      `builtInEditor`, click a bar whose time has seconds (any phase in
+      `/timeline-cycle`): the Start/End controls show a seconds (and, for a
+      millisecond phase, a decimals) field. Change ONLY the title and save —
+      the times must come back unchanged, not rounded to `:00`. A plain
+      whole-minute event (`/timeline`) must still show the ordinary hh:mm
+      control with no seconds field.
 - [ ] **Live (follow-now)** — toolbar toggle next to Prev: arming fills it with a
       pulsing dot and re-anchors on today (like Today) every `config.refreshSeconds`
       (60s when unset) — at Hour zoom it pages 00/08/16 — **and scrolls the board
