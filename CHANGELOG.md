@@ -14,6 +14,11 @@ including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
 grid / calendar / timeline exports loaded deltas and quantities as text. Plain
 numbers now skip the formula guard; real formula-looking cells are unchanged.
 
+### Fixed: On-Screen Keyboard email/url symbols missing `_ = + # % ~`
+Email and url layouts shared a symbols page that had none of these characters,
+so addresses like `john_doe@x.com`, `a+b@x.com`, and query strings with `#` /
+`%` / `=` could not be typed. They are now on the shared symbols row (#152).
+
 ### Fixed: Branching Diagram upward cross-edges routed diagonally
 Connector corridor scanning compared the origin-row column walk to the
 target's *row* (`cell.y`). An edge from `(col 0, row 2)` to `(col 4, row 0)`

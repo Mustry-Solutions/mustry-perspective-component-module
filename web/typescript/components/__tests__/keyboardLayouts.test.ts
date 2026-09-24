@@ -32,6 +32,14 @@ describe('getRows — symbols layer', () => {
         expect(chars(rows)).toContain('1234567890');
         expect(flat(rows).some((k) => k.action === 'layer' && k.layer === 'letters')).toBe(true);
     });
+    it('exposes _, =, +, #, %, ~ so email and url addresses can be typed', () => {
+        for (const layout of ['text', 'email', 'url'] as const) {
+            const vals = new Set(flat(getRows(layout, 'symbols', false, 'Enter')).map((k) => k.value));
+            for (const ch of ['_', '=', '+', '#', '%', '~']) {
+                expect(vals.has(ch)).toBe(true);
+            }
+        }
+    });
 });
 
 describe('getRows — layout extras', () => {
