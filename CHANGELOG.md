@@ -15,6 +15,12 @@ therefore never advanced past the first empty cell and produced split
 `[3.5, 0.5]` — a diagonal through intermediate nodes. Cap the walk with
 `cell.x` so the same edge gets `[3.5, 3.5]`, a clean vertical riser (#155).
 
+### Fixed: Admin row-menu aria-labels showed literal `u.username` / `h.name` / `r.name`
+User, Holiday, and Roster managers were missing `${}` around the row identifier in
+the `moreActionsLabel` template, so every ⋯ button's accessible name was the
+literal text. Schedule Manager already interpolated correctly; the other three
+now match, and e2e asserts the accessible name includes the real row name.
+
 ## [0.5.2] - 2026-09-18
 
 ### Fixed: Pan & Zoom framed the content in an invented 1600x1200 canvas

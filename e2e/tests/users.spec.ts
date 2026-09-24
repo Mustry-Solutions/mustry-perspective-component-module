@@ -252,7 +252,10 @@ test.describe('User Manager', () => {
 
         const row = root.locator('.mustry-sched-item').filter({ hasText: 'Kiran Patel' });
         await row.hover();
-        await row.getByRole('button', { name: /More actions/ }).click();
+        // aria-label must include the username (not the literal "u.username").
+        const more = row.getByRole('button', { name: 'More actions kpatel', exact: true });
+        await expect(more).toBeVisible();
+        await more.click();
         await page.getByRole('menuitem', { name: 'Duplicate' }).click();
         await expect(root.locator('.mustry-sched-name-input')).toHaveValue('kpatel-copy');
         // Copies profile fields but never the password — stage one to satisfy
@@ -266,7 +269,7 @@ test.describe('User Manager', () => {
         // Clean up via the row menu's two-step delete.
         const copyRow = root.locator('.mustry-sched-item').filter({ hasText: 'kpatel-copy' });
         await copyRow.hover();
-        await copyRow.getByRole('button', { name: /More actions/ }).click();
+        await copyRow.getByRole('button', { name: 'More actions kpatel-copy', exact: true }).click();
         const menuDelete = page.locator('.mustry-row-menu-pop .mustry-row-menu-item--danger');
         await menuDelete.click();
         await menuDelete.click();
