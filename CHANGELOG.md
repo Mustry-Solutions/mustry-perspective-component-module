@@ -8,6 +8,12 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Rich Text Editor `output.charCount` was always 0 without a charLimit
+`CharacterCount` was only mounted when `config.charLimit > 0`, so the default
+unlimited editor wrote `0`. The count also came from the live draft, so it
+disagreed with `plainText` / `wordCount` while dirty. `charCount` is now
+`plainTextOf(doc).length`, matching the other outputs (#136).
+
 ### Fixed: CSV export treated negative numbers as formulas
 `csvCell` prefixed a leading apostrophe to any cell starting with `+` or `-`,
 including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
