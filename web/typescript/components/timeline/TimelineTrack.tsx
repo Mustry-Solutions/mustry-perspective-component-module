@@ -20,6 +20,7 @@ interface TimelineTrackProps {
     lay: RowLayouts;
     scale: TimeScale;
     rowHeight: number;
+    barMinPx: number;   // rendered width floor (see barMinPx in timelineLogic)
     categories: Category[];
     preview: TlPreview | null;
     movable: (ev: TimelineEvent) => boolean;
@@ -102,12 +103,14 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                 if (preview && preview.mode !== 'create' && preview.eventId === ev.id) {
                     return null;   // hidden while dragging; the ghost is shown instead
                 }
-                // Floor the width so short jobs stay grabbable; drop the edge
-                // handles when they'd swallow the whole bar (move/click only).
-                const g = barGeom(px(it.startMs), px(it.endMs));
+                // Floor the width (see barMinPx) so short jobs stay visible; drop the
+                // edge handles when they'd swallow the bar (move/click only), and
+                // render below the grabbable floor as a padding-free hairline.
+                const g = barGeom(px(it.startMs), px(it.endMs), p.barMinPx);
                 const laneH = barArea / it.lanes;
                 const movable = p.movable(ev);
                 const cls = ['mustry-tml-bar'];
+                if (g.hairline) { cls.push('mustry-tml-bar--hairline'); }
                 if (movable) { cls.push('mustry-tml-bar--movable'); }
                 if (it.continuesLeft) { cls.push('mustry-tml-bar--cont-left'); }
                 if (it.continuesRight) { cls.push('mustry-tml-bar--cont-right'); }

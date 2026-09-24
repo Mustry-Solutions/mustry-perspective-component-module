@@ -20,7 +20,7 @@ import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
     buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
-    isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, resolveSnapMinutes,
+    barMinPx, isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, resolveSnapMinutes,
     rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
@@ -122,8 +122,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             this.setupRefreshTimer();   // the tick is zoom-dependent (nowTickMs)
         }
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
-                || prevProps.props.followNow !== this.props.props.followNow) {
-            this.setupFollowTimer();
+                || prevProps.props.followNow !== this.props.props.followNow
+                || (this.props.props.followNow && prevProps.props.zoom !== this.props.props.zoom)) {
+            this.setupFollowTimer();   // the interval is zoom-dependent (followTickMs)
         } else if (this.props.props.followNow
                 && (prevProps.props.zoom !== this.props.props.zoom
                     || prevProps.props.timezone !== this.props.props.timezone)) {
@@ -236,7 +237,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         if (this.props.props.followNow) {
             this.tickFollow();
-            this.followTimer = window.setInterval(() => this.tickFollow(), followTickMs(this.props.props.refreshSeconds));
+            this.followTimer = window.setInterval(
+                () => this.tickFollow(), followTickMs(this.props.props.refreshSeconds, this.props.props.zoom));
         }
     }
 
@@ -665,6 +667,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const emptyLabel = isConfiguredEmpty(p.loading, p.events, p.recurringEvents)
             ? emptyMessageText(p.emptyMessage, labels.noEvents) : '';
         const zoomLabels: { [z in TimelineZoom]: string } = {
+            millisecond: labels.zoomMillisecond,
             second: labels.zoomSecond, minute: labels.zoomMinute, hour: labels.zoomHour,
             day: labels.zoomDay, shift: labels.zoomShift, week: labels.zoomWeek
         };
@@ -707,6 +710,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 lay={lay}
                 scale={scale}
                 rowHeight={p.rowHeight}
+                barMinPx={barMinPx(p.zoom, p.editable)}
                 categories={p.categories}
                 preview={this.state.preview}
                 movable={this.movable}

@@ -28,6 +28,13 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       to Second: the current cycle stays in view (now was visible); page back a
       few windows first and the round trip returns to where you were instead.
       Drag-create at Second snaps to 1 s; `config.snapMinutes: 0.5` snaps to 30 s.
+- [ ] **Millisecond preset** — a 10-second window on 500 ms ticks labelled
+      `HH:mm:ss.S` (localized separator: `,` in de/fr). The 40 ms "Vent" and
+      60 ms "Arc on/off" phases are hairlines at Second and clearly readable
+      here; their widths stay proportional (a 40 ms phase must NOT be as wide as
+      a 1 s one). With Live armed the window re-anchors at least every 2.5 s so
+      the now-line cannot run off it. Set `config.editable: true` and the bars
+      go back to the 12 px grabbable floor — deliberate, so they can be dragged.
 - [ ] **Live (follow-now)** — toolbar toggle next to Prev: arming fills it with a
       pulsing dot and re-anchors on today (like Today) every `config.refreshSeconds`
       (60s when unset) — at Hour zoom it pages 00/08/16 — **and scrolls the board

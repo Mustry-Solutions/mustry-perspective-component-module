@@ -1,4 +1,4 @@
-import { msToWallInput, msToZonedIso } from '../../shared/dateUtils';
+import { msToWallInput, msToZonedIso, toEpochMs } from '../../shared/dateUtils';
 import {
     createPreviewMs, isNoopMove, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision, TlGestureFlags
 } from '../timeline/timelineGestureLogic';
@@ -16,6 +16,14 @@ describe('epoch emit helpers', () => {
         expect(msToZonedIso(T0, 'UTC')).toBe('2026-07-03T08:00:00+00:00');
         expect(msToZonedIso(T0, 'America/Chicago')).toBe('2026-07-03T03:00:00-05:00');
     });
+    it('msToZonedIso keeps milliseconds when the instant has them', () => {
+        expect(msToZonedIso(T0 + 250, 'UTC')).toBe('2026-07-03T08:00:00.250+00:00');
+        expect(msToZonedIso(T0 + 7, 'America/Chicago')).toBe('2026-07-03T03:00:00.007-05:00');
+        // Whole seconds keep the short form — ordinary scheduling data is unchanged.
+        expect(msToZonedIso(T0, 'UTC')).toBe('2026-07-03T08:00:00+00:00');
+        // Round-trips back through the parser.
+        expect(toEpochMs(msToZonedIso(T0 + 250, 'America/Chicago'), 'UTC')).toBe(T0 + 250);
+    });
     it('msToWallInput emits a datetime-local value in the zone', () => {
         expect(msToWallInput(T0, 'UTC')).toBe('2026-07-03T08:00');
         expect(msToWallInput(T0, 'America/Chicago')).toBe('2026-07-03T03:00');
@@ -31,7 +39,8 @@ describe('gesture preview math', () => {
         expect(snapMs(T0 + 7000, 0.25)).toBe(T0);                   // 08:00:07 -> 08:00:00
         expect(snapMs(T0 + 8000, 0.25)).toBe(T0 + 15000);           // 08:00:08 -> 08:00:15
         expect(snapMs(T0 + 1400, 1 / 60)).toBe(T0 + 1000);          // 1 s step is exactly 1000 ms
-        expect(snapMs(T0 + 1400, 0.001)).toBe(T0 + 1000);           // floor at 1 s
+        expect(snapMs(T0 + 140, 0.1 / 60)).toBe(T0 + 100);          // 100 ms step (millisecond zoom)
+        expect(snapMs(T0 + 1400, 1e-9)).toBe(T0 + 1400);            // floor at 1 ms
         expect(createPreviewMs(T0 + 300, T0 + 300, 1 / 60)).toEqual({ startMs: T0, endMs: T0 + 1000 });
     });
     it('move preserves duration and snaps the start', () => {

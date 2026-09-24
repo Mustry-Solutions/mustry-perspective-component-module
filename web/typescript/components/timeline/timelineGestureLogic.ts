@@ -3,15 +3,17 @@
 // unit-tested under node jest; the controller measures the DOM, calls these, and
 // applies setState / fires events (same split as the calendar's calendarGestureLogic).
 
+import { MIN_SNAP_MINUTES } from './timelineLogic';
+
 export type TlGestureMode = 'move' | 'resize-start' | 'resize-end' | 'create';
 
 export const MS_PER_MIN = 60000;
 
 /** The snap step in whole ms. Snaps may be fractional minutes at the sub-hour
- *  zoom presets (0.25 = 15 s) but never finer than a second, and the product is
- *  rounded so a 1/60-minute step is exactly 1000 ms. */
+ *  zoom presets (0.25 = 15 s, 0.1/60 = 100 ms) down to MIN_SNAP_MINUTES, and the
+ *  product is rounded so a 1/60-minute step is exactly 1000 ms. */
 export function snapStepMs(snapMinutes: number): number {
-    return Math.round(Math.max(1 / 60, snapMinutes) * MS_PER_MIN);
+    return Math.round(Math.max(MIN_SNAP_MINUTES, snapMinutes) * MS_PER_MIN);
 }
 
 /** Round an epoch instant to the nearest snap step. */

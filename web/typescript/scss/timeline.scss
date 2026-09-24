@@ -364,6 +364,19 @@
         z-index: 1;
     }
 
+    // Sub-second phases at the fine zooms: the ordinary bar's 12px padding plus
+    // its 3px accent border would floor a 0.5px phase at ~15px and draw it as a
+    // full second. A hairline sheds both and goes solid, so the mark stays honest
+    // about duration and still visible (and hoverable) against the track.
+    &--hairline {
+        padding: 0;
+        gap: 0;
+        border-left-width: 0;
+        border-radius: 1px;
+        min-width: 1px;
+        background: var(--ev);
+    }
+
     // Clamped at a window edge: square that edge to signal continuation.
     &.mustry-tml-bar--cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; }
     &.mustry-tml-bar--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }

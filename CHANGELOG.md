@@ -8,15 +8,22 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
-### Added: Resource Timeline `second` and `minute` zoom presets (#117)
+### Added: Resource Timeline sub-hour zoom presets (#117)
 The finest preset was `hour` (8-hour window, 15-minute ticks), which flattens a
-machine cycle whose phases last seconds into a stack of slivers. Two presets
-below it: **`minute`** (30-minute window, one-minute ticks, 15 s snap) and
-**`second`** (2-minute window, 5-second ticks labelled `HH:mm:ss`, 1 s snap).
-Both are opt-in on the toolbar through the new **`config.zooms`** list, which
-picks and orders the zoom buttons (`["second", "minute", "hour"]` for a
-cycle-time board; unset keeps hour / day / shift / week). `state.zoom` accepts
-every preset regardless, so a binding can drive it.
+machine cycle whose phases last seconds into a stack of slivers. Three presets
+below it: **`minute`** (30-minute window, one-minute ticks, 15 s snap),
+**`second`** (2-minute window, 5-second ticks labelled `HH:mm:ss`, 1 s snap) and
+**`millisecond`** (10-second window, 500 ms ticks labelled `HH:mm:ss.S`, 100 ms
+snap). All three are opt-in on the toolbar through the new **`config.zooms`**
+list, which picks and orders the zoom buttons (`["millisecond", "second",
+"minute", "hour"]` for a cycle-time board; unset keeps hour / day / shift /
+week). `state.zoom` accepts every preset regardless, so a binding can drive it.
+
+The narrow windows are the *cheapest* presets to render, not the most
+expensive — they contain less data. Measured on the cycle fixture: millisecond
+zoom draws 9 bars / 88 grid nodes and a full board layout costs 0.06 ms,
+against 1024 bars / 2137 nodes / 0.6 ms at day zoom, with no task over 50 ms
+across six seconds of live now-line ticks.
 
 With windows that narrow, "today at 00:00" is the wrong place to land, so the
 anchoring rule changed for every sub-day preset: **Today** and follow-now open
@@ -34,10 +41,18 @@ presets the now-line refreshes every second regardless of
 keys `zoomSecond` / `zoomMinute` in all seven packs. Live fixture:
 `/timeline-cycle` in the verify project.
 
-Known limits: bars keep their 12 px clickable floor, so at `second` (12 px/s)
-a sub-second phase renders as one second; the built-in editor's inputs are
-minute-resolution, so editing a second-level event through it truncates the
-seconds.
+**Sub-second phases now render at their true width.** The 12 px floor that
+keeps a week-zoom job grabbable was drawing a 40 ms phase as a full second, and
+the bar's own padding plus accent border re-imposed ~15 px even below it. On a
+**read-only** board at the sub-hour presets the floor drops to a 3 px hairline
+that sheds both, so width means duration; editable boards keep the grabbable
+floor. Emitted instants (`msToZonedIso`) now carry milliseconds when they have
+them, which also stops a drag at any zoom from silently truncating the
+sub-second part of an event it did not intend to change.
+
+Known limit: the built-in editor's inputs are minute-resolution, so editing a
+second- or millisecond-level event through the editor truncates the seconds.
+Gestures (drag/resize) are unaffected.
 
 ## [0.5.2] - 2026-09-18
 

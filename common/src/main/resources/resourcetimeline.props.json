@@ -21,10 +21,11 @@
         "zooms": {
           "type": "array",
           "default": [],
-          "description": "Which zoom-preset buttons the toolbar offers, in order. Empty (default) = hour, day, shift, week. Add 'minute' (30-minute window, 1-minute ticks) and 'second' (2-minute window, 5-second ticks) for cycle-time / step-sequence views. 'shift' is only shown when config.shifts is set; unknown entries are ignored. state.zoom accepts every preset regardless of this list.",
+          "description": "Which zoom-preset buttons the toolbar offers, in order. Empty (default) = hour, day, shift, week. Add 'minute' (30-minute window, 1-minute ticks), 'second' (2-minute window, 5-second ticks) and 'millisecond' (10-second window, 500ms ticks) for cycle-time / step-sequence views. 'shift' is only shown when config.shifts is set; unknown entries are ignored. state.zoom accepts every preset regardless of this list.",
           "items": {
             "type": "string",
             "enum": [
+              "millisecond",
               "second",
               "minute",
               "hour",
@@ -37,7 +38,7 @@
         "snapMinutes": {
           "type": "number",
           "default": 0,
-          "description": "Gesture snap granularity in minutes for drag-move, edge-resize, drag-to-create and the click-to-create slot start. 0 (default) keeps each zoom preset's built-in snap (second 1 s, minute 15 s, hour 5, day/shift 15, week 60); a positive value overrides it at every zoom and may be fractional (0.5 = 30 seconds; floored at one second). Negative/invalid values are treated as 0."
+          "description": "Gesture snap granularity in minutes for drag-move, edge-resize, drag-to-create and the click-to-create slot start. 0 (default) keeps each zoom preset's built-in snap (millisecond 100 ms, second 1 s, minute 15 s, hour 5, day/shift 15, week 60); a positive value overrides it at every zoom and may be fractional (0.5 = 30 seconds, 0.1/60 = 100 ms; floored at one millisecond). Negative/invalid values are treated as 0."
         },
         "rowHeight": {
           "type": "number",
@@ -94,6 +95,10 @@
             "next": {
               "type": "string",
               "description": "Accessible label of the forward arrow."
+            },
+            "zoomMillisecond": {
+              "type": "string",
+              "description": "Millisecond zoom-preset button (shown when config.zooms includes 'millisecond')."
             },
             "zoomSecond": {
               "type": "string",
@@ -448,6 +453,7 @@
         "zoom": {
           "type": "string",
           "enum": [
+            "millisecond",
             "second",
             "minute",
             "hour",
@@ -456,7 +462,7 @@
             "week"
           ],
           "default": "day",
-          "description": "Zoom preset (two-way: the toolbar writes the user's choice back; set it to switch the view). Each preset sets the horizontal density, the paging span and the snap granularity: second = 2-minute window, minute = 30 minutes, hour = 8 hours, day/shift = one day, week = 7 days. 'shift' is a day-wide window whose lower ticks/gridlines sit on the config.shifts boundaries; it requires config.shifts and is otherwise treated as 'day'. Changing the zoom keeps the current time in view when it was visible, else the window containing the previous window's start."
+          "description": "Zoom preset (two-way: the toolbar writes the user's choice back; set it to switch the view). Each preset sets the horizontal density, the paging span and the snap granularity: millisecond = 10-second window, second = 2 minutes, minute = 30 minutes, hour = 8 hours, day/shift = one day, week = 7 days. 'shift' is a day-wide window whose lower ticks/gridlines sit on the config.shifts boundaries; it requires config.shifts and is otherwise treated as 'day'. Changing the zoom keeps the current time in view when it was visible, else the window containing the previous window's start."
         },
         "followNow": {
           "type": "boolean",

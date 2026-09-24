@@ -349,7 +349,12 @@ export function msToZonedIso(ms: number, timeZone: string): string {
     const d = new Date(ms);
     const w = zoneWallClock(d, timeZone);
     const off = timeZone ? tzOffsetMinutes(d, timeZone) : -d.getTimezoneOffset();
-    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}${offsetToStr(off)}`;
+    // Sub-second instants keep their milliseconds ('.250'): zone resolution is
+    // second-granular, so the fraction rides on top. Whole seconds emit the
+    // shorter form, so nothing changes for ordinary scheduling data.
+    const frac = ((ms % 1000) + 1000) % 1000;
+    const fracStr = frac ? `.${String(frac).padStart(3, '0')}` : '';
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}T${pad2(w.h)}:${pad2(w.mi)}:${pad2(w.s)}${fracStr}${offsetToStr(off)}`;
 }
 
 /** An epoch instant as a zone-local 'YYYY-MM-DDTHH:mm' — the value format of a

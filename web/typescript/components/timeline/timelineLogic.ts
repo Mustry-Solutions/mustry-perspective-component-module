@@ -30,9 +30,9 @@ export interface TimelineEvent {
     rrule?: RRule;         // expanded per visible window (display-only in v1)
 }
 
-export type TimelineZoom = 'second' | 'minute' | 'hour' | 'day' | 'shift' | 'week';
+export type TimelineZoom = 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'shift' | 'week';
 
-export const TIMELINE_ZOOMS: TimelineZoom[] = ['second', 'minute', 'hour', 'day', 'shift', 'week'];
+export const TIMELINE_ZOOMS: TimelineZoom[] = ['millisecond', 'second', 'minute', 'hour', 'day', 'shift', 'week'];
 
 export function isTimelineZoom(z: unknown): z is TimelineZoom {
     return TIMELINE_ZOOMS.indexOf(z as TimelineZoom) >= 0;
@@ -45,12 +45,15 @@ export interface ZoomPreset {
     lowerStepMin: number; // lower tick-row step, minutes (fractional below a minute)
 }
 
-// Every preset renders to roughly the same width (~1440px): the sub-day presets
-// trade span for density, so drilling from a shift into one machine cycle keeps
-// the board the same size and only the axis changes. The sub-hour ones exist
-// for cycle-time / step-sequence views (issue #117) where whole phases last
-// seconds: 'minute' gives ~48px per minute, 'second' 12px per second.
+// Every preset renders to roughly the same width (~1440px) and carries 20-32
+// lower ticks: the sub-day presets trade span for density, so drilling from a
+// shift into one machine cycle keeps the board the same size and only the axis
+// changes. The sub-hour ones exist for cycle-time / step-sequence views (issue
+// #117) where whole phases last seconds or less: 'minute' gives ~48px per
+// minute, 'second' 12px per second, 'millisecond' 0.144px per ms (a 10-second
+// window ticked every 500ms — a 100ms phase is still 14px wide).
 export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
+    millisecond: { pxPerHour: 518400, spanHours: 10 / 3600, snapMinutes: 0.1 / 60, lowerStepMin: 0.5 / 60 },
     second: { pxPerHour: 43200, spanHours: 2 / 60, snapMinutes: 1 / 60, lowerStepMin: 5 / 60 },
     minute: { pxPerHour: 2880, spanHours: 0.5, snapMinutes: 0.25, lowerStepMin: 1 },
     hour: { pxPerHour: 180, spanHours: 8, snapMinutes: 5, lowerStepMin: 15 },
@@ -73,10 +76,10 @@ export function isSubHourZoom(zoom: TimelineZoom): boolean {
     return ZOOM_PRESETS[zoom].spanHours < 1;
 }
 
-/** Floor for any snap step, minutes (= 1 second): a snap can be sub-minute at
- *  the fine presets, but never sub-second — the editor's inputs and the ISO
- *  event times are second-resolution. */
-export const MIN_SNAP_MINUTES = 1 / 60;
+/** Floor for any snap step, minutes (= 1 millisecond): a snap can be sub-minute
+ *  at the fine presets, down to the resolution the event times themselves carry.
+ *  Emitted instants keep their milliseconds (see msToZonedIso). */
+export const MIN_SNAP_MINUTES = 1 / 60000;
 
 /** The effective gesture snap step: config.snapMinutes when set (> 0), else the
  *  zoom preset's built-in granularity. Non-finite / non-positive overrides mean
@@ -196,9 +199,15 @@ export function nowTickMs(zoom: TimelineZoom, refreshSeconds: number): number {
 export const FOLLOW_DEFAULT_TICK_MS = 60000;
 
 /** Follow-now tick interval, ms: config.refreshSeconds when > 0 (floored at 1s so
- *  a fractional/zero setting can't spin), else one minute. */
-export function followTickMs(refreshSeconds: number): number {
-    return refreshSeconds > 0 ? Math.max(1, refreshSeconds) * 1000 : FOLLOW_DEFAULT_TICK_MS;
+ *  a fractional/zero setting can't spin), else one minute — but never longer than
+ *  a quarter of the window at the sub-day presets, where the default minute would
+ *  let the now-line run off a 10-second window long before the next re-anchor. */
+export function followTickMs(refreshSeconds: number, zoom?: TimelineZoom): number {
+    const base = refreshSeconds > 0 ? Math.max(1, refreshSeconds) * 1000 : FOLLOW_DEFAULT_TICK_MS;
+    if (!zoom || !isSubDayZoom(zoom)) {
+        return base;
+    }
+    return Math.max(1000, Math.min(base, Math.round(zoomSpanMs(zoom) / 4)));
 }
 
 /**
@@ -288,11 +297,20 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
     const upperFmt = zonedFormat(locale, timezone, isSubHourZoom(zoom)
         ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }
         : { weekday: 'short', day: 'numeric', month: 'short' });
+    // `fractionalSecondDigits` is typed in lib.es2021.intl — hence the es2021.intl
+    // entry in web/tsconfig.json's `lib` (target stays es2019; types only).
+    // Seconds (and tenths) only where the tick step needs them. A second-only
+    // format is not reliably zero-padded across engines, so the fine rows keep
+    // the full HH:mm:ss(.S) shape; Intl localizes the decimal separator.
     const lowerFmt = zoom === 'week'
         ? zonedFormat(locale, timezone, { hour: '2-digit', hour12: false })
-        : zoom === 'second'
-            ? zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-            : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
+        : zoom === 'millisecond'
+            ? zonedFormat(locale, timezone, {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 1, hour12: false
+            })
+            : zoom === 'second'
+                ? zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+                : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
 
     // Zone-local midnights covering the window (starting at the day containing start).
     const dayStarts: number[] = [];
@@ -392,15 +410,33 @@ export function timelineEventsToCsv(events: TimelineEvent[]): string {
 // --- per-row bar/band layout --------------------------------------------------
 
 export const DEFAULT_BAR_MIN = 60;   // assumed duration (minutes) for a bar with no end
-export const MIN_BAR_PX = 12;        // rendered floor so short events stay visible/clickable
+export const MIN_BAR_PX = 12;        // rendered floor so short events stay grabbable
+export const MIN_BAR_PX_READONLY = 3; // read-only floor: visible/hoverable without faking duration
 export const BAR_HANDLES_MIN_PX = 24; // below this, edge handles would swallow the bar
 
-/** Rendered geometry for a bar: a minimum width so a 5-minute job at week zoom
- *  (≈1px true width) can still be seen and grabbed, and whether the bar is wide
- *  enough to carry edge-resize handles (narrower bars are move/click only). */
-export function barGeom(leftPx: number, rightPx: number): { left: number; width: number; showHandles: boolean } {
-    const width = Math.max(MIN_BAR_PX, rightPx - leftPx);
-    return { left: leftPx, width, showHandles: width >= BAR_HANDLES_MIN_PX };
+/**
+ * The rendered width floor for this board, px. The 12px default exists so a
+ * 5-minute job at week zoom can still be grabbed — but at the sub-hour presets
+ * it LIES about duration: a 300ms phase is 3.6px true width at 'second' zoom and
+ * 12px would draw it as a full second. On a read-only board (the cycle-time
+ * case) nothing needs grabbing, so the floor drops to a hairline that is still
+ * visible and hoverable. An editable board keeps the grabbable floor — being
+ * able to drag the bar wins over the pixel-exactness there.
+ */
+export function barMinPx(zoom: TimelineZoom, editable: boolean): number {
+    return !editable && isSubHourZoom(zoom) ? MIN_BAR_PX_READONLY : MIN_BAR_PX;
+}
+
+/** Rendered geometry for a bar: the width floor from `barMinPx` so short events
+ *  stay visible, whether the bar is wide enough to carry edge-resize handles
+ *  (narrower bars are move/click only), and whether it must render as a hairline
+ *  — the bar's own padding and accent border add ~15px, which would silently
+ *  re-impose the floor `barMinPx` just dropped, so those bars shed both. */
+export function barGeom(leftPx: number, rightPx: number, minPx: number = MIN_BAR_PX): {
+    left: number; width: number; showHandles: boolean; hairline: boolean;
+} {
+    const width = Math.max(minPx, rightPx - leftPx);
+    return { left: leftPx, width, showHandles: width >= BAR_HANDLES_MIN_PX, hairline: width < MIN_BAR_PX };
 }
 
 /** A window-clamped item ready to render on one row. */
