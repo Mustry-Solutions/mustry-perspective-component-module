@@ -8,6 +8,12 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: CSV export treated negative numbers as formulas
+`csvCell` prefixed a leading apostrophe to any cell starting with `+` or `-`,
+including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
+grid / calendar / timeline exports loaded deltas and quantities as text. Plain
+numbers now skip the formula guard; real formula-looking cells are unchanged.
+
 ### Fixed: On-Screen Keyboard email/url symbols missing `_ = + # % ~`
 Email and url layouts shared a symbols page that had none of these characters,
 so addresses like `john_doe@x.com`, `a+b@x.com`, and query strings with `#` /
