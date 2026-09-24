@@ -14,6 +14,13 @@ including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
 grid / calendar / timeline exports loaded deltas and quantities as text. Plain
 numbers now skip the formula guard; real formula-looking cells are unchanged.
 
+### Fixed: Branching Diagram upward cross-edges routed diagonally
+Connector corridor scanning compared the origin-row column walk to the
+target's *row* (`cell.y`). An edge from `(col 0, row 2)` to `(col 4, row 0)`
+therefore never advanced past the first empty cell and produced split
+`[3.5, 0.5]` — a diagonal through intermediate nodes. Cap the walk with
+`cell.x` so the same edge gets `[3.5, 3.5]`, a clean vertical riser (#155).
+
 ### Fixed: Admin row-menu aria-labels showed literal `u.username` / `h.name` / `r.name`
 User, Holiday, and Roster managers were missing `${}` around the row identifier in
 the `moreActionsLabel` template, so every ⋯ button's accessible name was the

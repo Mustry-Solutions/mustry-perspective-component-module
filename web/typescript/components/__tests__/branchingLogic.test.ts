@@ -64,6 +64,32 @@ describe('layoutTree — BFS placement', () => {
     });
 });
 
+describe('layoutTree — cross-row corridor split', () => {
+    // Cross-edge from (col 0, row 2) to (col 4, row 0). The origin-row scan that
+    // picks the hand-off column must be capped by the target's *column* (cell.x),
+    // not its row (cell.y) — otherwise the scan stops immediately when the target
+    // sits in row 0 and the connector zigzags through intermediate nodes.
+    // Regression for #155.
+    it('routes a long upward cross-edge as a clean vertical riser', () => {
+        const layout = layoutTree([
+            n({ id: 1, category: 2, nextId: [2, 9] }),
+            n({ id: 2, category: 1, nextId: [3, 7] }),
+            n({ id: 3, category: 1, nextId: [4, 5] }),
+            n({ id: 4, category: 1, nextId: [9, 8] }),
+            n({ id: 5, category: 0 }),
+            n({ id: 6, category: 2 }),
+            n({ id: 7, category: 1 }),
+            n({ id: 8, category: 1, nextId: [6] }),
+            n({ id: 9, category: 0 })
+        ]);
+        const c = cells(layout);
+        expect(c[1]).toEqual([0, 2]);
+        expect(c[9]).toEqual([4, 0]);
+        const cross = layout.connections.find((x) => x.fromId === 1 && x.toId === 9)!;
+        expect(cross.split).toEqual([3.5, 3.5]);
+    });
+});
+
 describe('layoutTree — duplicate forwarding', () => {
     it('a re-referenced node takes its LONGEST forward path as its column', () => {
         // 1 → 2, 1 → 3, 3 → 2: 3→2 is a forward cross-edge (not a loop), so 2's
