@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Branching Diagram upward cross-edges routed diagonally
+Connector corridor scanning compared the origin-row column walk to the
+target's *row* (`cell.y`). An edge from `(col 0, row 2)` to `(col 4, row 0)`
+therefore never advanced past the first empty cell and produced split
+`[3.5, 0.5]` — a diagonal through intermediate nodes. Cap the walk with
+`cell.x` so the same edge gets `[3.5, 3.5]`, a clean vertical riser (#155).
+
 ## [0.5.2] - 2026-09-18
 
 ### Fixed: Pan & Zoom framed the content in an invented 1600x1200 canvas
