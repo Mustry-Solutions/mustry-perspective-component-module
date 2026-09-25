@@ -38,6 +38,59 @@ the `moreActionsLabel` template, so every ⋯ button's accessible name was the
 literal text. Schedule Manager already interpolated correctly; the other three
 now match, and e2e asserts the accessible name includes the real row name.
 
+### Added: Resource Timeline sub-hour zoom presets (#117)
+The finest preset was `hour` (8-hour window, 15-minute ticks), which flattens a
+machine cycle whose phases last seconds into a stack of slivers. Three presets
+below it: **`minute`** (30-minute window, one-minute ticks, 15 s snap),
+**`second`** (2-minute window, 5-second ticks labelled `HH:mm:ss`, 1 s snap) and
+**`millisecond`** (10-second window, 500 ms ticks labelled `HH:mm:ss.S`, 100 ms
+snap). All three are opt-in on the toolbar through the new **`config.zooms`**
+list, which picks and orders the zoom buttons (`["millisecond", "second",
+"minute", "hour"]` for a cycle-time board; unset keeps hour / day / shift /
+week). `state.zoom` accepts every preset regardless, so a binding can drive it.
+
+The narrow windows are the *cheapest* presets to render, not the most
+expensive — they contain less data. Measured on the cycle fixture: millisecond
+zoom draws 9 bars / 88 grid nodes and a full board layout costs 0.06 ms,
+against 1024 bars / 2137 nodes / 0.6 ms at day zoom, with no task over 50 ms
+across six seconds of live now-line ticks.
+
+With windows that narrow, "today at 00:00" is the wrong place to land, so the
+anchoring rule changed for every sub-day preset: **Today** and follow-now open
+the window *containing now*, and a **zoom change keeps now in view when it was
+visible** (drilling from a shift into the running cycle lands on the cycle),
+else the window containing the previous window's start. At `hour` this means
+Today now opens the current 8-hour stride rather than 00:00–08:00.
+
+Also: naive event times accept fractional seconds (`…T14:36:07.250`);
+`config.snapMinutes` may be fractional (`0.5` = 30 s, floored at one second);
+the hover popover shows seconds when an instant has them; the title and
+day-row label of a sub-hour window include its start time; at the sub-hour
+presets the now-line refreshes every second regardless of
+`config.refreshSeconds` and glides between ticks instead of hopping. New label
+keys `zoomSecond` / `zoomMinute` in all seven packs. Live fixture:
+`/timeline-cycle` in the verify project.
+
+**Sub-second phases now render at their true width.** The 12 px floor that
+keeps a week-zoom job grabbable was drawing a 40 ms phase as a full second, and
+the bar's own padding plus accent border re-imposed ~15 px even below it. On a
+**read-only** board at the sub-hour presets the floor drops to a 3 px hairline
+that sheds both, so width means duration; editable boards keep the grabbable
+floor. Emitted instants (`msToZonedIso`) now carry milliseconds when they have
+them, which also stops a drag at any zoom from silently truncating the
+sub-second part of an event it did not intend to change.
+
+**The built-in editor no longer truncates sub-minute times.** Its Start/End
+fields are native `datetime-local` inputs, whose precision follows the value
+they are given — so opening a cycle phase to fix its title and saving used to
+rewrite `08:00:07.250` to `08:00:00`, silently retiming an event the operator
+never meant to move. This predates the fine zooms (any historian-sourced event
+with seconds hit it) but was easy to trip once phases lasted milliseconds.
+`msToWallInput` now keeps seconds and milliseconds when the instant carries
+them, and the inputs get a matching `step`. Whole-minute events are unchanged:
+an ordinary shift event still shows the plain hh:mm control, with no seconds
+field.
+
 ## [0.5.2] - 2026-09-18
 
 ### Fixed: Pan & Zoom framed the content in an invented 1600x1200 canvas

@@ -15,7 +15,9 @@ export interface TimelineLabels {
     today: string;
     followNow: string;                // toolbar live-follow toggle ('Live')
     previous: string; next: string;   // nav arrows (accessible labels)
-    zoomHour: string; zoomDay: string; zoomShift: string; zoomWeek: string;   // zoom-preset buttons
+    // zoom-preset buttons
+    zoomMillisecond: string; zoomSecond: string; zoomMinute: string;
+    zoomHour: string; zoomDay: string; zoomShift: string; zoomWeek: string;
     noResources: string;              // empty text when config.resources is empty
     noEvents: string;                 // localized empty-badge text (the emptyMessage default follows it)
     // hover popover status badge (event.status)
@@ -48,7 +50,7 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     today: 'Today',
     followNow: 'Live',
     previous: 'Previous', next: 'Next',
-    zoomHour: 'Hour', zoomDay: 'Day', zoomShift: 'Shift', zoomWeek: 'Week',
+    zoomMillisecond: 'Millisecond', zoomSecond: 'Second', zoomMinute: 'Minute', zoomHour: 'Hour', zoomDay: 'Day', zoomShift: 'Shift', zoomWeek: 'Week',
     noResources: 'No resources',
     statusTentative: 'Tentative', statusCancelled: 'Cancelled', statusDone: 'Done',
     noEvents: 'No events',
@@ -78,7 +80,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: "Aujourd'hui",
         followNow: 'En direct',
         previous: 'Précédent', next: 'Suivant',
-        zoomHour: 'Heure', zoomDay: 'Jour', zoomShift: 'Poste', zoomWeek: 'Semaine',
+        zoomMillisecond: 'Milliseconde', zoomSecond: 'Seconde', zoomMinute: 'Minute', zoomHour: 'Heure', zoomDay: 'Jour', zoomShift: 'Poste', zoomWeek: 'Semaine',
         noResources: 'Aucune ressource',
         statusTentative: 'Provisoire', statusCancelled: 'Annulé', statusDone: 'Terminé',
         noEvents: 'Aucun événement',
@@ -106,7 +108,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: 'Heute',
         followNow: 'Live',
         previous: 'Zurück', next: 'Weiter',
-        zoomHour: 'Stunde', zoomDay: 'Tag', zoomShift: 'Schicht', zoomWeek: 'Woche',
+        zoomMillisecond: 'Millisekunde', zoomSecond: 'Sekunde', zoomMinute: 'Minute', zoomHour: 'Stunde', zoomDay: 'Tag', zoomShift: 'Schicht', zoomWeek: 'Woche',
         noResources: 'Keine Ressourcen',
         statusTentative: 'Vorläufig', statusCancelled: 'Abgesagt', statusDone: 'Erledigt',
         noEvents: 'Keine Ereignisse',
@@ -134,7 +136,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: 'Hoy',
         followNow: 'En vivo',
         previous: 'Anterior', next: 'Siguiente',
-        zoomHour: 'Hora', zoomDay: 'Día', zoomShift: 'Turno', zoomWeek: 'Semana',
+        zoomMillisecond: 'Milisegundo', zoomSecond: 'Segundo', zoomMinute: 'Minuto', zoomHour: 'Hora', zoomDay: 'Día', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sin recursos',
         statusTentative: 'Provisional', statusCancelled: 'Cancelado', statusDone: 'Completado',
         noEvents: 'Sin eventos',
@@ -162,7 +164,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: 'Vandaag',
         followNow: 'Live',
         previous: 'Vorige', next: 'Volgende',
-        zoomHour: 'Uur', zoomDay: 'Dag', zoomShift: 'Ploeg', zoomWeek: 'Week',
+        zoomMillisecond: 'Milliseconde', zoomSecond: 'Seconde', zoomMinute: 'Minuut', zoomHour: 'Uur', zoomDay: 'Dag', zoomShift: 'Ploeg', zoomWeek: 'Week',
         noResources: 'Geen resources',
         statusTentative: 'Voorlopig', statusCancelled: 'Geannuleerd', statusDone: 'Afgerond',
         noEvents: 'Geen evenementen',
@@ -190,7 +192,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: 'Oggi',
         followNow: 'In diretta',
         previous: 'Precedente', next: 'Successivo',
-        zoomHour: 'Ora', zoomDay: 'Giorno', zoomShift: 'Turno', zoomWeek: 'Settimana',
+        zoomMillisecond: 'Millisecondo', zoomSecond: 'Secondo', zoomMinute: 'Minuto', zoomHour: 'Ora', zoomDay: 'Giorno', zoomShift: 'Turno', zoomWeek: 'Settimana',
         noResources: 'Nessuna risorsa',
         statusTentative: 'Provvisorio', statusCancelled: 'Annullato', statusDone: 'Completato',
         noEvents: 'Nessun evento',
@@ -218,7 +220,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         today: 'Hoje',
         followNow: 'Ao vivo',
         previous: 'Anterior', next: 'Seguinte',
-        zoomHour: 'Hora', zoomDay: 'Dia', zoomShift: 'Turno', zoomWeek: 'Semana',
+        zoomMillisecond: 'Milissegundo', zoomSecond: 'Segundo', zoomMinute: 'Minuto', zoomHour: 'Hora', zoomDay: 'Dia', zoomShift: 'Turno', zoomWeek: 'Semana',
         noResources: 'Sem recursos',
         statusTentative: 'Provisório', statusCancelled: 'Cancelado', statusDone: 'Concluído',
         noEvents: 'Sem eventos',

@@ -25,8 +25,12 @@ interface TimelineHoverProps {
 
 export function TimelineHover({ hover, locale, timezone, categories, labels }: TimelineHoverProps): React.ReactElement {
     const ev = hover.event;
+    // Seconds only when an instant actually has them: a 3-second cycle phase must
+    // not read "14:36 – 14:36", but a scheduling board's 08:00 bar stays short.
+    const hasSeconds = hover.startMs % 60000 !== 0 || hover.endMs % 60000 !== 0;
     const fmt = zonedFormat(locale, timezone, {
-        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false
+        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+        ...(hasSeconds ? { second: '2-digit' as const } : {})
     });
     const W = 260;
     const left = Math.max(6, Math.min(hover.rect.left, window.innerWidth - W - 6));

@@ -3,13 +3,22 @@
 // unit-tested under node jest; the controller measures the DOM, calls these, and
 // applies setState / fires events (same split as the calendar's calendarGestureLogic).
 
+import { MIN_SNAP_MINUTES } from './timelineLogic';
+
 export type TlGestureMode = 'move' | 'resize-start' | 'resize-end' | 'create';
 
 export const MS_PER_MIN = 60000;
 
+/** The snap step in whole ms. Snaps may be fractional minutes at the sub-hour
+ *  zoom presets (0.25 = 15 s, 0.1/60 = 100 ms) down to MIN_SNAP_MINUTES, and the
+ *  product is rounded so a 1/60-minute step is exactly 1000 ms. */
+export function snapStepMs(snapMinutes: number): number {
+    return Math.round(Math.max(MIN_SNAP_MINUTES, snapMinutes) * MS_PER_MIN);
+}
+
 /** Round an epoch instant to the nearest snap step. */
 export function snapMs(ms: number, snapMinutes: number): number {
-    const step = Math.max(1, snapMinutes) * MS_PER_MIN;
+    const step = snapStepMs(snapMinutes);
     return Math.round(ms / step) * step;
 }
 
@@ -22,7 +31,7 @@ export interface MsRange {
  *  original grid offset (an 08:07 bar stays :07-aligned; a sloppy near-zero drag
  *  snaps back to exactly the original, so no silent retime on a wobbly click). */
 export function movePreviewMs(origStartMs: number, origEndMs: number, deltaMs: number, snapMinutes: number): MsRange {
-    const step = Math.max(1, snapMinutes) * MS_PER_MIN;
+    const step = snapStepMs(snapMinutes);
     const startMs = origStartMs + Math.round(deltaMs / step) * step;
     return { startMs, endMs: startMs + (origEndMs - origStartMs) };
 }
@@ -37,7 +46,7 @@ export function isNoopMove(origStartMs: number, origResourceId: string, previewS
 export function resizePreviewMs(
     edge: 'start' | 'end', origStartMs: number, origEndMs: number, deltaMs: number, snapMinutes: number
 ): MsRange {
-    const minDur = Math.max(1, snapMinutes) * MS_PER_MIN;
+    const minDur = snapStepMs(snapMinutes);
     if (edge === 'start') {
         const startMs = Math.min(snapMs(origStartMs + deltaMs, snapMinutes), origEndMs - minDur);
         return { startMs, endMs: origEndMs };
@@ -50,7 +59,7 @@ export function resizePreviewMs(
 export function createPreviewMs(anchorMs: number, currentMs: number, snapMinutes: number): MsRange {
     const a = snapMs(Math.min(anchorMs, currentMs), snapMinutes);
     const b = snapMs(Math.max(anchorMs, currentMs), snapMinutes);
-    return { startMs: a, endMs: Math.max(b, a + Math.max(1, snapMinutes) * MS_PER_MIN) };
+    return { startMs: a, endMs: Math.max(b, a + snapStepMs(snapMinutes)) };
 }
 
 /** Vertical extent of a resource row track (screen px), for reassign hit-testing. */

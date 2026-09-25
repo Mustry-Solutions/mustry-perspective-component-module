@@ -5,7 +5,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { Category } from '../../shared/types';
-import { intlFormat } from '../../shared/dateUtils';
+import { intlFormat, wallInputStep } from '../../shared/dateUtils';
 import { TimelineLabels } from '../../shared/labelPacks';
 import { UNCATEGORIZED_COLOR, categoryColor } from '../../shared/eventStyle';
 import { TimelineResource } from './timelineLogic';
@@ -95,11 +95,17 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                 <div className="mustry-cal-editor-row">
                     <label className="mustry-cal-editor-field">
                         <span>{labels.start}</span>
-                        <input type="datetime-local" value={ed.start} onChange={(e) => onUpdate({ start: e.target.value })} />
+                        <input
+                            type="datetime-local" step={wallInputStep(ed.start) || undefined}
+                            value={ed.start} onChange={(e) => onUpdate({ start: e.target.value })}
+                        />
                     </label>
                     <label className="mustry-cal-editor-field">
                         <span>{labels.end}</span>
-                        <input type="datetime-local" value={ed.end} onChange={(e) => onUpdate({ end: e.target.value })} />
+                        <input
+                            type="datetime-local" step={wallInputStep(ed.end) || undefined}
+                            value={ed.end} onChange={(e) => onUpdate({ end: e.target.value })}
+                        />
                     </label>
                 </div>
                 {timezone && (

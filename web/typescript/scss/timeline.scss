@@ -334,6 +334,9 @@
     border-left: 2px solid var(--tml-now);
     z-index: 1;
     pointer-events: none;
+    // Glide between refresh ticks (the component sets the tick length) so the
+    // line moves continuously at the sub-hour zooms instead of hopping.
+    transition: left var(--tml-now-tick, 0ms) linear;
 }
 
 // --- bars & bands -------------------------------------------------------------
@@ -359,6 +362,19 @@
         filter: brightness(0.96);
         box-shadow: 0 1px 5px rgba(0, 0, 0, 0.14);
         z-index: 1;
+    }
+
+    // Sub-second phases at the fine zooms: the ordinary bar's 12px padding plus
+    // its 3px accent border would floor a 0.5px phase at ~15px and draw it as a
+    // full second. A hairline sheds both and goes solid, so the mark stays honest
+    // about duration and still visible (and hoverable) against the track.
+    &--hairline {
+        padding: 0;
+        gap: 0;
+        border-left-width: 0;
+        border-radius: 1px;
+        min-width: 1px;
+        background: var(--ev);
     }
 
     // Clamped at a window edge: square that edge to signal continuation.
