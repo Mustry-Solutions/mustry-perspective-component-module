@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-25
+
 ### Fixed: Rich Text Editor `output.charCount` was always 0 without a charLimit
 `CharacterCount` was only mounted when `config.charLimit > 0`, so the default
 unlimited editor wrote `0`. The count also came from the live draft, so it
