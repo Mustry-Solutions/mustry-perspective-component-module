@@ -259,7 +259,7 @@ export class RosterManager extends AdminManagerBase<RosterItem, RosterDraft, Ros
                             </span>
                             {p.editable && (p.allowCreate || p.allowDelete) && (
                                 <RowMenu
-                                    moreActionsLabel={`${p.labels.moreActions} r.name`}
+                                    moreActionsLabel={`${p.labels.moreActions} ${r.name}`}
                                     duplicateLabel={p.labels.duplicate}
                                     deleteLabel={p.labels.delete}
                                     confirmDeleteLabel={p.labels.confirmDelete}

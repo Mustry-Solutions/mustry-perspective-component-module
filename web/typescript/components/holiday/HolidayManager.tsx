@@ -264,7 +264,7 @@ export class HolidayManager
                                 </span>
                                 {p.editable && (p.allowCreate || p.allowDelete) && (
                                     <RowMenu
-                                        moreActionsLabel={`${p.labels.moreActions} h.name`}
+                                        moreActionsLabel={`${p.labels.moreActions} ${h.name}`}
                                         duplicateLabel={p.labels.duplicate}
                                         deleteLabel={p.labels.delete}
                                         confirmDeleteLabel={p.labels.confirmDelete}

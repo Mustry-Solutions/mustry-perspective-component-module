@@ -31,6 +31,10 @@ test.describe('Holiday Manager', () => {
         const root = await openPopulated(page);
         // The annual repeat shows its NEXT occurrence and the 'annual' badge.
         const newYear = root.locator('.mustry-sched-item').filter({ hasText: 'Demo New Year' });
+        await newYear.hover();
+        // aria-label must include the holiday name (not the literal "h.name").
+        await expect(newYear.getByRole('button', { name: 'More actions Demo New Year', exact: true }))
+            .toBeVisible();
         await expect(newYear.locator('.mustry-holiday-badge').filter({ hasText: 'annual' })).toHaveCount(1);
         // Founders Day (2026-09-01, non-repeating) is upcoming relative to the
         // demo data's era OR past — either way it renders with a date and no crash;

@@ -77,6 +77,27 @@ describe('wordCountOf', () => {
     });
 });
 
+// output.charCount is plainTextOf(html).length (RichTextEditor.deriveOutputs) —
+// not TipTap CharacterCount, which is only loaded when charLimit > 0.
+describe('plainTextOf length (output.charCount source)', () => {
+    it('counts characters of the plain-text mirror for typical HTML', () => {
+        const plain = plainTextOf('<p>Hello <strong>world</strong></p>');
+        expect(plain).toBe('Hello world');
+        expect(plain.length).toBe(11);
+    });
+
+    it('is 0 for empty documents', () => {
+        expect(plainTextOf('').length).toBe(0);
+        expect(plainTextOf('<p></p>').length).toBe(0);
+    });
+
+    it('includes newlines between blocks in the count', () => {
+        const plain = plainTextOf('<h2>Title</h2><p>Body</p>');
+        expect(plain).toBe('Title\nBody');
+        expect(plain.length).toBe(10);
+    });
+});
+
 describe('fillLabel', () => {
     it('substitutes known vars and leaves unknown ones', () => {
         expect(fillLabel('Heading {n}', { n: 2 })).toBe('Heading 2');

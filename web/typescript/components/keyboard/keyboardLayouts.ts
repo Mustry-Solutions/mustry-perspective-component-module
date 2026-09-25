@@ -30,10 +30,13 @@ const LETTER_ROWS = [
     'zxcvbnm'.split('')
 ];
 
+// Email/url need _, +, #, %, =, ~ (john_doe@…, a+b@…, ?id=5, #frag, %20, ~user).
+// The letters layer has none of these; keep them on the shared symbols page so
+// plain text can type them too.
 const SYMBOL_ROWS = [
     '1234567890'.split(''),
     ['-', '/', ':', ';', '(', ')', '$', '&', '@', '"'],
-    ['.', ',', '?', '!', "'"]
+    ['.', ',', '?', '!', "'", '_', '=', '+', '#', '%', '~']
 ];
 
 const SHIFT: KeyDef = { label: '⇧', action: 'shift', flex: 1.5, kind: 'control' };

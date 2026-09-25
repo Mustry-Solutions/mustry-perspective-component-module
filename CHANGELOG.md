@@ -8,6 +8,36 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Rich Text Editor `output.charCount` was always 0 without a charLimit
+`CharacterCount` was only mounted when `config.charLimit > 0`, so the default
+unlimited editor wrote `0`. The count also came from the live draft, so it
+disagreed with `plainText` / `wordCount` while dirty. `charCount` is now
+`plainTextOf(doc).length`, matching the other outputs (#136).
+
+### Fixed: CSV export treated negative numbers as formulas
+`csvCell` prefixed a leading apostrophe to any cell starting with `+` or `-`,
+including plain numbers like `-5` and `+3.2`. Excel kept the apostrophe, so
+grid / calendar / timeline exports loaded deltas and quantities as text. Plain
+numbers now skip the formula guard; real formula-looking cells are unchanged.
+
+### Fixed: On-Screen Keyboard email/url symbols missing `_ = + # % ~`
+Email and url layouts shared a symbols page that had none of these characters,
+so addresses like `john_doe@x.com`, `a+b@x.com`, and query strings with `#` /
+`%` / `=` could not be typed. They are now on the shared symbols row (#152).
+
+### Fixed: Branching Diagram upward cross-edges routed diagonally
+Connector corridor scanning compared the origin-row column walk to the
+target's *row* (`cell.y`). An edge from `(col 0, row 2)` to `(col 4, row 0)`
+therefore never advanced past the first empty cell and produced split
+`[3.5, 0.5]` — a diagonal through intermediate nodes. Cap the walk with
+`cell.x` so the same edge gets `[3.5, 3.5]`, a clean vertical riser (#155).
+
+### Fixed: Admin row-menu aria-labels showed literal `u.username` / `h.name` / `r.name`
+User, Holiday, and Roster managers were missing `${}` around the row identifier in
+the `moreActionsLabel` template, so every ⋯ button's accessible name was the
+literal text. Schedule Manager already interpolated correctly; the other three
+now match, and e2e asserts the accessible name includes the real row name.
+
 ### Added: Resource Timeline sub-hour zoom presets (#117)
 The finest preset was `hour` (8-hour window, 15-minute ticks), which flattens a
 machine cycle whose phases last seconds into a stack of slivers. Three presets
