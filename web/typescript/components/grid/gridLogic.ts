@@ -134,8 +134,16 @@ export function nextSort(current: GridSort, field: string): GridSort {
     return current.dir === 'asc' ? { field, dir: 'desc' } : { field: '', dir: '' };
 }
 
-/** Type-aware compare: numbers numerically (numeric strings too), everything
- *  else case-insensitively as text; null/undefined/'' sort last in both dirs. */
+// One shared collator: case-insensitive, and digit runs compare by value so part
+// / lot codes sort naturally ('B7' < 'B10'). Reused because building one per
+// compare is slow on large grids.
+const TEXT_COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
+/** Type-aware compare: numbers (numeric strings too) numerically and ahead of
+ *  all text; text case-insensitively with natural digit order; null/undefined/''
+ *  sort last in both dirs. Numbers and text are separate groups so the order is
+ *  transitive — mixing them pairwise ('10' > '9' > '1a' > '10') made the result
+ *  depend on input order (#133). */
 export function compareValues(a: unknown, b: unknown): number {
     const aEmpty = a === null || a === undefined || a === '';
     const bEmpty = b === null || b === undefined || b === '';
@@ -144,10 +152,15 @@ export function compareValues(a: unknown, b: unknown): number {
     }
     const an = typeof a === 'number' ? a : Number(a);
     const bn = typeof b === 'number' ? b : Number(b);
-    if (Number.isFinite(an) && Number.isFinite(bn)) {
+    const aNum = Number.isFinite(an);
+    const bNum = Number.isFinite(bn);
+    if (aNum && bNum) {
         return an - bn;
     }
-    return cellText(a).localeCompare(cellText(b), undefined, { sensitivity: 'base' });
+    if (aNum !== bNum) {
+        return aNum ? -1 : 1;
+    }
+    return TEXT_COLLATOR.compare(cellText(a), cellText(b));
 }
 
 /** A sorted copy (stable; the input is never mutated — rows are a bound prop). */
