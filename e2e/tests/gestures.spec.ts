@@ -58,7 +58,11 @@ test('timeline: dragging a bar commits a horizontal move', async ({ page }) => {
     await openRoute(page, '/timeline', '.mustry-timeline');
     const bar = page.locator('.mustry-tml-bar', { hasText: 'Batch 4711' });
     await expect(bar).toBeVisible();
-    await bar.scrollIntoViewIfNeeded();
+    // The board scrolls the now-line into view on mount, so later in the (UTC)
+    // day this 06:00 bar starts off to the left. scrollIntoViewIfNeeded would
+    // stop it at the scroller's edge — under the sticky resource-label column,
+    // where a raw mouse.down hits the label. Centre it so the press lands on it.
+    await bar.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
     const before = (await bar.boundingBox())!;
 
     await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
