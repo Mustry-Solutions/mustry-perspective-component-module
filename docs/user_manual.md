@@ -113,7 +113,10 @@ production-planning and shift-board surface.
 An editable grid for write-back workflows: per-column editors and
 validation, frozen columns, sorting/filtering, row virtualisation (tested
 to thousands of rows), batch edit with a Save/Discard tail. `onCellEdit`
-carries the row, column and new value; your script persists.
+carries the row, column and new value; your script persists. Typed and
+pasted numbers follow `config.locale` (empty = the browser's): `1,234.5`
+in `en`, `1.234,5` in `de`. Input that is malformed or ambiguous for that
+locale, such as `4,5` in `en`, shows an error instead of being guessed.
 
 ## 8. Pan & Zoom View
 
