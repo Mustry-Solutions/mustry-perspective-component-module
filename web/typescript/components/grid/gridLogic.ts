@@ -370,7 +370,7 @@ function localeSeps(locale: string): NumSeps {
     if (!s) {
         const parts = new Intl.NumberFormat(locale || undefined).formatToParts(1234567.5);
         const decimal = parts.find((p) => p.type === 'decimal')?.value ?? '.';
-        const group = (parts.find((p) => p.type === 'group')?.value ?? ',').replace(/[\s  ]/g, ' ');
+        const group = (parts.find((p) => p.type === 'group')?.value ?? ',').replace(/[\s\u00a0\u202f]/g, ' ');
         s = { decimal, group };
         numSeps.set(locale, s);
     }
@@ -389,7 +389,7 @@ export function parseLocaleNumber(text: string, locale: string): number {
         return Number(s);                       // exponent notation is JS syntax
     }
     if (group === ' ') {
-        s = s.replace(/[\s  ]/g, ' ');
+        s = s.replace(/[\s\u00a0\u202f]/g, ' ');
     } else if (group === '’' || group === '\'') {
         s = s.replace(/[’']/g, group);     // de-CH: accept both apostrophes
     }
