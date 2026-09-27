@@ -345,6 +345,14 @@ describe('parseLocaleNumber (#131: thousands separators are not decimal points)'
         expect(parseLocaleNumber('1,5', 'en')).toBeNaN();      // malformed grouping
     });
 
+    it('accepts two-digit (Indian) grouping only in locales that group that way', () => {
+        expect(parseLocaleNumber('1,23,456', 'en')).toBeNaN();
+        expect(parseLocaleNumber('1.23.456', 'de')).toBeNaN();
+        expect(parseLocaleNumber('1,23,456', 'en-IN')).toBe(123456);
+        expect(parseLocaleNumber('1,234,567', 'en-IN')).toBe(1234567);
+        expect(parseLocaleNumber('123,45,678', 'en-IN')).toBeNaN();
+    });
+
     it('rejects malformed input rather than guessing', () => {
         expect(parseLocaleNumber('1,23,4', 'en')).toBeNaN();
         expect(parseLocaleNumber('1.2.3', 'en')).toBeNaN();
@@ -362,6 +370,14 @@ describe('parseLocaleNumber (#131: thousands separators are not decimal points)'
         expect(parseLocaleNumber('.5', 'en')).toBe(0.5);
         expect(parseLocaleNumber(',5', 'de')).toBe(0.5);
         expect(parseLocaleNumber('1e3', 'de')).toBe(1000);
+    });
+
+    it('number options are authored values: matched and committed as written in every locale', () => {
+        const opt = col('n', { type: 'number', options: [{ value: '1.5', label: 'A' }, { value: '2.5', label: 'B' }] });
+        expect(editDraft(1.5, opt, 'de')).toBe('1.5');
+        expect(validateCell(editDraft(1.5, opt, 'de'), opt, 'de')).toEqual({ value: 1.5, error: null });
+        expect(validateCell('2.5', opt, 'de')).toEqual({ value: 2.5, error: null });
+        expect(validateCell('2,5', opt, 'de').error).toBe('option');
     });
 
     it('validateCell commits the locale reading, not 1000x too small', () => {

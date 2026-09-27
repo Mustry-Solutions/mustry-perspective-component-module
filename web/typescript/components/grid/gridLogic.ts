@@ -360,18 +360,20 @@ export function matchStyle(value: unknown, rules: CellStyleRule[]): CellStyleRul
 
 // --- M2: cell editing --------------------------------------------------------------
 
-interface NumSeps { decimal: string; group: string }
+interface NumSeps { decimal: string; group: string; indian: boolean }
 const numSeps = new Map<string, NumSeps>();
 
 /** The locale's decimal + group separators. Whitespace-like groups (fr's
- *  narrow no-break space) are normalized to a plain space. */
+ *  narrow no-break space) are normalized to a plain space. `indian` marks
+ *  locales that group in twos above the thousands (en-IN: 12,34,567). */
 function localeSeps(locale: string): NumSeps {
     let s = numSeps.get(locale);
     if (!s) {
         const parts = new Intl.NumberFormat(locale || undefined).formatToParts(1234567.5);
         const decimal = parts.find((p) => p.type === 'decimal')?.value ?? '.';
         const group = (parts.find((p) => p.type === 'group')?.value ?? ',').replace(/[\s\u00a0\u202f]/g, ' ');
-        s = { decimal, group };
+        const ints = parts.filter((p) => p.type === 'integer').map((p) => p.value);
+        s = { decimal, group, indian: ints.slice(1, -1).some((v) => v.length === 2) };
         numSeps.set(locale, s);
     }
     return s;
@@ -383,15 +385,15 @@ function localeSeps(locale: string): NumSeps {
  *  it can't be a thousands group: in fr "1.5" is 1.5 while "1.234" is
  *  ambiguous and rejected. Grouping must be well formed. NaN = not a number. */
 export function parseLocaleNumber(text: string, locale: string): number {
-    const { decimal, group } = localeSeps(locale);
-    let s = text.trim().replace(/−/g, '-');
+    const { decimal, group, indian } = localeSeps(locale);
+    let s = text.trim().replace(/\u2212/g, '-');
     if (/^[+-]?(\d+\.?\d*|\.\d+)[eE][+-]?\d+$/.test(s)) {
         return Number(s);                       // exponent notation is JS syntax
     }
     if (group === ' ') {
         s = s.replace(/[\s\u00a0\u202f]/g, ' ');
-    } else if (group === '’' || group === '\'') {
-        s = s.replace(/[’']/g, group);     // de-CH: accept both apostrophes
+    } else if (group === '\u2019' || group === '\'') {
+        s = s.replace(/[\u2019']/g, group);    // de-CH: accept both apostrophes
     }
     const m = /^([+-]?)(.*)$/.exec(s) as RegExpExecArray;
     let body = m[2];
@@ -416,9 +418,11 @@ export function parseLocaleNumber(text: string, locale: string): number {
     let int = halves[0];
     const frac = halves.length === 2 ? halves[1] : '';
     if (int.indexOf(group) >= 0) {
-        // 1,234,567 and en-IN's 12,34,567 — last group always three digits
+        // 1,234,567 everywhere; en-IN's 12,34,567 only where the locale groups that way
         const g = group.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        if (!new RegExp(`^\\d{1,3}(${g}\\d{2,3})*${g}\\d{3}$`).test(int)) {
+        const western = new RegExp(`^\\d{1,3}(${g}\\d{3})+$`);
+        const twos = new RegExp(`^\\d{1,2}(${g}\\d{2})*${g}\\d{3}$`);
+        if (!western.test(int) && !(indian && twos.test(int))) {
             return NaN;
         }
         int = int.split(group).join('');
@@ -447,7 +451,8 @@ export function validateCell(draft: string | boolean, col: GridColumn, locale: s
         return { value: text, error: 'option' };
     }
     if (col.type === 'number') {
-        const n = parseLocaleNumber(text, locale);
+        // an option value is authored data (JS syntax), not operator input
+        const n = col.options.length ? Number(text) : parseLocaleNumber(text, locale);
         if (!Number.isFinite(n)) {
             return { value: text, error: 'number' };
         }
@@ -474,14 +479,15 @@ export function validateCell(draft: string | boolean, col: GridColumn, locale: s
 /** The editor's initial draft for a cell value (raw, not display-formatted —
  *  you edit the value, not its localized rendering). Dates keep ISO. Numbers
  *  keep full precision and no grouping but use the locale's decimal
- *  separator, so the draft reads back unchanged through validateCell. */
+ *  separator, so the draft reads back unchanged through validateCell. Option
+ *  columns keep the raw value so the draft matches an option value. */
 export function editDraft(value: unknown, col: GridColumn, locale: string = ''): string {
     if (value === null || value === undefined) {
         return '';
     }
     const n = typeof value === 'number' ? value
         : typeof value === 'string' && value.trim() ? Number(value) : NaN;
-    if (col.type === 'number' && Number.isFinite(n)) {
+    if (col.type === 'number' && !col.options.length && Number.isFinite(n)) {
         const s = String(n);
         return /e/i.test(s) ? s : s.replace('.', localeSeps(locale).decimal);
     }
