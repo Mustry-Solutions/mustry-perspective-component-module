@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Data Grid mixed number/text sort order depended on input order
+The sort comparator compared two numbers numerically and anything else as text,
+which is not transitive (`"10" > "9" > "1a"`, yet `"10" < "1a"`). Columns of
+part/lot codes re-ordered every time rows rebound. Numbers (and numeric strings)
+now sort ahead of all text, and text sorts case-insensitively with natural digit
+order (`B7` before `B10`) (#133).
+
 ### Fixed: Rich Text Editor `output.charCount` was always 0 without a charLimit
 `CharacterCount` was only mounted when `config.charLimit > 0`, so the default
 unlimited editor wrote `0`. The count also came from the live draft, so it
