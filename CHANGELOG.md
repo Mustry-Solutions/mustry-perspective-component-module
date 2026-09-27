@@ -21,7 +21,11 @@ order (`B7` before `B10`) (#133).
 `CharacterCount` was only mounted when `config.charLimit > 0`, so the default
 unlimited editor wrote `0`. The count also came from the live draft, so it
 disagreed with `plainText` / `wordCount` while dirty. `charCount` is now
-`plainTextOf(doc).length`, matching the other outputs (#136).
+derived from `plainText`, matching the other outputs (#136). It uses the same
+measure as the typing limit: line breaks between blocks are not counted, so a
+document filled to `charLimit` never reports more (#162). Both count
+user-perceived characters, so an emoji, flag or ZWJ sequence is 1 instead of
+2–11 (#163).
 
 ### Fixed: CSV export treated negative numbers as formulas
 `csvCell` prefixed a leading apostrophe to any cell starting with `+` or `-`,

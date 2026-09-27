@@ -8,7 +8,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { ControlledDraftHost } from '../../shared/controlledDraftHost';
 import { RichTextController } from './richTextController';
-import { plainTextOf, wordCountOf } from './richTextLogic';
+import { charCountOf, plainTextOf, wordCountOf } from './richTextLogic';
 import { RichTextProps, mapRteProps } from './richTextProps';
 import { RteToolbar } from './RteToolbar';
 
@@ -84,11 +84,13 @@ export class RichTextEditor extends ControlledDraftHost<RichTextProps, RichTextE
         // charCount from the plain-text mirror (same doc argument as
         // plainText/wordCount) — not TipTap's CharacterCount storage, which is
         // only mounted when charLimit > 0 and always reads the live draft.
+        // charCountOf uses the limit's own measure (no block separators,
+        // grapheme clusters), so charCount never exceeds charLimit (#162, #163).
         const plain = plainTextOf(html);
         return {
             plainText: plain,
             wordCount: wordCountOf(plain),
-            charCount: plain.length
+            charCount: charCountOf(plain)
         };
     }
 

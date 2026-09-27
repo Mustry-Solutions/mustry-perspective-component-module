@@ -208,7 +208,7 @@
           "type": "number",
           "default": 0,
           "minimum": 0,
-          "description": "Maximum characters (0 = unlimited). Enforced while typing/pasting."
+          "description": "Maximum characters (0 = unlimited), counted like output.charCount. Enforced while typing/pasting."
         },
         "maxImageKb": {
           "type": "number",
@@ -269,7 +269,7 @@
         "charCount": {
           "type": "number",
           "default": 0,
-          "description": "Character count of the (saved/bound) document. Pair with config.charLimit."
+          "description": "Character count of the (saved/bound) document, measured like config.charLimit: user-perceived characters (an emoji is 1), line breaks between blocks not counted."
         }
       }
     },
