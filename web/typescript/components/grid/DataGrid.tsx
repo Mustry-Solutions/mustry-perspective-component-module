@@ -241,7 +241,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (!col || !row || !this.colEditable(col)) {
             return;
         }
-        const draft = initial !== undefined ? initial : editDraft(this.cellValue(row, col.field), col);
+        const draft = initial !== undefined ? initial : editDraft(this.cellValue(row, col.field), col, this.props.props.locale);
         this.setState({ focus: pos, editing: { pos, field: col.field, draft, error: null } },
             () => this.editorRef.current?.focus());
     }
@@ -258,7 +258,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             this.setState({ editing: null });
             return true;
         }
-        const { value, error } = validateCell(ed.draft, col);
+        const { value, error } = validateCell(ed.draft, col, this.props.props.locale);
         if (error) {
             this.setState({ editing: { ...ed, error } });
             return false;
@@ -458,7 +458,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         for (const t of plan) {
             const col = cols[t.col];
             const row = view[t.row];
-            const { value, error } = validateCell(t.draft, col);
+            const { value, error } = validateCell(t.draft, col, this.props.props.locale);
             if (!error) {
                 const oldValue = this.cellValue(row, col.field);
                 if (cellText(value) !== cellText(oldValue)) {

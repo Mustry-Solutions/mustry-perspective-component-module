@@ -42,7 +42,8 @@ with full write-back scripts (batch mode).
 
 - [ ] With `config.editable` off, nothing edits. On: double-click / Enter / F2 /
       type-to-edit opens the editor on columns whose `editable` isn't false.
-- [ ] Editor types: text, number (decimal comma tolerated), date, datetime, and
+- [ ] Editor types: text, number (read with `config.locale`'s separators:
+      `1,234` is 1234 in `en`; `1.234` is ambiguous in `fr` and rejected), date, datetime, and
       a real **dropdown** when `column.options` is set; boolean cells are live
       checkboxes committing on toggle.
 - [ ] **Validation**: required / min / max / pattern / options — an invalid

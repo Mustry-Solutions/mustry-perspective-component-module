@@ -287,13 +287,13 @@ describe('matchStyle (first matching rule wins)', () => {
     });
 });
 
-import { editDraft, nextCell, validateCell } from '../grid/gridLogic';
+import { editDraft, nextCell, parseLocaleNumber, validateCell } from '../grid/gridLogic';
 
 describe('validateCell (parse + validate per column type)', () => {
     it('numbers: parses (decimal comma too), enforces min/max, types the commit', () => {
         const qty = col('q', { type: 'number', min: 0, max: 999, required: true });
         expect(validateCell('42', qty)).toEqual({ value: 42, error: null });
-        expect(validateCell('4,5', qty)).toEqual({ value: 4.5, error: null });
+        expect(validateCell('4,5', qty, 'de')).toEqual({ value: 4.5, error: null });
         expect(validateCell('abc', qty).error).toBe('number');
         expect(validateCell('-1', qty).error).toBe('min');
         expect(validateCell('1000', qty).error).toBe('max');
@@ -318,11 +318,92 @@ describe('validateCell (parse + validate per column type)', () => {
     });
 });
 
+describe('parseLocaleNumber (#131: thousands separators are not decimal points)', () => {
+    it('reads the locale group separator as grouping, never as a decimal', () => {
+        expect(parseLocaleNumber('1,234', 'en')).toBe(1234);
+        expect(parseLocaleNumber('1,234,567.25', 'en')).toBe(1234567.25);
+        expect(parseLocaleNumber('12,34,567', 'en-IN')).toBe(1234567);
+        expect(parseLocaleNumber('1.234', 'de')).toBe(1234);
+        expect(parseLocaleNumber('1.234.567,5', 'de')).toBe(1234567.5);
+        expect(parseLocaleNumber('1 234,5', 'fr')).toBe(1234.5);
+        expect(parseLocaleNumber('1 234,5', 'fr')).toBe(1234.5);
+        expect(parseLocaleNumber('1’234.5', 'de-CH')).toBe(1234.5);
+        expect(parseLocaleNumber("1'234.5", 'de-CH')).toBe(1234.5);
+    });
+
+    it('round-trips the grid\'s own formatted output', () => {
+        const n = col('n', { type: 'number', decimals: 2 });
+        for (const loc of ['en', 'de', 'fr', 'nl', 'de-CH', 'en-IN']) {
+            expect(parseLocaleNumber(formatCell(1234567.89, n, loc), loc)).toBe(1234567.89);
+        }
+    });
+
+    it('accepts the other separator as a decimal only when it cannot be a group', () => {
+        expect(parseLocaleNumber('1.5', 'fr')).toBe(1.5);
+        expect(parseLocaleNumber('0.25', 'nl')).toBeNaN();     // '.' is nl's group
+        expect(parseLocaleNumber('1.234', 'fr')).toBeNaN();    // thousands or decimal?
+        expect(parseLocaleNumber('1,5', 'en')).toBeNaN();      // malformed grouping
+    });
+
+    it('accepts two-digit (Indian) grouping only in locales that group that way', () => {
+        expect(parseLocaleNumber('1,23,456', 'en')).toBeNaN();
+        expect(parseLocaleNumber('1.23.456', 'de')).toBeNaN();
+        expect(parseLocaleNumber('1,23,456', 'en-IN')).toBe(123456);
+        expect(parseLocaleNumber('1,234,567', 'en-IN')).toBe(1234567);
+        expect(parseLocaleNumber('123,45,678', 'en-IN')).toBeNaN();
+    });
+
+    it('rejects malformed input rather than guessing', () => {
+        expect(parseLocaleNumber('1,23,4', 'en')).toBeNaN();
+        expect(parseLocaleNumber('1.2.3', 'en')).toBeNaN();
+        expect(parseLocaleNumber('1,234.5,6', 'en')).toBeNaN();
+        expect(parseLocaleNumber('1,234,5', 'de')).toBeNaN();
+        expect(parseLocaleNumber('abc', 'en')).toBeNaN();
+        expect(parseLocaleNumber('', 'en')).toBeNaN();
+        expect(parseLocaleNumber('-', 'en')).toBeNaN();
+    });
+
+    it('keeps signs, bare fractions and exponent notation', () => {
+        expect(parseLocaleNumber('-1,234.5', 'en')).toBe(-1234.5);
+        expect(parseLocaleNumber('−1.234,5', 'de')).toBe(-1234.5);
+        expect(parseLocaleNumber('+7', 'en')).toBe(7);
+        expect(parseLocaleNumber('.5', 'en')).toBe(0.5);
+        expect(parseLocaleNumber(',5', 'de')).toBe(0.5);
+        expect(parseLocaleNumber('1e3', 'de')).toBe(1000);
+    });
+
+    it('number options are authored values: matched and committed as written in every locale', () => {
+        const opt = col('n', { type: 'number', options: [{ value: '1.5', label: 'A' }, { value: '2.5', label: 'B' }] });
+        expect(editDraft(1.5, opt, 'de')).toBe('1.5');
+        expect(validateCell(editDraft(1.5, opt, 'de'), opt, 'de')).toEqual({ value: 1.5, error: null });
+        expect(validateCell('2.5', opt, 'de')).toEqual({ value: 2.5, error: null });
+        expect(validateCell('2,5', opt, 'de').error).toBe('option');
+    });
+
+    it('validateCell commits the locale reading, not 1000x too small', () => {
+        const n = col('n', { type: 'number' });
+        expect(validateCell('1,234', n, 'en')).toEqual({ value: 1234, error: null });
+        expect(validateCell('1.234', n, 'fr').error).toBe('number');
+    });
+});
+
 describe('editDraft', () => {
     it('edits the RAW value, not the localized rendering', () => {
-        expect(editDraft(1234.5, col('n', { type: 'number' }))).toBe('1234.5');
+        expect(editDraft(1234.5, col('n', { type: 'number' }), 'en')).toBe('1234.5');
         expect(editDraft('2026-07-06', col('d', { type: 'date' }))).toBe('2026-07-06');
         expect(editDraft(null, col('t'))).toBe('');
+    });
+
+    it('uses the locale decimal so an unchanged draft reads back to the same value', () => {
+        const n = col('n', { type: 'number' });
+        expect(editDraft(1234.5, n, 'de')).toBe('1234,5');
+        expect(editDraft('1234.5', n, 'de')).toBe('1234,5');
+        expect(editDraft('n/a', n, 'de')).toBe('n/a');
+        for (const loc of ['en', 'de', 'fr', 'nl', 'de-CH']) {
+            for (const v of [1.234, 1234.5, -0.5, 1e21, 42]) {
+                expect(validateCell(editDraft(v, n, loc), n, loc).value).toBe(v);
+            }
+        }
     });
 });
 

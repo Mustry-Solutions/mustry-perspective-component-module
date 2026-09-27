@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Data Grid number cells read `1,234` as 1.234
+Number edits and pastes swapped the first comma for a decimal point, so a
+thousands separator (Excel's displayed values, or the grid's own formatted
+output) committed a value 1000× too small with no warning. Number text is now
+read with `config.locale`'s decimal and group separators, grouping must be well
+formed, and the separator the locale doesn't use is accepted as a decimal point
+only when it can't be a thousands group (`1.5` in `fr` is 1.5; `1.234` is
+rejected). The editor's starting draft uses the locale's decimal separator so
+an unchanged draft reads back to the same value (#131).
+
 ### Fixed: Data Grid mixed number/text sort order depended on input order
 The sort comparator compared two numbers numerically and anything else as text,
 which is not transitive (`"10" > "9" > "1a"`, yet `"10" < "1a"`). Columns of
