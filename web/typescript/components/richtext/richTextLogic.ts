@@ -106,6 +106,44 @@ export function plainTextOf(html: string): string {
         .join('\n');
 }
 
+interface GraphemeSegmenter { segment(input: string): Iterable<unknown> }
+type SegmenterCtor = new (locale?: string, opts?: { granularity: 'grapheme' }) => GraphemeSegmenter;
+
+// Intl.Segmenter is es2022.intl (not in our lib) and missing from older
+// Firefox; fall back to code points, which still counts astral chars as 1.
+const Segmenter = (Intl as unknown as { Segmenter?: SegmenterCtor }).Segmenter;
+const graphemes: GraphemeSegmenter | null = Segmenter ? new Segmenter(undefined, { granularity: 'grapheme' }) : null;
+
+/**
+ * User-perceived characters in `text`: grapheme clusters, so an emoji, a flag
+ * or a ZWJ family is 1 (not its UTF-16 length). The ONE counter behind both
+ * config.charLimit (CharacterCount's textCounter) and output.charCount.
+ */
+export function countChars(text: string): number {
+    if (!text) {
+        return 0;
+    }
+    if (graphemes) {
+        let n = 0;
+        for (const _ of graphemes.segment(text)) {
+            n++;
+        }
+        return n;
+    }
+    return Array.from(text).length;
+}
+
+/**
+ * output.charCount: countChars of the plain text WITHOUT the block
+ * separators plainTextOf inserts — the limit (TipTap textSize) doesn't count
+ * them either, so a document the editor accepted never reports charCount >
+ * charLimit. plainTextOf also collapses whitespace, so this can only come
+ * out at or below the editor's own count, never above it.
+ */
+export function charCountOf(plain: string): number {
+    return countChars(plain.replace(/\n/g, ''));
+}
+
 export function wordCountOf(text: string): number {
     const t = text.trim();
     return t ? t.split(/\s+/).length : 0;

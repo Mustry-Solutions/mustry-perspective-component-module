@@ -20,7 +20,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import { Node as PMNode } from '@tiptap/pm/model';
 import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
-import { RteFeatures, dataUriKb, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
+import { RteFeatures, countChars, dataUriKb, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
 
 export interface RteControllerOpts {
     element: HTMLElement;
@@ -121,7 +121,7 @@ export class RichTextController {
                 // output.charCount is derived from plainTextOf in the component —
                 // this extension is absent when unlimited, and even when present
                 // it reads the live draft, not the bound/saved doc outputs track.
-                ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit })] : []),
+                ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit, textCounter: countChars })] : []),
                 ...(opts.editable && opts.placeholder
                     ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
             ],

@@ -341,7 +341,7 @@ True WYSIWYG editing — and safe read-only display — of rich text: operator i
 - **Image library picker** — bind `data.imageLibrary` (`[{label, src}]`) to offer a dropdown of known images; gateway Image Management paths (`/system/images/...`) work directly and stay session-authenticated.
 - **Font allowlist** (`config.fonts`, default off) — list the families operators may apply (e.g. a monospace for part numbers); display mode always renders saved fonts.
 - `config.charLimit` (0 = unlimited) enforced while typing; `config.placeholder`; localization (same 7 languages + `config.labels` overrides); print stylesheet (toolbar and chrome drop out).
-- **Outputs**: `output.isDirty`, `output.plainText` (for DB search/indexing), `output.wordCount`, `output.charCount` — updated on save/rebind, not per keystroke.
+- **Outputs**: `output.isDirty`, `output.plainText` (for DB search/indexing), `output.wordCount`, `output.charCount` (same measure as `charLimit`: user-perceived characters, block line breaks not counted) — updated on save/rebind, not per keystroke.
 
 ### How editing works
 
