@@ -24,7 +24,7 @@ An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiv
 
 ## Install & quick start
 
-**Requirements:** an Ignition **8.3.6+** gateway.
+**Requirements:** an Ignition **8.3.6+** gateway. Maker Edition gateways are supported: the module declares itself Maker Edition compatible, which Maker requires of every module it loads.
 
 1. **Download** the latest `Mustry-Perspective-Components.modl` from the [Releases](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases) page.
 2. **Install** it on the gateway — in the Gateway web interface, open the **Modules** section of the config and install/upgrade with the `.modl`. Accept the signing certificate and the license when prompted; the module loads immediately (no gateway restart needed).

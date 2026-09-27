@@ -67,4 +67,14 @@ public class MustryPerspectiveComponentsGatewayHook extends AbstractGatewayModul
     public boolean isFreeModule() {
         return true;
     }
+
+    /**
+     * Allow the module on Ignition Maker Edition. A Maker Edition gateway only loads
+     * modules whose gateway hook returns true here (the SDK default is false), and
+     * refuses the rest at startup with "Not eligible for use with Ignition Maker Edition".
+     */
+    @Override
+    public boolean isMakerEditionCompatible() {
+        return true;
+    }
 }
