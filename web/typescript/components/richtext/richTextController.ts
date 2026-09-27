@@ -4,7 +4,7 @@
 // event-handler attributes can never enter), and exposes the small imperative
 // surface the class component drives. DOM-facing, hence untested; anything
 // with logic lives in richTextLogic.ts.
-import { Editor } from '@tiptap/core';
+import { Editor, Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -18,9 +18,42 @@ import CharacterCount from '@tiptap/extension-character-count';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Node as PMNode } from '@tiptap/pm/model';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
-import { RteFeatures, countChars, dataUriKb, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
+import { RteFeatures, countChars, dataUriKb, graphemeTailLength, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
+
+const docChars = (doc: PMNode): number => countChars(doc.textBetween(0, doc.content.size, undefined, ' '));
+
+// CharacterCount trims an over-limit paste by deleting `over` POSITIONS, but
+// its textCounter (countChars) counts graphemes, so an emoji paste is trimmed
+// short and then rejected outright. Trim it first, by grapheme, so the
+// transaction reaching CharacterCount is already within the limit.
+function pasteTrimToLimit(limit: number): Extension {
+    return Extension.create({
+        name: 'pasteTrimToLimit',
+        priority: 101, // ahead of CharacterCount (100)
+        addProseMirrorPlugins() {
+            return [new Plugin({
+                key: new PluginKey('pasteTrimToLimit'),
+                filterTransaction: (tr, state) => {
+                    if (!tr.docChanged || !tr.getMeta('paste') || docChars(state.doc) > limit) {
+                        return true;
+                    }
+                    const over = docChars(tr.doc) - limit;
+                    if (over > 0) {
+                        const $head = tr.selection.$head;
+                        const len = graphemeTailLength($head.parent.textBetween(0, $head.parentOffset, undefined, ' '), over);
+                        if (len > 0) {
+                            tr.deleteRange($head.pos - len, $head.pos);
+                        }
+                    }
+                    return true;
+                }
+            })];
+        }
+    });
+}
 
 export interface RteControllerOpts {
     element: HTMLElement;
@@ -121,7 +154,10 @@ export class RichTextController {
                 // output.charCount is derived from plainTextOf in the component —
                 // this extension is absent when unlimited, and even when present
                 // it reads the live draft, not the bound/saved doc outputs track.
-                ...(opts.charLimit > 0 ? [CharacterCount.configure({ limit: opts.charLimit, textCounter: countChars })] : []),
+                ...(opts.charLimit > 0 ? [
+                    pasteTrimToLimit(opts.charLimit),
+                    CharacterCount.configure({ limit: opts.charLimit, textCounter: countChars })
+                ] : []),
                 ...(opts.editable && opts.placeholder
                     ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
             ],

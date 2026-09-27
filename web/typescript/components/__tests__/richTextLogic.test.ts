@@ -1,4 +1,4 @@
-import { charCountOf, countChars, fillLabel, plainTextOf, sanitizeUrl, wordCountOf } from '../richtext/richTextLogic';
+import { charCountOf, countChars, fillLabel, graphemeTailLength, plainTextOf, sanitizeUrl, wordCountOf } from '../richtext/richTextLogic';
 
 describe('sanitizeUrl', () => {
     it('allows http/https/mailto/tel', () => {
@@ -96,6 +96,20 @@ describe('countChars', () => {
         expect(countChars('🇧🇪')).toBe(1);
         expect(countChars('👍🏽')).toBe(1);
         expect(countChars('é')).toBe(1); // e + combining acute
+    });
+});
+
+describe('graphemeTailLength (over-limit paste trim span)', () => {
+    it('returns the UTF-16 length of the last n graphemes', () => {
+        expect(graphemeTailLength('abc', 2)).toBe(2);
+        expect(graphemeTailLength('ab😀😀', 1)).toBe(2);
+        expect(graphemeTailLength('a👨‍👩‍👧', 1)).toBe('👨‍👩‍👧'.length);
+    });
+
+    it('caps at the whole text and is 0 for n <= 0', () => {
+        expect(graphemeTailLength('a😀', 5)).toBe(3);
+        expect(graphemeTailLength('abc', 0)).toBe(0);
+        expect(graphemeTailLength('', 3)).toBe(0);
     });
 });
 

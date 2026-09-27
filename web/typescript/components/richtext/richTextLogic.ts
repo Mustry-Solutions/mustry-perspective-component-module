@@ -134,6 +134,26 @@ export function countChars(text: string): number {
 }
 
 /**
+ * UTF-16 length of the last `n` grapheme clusters of `text` (all of it when it
+ * has fewer). ProseMirror positions are UTF-16 units, so this turns a
+ * countChars overflow into a deleteRange span for trimming an over-limit paste.
+ */
+export function graphemeTailLength(text: string, n: number): number {
+    if (n <= 0 || !text) {
+        return 0;
+    }
+    const parts: string[] = [];
+    if (graphemes) {
+        for (const g of graphemes.segment(text) as Iterable<{ segment: string }>) {
+            parts.push(g.segment);
+        }
+    } else {
+        parts.push(...Array.from(text));
+    }
+    return parts.slice(-n).join('').length;
+}
+
+/**
  * output.charCount: countChars of the plain text WITHOUT the block
  * separators plainTextOf inserts — the limit (TipTap textSize) doesn't count
  * them either, so a document the editor accepted never reports charCount >
