@@ -95,7 +95,7 @@ describe('countChars', () => {
         expect(countChars('👨‍👩‍👧')).toBe(1);
         expect(countChars('🇧🇪')).toBe(1);
         expect(countChars('👍🏽')).toBe(1);
-        expect(countChars('é')).toBe(1); // e + combining acute
+        expect(countChars('e\u0301')).toBe(1); // e + combining acute
     });
 });
 
