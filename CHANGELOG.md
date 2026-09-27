@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-27
+
 ### Fixed: Data Grid number cells read `1,234` as 1.234
 Number edits and pastes swapped the first comma for a decimal point, so a
 thousands separator (Excel's displayed values, or the grid's own formatted
