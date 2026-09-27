@@ -59,9 +59,20 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     await expect(lower.first()).toHaveText(/^\d\d:\d\d:[0-5]\d[.,]\d$/);
 
     // Same 40ms phase, now several px wide and still not floored to a second.
-    const ventMs = page.locator('.mustry-tml-bar[title="Vent"]').first();
-    await expect(ventMs).toBeVisible();
-    const w = await ventMs.evaluate((el: HTMLElement) => el.getBoundingClientRect().width);
+    // Station A vents once per 19.9 s cycle, so a given clock-aligned 10 s
+    // window holds a whole Vent only about half the time: step forward until
+    // one does. Two consecutive windows cover a full cycle, so 3 is plenty.
+    const vents = page.locator('.mustry-tml-bar[title="Vent"]');
+    let w = 0;
+    for (let i = 0; i < 3 && w <= 3; i++) {
+        if (i > 0) {
+            const first = (await lower.first().textContent()) ?? '';
+            await page.getByRole('button', { name: 'Next', exact: true }).click();
+            await expect(lower.first()).not.toHaveText(first);
+        }
+        const widths = await vents.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+        w = Math.max(0, ...widths);
+    }
     expect(w).toBeGreaterThan(3);
     expect(w).toBeLessThan(20);   // a floored 1s phase would be ~144px
 });
