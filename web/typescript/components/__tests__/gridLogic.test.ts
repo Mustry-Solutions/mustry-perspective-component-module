@@ -147,6 +147,28 @@ describe('sortRows / compareValues', () => {
         expect(rows[0].n).toBe(10);   // untouched (bound prop)
         expect(sortRows(rows, { field: '', dir: '' })).toBe(rows);
     });
+
+    // #133: numbers before text, text in natural order — one total order, so
+    // the result no longer depends on the order rows arrive in.
+    const codes = ['10', '9', '1a', '100', '20A', '2', 'B7'];
+    const permutations = (xs: string[]): string[][] => xs.length <= 1 ? [xs]
+        : xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p]));
+
+    it('mixed number/text sorts to one order regardless of input order', () => {
+        const orders = new Set(permutations(codes).map((p) =>
+            sortRows(p.map((c) => ({ c })), { field: 'c', dir: 'asc' }).map((r) => r.c).join(',')));
+        expect([...orders]).toEqual(['2,9,10,100,1a,20A,B7']);
+    });
+
+    it('numbers precede text; text is case-insensitive with natural digit order', () => {
+        expect(compareValues(1e9, 'a')).toBeLessThan(0);
+        expect(compareValues('a', -5)).toBeGreaterThan(0);
+        expect(compareValues('-1.5', '1')).toBeLessThan(0);   // still numeric, sign + decimals
+        expect(compareValues('B7', 'b10')).toBeLessThan(0);
+        expect(compareValues('lot', 'LOT')).toBe(0);
+        const desc = sortRows(['x', 3, null, '12'].map((c) => ({ c })), { field: 'c', dir: 'desc' });
+        expect(desc.map((r) => r.c)).toEqual(['x', '12', 3, null]);   // desc reverses groups; empties still last
+    });
 });
 
 describe('quickFilterRows', () => {
