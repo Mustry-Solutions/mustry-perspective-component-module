@@ -1,4 +1,4 @@
-import { fillLabel, plainTextOf, sanitizeUrl, wordCountOf } from '../richtext/richTextLogic';
+import { charCountOf, countChars, fillLabel, graphemeTailLength, plainTextOf, sanitizeUrl, wordCountOf } from '../richtext/richTextLogic';
 
 describe('sanitizeUrl', () => {
     it('allows http/https/mailto/tel', () => {
@@ -77,24 +77,56 @@ describe('wordCountOf', () => {
     });
 });
 
-// output.charCount is plainTextOf(html).length (RichTextEditor.deriveOutputs) —
-// not TipTap CharacterCount, which is only loaded when charLimit > 0.
-describe('plainTextOf length (output.charCount source)', () => {
-    it('counts characters of the plain-text mirror for typical HTML', () => {
-        const plain = plainTextOf('<p>Hello <strong>world</strong></p>');
-        expect(plain).toBe('Hello world');
-        expect(plain.length).toBe(11);
+// output.charCount is charCountOf(plainTextOf(html)) (RichTextEditor.deriveOutputs),
+// the same measure CharacterCount enforces config.charLimit with.
+describe('countChars', () => {
+    it('counts plain ASCII by length', () => {
+        expect(countChars('Hello world')).toBe(11);
+        expect(countChars('')).toBe(0);
+    });
+
+    it('counts an astral character as 1, not its UTF-16 length (#163)', () => {
+        expect('😀'.length).toBe(2);
+        expect(countChars('a😀b')).toBe(3);
+        expect(countChars('𝒳')).toBe(1);
+    });
+
+    it('counts ZWJ sequences, flags and skin tones as 1 (#163)', () => {
+        expect(countChars('👨‍👩‍👧')).toBe(1);
+        expect(countChars('🇧🇪')).toBe(1);
+        expect(countChars('👍🏽')).toBe(1);
+        expect(countChars('e\u0301')).toBe(1); // e + combining acute
+    });
+});
+
+describe('graphemeTailLength (over-limit paste trim span)', () => {
+    it('returns the UTF-16 length of the last n graphemes', () => {
+        expect(graphemeTailLength('abc', 2)).toBe(2);
+        expect(graphemeTailLength('ab😀😀', 1)).toBe(2);
+        expect(graphemeTailLength('a👨‍👩‍👧', 1)).toBe('👨‍👩‍👧'.length);
+    });
+
+    it('caps at the whole text and is 0 for n <= 0', () => {
+        expect(graphemeTailLength('a😀', 5)).toBe(3);
+        expect(graphemeTailLength('abc', 0)).toBe(0);
+        expect(graphemeTailLength('', 3)).toBe(0);
+    });
+});
+
+describe('charCountOf (output.charCount)', () => {
+    it('counts the plain-text mirror for typical HTML', () => {
+        expect(charCountOf(plainTextOf('<p>Hello <strong>world</strong></p>'))).toBe(11);
     });
 
     it('is 0 for empty documents', () => {
-        expect(plainTextOf('').length).toBe(0);
-        expect(plainTextOf('<p></p>').length).toBe(0);
+        expect(charCountOf(plainTextOf(''))).toBe(0);
+        expect(charCountOf(plainTextOf('<p></p>'))).toBe(0);
     });
 
-    it('includes newlines between blocks in the count', () => {
-        const plain = plainTextOf('<h2>Title</h2><p>Body</p>');
-        expect(plain).toBe('Title\nBody');
-        expect(plain.length).toBe(10);
+    it('does not count block separators, matching the charLimit measure (#162)', () => {
+        const plain = plainTextOf('<h2>Title</h2><p>Body</p><ul><li>One</li></ul>');
+        expect(plain).toBe('Title\nBody\nOne');
+        expect(charCountOf(plain)).toBe(12);
     });
 });
 
