@@ -42,6 +42,16 @@ updates:
       tiptap:
         patterns:
           - "@tiptap/*"
+      # CodeMirror 6 is a family of @codemirror/* packages built on @lezer/*,
+      # and they share runtime identity: two copies of @codemirror/state in
+      # the bundle break the editor (extensions fail instanceof checks).
+      # Ungrouped, one release arrived as three PRs (#178–#180) that
+      # conflicted in web/package.json and had to merge serially under the
+      # strict up-to-date rule. One PR that moves the family together.
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - "@lezer/*"
     ignore:
       # React is pinned at 16 (Perspective's runtime). Several UI libs' latest
       # majors need React 18 (react-markdown 5+) or are breaking rewrites
