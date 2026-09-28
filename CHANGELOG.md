@@ -8,14 +8,14 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-28
+
 ### Added: Ignition Maker Edition support
 The gateway hook now declares `isMakerEditionCompatible()`. Before this, a
 Maker Edition gateway refused the module at startup with "Not eligible for use
 with Ignition Maker Edition" (seen with 0.5.2 on 8.3.9). The SDK default is
 `false`, and `isFreeModule()` only covers licensing, so the module has to say
 so itself.
-
-## [0.6.0] - 2026-09-27
 
 ### Fixed: Data Grid number cells read `1,234` as 1.234
 Number edits and pastes swapped the first comma for a decimal point, so a
