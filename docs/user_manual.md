@@ -33,7 +33,7 @@ Solutions** category.
 
 ## 2. Requirements & installation
 
-- Ignition **8.3.0 or newer** (developed and tested against 8.3.6).
+- Ignition **8.3.6 or newer**.
 - Perspective module installed.
 - Maker Edition gateways work too: the module declares itself Maker Edition
   compatible, which a Maker Edition gateway requires before it loads a module.
