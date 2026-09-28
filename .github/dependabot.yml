@@ -47,9 +47,12 @@ updates:
       # the bundle break the editor (extensions fail instanceof checks).
       # Ungrouped, one release arrived as three PRs (#178–#180) that
       # conflicted in web/package.json and had to merge serially under the
-      # strict up-to-date rule. One PR that moves the family together.
+      # strict up-to-date rule. One PR that moves the family together. The
+      # unscoped `codemirror` meta-package is a direct dependency that pins
+      # the core @codemirror/* set, so it belongs in the group too.
       codemirror:
         patterns:
+          - "codemirror"
           - "@codemirror/*"
           - "@lezer/*"
     ignore:
