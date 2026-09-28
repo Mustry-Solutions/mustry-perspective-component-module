@@ -35,6 +35,8 @@ Solutions** category.
 
 - Ignition **8.3.0 or newer** (developed and tested against 8.3.6).
 - Perspective module installed.
+- Maker Edition gateways work too: the module declares itself Maker Edition
+  compatible, which a Maker Edition gateway requires before it loads a module.
 
 Install `Mustry-Perspective-Components.modl` via **Gateway → Config → Modules →
 Install or Upgrade a Module**, accept the license agreement and the signing
