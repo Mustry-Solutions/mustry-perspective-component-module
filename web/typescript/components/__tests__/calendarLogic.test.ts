@@ -318,6 +318,43 @@ describe('expandEvents (recurrence)', () => {
         ]); // Mon/Wed of weeks 1 & 2, stopped by until 06-14
     });
 
+    it('weekly byweekday with interval > 1 buckets weeks Monday-first (RFC 5545 WKST default)', () => {
+        // #141: a biweekly Sat+Sun on-call series from Sat 2026-09-05 must keep each
+        // weekend together (Sunday-first buckets split it into Sat 5, Sun 13, Sat 19, ...).
+        const e: CalEvent = { id: 'oc', title: 'On call', start: '2026-09-05', allDay: true, rrule: { freq: 'weekly', interval: 2, byweekday: [6, 0], count: 4 } };
+        const [s, en] = win('2026-09-01', '2026-11-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual([
+            '2026-09-05', '2026-09-06', '2026-09-19', '2026-09-20'
+        ]);
+    });
+
+    it('wkst picks the week start: 0 = Sunday-first buckets', () => {
+        const e: CalEvent = { id: 'oc', title: 'On call', start: '2026-09-05', allDay: true, rrule: { freq: 'weekly', interval: 2, byweekday: [0, 6], wkst: 0, count: 4 } };
+        const [s, en] = win('2026-09-01', '2026-11-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual([
+            '2026-09-05', '2026-09-13', '2026-09-19', '2026-09-27'
+        ]);
+    });
+
+    it('count takes occurrences in date order within a week that spans Sunday', () => {
+        // base Mon 2026-06-01, biweekly Mon+Sun: the Sunday is the LAST day of the Monday-first week
+        const e: CalEvent = { id: 'w', title: 'W', start: '2026-06-01', allDay: true, rrule: { freq: 'weekly', interval: 2, byweekday: [0, 1], count: 3 } };
+        const [s, en] = win('2026-05-01', '2026-08-01');
+        expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-01', '2026-06-07', '2026-06-15']);
+    });
+
+    it('an unbounded biweekly weekend series keeps Sat+Sun together far in the future', () => {
+        const e: CalEvent = { id: 'oc', title: 'On call', start: '2026-09-05', allDay: true, rrule: { freq: 'weekly', interval: 2, byweekday: [6, 0] } };
+        const [s, en] = win('2031-03-01', '2031-04-01');
+        const days = expandEvents([e], s, en).map((o) => new Date(o.start + 'T00:00:00'));
+        expect(days.length).toBeGreaterThan(0);
+        for (const d of days) {
+            const partner = new Date(d.getFullYear(), d.getMonth(), d.getDate() + (d.getDay() === 6 ? 1 : -1));
+            const inWin = partner >= s && partner < en;
+            expect(!inWin || days.some((x) => x.getTime() === partner.getTime())).toBe(true);
+        }
+    });
+
     it('monthly keeps the day-of-month and respects until', () => {
         const e: CalEvent = { id: 'm', title: 'M', start: '2026-01-15', allDay: true, rrule: { freq: 'monthly', until: '2026-04-30' } };
         const [s, en] = win('2026-01-01', '2027-01-01');

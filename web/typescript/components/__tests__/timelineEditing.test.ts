@@ -266,6 +266,15 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
         expect(spec.extra).toEqual({ scope: 'series', seriesId: 'r1' });
     });
 
+    it('series save keeps a weekly rule\u2019s wkst (the editor has no field for it)', () => {
+        const wk: TimelineEvent = { ...base, rrule: { freq: 'weekly', interval: 2, byweekday: [0, 6], wkst: 0 } };
+        const wkLookup = (id: string): TimelineEvent | undefined => (id === 'r1' ? wk : undefined);
+        const e = { ...tlEditorForEvent(occ, TZ, wkLookup), scope: 'series' as const };
+        expect(tlSaveSpec(e, TZ, wkLookup).event).toMatchObject({
+            rrule: { freq: 'weekly', interval: 2, byweekday: [0, 6], wkst: 0 }
+        });
+    });
+
     it('deleting one occurrence / the whole series carries the right context', () => {
         const e = tlEditorForEvent(occ, TZ);
         expect(tlDeleteSpec(e)).toMatchObject({

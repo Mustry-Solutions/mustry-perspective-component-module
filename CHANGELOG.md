@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: weekly recurrences with `interval` > 1 split weekends across weeks
+A weekly `byweekday` rule grouped its days into Sunday-first weeks, so a
+biweekly Sat+Sun on-call series from Sat 2026-09-05 expanded to Sat 5, Sun 13,
+Sat 19, Sun 27 instead of Sat 5 + Sun 6, Sat 19 + Sun 20 (calendar and
+timeline). Weeks now start on the rule's new optional `rrule.wkst` (0=Sun ..
+6=Sat), defaulting to Monday as RFC 5545's `WKST` does, and `count` takes
+occurrences in date order within that week. Only rules with `interval` > 1
+can expand differently; set `wkst: 0` to keep Sunday-first weeks. The built-in
+editors keep a series' `wkst` when it is re-saved (#141).
+
 ## [0.6.0] - 2026-09-28
 
 ### Added: Ignition Maker Edition support
