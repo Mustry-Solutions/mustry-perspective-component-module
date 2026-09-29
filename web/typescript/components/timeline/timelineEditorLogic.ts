@@ -74,7 +74,7 @@ function repeatFromRule(rr: RRule | undefined): ReturnType<typeof repeatDefaults
 }
 
 /** Build an RRule from the editor's repeat fields (undefined = does not repeat).
- *  Preserves an existing series' exdate list when re-saving the whole series. */
+ *  Preserves an existing series' exdate list (and weekly wkst) when re-saving the whole series. */
 export function tlBuildRRule(ed: TlEditor, baseEventById: TlBaseEventLookup): RRule | undefined {
     if (!ed.repeatFreq) {
         return undefined;
@@ -92,6 +92,9 @@ export function tlBuildRRule(ed: TlEditor, baseEventById: TlBaseEventLookup): RR
         rr.count = ed.repeatCount;
     }
     const base = ed.seriesId ? baseEventById(ed.seriesId) : undefined;
+    if (rr.byweekday && base && base.rrule && base.rrule.wkst !== undefined) {
+        rr.wkst = base.rrule.wkst;               // the editor has no week-start field; keep the series'
+    }
     if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
         rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
     }

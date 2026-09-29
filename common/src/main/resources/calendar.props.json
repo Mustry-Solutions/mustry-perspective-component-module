@@ -502,6 +502,10 @@
                       "type": "number"
                     }
                   },
+                  "wkst": {
+                    "type": "number",
+                    "description": "Weekly with byweekday only: the day a week starts on (0=Sun .. 6=Sat, default 1 = Monday, as RFC 5545 WKST). With interval > 1 it decides which weekdays share a week, e.g. a biweekly Sat+Sun series."
+                  },
                   "exdate": {
                     "type": "array",
                     "description": "Occurrence dates (ISO 'YYYY-MM-DD') to skip — deleted or overridden instances.",

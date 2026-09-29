@@ -105,6 +105,13 @@ describe('buildRRule', () => {
         const rr = buildRRule(ed({ repeatFreq: 'daily', seriesId: 'a' }), (id) => (id === 'a' ? base : undefined))!;
         expect(rr.exdate).toEqual(['2026-06-16']);
     });
+    it('keeps a weekly series’ wkst (the editor has no field for it) and drops it off byweekday rules', () => {
+        const base: CalEvent = { id: 'a', title: 'T', start: '2026-09-05', rrule: { freq: 'weekly', interval: 2, byweekday: [0, 6], wkst: 0 } };
+        const lookup = (id: string) => (id === 'a' ? base : undefined);
+        expect(buildRRule(ed({ repeatFreq: 'weekly', repeatInterval: 2, repeatByweekday: [6, 0], seriesId: 'a' }), lookup))
+            .toEqual({ freq: 'weekly', interval: 2, byweekday: [0, 6], wkst: 0 });
+        expect(buildRRule(ed({ repeatFreq: 'daily', seriesId: 'a' }), lookup)).toEqual({ freq: 'daily' });
+    });
 });
 
 describe('reanchorSeries', () => {

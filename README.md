@@ -182,7 +182,7 @@ self.props.data.events = events
 | `status` | optional `tentative` / `cancelled` / `done` — restyles the chip (striped/faded, struck-through) |
 | `description` | optional text shown in the hover popover |
 | `display` | `"background"` for a downtime/availability band |
-| `rrule` | `{ freq: daily\|weekly\|monthly\|yearly, interval?, count?, until?, byweekday?[], exdate?[] }` (byweekday: 0=Sun..6=Sat; exdate: `YYYY-MM-DD` occurrences to skip) |
+| `rrule` | `{ freq: daily\|weekly\|monthly\|yearly, interval?, count?, until?, byweekday?[], wkst?, exdate?[] }` (byweekday: 0=Sun..6=Sat; wkst: the week's first day for `interval` > 1, 0=Sun..6=Sat, default 1 = Monday as in RFC 5545; exdate: `YYYY-MM-DD` occurrences to skip) |
 
 **`state`** (two-way) | `view` (the toolbar writes the user's choice back; setting it switches the view) · `followNow` (the Live toggle) · `hiddenCategories` (legend filter — pre-settable/bindable). \n**`output`** (read-only) | `visibleStart`, `visibleEnd` (half-open `[start, end)` — bind your query: `date >= visibleStart AND date < visibleEnd`) plus the epoch-ms twins `visibleStartMs`/`visibleEndMs`.
 

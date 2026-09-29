@@ -9,6 +9,7 @@ export interface RRule {
     count?: number;        // max occurrences in the series
     until?: string;        // ISO 'YYYY-MM-DD', inclusive
     byweekday?: number[];  // weekly only: 0=Sun .. 6=Sat
+    wkst?: number;         // weekly only: day a week starts on, 0=Sun .. 6=Sat (default 1 = Monday, as RFC 5545)
     exdate?: string[];     // 'YYYY-MM-DD' occurrence dates to skip (deleted / overridden)
 }
 
@@ -21,6 +22,12 @@ export interface RecurringItem {
 }
 
 const MAX_OCC = 1000;
+
+/** The rule's week start (0=Sun .. 6=Sat); anything missing or invalid is RFC 5545's Monday. */
+function weekStartOf(r: RRule): number {
+    const w = r.wkst;
+    return typeof w === 'number' && Number.isInteger(w) && w >= 0 && w <= 6 ? w : 1;
+}
 
 /** Occurrence start dates of a recurring series within [winStart, winEnd).
  *
@@ -41,16 +48,20 @@ function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date
     const skipDays = Math.max(0, daysBetween(base, winStart));
 
     if (r.freq === 'weekly' && r.byweekday && r.byweekday.length) {
-        const wds = r.byweekday.slice().sort((a, b) => a - b);
-        const weekRef = addDays(base, -base.getDay()); // Sunday of the base's week
+        // Weeks are bucketed from the rule's week start (RFC 5545 WKST, default Monday),
+        // so e.g. a biweekly Sat+Sun series keeps each weekend's Sat and Sun together.
+        // byweekday becomes day offsets from that start, in chronological order.
+        const wkst = weekStartOf(r);
+        const offsets = r.byweekday.map((wd) => (((wd - wkst) % 7) + 7) % 7).sort((a, b) => a - b);
+        const weekRef = addDays(base, -((base.getDay() - wkst + 7) % 7)); // start of the base's week
         const k0 = hasCount ? 0 : Math.max(0, Math.floor(skipDays / (7 * interval)) - 1);
         for (let k = k0; dates.length < limit && k < k0 + MAX_OCC; k++) {
             const weekBase = addDays(weekRef, k * interval * 7);
             if (weekBase.getTime() >= winEnd.getTime() || (until && weekBase.getTime() > until.getTime())) {
                 break;
             }
-            for (const wd of wds) {
-                const d = addDays(weekBase, wd);
+            for (const off of offsets) {
+                const d = addDays(weekBase, off);
                 if (d.getTime() < base.getTime() || pastUntil(d) || d.getTime() >= winEnd.getTime()) {
                     continue;
                 }
