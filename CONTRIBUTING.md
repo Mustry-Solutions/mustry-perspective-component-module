@@ -7,23 +7,9 @@ guide covers how to build, test, and submit changes.
 
 - Be respectful — see our [Code of Conduct](CODE_OF_CONDUCT.md).
 - By contributing you agree your work is licensed under the repository's
-  [Apache-2.0 License](LICENSE), and you certify the **Developer Certificate
-  of Origin** (below).
+  [Apache-2.0 License](LICENSE).
 - Found a security issue? **Do not** open a public issue — see
   [SECURITY.md](SECURITY.md).
-
-## Developer Certificate of Origin (DCO)
-
-We use the [DCO](https://developercertificate.org/) instead of a CLA. Every
-commit must be signed off, certifying you wrote the code (or have the right to
-submit it) under the project license:
-
-```
-git commit -s -m "Your message"
-```
-
-This appends a `Signed-off-by: Your Name <you@example.com>` line. Set your git
-`user.name`/`user.email` to a real identity.
 
 ## Prerequisites
 
@@ -53,7 +39,7 @@ See [`ops/README.md`](ops/README.md) for the dev-gateway lifecycle.
 2. Make your change **with tests** (jest for pure logic, Playwright for
    rendered behavior) and a `CHANGELOG.md` entry under `## [Unreleased]`.
 3. Open a PR. The two required checks — **Build & test** and
-   **E2E smoke (Playwright)** — must pass, and commits must be DCO-signed.
+   **E2E smoke (Playwright)** — must pass.
 4. A maintainer squash-merges. `main` is always releasable.
 
 ## Conventions
