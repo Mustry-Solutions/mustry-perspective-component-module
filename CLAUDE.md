@@ -107,7 +107,10 @@ bind-mounted into the gateway — Designer saves write back into the repo.
 
 ## Working agreements
 
-- Commit style: `Area: what changed` + a body explaining why; logical chunks.
+- Commit style: Conventional Commits, `type(scope): what changed` + a body
+  explaining why; logical chunks. The scope is the area (`fix(data-grid): ...`).
+  PR titles follow the same format, since squash-merge makes them the commit
+  on `main`.
 - Components are controlled: they never mutate their own bound data — gestures
   and editors fire events (`onChange`, `onCellEdit`, …) and the author's
   script persists. Demo views in the verify project ship reference scripts.
