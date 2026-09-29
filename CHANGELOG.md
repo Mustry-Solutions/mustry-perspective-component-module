@@ -8,6 +8,12 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Docs: contributions no longer require a DCO sign-off
+`CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
+Origin requirement (`git commit -s`). It was never enforced by CI and was
+followed inconsistently; contributions remain licensed under Apache-2.0 as
+stated in `CONTRIBUTING.md`.
+
 ### Fixed: weekly recurrences with `interval` > 1 split weekends across weeks
 A weekly `byweekday` rule grouped its days into Sunday-first weeks, so a
 biweekly Sat+Sun on-call series from Sat 2026-09-05 expanded to Sat 5, Sun 13,

@@ -6,7 +6,6 @@
 
 ## Checklist
 
-- [ ] Commits are **DCO-signed** (`git commit -s`)
 - [ ] Tests added/updated (jest for pure logic, Playwright for rendered behavior)
 - [ ] `CHANGELOG.md` updated under `## [Unreleased]`
 - [ ] Prop-schema changes are **additive** (no removed/renamed keys), or acknowledged in `ops/schema-guard-acknowledged.txt`
