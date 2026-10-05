@@ -16,6 +16,16 @@ instant or epoch ms) override the preset when both are set. Paging moves the
 window by its own length, Today and Live keep its phase, and a zoom button
 returns to the presets. Unset (the default) keeps the current behaviour.
 
+### Fixed: events faded in on page load and when paging (calendar, timeline)
+A bound component mounts before its binding delivers, and a windowed binding
+refetches after every page or view change. Both deliveries counted as newly
+created events, so every event played the enter animation on page load and
+again on each page. The first new ids after mount or a window change are now
+treated as loaded data; events created through the component, or added by a
+binding later, still animate. The calendar also never registered
+`data.recurringEvents` with the animation, so recurring occurrences faded in on
+every render; they now animate only when their series is new.
+
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
 Origin requirement (`git commit -s`). It was never enforced by CI and was
