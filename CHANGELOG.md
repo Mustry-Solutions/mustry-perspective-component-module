@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: `config.animations` on the resource timeline
+A new bar or band fades in the first time its event id appears. On a board
+polled every few seconds (a machine-cycle view) each new cycle animated in,
+which reads as flashing. `config.animations: false` turns the enter animation
+off; the now-line still moves. Defaults to `true`, so existing views are
+unchanged.
+
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
 Origin requirement (`git commit -s`). It was never enforced by CI and was
