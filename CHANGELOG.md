@@ -8,14 +8,15 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
-### Fixed: events faded in on page load (calendar, timeline)
-A bound component mounts before its binding delivers, so the first data
-counted as newly created and every event played the enter animation on page
-load. The first data to arrive is now treated as the initial load. The
-calendar also never registered `data.recurringEvents` with the animation, so
-recurring occurrences faded in on every render; they now animate only when
-their series is new. One trade-off: the first event created on an empty board
-no longer animates.
+### Fixed: events faded in on page load and when paging (calendar, timeline)
+A bound component mounts before its binding delivers, and a windowed binding
+refetches after every page or view change. Both deliveries counted as newly
+created events, so every event played the enter animation on page load and
+again on each page. The first new ids after mount or a window change are now
+treated as loaded data; events created through the component, or added by a
+binding later, still animate. The calendar also never registered
+`data.recurringEvents` with the animation, so recurring occurrences faded in on
+every render; they now animate only when their series is new.
 
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of

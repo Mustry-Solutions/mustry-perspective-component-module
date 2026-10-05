@@ -297,6 +297,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (sig === this.lastOutputSig) {
             return;
         }
+        if (this.lastOutputSig) {
+            this.enter.navigated();   // a windowed binding refetches: its rows are loads, not creates
+        }
         this.lastOutputSig = sig;
         const write = (): void => {
             this.outputTimer = 0;
@@ -380,6 +383,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     /** Fires onChange for ANY data mutation — the single write-back hook. */
     private fireSpec(spec: TlChangeSpec): void {
+        this.enter.edited();
         this.fireEvent('onChange', {
             action: spec.action, event: spec.event,
             ...(spec.fromResourceId ? { fromResourceId: spec.fromResourceId } : {}),

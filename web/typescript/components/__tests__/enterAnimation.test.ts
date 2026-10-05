@@ -71,6 +71,48 @@ describe('EnterTracker', () => {
         expect(t.enterClass('b')).toBe(' mustry-cal-anim-enter');
     });
 
+    it('the first data after navigating is the new window\'s load', () => {
+        // A windowed binding refetches on navigation: the new window's events
+        // are new ids, but not new events.
+        const t = new EnterTracker();
+        t.seed([ev('a')]);
+        t.navigated();
+        expect(t.enterClass('x')).toBe('');                  // render showing the new window
+        t.detect([ev('x'), ev('y')], jest.fn());
+        expect(t.enterClass('x')).toBe('');
+        expect(t.enterClass('y')).toBe('');
+        t.detect([ev('x'), ev('y'), ev('z')], jest.fn());  // later additions animate again
+        expect(t.enterClass('z')).toBe(' mustry-cal-anim-enter');
+    });
+
+    it('navigating with unchanged data waits for the next new ids', () => {
+        // Static (non-windowed) data: navigation brings no new ids, so the
+        // reload stays pending until one arrives.
+        const t = new EnterTracker();
+        t.seed([ev('a')]);
+        t.navigated();
+        t.detect([ev('a')], jest.fn());
+        t.detect([ev('a'), ev('b')], jest.fn());
+        expect(t.enterClass('b')).toBe('');
+    });
+
+    it('an edit from the component itself still animates after navigating', () => {
+        const t = new EnterTracker();
+        t.seed([ev('a')]);
+        t.navigated();
+        t.edited();                                          // the component fired onChange
+        t.detect([ev('a'), ev('n')], jest.fn());
+        expect(t.enterClass('n')).toBe(' mustry-cal-anim-enter');
+    });
+
+    it('the first event created on an empty board animates', () => {
+        const t = new EnterTracker();
+        t.seed([]);
+        t.edited();
+        t.detect([ev('n')], jest.fn());
+        expect(t.enterClass('n')).toBe(' mustry-cal-anim-enter');
+    });
+
     it('dispose cancels pending settles', () => {
         const t = new EnterTracker();
         t.seed([ev('a')]);

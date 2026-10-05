@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test';
 import { test, expect, openRoute } from './helpers';
 
 // Evergreen demo: events are seeded relative to today on view load. The exact
@@ -24,7 +25,8 @@ test('calendar: empty state shows the badge', async ({ page }) => {
     await expect(page.locator('.mustry-cal-empty-badge')).toBeVisible();
 });
 
-test('calendar: events and recurring series do not fade in on page load', async ({ page }) => {
+/** Count every enter-animation class the page ever shows, from first paint. */
+async function countEnterAnimations(page: Page): Promise<void> {
     await page.addInitScript(() => {
         const w = window as unknown as { enterSeen: number };
         w.enterSeen = 0;
@@ -37,7 +39,30 @@ test('calendar: events and recurring series do not fade in on page load', async 
             document.addEventListener('readystatechange', watch, { once: true });
         }
     });
+}
+
+const enterSeen = (page: Page) => page.evaluate(() => (window as unknown as { enterSeen: number }).enterSeen);
+
+test('calendar: events and recurring series do not fade in on page load', async ({ page }) => {
+    await countEnterAnimations(page);
     await openRoute(page, '/calendar', '.mustry-calendar');
     await page.waitForTimeout(1000);
-    expect(await page.evaluate(() => (window as unknown as { enterSeen: number }).enterSeen)).toBe(0);
+    expect(await enterSeen(page)).toBe(0);
+});
+
+test('calendar: a windowed binding\'s new page does not fade in', async ({ page }) => {
+    // /calendar-db refetches per visible range; its one-off events sit in
+    // May-August 2026. Paging back into them loads new ids, which are loaded
+    // data, not newly created events.
+    await countEnterAnimations(page);
+    await openRoute(page, '/calendar-db', '.mustry-calendar');
+    await page.getByRole('button', { name: 'Month', exact: true }).click();
+    const oneOff = page.locator('.mustry-cal-mbar:not(:has(.mustry-cal-ev-recur))');
+    for (let i = 0; i < 36 && !(await oneOff.count()); i++) {
+        await page.getByRole('button', { name: 'Previous', exact: true }).click();
+        await page.waitForTimeout(400);
+    }
+    await expect(oneOff.first()).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await enterSeen(page)).toBe(0);
 });

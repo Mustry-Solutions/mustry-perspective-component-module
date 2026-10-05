@@ -300,6 +300,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
      * onDateClick / onSelect are the "the user did something" intent events.
      */
     private fireSpec(spec: ChangeSpec): void {
+        this.enter.edited();
         this.fireEvent('onChange', { action: spec.action, event: spec.event, ...(spec.extra || {}) });
     }
 
@@ -447,6 +448,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const sig = `${this.props.props.view}|${r.start}|${r.end}|${win.startMs}|${win.endMs}`;
         if (sig === this.lastOutputSig) {
             return;
+        }
+        if (this.lastOutputSig) {
+            this.enter.navigated();   // a windowed binding refetches: its rows are loads, not creates
         }
         this.lastOutputSig = sig;
         const write = (): void => {
