@@ -20,7 +20,7 @@
         "@codemirror/state": "^6.7.6",
         "@codemirror/view": "^6.43.13",
         "@inductiveautomation/perspective-client": "^2.3.9",
-        "@lezer/highlight": "^1.2.4",
+        "@lezer/highlight": "^1.2.5",
         "@tiptap/core": "^2.27.3",
         "@tiptap/extension-character-count": "^2.27.3",
         "@tiptap/extension-font-family": "^2.27.3",
