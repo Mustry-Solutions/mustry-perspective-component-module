@@ -169,7 +169,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
      *  while a drag is in flight so the ghost and mid-gesture re-renders never
      *  animate (the shared tracker returns the calendar's class; mapped to .mustry-tml-). */
     private enterClass = (occId: string): string => {
-        return !this.gestures.active && this.enter.enterClass(occId) ? ' mustry-tml-anim-enter' : '';
+        return this.props.props.animations && !this.gestures.active && this.enter.enterClass(occId)
+            ? ' mustry-tml-anim-enter' : '';
     }
 
     /** The visible window (day/week span whole wall-calendar days — DST-safe). */
