@@ -9,12 +9,33 @@ export class EnterTracker {
     private pending = new Set<string>();
     private timers: Array<ReturnType<typeof setTimeout>> = [];
     private mounted = false;
+    // The next new ids are a (re)load, not new events: a bound component mounts
+    // before its binding delivers, and a windowed binding refetches after
+    // navigation. Cleared by the first detect() that brings new ids, or by an
+    // edit the component itself fired.
+    private loadPending = false;
 
     /** Seed with the initial items so they don't fire the create animation
-     *  (the container fades in instead), and start honouring enterClass. */
-    seed(items: Array<{ id?: string }>): void {
+     *  (the container fades in instead), and start honouring enterClass.
+     *  `loading`: the bound data has not arrived yet, so the first new ids are
+     *  its initial load (default: nothing to seed). A component whose items mix
+     *  an always-loaded source with a bound one passes whether the bound one is
+     *  still empty. */
+    seed(items: Array<{ id?: string }>, loading = !items.some((e) => e.id)): void {
         items.forEach((e) => { if (e.id) { this.seen.add(e.id); } });
+        this.loadPending = loading;
         this.mounted = true;
+    }
+
+    /** The visible window changed: the next new ids are its data loading. */
+    navigated(): void {
+        this.loadPending = true;
+    }
+
+    /** The component fired a change (create/move/edit/...): the next new ids
+     *  are that edit landing, so they animate. */
+    edited(): void {
+        this.loadPending = false;
     }
 
     /** After a render: mark freshly-appeared ids so their chips finish the enter
@@ -23,13 +44,18 @@ export class EnterTracker {
         const fresh: string[] = [];
         items.forEach((e) => {
             if (e.id && !this.seen.has(e.id) && !this.pending.has(e.id)) {
-                this.pending.add(e.id);
                 fresh.push(e.id);
             }
         });
         if (!fresh.length) {
             return;
         }
+        if (this.loadPending) {
+            this.loadPending = false;
+            fresh.forEach((id) => this.seen.add(id));
+            return;
+        }
+        fresh.forEach((id) => this.pending.add(id));
         this.timers.push(setTimeout(() => {
             fresh.forEach((id) => { this.pending.delete(id); this.seen.add(id); });
             onSettled();
@@ -37,10 +63,11 @@ export class EnterTracker {
     }
 
     /** Enter-animation class for an item: set once for a never-seen base id
-     *  (recurring occurrences "base::date" match their base). */
+     *  (recurring occurrences "base::date" match their base). Never while a load
+     *  is pending: that render shows loaded data, not new events. */
     enterClass(occId: string): string {
         const base = (occId || '').split('::')[0];
-        return this.mounted && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
+        return this.mounted && !this.loadPending && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
     }
 
     dispose(): void {
