@@ -125,7 +125,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentDidMount(): void {
-        this.enter.seed(this.props.props.events || []);
+        // data.events is the bound (often windowed) source; recurringEvents can
+        // already be there while it is still on its way.
+        this.enter.seed(this.allEvents(), !(this.props.props.events || []).length);
         this.syncOutput();
         this.scrollTimeGrid();
         // Re-measure the month-cell capacity whenever the component is resized.
@@ -143,7 +145,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (prevProps.props.view !== this.props.props.view) {
             this.scrollTimeGrid();   // re-scroll the time grid after switching to week/day
         }
-        this.enter.detect(this.props.props.events || [], () => this.forceUpdate());
+        this.enter.detect(this.allEvents(), () => this.forceUpdate());
         this.recomputeMonthCap();   // week-count (5/6) or view changes can change the fit
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds) {
             this.setupRefreshTimer();
@@ -276,6 +278,13 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     /** Enter-animation class for an event chip. */
+    /** Both event sources, merged raw (unexpanded): the enter tracker's id
+     *  universe. Recurring occurrences match their series id, so a series left
+     *  out here would fade in on every render. */
+    private allEvents(): CalEvent[] {
+        return [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
+    }
+
     private enterClass(occId: string): string {
         return this.enter.enterClass(occId);
     }
@@ -294,6 +303,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
      * onDateClick / onSelect are the "the user did something" intent events.
      */
     private fireSpec(spec: ChangeSpec): void {
+        this.enter.edited();
         this.fireEvent('onChange', { action: spec.action, event: spec.event, ...(spec.extra || {}) });
     }
 
@@ -441,6 +451,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         const sig = `${this.props.props.view}|${r.start}|${r.end}|${win.startMs}|${win.endMs}`;
         if (sig === this.lastOutputSig) {
             return;
+        }
+        if (this.lastOutputSig) {
+            this.enter.navigated();   // a windowed binding refetches: its rows are loads, not creates
         }
         this.lastOutputSig = sig;
         const write = (): void => {

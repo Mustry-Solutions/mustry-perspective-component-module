@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test';
 import { test, expect, openRoute } from './helpers';
 
 test('timeline: day view renders resources and seeded bars', async ({ page }) => {
@@ -75,4 +76,45 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     }
     expect(w).toBeGreaterThan(3);
     expect(w).toBeLessThan(20);   // a floored 1s phase would be ~144px
+});
+
+/** Count every enter-animation class the page ever shows, from first paint. */
+async function countEnterAnimations(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+        const w = window as unknown as { enterSeen: number };
+        w.enterSeen = 0;
+        const watch = () => new MutationObserver(() => {
+            w.enterSeen += document.querySelectorAll('.mustry-tml-anim-enter').length;
+        }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        if (document.documentElement) {
+            watch();
+        } else {
+            document.addEventListener('readystatechange', watch, { once: true });
+        }
+    });
+}
+
+const enterSeen = (page: Page) => page.evaluate(() => (window as unknown as { enterSeen: number }).enterSeen);
+
+test('timeline: bound events do not fade in on page load', async ({ page }) => {
+    // The demo's events come from a binding that delivers after the component
+    // mounts; that first delivery is the initial load, not newly created events.
+    await countEnterAnimations(page);
+    await openRoute(page, '/timeline', '.mustry-timeline');
+    await expect(page.getByText('Batch 4711')).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await enterSeen(page)).toBe(0);
+});
+
+test('timeline: a windowed binding\'s next page does not fade in', async ({ page }) => {
+    // /timeline-db refetches per window: the next window's rows are new ids,
+    // but they are loaded data, not newly created events.
+    await countEnterAnimations(page);
+    await openRoute(page, '/timeline-db', '.mustry-timeline');
+    await expect(page.locator('.mustry-tml-bar').first()).toBeVisible();
+    const firstBar = await page.locator('.mustry-tml-bar').first().getAttribute('title');
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.locator('.mustry-tml-bar').first()).not.toHaveAttribute('title', firstBar || '');
+    await page.waitForTimeout(500);
+    expect(await enterSeen(page)).toBe(0);
 });
