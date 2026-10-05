@@ -48,6 +48,10 @@
    "viewPath": "TimelineCycle",
    "viewParams": {}
   },
+  "/timeline-window": {
+   "viewPath": "TimelineWindow",
+   "viewParams": {}
+  },
   "/rte": {
    "viewPath": "RteDemo",
    "viewParams": {}

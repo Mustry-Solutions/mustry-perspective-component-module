@@ -1,5 +1,6 @@
 // Pure mapping from the component's PropertyTree to typed TimelineProps. Kept
 // perspective-client-free (PropReader) so it can be unit-tested under node jest.
+import { toEpochMs } from '../../shared/dateUtils';
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
@@ -42,6 +43,9 @@ export interface TimelineProps {
     locale: string;
     refreshSeconds: number;  // periodic re-render so the now-line ticks (0 = off)
     followNow: boolean;      // two-way (state.followNow): the toolbar's Live toggle writes it back
+    windowStart: number | null;   // two-way (state.windowStart): custom window, epoch ms (null = unset)
+    windowEnd: number | null;     // two-way (state.windowEnd)
+    windowAsEpoch: boolean;       // the window was given as epoch ms, so write it back as numbers
     emptyMessage: string;    // toolbar badge when no events are configured ('' = hidden)
     loading: boolean;
     refetchDebounceMs: number;
@@ -50,6 +54,15 @@ export interface TimelineProps {
     resources: TimelineResource[];
     events: TimelineEvent[];
     recurringEvents: TimelineEvent[];
+}
+
+/** A state.windowStart/End value as epoch ms: a number is epoch ms, a string is
+ *  read like an event time (offset/Z = instant, naive = config.timezone). */
+function windowEdgeMs(v: unknown, timezone: string): number | null {
+    if (typeof v === 'number') {
+        return Number.isFinite(v) ? v : null;
+    }
+    return typeof v === 'string' ? toEpochMs(v, timezone) : null;
 }
 
 function mapEvent(e: any): TimelineEvent {
@@ -105,6 +118,9 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         locale,
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
         followNow: tree.readBoolean('state.followNow', false),
+        windowStart: windowEdgeMs(tree.read('state.windowStart', null), tree.readString('config.timezone', '')),
+        windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), tree.readString('config.timezone', '')),
+        windowAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
         emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         loading: tree.readBoolean('config.loading', false),
         refetchDebounceMs: Math.max(0, tree.readNumber('config.refetchDebounceMs', 150)),
