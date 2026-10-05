@@ -18,10 +18,12 @@ import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth } from '../../shared/dateUtils';
 import {
-    BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
-    buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
-    barMinPx, isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, resolveSnapMinutes,
-    rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zonedFormat
+    BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
+    buildRows, buildTicks, containingAnchorMs, containingCustomWindow, customScale, customTickStepMs, customWindow,
+    customWindowOnDate, customZoom, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
+    barMinPx, isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs,
+    pageCustomWindow, resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs,
+    zoneMidnightMs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
 import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
@@ -57,6 +59,24 @@ function todayAnchorMs(zoom: TimelineZoom, timezone: string): number {
     return containingAnchorMs(Date.now(), zoom, timezone);
 }
 
+/** The custom window (state.windowStart/End) when set and valid, else null. */
+function customOf(p: TimelineProps): CustomWindow | null {
+    return customWindow(p.windowStart, p.windowEnd);
+}
+
+/** The zoom that sizes snapping, the bar floor, the now-line tick and the label
+ *  formats: state.zoom, or for a custom window the preset nearest its span. */
+function viewZoomOf(p: TimelineProps): TimelineZoom {
+    const c = customOf(p);
+    return c ? customZoom(c.endMs - c.startMs) : p.zoom;
+}
+
+/** What the refresh/follow timer intervals depend on besides refreshSeconds. */
+function tickBasisOf(p: TimelineProps): string {
+    const c = customOf(p);
+    return c ? `custom|${c.endMs - c.startMs}` : p.zoom;
+}
+
 export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, ResourceTimelineState> {
 
     private lastOutputSig = '';
@@ -67,12 +87,13 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private gridRef = React.createRef<HTMLDivElement>();
     private scrollRef = React.createRef<HTMLDivElement>();   // the horizontal scroll container (.mustry-tml-scroll)
     private enter = new EnterTracker();   // enter-animation bookkeeping for newly-appearing ids
+    private scrollNowOnUpdate = false;    // a custom-window write is in flight; scroll to now once it lands
 
     private gestures = new TimelineGestureController({
         env: () => ({
             editable: this.props.props.editable,
             selectable: this.props.props.selectable,
-            snapMinutes: resolveSnapMinutes(this.props.props.zoom, this.props.props.snapMinutes),
+            snapMinutes: resolveSnapMinutes(viewZoomOf(this.props.props), this.props.props.snapMinutes),
             scale: this.scale()
         }),
         flags: () => ({
@@ -119,13 +140,15 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (!this.gestures.active) {
             this.enter.detect(this.allEvents(), () => this.forceUpdate());
         }
-        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
-                || prevProps.props.zoom !== this.props.props.zoom) {
+        const basisChanged = tickBasisOf(prevProps.props) !== tickBasisOf(this.props.props);
+        const prevCustom = customOf(prevProps.props);
+        const custom = customOf(this.props.props);
+        if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds || basisChanged) {
             this.setupRefreshTimer();   // the tick is zoom-dependent (nowTickMs)
         }
         if (prevProps.props.refreshSeconds !== this.props.props.refreshSeconds
                 || prevProps.props.followNow !== this.props.props.followNow
-                || (this.props.props.followNow && prevProps.props.zoom !== this.props.props.zoom)) {
+                || (this.props.props.followNow && basisChanged)) {
             this.setupFollowTimer();   // the interval is zoom-dependent (followTickMs)
         } else if (this.props.props.followNow
                 && (prevProps.props.zoom !== this.props.props.zoom
@@ -134,12 +157,23 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             // page within the day) — re-anchor immediately instead of waiting out
             // the next tick.
             this.tickFollow();
-        } else if (prevProps.props.zoom !== this.props.props.zoom) {
+        } else if (prevCustom && !custom) {
+            // Leaving a custom window (a zoom button or a cleared binding): open the
+            // preset window on "now" if it was in view, else on the custom start.
+            const now = Date.now();
+            const target = now >= prevCustom.startMs && now < prevCustom.endMs ? now : prevCustom.startMs;
+            this.setState({ anchorMs: containingAnchorMs(target, this.props.props.zoom, this.props.props.timezone) });
+        } else if (!custom && prevProps.props.zoom !== this.props.props.zoom) {
             // Not following: keep the user where they were — on "now" if it was in
             // view, else on the window containing the old window's start.
             this.setState({
                 anchorMs: rezoomAnchorMs(this.state.anchorMs, prevProps.props.zoom, this.props.props.zoom, Date.now(), this.props.props.timezone)
             });
+        }
+        if (this.scrollNowOnUpdate && custom
+                && (!prevCustom || prevCustom.startMs !== custom.startMs || prevCustom.endMs !== custom.endMs)) {
+            this.scrollNowOnUpdate = false;
+            this.scrollNowIntoView();
         }
     }
 
@@ -173,9 +207,31 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             ? ' mustry-tml-anim-enter' : '';
     }
 
-    /** The visible window (day/week span whole wall-calendar days — DST-safe). */
+    /** The visible window: the custom window when set, else the zoom preset's
+     *  (day/week span whole wall-calendar days — DST-safe). */
     private scale(): TimeScale {
-        return windowFor(this.state.anchorMs, this.props.props.zoom, this.props.props.timezone);
+        const c = customOf(this.props.props);
+        return c ? customScale(c) : windowFor(this.state.anchorMs, this.props.props.zoom, this.props.props.timezone);
+    }
+
+    /** Write a custom window back to state.windowStart/End in the form it came in
+     *  (epoch ms, or an offset-bearing ISO instant in config.timezone). */
+    private writeWindow(w: CustomWindow): void {
+        const p = this.props.props;
+        const out = (ms: number, asEpoch: boolean) => (asEpoch ? ms : msToZonedIso(ms, p.timezone));
+        this.props.store.props.write('state.windowStart', out(w.startMs, p.windowStartAsEpoch));
+        this.props.store.props.write('state.windowEnd', out(w.endMs, p.windowEndAsEpoch));
+    }
+
+    /** Move a custom window to the stride holding now (Today / follow-now). */
+    private customToNow(c: CustomWindow): void {
+        const next = containingCustomWindow(c, Date.now(), this.props.props.timezone);
+        if (next.startMs === c.startMs) {
+            this.scrollNowIntoView();
+        } else {
+            this.scrollNowOnUpdate = true;
+            this.writeWindow(next);
+        }
     }
 
     private layoutMemo: { deps: unknown[]; rows: RowItem[]; ticks: TickRows; byRow: Map<string, RowLayouts> } | null = null;
@@ -188,7 +244,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         const p = this.props.props;
         const deps: unknown[] = [
             p.events, p.recurringEvents, p.resources, p.collapsedGroups, p.hiddenCategories,
-            scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, p.zoom, p.locale, p.shifts
+            scale.startMs, scale.endMs, scale.pxPerHour, p.timezone, viewZoomOf(p), p.locale, p.shifts
         ];
         const m = this.layoutMemo;
         if (m && m.deps.every((d, i) => d === deps[i])) {
@@ -207,7 +263,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 });
             }
         }
-        this.layoutMemo = { deps, rows, ticks: buildTicks(scale, p.zoom, p.timezone, p.locale, p.shifts), byRow };
+        const custom = customOf(p);
+        const ticks = buildTicks(scale, viewZoomOf(p), p.timezone, p.locale, p.shifts,
+            custom ? customTickStepMs(custom.endMs - custom.startMs) : undefined);
+        this.layoutMemo = { deps, rows, ticks, byRow };
         return this.layoutMemo;
     }
 
@@ -216,7 +275,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             window.clearInterval(this.refreshTimer);
             this.refreshTimer = 0;
         }
-        const tick = nowTickMs(this.props.props.zoom, this.props.props.refreshSeconds);
+        const tick = nowTickMs(viewZoomOf(this.props.props), this.props.props.refreshSeconds);
         if (tick > 0) {
             this.refreshTimer = window.setInterval(() => {
                 // Don't re-render mid-interaction — pointless during a drag, and it
@@ -240,8 +299,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         if (this.props.props.followNow) {
             this.tickFollow();
-            this.followTimer = window.setInterval(
-                () => this.tickFollow(), followTickMs(this.props.props.refreshSeconds, this.props.props.zoom));
+            const c = customOf(this.props.props);
+            this.followTimer = window.setInterval(() => this.tickFollow(),
+                followTickMs(this.props.props.refreshSeconds, this.props.props.zoom, c ? c.endMs - c.startMs : undefined));
         }
     }
 
@@ -254,6 +314,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             return;
         }
         const p = this.props.props;
+        const c = customOf(p);
+        if (c) {
+            this.customToNow(c);
+            return;
+        }
         const next = followAnchorMs(Date.now(), p.zoom, p.timezone);
         if (next !== this.state.anchorMs) {
             this.setState({ anchorMs: next }, () => this.scrollNowIntoView());
@@ -525,16 +590,33 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     // --- navigation ---------------------------------------------------------
     private step(dir: number): void {
         this.disarmFollow('page');
+        const c = customOf(this.props.props);
+        if (c) {
+            this.writeWindow(pageCustomWindow(c, dir, this.props.props.timezone));
+            return;
+        }
         this.setState({ anchorMs: pageAnchorMs(this.state.anchorMs, dir, this.props.props.zoom, this.props.props.timezone) });
     }
 
     private prev = (): void => this.step(-1);
     private next = (): void => this.step(1);
-    private goToday = (): void => this.setState(
-        { anchorMs: todayAnchorMs(this.props.props.zoom, this.props.props.timezone) }, () => this.scrollNowIntoView());
+    private goToday = (): void => {
+        const c = customOf(this.props.props);
+        if (c) {
+            this.customToNow(c);
+            return;
+        }
+        this.setState(
+            { anchorMs: todayAnchorMs(this.props.props.zoom, this.props.props.timezone) }, () => this.scrollNowIntoView());
+    };
 
-    // `state.zoom` is two-way: the toolbar writes the user's choice back.
+    // `state.zoom` is two-way: the toolbar writes the user's choice back. A zoom
+    // button also leaves a custom window (componentDidUpdate re-anchors).
     private setZoom = (zoom: TimelineZoom): void => {
+        if (customOf(this.props.props)) {
+            this.props.store.props.write('state.windowStart', null);
+            this.props.store.props.write('state.windowEnd', null);
+        }
         this.props.store.props.write('state.zoom', zoom);
     }
 
@@ -559,7 +641,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             return;
         }
         const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const w = zoneWallClock(new Date(this.state.anchorMs), this.props.props.timezone);
+        const w = zoneWallClock(new Date(this.scale().startMs), this.props.props.timezone);
         this.setState({
             mini: {
                 rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
@@ -576,11 +658,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
     }
 
-    /** Pick a day in the mini grid: anchor the window on that day's zone-local midnight. */
+    /** Pick a day in the mini grid: anchor the window on that day's zone-local
+     *  midnight (a custom window keeps its start time and length). */
     private miniPick(iso: string): void {
         const d = parseDate(iso);
         this.closeMini();
-        if (d) {
+        const c = customOf(this.props.props);
+        if (d && c) {
+            this.disarmFollow('miniPick');
+            this.writeWindow(customWindowOnDate(c, d.getFullYear(), d.getMonth() + 1, d.getDate(), this.props.props.timezone));
+        } else if (d) {
             this.disarmFollow('miniPick');
             this.setState({ anchorMs: resolveZoned(d, this.props.props.timezone).epochMs });
         }
@@ -668,8 +755,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     private renderToolbar(): React.ReactNode {
-        const { labels, zoom, followNow } = this.props.props;
+        const { labels, followNow } = this.props.props;
         const p = this.props.props;
+        const custom = customOf(p);
+        const zoom = viewZoomOf(p);
         // No events configured at all (neither source) and not mid-fetch -> the badge.
         const emptyLabel = isConfiguredEmpty(p.loading, p.events, p.recurringEvents)
             ? emptyMessageText(p.emptyMessage, labels.noEvents) : '';
@@ -681,15 +770,18 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         // config.zooms picks the buttons (the mapper already dropped 'shift' when
         // config.shifts is empty and fell back to the default set when empty).
         const zooms = p.zooms.map((id) => ({ id, label: zoomLabels[id] }));
-        // A sub-hour window is a slice of a day, so the title names its start time too.
-        const title = zonedFormat(this.props.props.locale, this.props.props.timezone, isSubHourZoom(zoom)
+        // A sub-hour window is a slice of a day, so the title names its start time
+        // too; so does a custom window that doesn't start at midnight.
+        const startMs = this.scale().startMs;
+        const withTime = isSubHourZoom(zoom) || (!!custom && zoneMidnightMs(startMs, p.timezone) !== startMs);
+        const title = zonedFormat(this.props.props.locale, this.props.props.timezone, withTime
             ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }
-            : { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(this.scale().startMs));
+            : { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(startMs));
         return (
             <TimelineToolbar
                 title={title}
                 labels={labels}
-                zoom={zoom}
+                zoom={custom ? null : p.zoom}
                 zooms={zooms}
                 followNow={followNow}
                 showMiniNav={p.showMiniNav}
@@ -717,7 +809,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 lay={lay}
                 scale={scale}
                 rowHeight={p.rowHeight}
-                barMinPx={barMinPx(p.zoom, p.editable)}
+                barMinPx={barMinPx(viewZoomOf(p), p.editable)}
                 categories={p.categories}
                 preview={this.state.preview}
                 movable={this.movable}
@@ -827,11 +919,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                             // the line instead of gliding it across the board; between
                             // refresh ticks it glides by exactly one tick's worth.
                             <div
-                                key={`now-${scale.startMs}-${p.zoom}`}
+                                key={`now-${scale.startMs}-${scale.endMs}`}
                                 className="mustry-tml-now"
                                 style={{
                                     left: LABEL_COL_PX + msToPx(scale, nowMs), top: AXIS_PX,
-                                    ['--tml-now-tick' as string]: `${nowTickMs(p.zoom, p.refreshSeconds)}ms`
+                                    ['--tml-now-tick' as string]: `${nowTickMs(viewZoomOf(p), p.refreshSeconds)}ms`
                                 } as React.CSSProperties}
                             />
                         )}

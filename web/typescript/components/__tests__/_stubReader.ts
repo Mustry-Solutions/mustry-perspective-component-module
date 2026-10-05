@@ -10,6 +10,7 @@ export function stubReader(data: any): PropReader {
         readString: (p, fb = '') => { const v = at(p); return missing(v) ? (fb as string) : String(v); },
         readBoolean: (p, fb = false) => { const v = at(p); return missing(v) ? (fb as boolean) : !!v; },
         readNumber: <T,>(p: string, fb: T): T => { const v = at(p); return (missing(v) ? fb : v) as T; },
-        readArray: (p, fb = [] as never[]) => { const v = at(p); return (missing(v) ? fb : v) as any[]; }
+        readArray: (p, fb = [] as never[]) => { const v = at(p); return (missing(v) ? fb : v) as any[]; },
+        read: (p = '', fb?: any) => { const v = p ? at(p) : data; return missing(v) ? fb : v; }
     };
 }

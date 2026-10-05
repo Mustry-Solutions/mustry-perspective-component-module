@@ -9,7 +9,7 @@ import { TimelineLabels } from '../../shared/labelPacks';
 interface TimelineToolbarProps {
     title: string;
     labels: TimelineLabels;
-    zoom: TimelineZoom;
+    zoom: TimelineZoom | null;   // null = a custom window, no preset active
     zooms: Array<{ id: TimelineZoom; label: string }>;
     followNow: boolean;
     showMiniNav: boolean;

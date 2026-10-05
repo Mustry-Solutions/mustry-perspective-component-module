@@ -7,4 +7,5 @@ export interface PropReader {
     readBoolean(path: string, defaultValue?: boolean): boolean;
     readNumber<T>(path: string, defaultValue: T): T;
     readArray(path: string, defaultValue?: never[]): any[];
+    read(path?: string, defaultValue?: any): any;
 }
