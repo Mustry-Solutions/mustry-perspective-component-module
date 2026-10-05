@@ -11,7 +11,9 @@ export class EnterTracker {
     private mounted = false;
 
     /** Seed with the initial items so they don't fire the create animation
-     *  (the container fades in instead), and start honouring enterClass. */
+     *  (the container fades in instead), and start honouring enterClass. A
+     *  bound component usually mounts before its binding delivers, so an empty
+     *  seed leaves the initial load to the first detect() that brings data. */
     seed(items: Array<{ id?: string }>): void {
         items.forEach((e) => { if (e.id) { this.seen.add(e.id); } });
         this.mounted = true;
@@ -20,6 +22,11 @@ export class EnterTracker {
     /** After a render: mark freshly-appeared ids so their chips finish the enter
      *  animation, then settle. `onSettled` re-renders to drop the enter class. */
     detect(items: Array<{ id?: string }>, onSettled: () => void): void {
+        if (!this.seen.size) {
+            // Nothing seen yet: this is the initial data load, not new events.
+            items.forEach((e) => { if (e.id) { this.seen.add(e.id); } });
+            return;
+        }
         const fresh: string[] = [];
         items.forEach((e) => {
             if (e.id && !this.seen.has(e.id) && !this.pending.has(e.id)) {
@@ -37,10 +44,11 @@ export class EnterTracker {
     }
 
     /** Enter-animation class for an item: set once for a never-seen base id
-     *  (recurring occurrences "base::date" match their base). */
+     *  (recurring occurrences "base::date" match their base). Never before any
+     *  id has been seen: that render shows the initial load (see detect). */
     enterClass(occId: string): string {
         const base = (occId || '').split('::')[0];
-        return this.mounted && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
+        return this.mounted && this.seen.size > 0 && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
     }
 
     dispose(): void {

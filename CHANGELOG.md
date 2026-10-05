@@ -8,6 +8,15 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: events faded in on page load (calendar, timeline)
+A bound component mounts before its binding delivers, so the first data
+counted as newly created and every event played the enter animation on page
+load. The first data to arrive is now treated as the initial load. The
+calendar also never registered `data.recurringEvents` with the animation, so
+recurring occurrences faded in on every render; they now animate only when
+their series is new. One trade-off: the first event created on an empty board
+no longer animates.
+
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
 Origin requirement (`git commit -s`). It was never enforced by CI and was

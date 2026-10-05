@@ -23,3 +23,21 @@ test('calendar: empty state shows the badge', async ({ page }) => {
     await openRoute(page, '/calendar-empty', '.mustry-calendar');
     await expect(page.locator('.mustry-cal-empty-badge')).toBeVisible();
 });
+
+test('calendar: events and recurring series do not fade in on page load', async ({ page }) => {
+    await page.addInitScript(() => {
+        const w = window as unknown as { enterSeen: number };
+        w.enterSeen = 0;
+        const watch = () => new MutationObserver(() => {
+            w.enterSeen += document.querySelectorAll('.mustry-cal-anim-enter').length;
+        }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        if (document.documentElement) {
+            watch();
+        } else {
+            document.addEventListener('readystatechange', watch, { once: true });
+        }
+    });
+    await openRoute(page, '/calendar', '.mustry-calendar');
+    await page.waitForTimeout(1000);
+    expect(await page.evaluate(() => (window as unknown as { enterSeen: number }).enterSeen)).toBe(0);
+});

@@ -76,3 +76,24 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     expect(w).toBeGreaterThan(3);
     expect(w).toBeLessThan(20);   // a floored 1s phase would be ~144px
 });
+
+test('timeline: bound events do not fade in on page load', async ({ page }) => {
+    // The demo's events come from a binding that delivers after the component
+    // mounts; that first delivery is the initial load, not newly created events.
+    await page.addInitScript(() => {
+        const w = window as unknown as { enterSeen: number };
+        w.enterSeen = 0;
+        const watch = () => new MutationObserver(() => {
+            w.enterSeen += document.querySelectorAll('.mustry-tml-anim-enter').length;
+        }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        if (document.documentElement) {
+            watch();
+        } else {
+            document.addEventListener('readystatechange', watch, { once: true });
+        }
+    });
+    await openRoute(page, '/timeline', '.mustry-timeline');
+    await expect(page.getByText('Batch 4711')).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => (window as unknown as { enterSeen: number }).enterSeen)).toBe(0);
+});
