@@ -46,7 +46,8 @@ export interface TimelineProps {
     followNow: boolean;      // two-way (state.followNow): the toolbar's Live toggle writes it back
     windowStart: number | null;   // two-way (state.windowStart): custom window, epoch ms (null = unset)
     windowEnd: number | null;     // two-way (state.windowEnd)
-    windowAsEpoch: boolean;       // the window was given as epoch ms, so write it back as numbers
+    windowStartAsEpoch: boolean;  // windowStart was given as epoch ms, so write it back as a number
+    windowEndAsEpoch: boolean;    // likewise for windowEnd
     emptyMessage: string;    // toolbar badge when no events are configured ('' = hidden)
     loading: boolean;
     refetchDebounceMs: number;
@@ -122,7 +123,8 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         followNow: tree.readBoolean('state.followNow', false),
         windowStart: windowEdgeMs(tree.read('state.windowStart', null), tree.readString('config.timezone', '')),
         windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), tree.readString('config.timezone', '')),
-        windowAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
+        windowStartAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
+        windowEndAsEpoch: typeof tree.read('state.windowEnd', null) === 'number',
         emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         loading: tree.readBoolean('config.loading', false),
         refetchDebounceMs: Math.max(0, tree.readNumber('config.refetchDebounceMs', 150)),

@@ -218,9 +218,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
      *  (epoch ms, or an offset-bearing ISO instant in config.timezone). */
     private writeWindow(w: CustomWindow): void {
         const p = this.props.props;
-        const out = (ms: number) => (p.windowAsEpoch ? ms : msToZonedIso(ms, p.timezone));
-        this.props.store.props.write('state.windowStart', out(w.startMs));
-        this.props.store.props.write('state.windowEnd', out(w.endMs));
+        const out = (ms: number, asEpoch: boolean) => (asEpoch ? ms : msToZonedIso(ms, p.timezone));
+        this.props.store.props.write('state.windowStart', out(w.startMs, p.windowStartAsEpoch));
+        this.props.store.props.write('state.windowEnd', out(w.endMs, p.windowEndAsEpoch));
     }
 
     /** Move a custom window to the stride holding now (Today / follow-now). */

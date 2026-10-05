@@ -621,14 +621,19 @@ describe('mapTimelineProps: custom window', () => {
         const epoch = mapTimelineProps(stubReader({ state: { windowStart: 1759644000000, windowEnd: 1759672800000 } }));
         expect(epoch.windowStart).toBe(1759644000000);
         expect(epoch.windowEnd).toBe(1759672800000);
-        expect(epoch.windowAsEpoch).toBe(true);
+        expect(epoch.windowStartAsEpoch).toBe(true);
+        expect(epoch.windowEndAsEpoch).toBe(true);
         const iso = mapTimelineProps(stubReader({
             config: { timezone: 'Europe/Brussels' },
             state: { windowStart: '2026-10-05T06:00:00', windowEnd: '2026-10-05T14:00:00Z' }
         }));
         expect(iso.windowStart).toBe(Date.UTC(2026, 9, 5, 4));
         expect(iso.windowEnd).toBe(Date.UTC(2026, 9, 5, 14));
-        expect(iso.windowAsEpoch).toBe(false);
+        expect(iso.windowStartAsEpoch).toBe(false);
+        expect(iso.windowEndAsEpoch).toBe(false);
+        const mixed = mapTimelineProps(stubReader({ state: { windowStart: 1759644000000, windowEnd: '2026-10-05T14:00:00Z' } }));
+        expect(mixed.windowStartAsEpoch).toBe(true);
+        expect(mixed.windowEndAsEpoch).toBe(false);
     });
 
     it('treats null, empty and garbage as unset', () => {
