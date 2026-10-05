@@ -32,17 +32,28 @@ export function daysInMonth(d: Date): number {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 }
 
-/** First day (local midnight) of the week containing `d`, per Monday/Sunday start. */
-export function startOfWeek(d: Date, mondayFirst: boolean): Date {
-    const dow = d.getDay(); // 0=Sun..6=Sat
-    const offset = mondayFirst ? (dow + 6) % 7 : dow;
-    return addDays(startOfDay(d), -offset);
+/** config.weekStart values, indexed like Date.getDay() (0 = Sunday). */
+export const WEEK_START_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+export type WeekStart = typeof WEEK_START_DAYS[number];
+
+/** A config.weekStart value, with anything unknown read as Monday. */
+export function toWeekStart(v: string): WeekStart {
+    return WEEK_START_DAYS.indexOf(v as WeekStart) >= 0 ? v as WeekStart : 'monday';
 }
 
-/** Offset (0..6) of the first day cell, honouring Monday-first or Sunday-first. */
-export function firstCellOffset(monthStart: Date, mondayFirst: boolean): number {
-    const dow = monthStart.getDay(); // 0=Sun .. 6=Sat
-    return mondayFirst ? (dow + 6) % 7 : dow;
+/** A week start as a Date.getDay() index (0 = Sunday .. 6 = Saturday). */
+export function weekStartDay(ws: WeekStart): number {
+    return Math.max(0, WEEK_START_DAYS.indexOf(ws));
+}
+
+/** First day (local midnight) of the week containing `d`; weeks start on `firstDay` (0 = Sunday). */
+export function startOfWeek(d: Date, firstDay: number): Date {
+    return addDays(startOfDay(d), -((d.getDay() - firstDay + 7) % 7));
+}
+
+/** Offset (0..6) of the first day cell when weeks start on `firstDay` (0 = Sunday). */
+export function firstCellOffset(monthStart: Date, firstDay: number): number {
+    return (monthStart.getDay() - firstDay + 7) % 7;
 }
 
 /** Whole calendar days between two values (DST-safe via day-count rounding). */
@@ -145,15 +156,15 @@ export function monthLabel(d: Date, locale: string): string {
     return intlFormat(locale, { month: 'long', year: 'numeric' }).format(d);
 }
 
-/** Short weekday headers localized to `locale`, ordered per `mondayFirst`. */
-export function weekdayHeaders(mondayFirst: boolean, locale: string): string[] {
+/** Short weekday headers localized to `locale`, starting on `firstDay` (0 = Sunday). */
+export function weekdayHeaders(firstDay: number, locale: string): string[] {
     const fmt = intlFormat(locale, { weekday: 'short' });
     // 2024-01-07 is a Sunday; format Sun..Sat.
     const base: string[] = [];
     for (let i = 0; i < 7; i++) {
         base.push(fmt.format(new Date(2024, 0, 7 + i)));
     }
-    return mondayFirst ? [...base.slice(1), base[0]] : base;
+    return [...base.slice(firstDay), ...base.slice(0, firstDay)];
 }
 
 // --- timezone resolution (DST-correct, no external libraries) -------------

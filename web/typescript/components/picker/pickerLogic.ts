@@ -84,7 +84,7 @@ export function effMax(disableDates: DisableMode, latestDate: string, todayDate:
 export interface PresetContext {
     now: Date;            // the "current" instant
     forward: boolean;     // rolling direction (disableDates === 'past')
-    mondayFirst: boolean; // weekStart === 'monday'
+    firstDay: number;     // weekStart as 0 = Sunday .. 6 = Saturday
 }
 
 /** Rolling preset: a window of amount*unit from `now`, in the given direction. */
@@ -113,8 +113,8 @@ export function rollingRange(amount: number, unit: PresetUnit, now: Date, forwar
 }
 
 /** Calendar preset: a period snapped to boundaries. 'this*' = period-to-date,
- *  'last*' = the full previous period. Week periods honour `mondayFirst`. */
-export function calendarRange(period: PresetPeriod, now: Date, mondayFirst: boolean): DateRange {
+ *  'last*' = the full previous period. Week periods start on `firstDay` (0 = Sunday). */
+export function calendarRange(period: PresetPeriod, now: Date, firstDay: number): DateRange {
     const todayStart = startOfDay(now);
     const endOfToday = combine(todayStart, 86399);
 
@@ -126,9 +126,9 @@ export function calendarRange(period: PresetPeriod, now: Date, mondayFirst: bool
             return { start: y, end: combine(y, 86399) };
         }
         case 'thisWeek':
-            return { start: startOfWeek(now, mondayFirst), end: endOfToday };
+            return { start: startOfWeek(now, firstDay), end: endOfToday };
         case 'lastWeek': {
-            const ws = startOfWeek(now, mondayFirst);
+            const ws = startOfWeek(now, firstDay);
             return { start: addDays(ws, -7), end: combine(addDays(ws, -1), 86399) };
         }
         case 'thisMonth':
@@ -150,7 +150,7 @@ export function calendarRange(period: PresetPeriod, now: Date, mondayFirst: bool
 /** The (datetime) endpoints a preset would set. */
 export function presetRange(p: PresetDef, ctx: PresetContext): DateRange {
     if (p.type === 'calendar') {
-        return calendarRange(p.period, ctx.now, ctx.mondayFirst);
+        return calendarRange(p.period, ctx.now, ctx.firstDay);
     }
     return rollingRange(p.amount, p.unit, ctx.now, ctx.forward);
 }

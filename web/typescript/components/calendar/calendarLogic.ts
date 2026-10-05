@@ -291,9 +291,9 @@ export interface DayCol {
 
 /** The day columns of the week containing `cursor` (respecting week-start & weekends). */
 export function weekDays(
-    cursor: Date, mondayFirst: boolean, showWeekends: boolean, todayDate: Date = today()
+    cursor: Date, firstDay: number, showWeekends: boolean, todayDate: Date = today()
 ): DayCol[] {
-    const start = startOfWeek(cursor, mondayFirst);
+    const start = startOfWeek(cursor, firstDay);
     const cols: DayCol[] = [];
     for (let i = 0; i < 7; i++) {
         const date = addDays(start, i);

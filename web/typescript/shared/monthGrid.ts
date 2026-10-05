@@ -20,10 +20,10 @@ const WEEKS = 6; // fixed height so the grid doesn't jump between months
 
 /** Build a 6-week month grid starting on the configured week-start day. */
 export function buildMonthGrid(
-    viewMonth: Date, mondayFirst: boolean, showWeekends: boolean, todayDate: Date = today()
+    viewMonth: Date, firstDay: number, showWeekends: boolean, todayDate: Date = today()
 ): MonthGrid {
     const monthStart = startOfMonth(viewMonth);
-    const gridStart = addDays(monthStart, -firstCellOffset(monthStart, mondayFirst));
+    const gridStart = addDays(monthStart, -firstCellOffset(monthStart, firstDay));
     const weeks: DayCell[][] = [];
     for (let w = 0; w < WEEKS; w++) {
         const row: DayCell[] = [];

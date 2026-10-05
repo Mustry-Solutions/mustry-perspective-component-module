@@ -186,6 +186,11 @@
         "weekStart": {
           "enum": [
             "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
             "sunday"
           ],
           "default": "monday",

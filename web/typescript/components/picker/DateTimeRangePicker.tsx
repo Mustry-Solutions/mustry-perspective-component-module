@@ -24,7 +24,8 @@ import {
     secToHms,
     startOfDay,
     startOfMonth,
-    today
+    today,
+    weekStartDay
 } from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
 import { ResolvedLayout, PresetDef } from './pickerLogic';
@@ -485,7 +486,7 @@ export class DateTimeRangePicker
         return {
             now: new Date(),
             forward: p.disableDates === 'past',
-            mondayFirst: p.weekStart === 'monday'
+            firstDay: weekStartDay(p.weekStart)
         };
     }
 

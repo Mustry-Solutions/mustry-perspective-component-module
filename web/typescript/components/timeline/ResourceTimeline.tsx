@@ -16,7 +16,7 @@ import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
 import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
-import { addMonths, startOfMonth } from '../../shared/dateUtils';
+import { addMonths, startOfMonth, weekStartDay } from '../../shared/dateUtils';
 import {
     BarLayout, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
     buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
@@ -844,7 +844,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     <MiniMonthNav
                         mini={this.state.mini}
                         locale={p.locale}
-                        mondayFirst={p.weekStart === 'monday'}
+                        firstDay={weekStartDay(p.weekStart)}
                         range={{ start: this.windowDates().start, end: this.windowDates().end }}
                         cursorIso={this.windowDates().cursor}
                         showRange={true}

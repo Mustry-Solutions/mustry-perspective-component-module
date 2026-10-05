@@ -6,7 +6,8 @@ import { LabelConfig } from '../../shared/labelPacks';
 
 export type { LabelConfig };
 
-export type WeekStart = 'monday' | 'sunday';
+import type { WeekStart } from '../../shared/dateUtils';
+export type { WeekStart };
 export type DisplayMode = 'inline' | 'popover';
 
 export interface DateTimeRangePickerProps {

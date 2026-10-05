@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: `config.weekStart` accepts every day of the week
+The calendar, date/time range picker and the timeline's mini month navigator
+only offered `monday` and `sunday` as the first day of the week (issue #186).
+All seven days are now valid, e.g. `saturday` for a Saturday-to-Friday week.
+The picker's week presets (this week, last week) follow it too. Unknown values
+still fall back to `monday`.
+
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
 Origin requirement (`git commit -s`). It was never enforced by CI and was
