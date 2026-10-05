@@ -220,6 +220,7 @@ A scheduling board: resources (machines, lines, crews) as rows on a zoomable hor
 - **Categories, icons & legend** — same contract as the calendar (`config.categories`, `event.category`, `event.status` restyling, interactive legend on two-way `state.hiddenCategories`).
 - **Recurrence** — events with an `rrule` expand per visible window (bind `config.data.recurringEvents` to an always-loaded query so windowed fetches never drop a series). Occurrences carry a ↻ marker and edit like the calendar's: dragging or editing one detaches it into a standalone override plus an `exdate` on the series; the editor can target the whole series instead.
 - **Windowed data binding** — `output.visibleStart`/`visibleEnd` are ISO-8601 UTC instants (half-open); bind your query `ts >= :start AND ts < :end` and `config.loading` to its state. See the live recipe at `/timeline-db` in the verify project, and the cycle-time fixture at `/timeline-cycle`.
+- **Enter animation** — a bar or band fades in the first time its event `id` appears. Keep ids stable across refreshes (a regenerated id counts as a new event); set `config.animations` to `false` on fast-polled boards where new events arrive every few seconds.
 - **CSV export** (`config.showExport`), now-line (`config.refreshSeconds`), localization (same 7 languages + `config.labels` overrides), CSS-variable theming (`--tml-*`).
 
 ### How events work

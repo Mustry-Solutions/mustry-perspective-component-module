@@ -16,6 +16,13 @@ instant or epoch ms) override the preset when both are set. Paging moves the
 window by its own length, Today and Live keep its phase, and a zoom button
 returns to the presets. Unset (the default) keeps the current behaviour.
 
+### Added: `config.animations` on the resource timeline
+A new bar or band fades in the first time its event id appears. On a board
+polled every few seconds (a machine-cycle view) each new cycle animated in,
+which reads as flashing. `config.animations: false` turns the enter animation
+off; the now-line still moves. Defaults to `true`, so existing views are
+unchanged.
+
 ### Fixed: events faded in on page load and when paging (calendar, timeline)
 A bound component mounts before its binding delivers, and a windowed binding
 refetches after every page or view change. Both deliveries counted as newly
