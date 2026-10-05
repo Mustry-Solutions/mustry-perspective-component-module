@@ -124,7 +124,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentDidMount(): void {
-        this.enter.seed(this.allEvents());
+        // data.events is the bound (often windowed) source; recurringEvents can
+        // already be there while it is still on its way.
+        this.enter.seed(this.allEvents(), !(this.props.props.events || []).length);
         this.syncOutput();
         this.scrollTimeGrid();
         // Re-measure the month-cell capacity whenever the component is resized.

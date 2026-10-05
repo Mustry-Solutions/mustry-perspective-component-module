@@ -16,11 +16,14 @@ export class EnterTracker {
     private loadPending = false;
 
     /** Seed with the initial items so they don't fire the create animation
-     *  (the container fades in instead), and start honouring enterClass. An
-     *  empty seed leaves the initial load to the first data that arrives. */
-    seed(items: Array<{ id?: string }>): void {
+     *  (the container fades in instead), and start honouring enterClass.
+     *  `loading`: the bound data has not arrived yet, so the first new ids are
+     *  its initial load (default: nothing to seed). A component whose items mix
+     *  an always-loaded source with a bound one passes whether the bound one is
+     *  still empty. */
+    seed(items: Array<{ id?: string }>, loading = !items.some((e) => e.id)): void {
         items.forEach((e) => { if (e.id) { this.seen.add(e.id); } });
-        this.loadPending = !this.seen.size;
+        this.loadPending = loading;
         this.mounted = true;
     }
 

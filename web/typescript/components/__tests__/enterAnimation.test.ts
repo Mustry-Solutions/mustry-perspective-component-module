@@ -64,6 +64,18 @@ describe('EnterTracker', () => {
         expect(t.enterClass('c')).toBe(' mustry-cal-anim-enter');
     });
 
+    it('a series present at mount does not end the initial load', () => {
+        // recurringEvents is always loaded, so it can be there at mount while the
+        // windowed events binding has not delivered yet.
+        const t = new EnterTracker();
+        t.seed([ev('series')], true);
+        expect(t.enterClass('a')).toBe('');
+        t.detect([ev('a'), ev('series')], jest.fn());
+        expect(t.enterClass('a')).toBe('');
+        t.detect([ev('a'), ev('b'), ev('series')], jest.fn());
+        expect(t.enterClass('b')).toBe(' mustry-cal-anim-enter');
+    });
+
     it('a board emptied after load still animates the next new event', () => {
         const t = new EnterTracker();
         t.seed([ev('a')]);

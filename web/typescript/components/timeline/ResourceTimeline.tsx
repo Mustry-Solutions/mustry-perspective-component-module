@@ -101,7 +101,9 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     }
 
     componentDidMount(): void {
-        this.enter.seed(this.allEvents());
+        // data.events is the bound (often windowed) source; recurringEvents can
+        // already be there while it is still on its way.
+        this.enter.seed(this.allEvents(), !(this.props.props.events || []).length);
         this.syncOutput();
         this.setupRefreshTimer();
         this.setupFollowTimer();
