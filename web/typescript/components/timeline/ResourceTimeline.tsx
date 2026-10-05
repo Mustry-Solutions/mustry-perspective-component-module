@@ -225,7 +225,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
 
     /** Move a custom window to the stride holding now (Today / follow-now). */
     private customToNow(c: CustomWindow): void {
-        const next = containingCustomWindow(c, Date.now());
+        const next = containingCustomWindow(c, Date.now(), this.props.props.timezone);
         if (next.startMs === c.startMs) {
             this.scrollNowIntoView();
         } else {
@@ -592,7 +592,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         this.disarmFollow('page');
         const c = customOf(this.props.props);
         if (c) {
-            this.writeWindow(pageCustomWindow(c, dir));
+            this.writeWindow(pageCustomWindow(c, dir, this.props.props.timezone));
             return;
         }
         this.setState({ anchorMs: pageAnchorMs(this.state.anchorMs, dir, this.props.props.zoom, this.props.props.timezone) });

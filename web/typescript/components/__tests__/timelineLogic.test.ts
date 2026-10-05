@@ -721,15 +721,50 @@ describe('custom window (state.windowStart / windowEnd)', () => {
 
     it('pages by its own length', () => {
         const w = { startMs: t0, endMs: t0 + 8 * H };
-        expect(pageCustomWindow(w, 1)).toEqual({ startMs: t0 + 8 * H, endMs: t0 + 16 * H });
-        expect(pageCustomWindow(w, -1)).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
+        expect(pageCustomWindow(w, 1, 'UTC')).toEqual({ startMs: t0 + 8 * H, endMs: t0 + 16 * H });
+        expect(pageCustomWindow(w, -1, 'UTC')).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
     });
 
     it('Today keeps the window\'s phase: 06:00-14:00 strides to 22:00-06:00', () => {
         const w = { startMs: t0, endMs: t0 + 8 * H };
-        expect(containingCustomWindow(w, t0 + 3 * H)).toEqual(w);                       // already there
-        expect(containingCustomWindow(w, t0 + 17 * H)).toEqual({ startMs: t0 + 16 * H, endMs: t0 + 24 * H });
-        expect(containingCustomWindow(w, t0 - 1)).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
+        expect(containingCustomWindow(w, t0 + 3 * H, 'UTC')).toEqual(w);                       // already there
+        expect(containingCustomWindow(w, t0 + 17 * H, 'UTC')).toEqual({ startMs: t0 + 16 * H, endMs: t0 + 24 * H });
+        expect(containingCustomWindow(w, t0 - 1, 'UTC')).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
+    });
+
+    describe('across the 2026-10-25 Brussels DST change (03:00 CEST -> 02:00 CET)', () => {
+        const tz = 'Europe/Brussels';
+        // Sat 2026-10-24 14:00-22:00 CEST = 12:00Z-20:00Z.
+        const late = { startMs: Date.UTC(2026, 9, 24, 12), endMs: Date.UTC(2026, 9, 24, 20) };
+
+        it('Next keeps the shift on the wall clock: the night shift runs 9 hours', () => {
+            const night = pageCustomWindow(late, 1, tz);
+            // 22:00 CEST Sat -> 06:00 CET Sun.
+            expect(night).toEqual({ startMs: Date.UTC(2026, 9, 24, 20), endMs: Date.UTC(2026, 9, 25, 5) });
+            // ...and the early shift after it is 06:00-14:00 CET.
+            expect(pageCustomWindow(night, 1, tz)).toEqual({ startMs: Date.UTC(2026, 9, 25, 5), endMs: Date.UTC(2026, 9, 25, 13) });
+            expect(pageCustomWindow(night, -1, tz)).toEqual(late);
+        });
+
+        it('Today/Live finds the same wall-clock shift after the change', () => {
+            // Mon 2026-10-26 07:00 CET = 06:00Z -> the 06:00-14:00 CET shift.
+            expect(containingCustomWindow(late, Date.UTC(2026, 9, 26, 6), tz))
+                .toEqual({ startMs: Date.UTC(2026, 9, 26, 5), endMs: Date.UTC(2026, 9, 26, 13) });
+        });
+
+        it('Live holds now even inside the repeated hour', () => {
+            const hour = { startMs: Date.UTC(2026, 9, 24, 22), endMs: Date.UTC(2026, 9, 24, 23) };   // 00:00-01:00 CEST
+            for (const now of [Date.UTC(2026, 9, 25, 0, 30), Date.UTC(2026, 9, 25, 1, 30)]) {   // 02:30 CEST, 02:30 CET
+                const w = containingCustomWindow(hour, now, tz);
+                expect(now).toBeGreaterThanOrEqual(w.startMs);
+                expect(now).toBeLessThan(w.endMs);
+            }
+        });
+
+        it('a sub-hour window steps in plain time, without skipping the repeated hour', () => {
+            const cycle = { startMs: Date.UTC(2026, 9, 25, 0, 59, 15), endMs: Date.UTC(2026, 9, 25, 1, 0) };   // 02:59:15-03:00 CEST
+            expect(pageCustomWindow(cycle, 1, tz)).toEqual({ startMs: Date.UTC(2026, 9, 25, 1, 0), endMs: Date.UTC(2026, 9, 25, 1, 0, 45) });
+        });
     });
 
     it('a mini-nav pick keeps the zone-local start time across a DST change', () => {

@@ -246,27 +246,66 @@ export function customTickStepMs(spanMs: number): number {
     return CUSTOM_TICK_STEPS_MS[CUSTOM_TICK_STEPS_MS.length - 1];
 }
 
-/** Prev/next for a custom window: shift by its own length. */
-export function pageCustomWindow(w: CustomWindow, dir: number): CustomWindow {
-    const span = w.endMs - w.startMs;
-    return { startMs: w.startMs + dir * span, endMs: w.endMs + dir * span };
+/** An instant's zone-local wall clock as a naive epoch (wall-clock arithmetic). */
+function wallMs(ms: number, timeZone: string): number {
+    const w = zoneWallClock(new Date(ms), timeZone);
+    return Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) + (((ms % 1000) + 1000) % 1000);
+}
+
+/** The instant showing a naive-epoch wall clock in the zone (inverse of wallMs). */
+function fromWallMs(wall: number, timeZone: string): number {
+    const d = new Date(wall);
+    const local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+    return resolveZoned(local, timeZone).epochMs + d.getUTCMilliseconds();
+}
+
+/** Wall-clock length of a window when it is a whole number of hours (a shift,
+ *  a day), else null. Those windows step on the zone's wall clock, so 06:00-14:00
+ *  stays on 06:00 / 14:00 / 22:00 across a DST change; shorter ones (a machine
+ *  cycle) step in plain time so paging never skips or repeats the DST hour. */
+function wallSpanMs(w: CustomWindow, timeZone: string): number | null {
+    const span = wallMs(w.endMs, timeZone) - wallMs(w.startMs, timeZone);
+    return span > 0 && span % MS_PER_HOUR === 0 ? span : null;
+}
+
+/** Prev/next for a custom window: shift by its own length (on the wall clock
+ *  for whole-hour windows, see wallSpanMs). */
+export function pageCustomWindow(w: CustomWindow, dir: number, timeZone: string): CustomWindow {
+    const wallSpan = wallSpanMs(w, timeZone);
+    if (wallSpan === null) {
+        const span = w.endMs - w.startMs;
+        return { startMs: w.startMs + dir * span, endMs: w.endMs + dir * span };
+    }
+    const start = wallMs(w.startMs, timeZone) + dir * wallSpan;
+    return { startMs: fromWallMs(start, timeZone), endMs: fromWallMs(start + wallSpan, timeZone) };
 }
 
 /** Today / follow-now for a custom window: the window-length stride that holds
  *  `nowMs`, counted from the window's own start, so a 06:00-14:00 window keeps
  *  landing on 06:00 / 14:00 / 22:00. */
-export function containingCustomWindow(w: CustomWindow, nowMs: number): CustomWindow {
-    const span = w.endMs - w.startMs;
-    return pageCustomWindow(w, Math.floor((nowMs - w.startMs) / span));
+export function containingCustomWindow(w: CustomWindow, nowMs: number, timeZone: string): CustomWindow {
+    const wallSpan = wallSpanMs(w, timeZone);
+    let c = w;
+    if (wallSpan !== null) {
+        c = pageCustomWindow(w, Math.floor((wallMs(nowMs, timeZone) - wallMs(w.startMs, timeZone)) / wallSpan), timeZone);
+        if (nowMs >= c.startMs && nowMs < c.endMs) {
+            return c;
+        }
+        // The repeated hour of a DST fall-back reads the same on the wall clock
+        // twice; finish in plain time from the wall-clock guess.
+    }
+    const span = c.endMs - c.startMs;
+    const k = Math.floor((nowMs - c.startMs) / span);
+    return { startMs: c.startMs + k * span, endMs: c.endMs + k * span };
 }
 
 /** Mini-nav day pick for a custom window: the same wall-clock start on that
  *  date, same length. */
 export function customWindowOnDate(w: CustomWindow, y: number, mo: number, d: number, timeZone: string): CustomWindow {
-    const s = zoneWallClock(new Date(w.startMs), timeZone);
-    const ms = w.startMs % 1000;
-    const startMs = resolveZoned(new Date(y, mo - 1, d, s.h, s.mi, s.s), timeZone).epochMs + ms;
-    return { startMs, endMs: startMs + (w.endMs - w.startMs) };
+    const start = Date.UTC(y, mo - 1, d) + wallMs(w.startMs, timeZone) % (24 * MS_PER_HOUR);
+    const startMs = fromWallMs(start, timeZone);
+    const wallSpan = wallSpanMs(w, timeZone);
+    return { startMs, endMs: wallSpan === null ? startMs + (w.endMs - w.startMs) : fromWallMs(start + wallSpan, timeZone) };
 }
 
 /** How often the now-line re-renders, ms (0 = never; config.refreshSeconds off).
