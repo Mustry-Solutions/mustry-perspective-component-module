@@ -636,6 +636,23 @@ describe('mapTimelineProps: custom window', () => {
         expect(mixed.windowEndAsEpoch).toBe(false);
     });
 
+    it('treats numbers outside the Date range as unset', () => {
+        // 1e20 is finite but not a valid Date: formatting it throws a RangeError.
+        const p = mapTimelineProps(stubReader({ state: { windowStart: 1e20, windowEnd: 2e20 } }));
+        expect(p.windowStart).toBeNull();
+        expect(p.windowEnd).toBeNull();
+        expect(mapTimelineProps(stubReader({ state: { windowStart: 8.64e15 } })).windowStart).toBe(8.64e15);
+    });
+
+    it('reports a window edge that is set at all, even when it is not usable', () => {
+        // A zoom click must clear a half-set or invalid window too, or a later
+        // write to the other edge switches the custom window back on.
+        expect(mapTimelineProps(stubReader({})).windowSet).toBe(false);
+        expect(mapTimelineProps(stubReader({ state: { windowStart: null, windowEnd: '' } })).windowSet).toBe(false);
+        expect(mapTimelineProps(stubReader({ state: { windowStart: '2026-10-05T06:00:00Z' } })).windowSet).toBe(true);
+        expect(mapTimelineProps(stubReader({ state: { windowEnd: 'soon' } })).windowSet).toBe(true);
+    });
+
     it('treats null, empty and garbage as unset', () => {
         const p = mapTimelineProps(stubReader({ state: { windowStart: null, windowEnd: 'soon' } }));
         expect(p.windowStart).toBeNull();
