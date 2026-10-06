@@ -20,6 +20,10 @@
    "viewPath": "GridDemo",
    "viewParams": {}
   },
+  "/grid-cell": {
+   "viewPath": "GridCellEdit",
+   "viewParams": {}
+  },
   "/grid-stress": {
    "viewPath": "GridStress",
    "viewParams": {}
