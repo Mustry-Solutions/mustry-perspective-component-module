@@ -8,6 +8,12 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Docs: user manual covers the issue #186 additions
+The Resource Timeline chapter now describes the zoom presets down to
+millisecond, the custom time window and `config.animations`; the
+localisation section mentions `config.weekStart`. The manual ships as the
+release PDF, so it had fallen behind the component.
+
 ### Fixed: custom-window edge cases on the resource timeline
 A `state.windowStart`/`windowEnd` number outside the range a date can hold
 (e.g. `1e20`) crashed the component instead of falling back to the zoom

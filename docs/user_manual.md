@@ -73,6 +73,9 @@ Every component uses the same four sections:
 date/weekday formatting and the built-in UI text, which ships in English,
 French, German, Spanish, Dutch, Italian and Portuguese. Any single string
 can be overridden via `config.labels.*` regardless of locale.
+`config.weekStart` sets the first day of the week (any day, default
+Monday) for the calendar, the date/time picker and its week presets, and
+the timeline's mini month navigator.
 
 ### 3.4 Theming
 
@@ -107,8 +110,18 @@ are supported. Timezone-aware via `config.timezone`.
 
 A scheduling board: resources down the side, time across, bars that drag
 between resources and resize at the edges (`onChange`). Resource groups
-collapse; day/week zoom levels; DST-correct. The classic
-production-planning and shift-board surface.
+collapse; DST-correct. The classic production-planning and shift-board
+surface.
+
+Zoom presets run from week and day down to hour, minute, second and
+millisecond for machine-cycle views; `config.zooms` picks the toolbar
+buttons and `config.shifts` adds a shift preset. For an exact range, set or
+bind `state.windowStart` and `state.windowEnd` (ISO instant or epoch ms),
+for example one 06:00-14:00 shift or the last 45 seconds; paging, Today and
+Live keep the window's length and alignment, also across DST. New events
+fade in the first time their id appears; on a board that receives new
+events every few seconds, set `config.animations` to `false`, and keep
+event ids stable across refreshes.
 
 ## 7. Data Grid
 
