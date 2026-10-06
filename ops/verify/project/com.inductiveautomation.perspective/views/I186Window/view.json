@@ -265,7 +265,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T14:00:00\"\n"
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T14:00:00\"\n"
                 }
               }
             ]
@@ -313,7 +313,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = \"2026-10-24T14:00:00\"\n\ttl.props.state.windowEnd = \"2026-10-24T22:00:00\"\n"
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = \"2026-10-24T14:00:00\"\n\ttl.props.state.windowEnd = \"2026-10-24T22:00:00\"\n"
                 }
               }
             ]
@@ -361,7 +361,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = now - 45000\n\ttl.props.state.windowEnd = now\n\tself.getSibling(\"timeline\").props.state.followNow = True\n"
+                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = True\n\ttl.props.state.windowStart = now - 45000\n\ttl.props.state.windowEnd = now\n"
                 }
               }
             ]
@@ -409,7 +409,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = now - 3600000\n\ttl.props.state.windowEnd = system.date.format(system.date.fromMillis(now + 3600000), \"yyyy-MM-dd'T'HH:mm:ssXXX\")\n"
+                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = now - 3600000\n\ttl.props.state.windowEnd = system.date.format(system.date.fromMillis(now + 3600000), \"yyyy-MM-dd'T'HH:mm:ssXXX\")\n"
                 }
               }
             ]
@@ -457,7 +457,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = None\n"
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = None\n"
                 }
               }
             ]
@@ -553,7 +553,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = 1e20\n\ttl.props.state.windowEnd = 2e20\n"
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = 1e20\n\ttl.props.state.windowEnd = 2e20\n"
                 }
               }
             ]
@@ -601,7 +601,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = None\n\ttl.props.state.windowEnd = None\n"
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = None\n\ttl.props.state.windowEnd = None\n"
                 }
               }
             ]
@@ -700,7 +700,7 @@
                 "type": "script",
                 "scope": "G",
                 "config": {
-                  "script": "\tdef val(t):\n\t\tt = (t or \"\").strip()\n\t\treturn long(t) if t.isdigit() else (t or None)\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = val(self.getSibling(\"startText\").props.text)\n\ttl.props.state.windowEnd = val(self.getSibling(\"endText\").props.text)\n"
+                  "script": "\tdef val(t):\n\t\tt = (t or \"\").strip()\n\t\treturn long(t) if t.isdigit() else (t or None)\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.followNow = False\n\ttl.props.state.windowStart = val(self.getSibling(\"startText\").props.text)\n\ttl.props.state.windowEnd = val(self.getSibling(\"endText\").props.text)\n"
                 }
               }
             ]
