@@ -611,9 +611,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     };
 
     // `state.zoom` is two-way: the toolbar writes the user's choice back. A zoom
-    // button also leaves a custom window (componentDidUpdate re-anchors).
+    // button also leaves a custom window (componentDidUpdate re-anchors), and
+    // clears a half-set one so a later write to the other edge can't revive it.
     private setZoom = (zoom: TimelineZoom): void => {
-        if (customOf(this.props.props)) {
+        if (this.props.props.windowSet) {
             this.props.store.props.write('state.windowStart', null);
             this.props.store.props.write('state.windowEnd', null);
         }

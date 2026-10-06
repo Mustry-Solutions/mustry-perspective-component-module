@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: custom-window edge cases on the resource timeline
+A `state.windowStart`/`windowEnd` number outside the range a date can hold
+(e.g. `1e20`) crashed the component instead of falling back to the zoom
+preset; such values are now ignored. A zoom button now also clears a half-set
+or invalid window, so a later write to the other edge can no longer switch the
+custom window back on over the chosen preset.
+
 ### Added: custom time window on the resource timeline
 The visible window could only be one of the zoom presets, so a view could not
 show, say, one 06:00-14:00 shift or the last 45 seconds of a machine cycle
