@@ -521,7 +521,7 @@ system.mustry.toast(message=u"Export finished.", sessionId=sessionId, pageId=pag
 
 **Targets.** With no ids the toast goes to the calling page, or to every page of the calling session when the script has no page (a session-scoped message handler). With `sessionId` alone it goes to every page of that session; add `pageId` for one page. The function returns the number of pages it reached; a missing target raises a `ValueError`.
 
-**Behaviour.** Toasts stack (at most five; a sixth pushes the oldest out), pause their countdown while hovered or focused, close with the close button or `Escape`, and are announced to screen readers (`role="alert"` for warnings and errors, `role="status"` otherwise). Title and message are always rendered as text, never as HTML.
+**Behaviour.** Toasts stack (at most five; a sixth pushes the oldest out), pause their countdown while hovered or keyboard-focused, close with the close button or `Escape`, and are announced to screen readers (`role="alert"` for warnings and errors, `role="status"` otherwise). Title and message are always rendered as text, never as HTML.
 
 ### Theming
 

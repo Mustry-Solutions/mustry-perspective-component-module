@@ -291,7 +291,7 @@ gateway message handler, WebDev) has no session of its own and must pass
 number of pages it reached and raises a `ValueError` for an unknown type or a
 missing session.
 
-Toasts stack up to five, pause while hovered or focused, close with their
+Toasts stack up to five, pause while hovered or keyboard-focused, close with their
 close button or `Escape`, and are announced to screen readers. They follow
 the Perspective theme; see the README for the `--mustry-toast-*` variables.
 

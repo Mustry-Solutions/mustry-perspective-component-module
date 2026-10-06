@@ -123,7 +123,12 @@ export class ToastHost {
         // Pause while the pointer or keyboard focus is on the toast, so it can be read.
         el.addEventListener('mouseenter', () => this.pause(toast.id));
         el.addEventListener('mouseleave', () => this.resume(toast.id));
-        el.addEventListener('focusin', () => this.pause(toast.id));
+        // Only keyboard focus pauses: a tap can leave focus behind on touch devices.
+        el.addEventListener('focusin', (e: FocusEvent) => {
+            if ((e.target as HTMLElement).matches(':focus-visible')) {
+                this.pause(toast.id);
+            }
+        });
         el.addEventListener('focusout', () => this.resume(toast.id));
         el.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -156,7 +161,7 @@ export class ToastHost {
     private resume(id: string): void {
         const entry = this.live.get(id);
         // Stay paused while the other trigger (pointer or focus) still holds it.
-        if (entry && (entry.el.matches(':hover') || entry.el.contains(this.doc.activeElement))) {
+        if (entry && (entry.el.matches(':hover') || entry.el.querySelector(':focus-visible') !== null)) {
             return;
         }
         this.startTimer(id);

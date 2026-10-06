@@ -17,7 +17,7 @@ The gateway loads a small separate bundle (`MustryToasts.js`) on every page,
 so no component is needed. Without ids it targets the calling page (or every
 page of the calling session); gateway-scope scripts pass `sessionId` and
 optionally `pageId`. Toasts follow the Perspective theme variables, stack up
-to five, pause on hover or focus, close on `Escape` and are announced to
+to five, pause on hover or keyboard focus, close on `Escape` and are announced to
 screen readers. Titles and messages are rendered as text only.
 
 ## [0.7.0] - 2026-10-06
