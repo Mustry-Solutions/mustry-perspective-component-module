@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
+In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
+twice with the same payload, so the write-back script ran twice per edit
+(double database writes, double audit entries). The commit handed focus back
+to the grid, and the editor's blur committed again before the closed editor
+had rendered. Batch mode was not affected. The verify project gains a
+`/grid-cell` page (cell mode, with a counter of script runs) that the e2e
+suite now checks.
+
+## [0.8.0] - 2026-10-06
+
 ### Added: toasts from any script with `system.mustry.toast()`
 Projects had no built-in way to show a short notification from a script, and
 add-on modules that offer one either need a component on every page or only
@@ -19,15 +30,6 @@ page of the calling session); gateway-scope scripts pass `sessionId` and
 optionally `pageId`. Toasts follow the Perspective theme variables, stack up
 to five, pause on hover or keyboard focus, close on `Escape` and are announced to
 screen readers. Titles and messages are rendered as text only.
-
-### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
-In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
-twice with the same payload, so the write-back script ran twice per edit
-(double database writes, double audit entries). The commit handed focus back
-to the grid, and the editor's blur committed again before the closed editor
-had rendered. Batch mode was not affected. The verify project gains a
-`/grid-cell` page (cell mode, with a counter of script runs) that the e2e
-suite now checks.
 
 ## [0.7.0] - 2026-10-06
 
