@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-06
+
 ### Added: toasts from any script with `system.mustry.toast()`
 Projects had no built-in way to show a short notification from a script, and
 add-on modules that offer one either need a component on every page or only
