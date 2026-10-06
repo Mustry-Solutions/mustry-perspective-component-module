@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: `config.weekStart` accepts every day of the week
+The calendar, date/time range picker and the timeline's mini month navigator
+only offered `monday` and `sunday` as the first day of the week (issue #186).
+All seven days are now valid, e.g. `saturday` for a Saturday-to-Friday week.
+The picker's week presets (this week, last week) follow it too. Unknown values
+still fall back to `monday`.
+
 ### Added: custom time window on the resource timeline
 The visible window could only be one of the zoom presets, so a view could not
 show, say, one 06:00-14:00 shift or the last 45 seconds of a machine cycle

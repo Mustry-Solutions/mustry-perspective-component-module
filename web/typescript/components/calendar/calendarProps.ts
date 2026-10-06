@@ -1,7 +1,8 @@
 // Pure mapping from the component's PropertyTree to typed CalendarProps. Extracted from
 // CalendarMeta.getPropsReducer so it can be unit-tested without perspective-client.
 import { PropReader } from '../../shared/propReader';
-import { CalendarProps, CalLabels, CalView, WeekStart, Category } from './calendarTypes';
+import { toWeekStart } from '../../shared/dateUtils';
+import { CalendarProps, CalLabels, CalView, Category } from './calendarTypes';
 import { CalEvent } from './calendarLogic';
 import { calendarLabelBase, EN_CALENDAR_LABELS } from '../../shared/labelPacks';
 import { parseShifts } from '../../shared/shifts';
@@ -63,7 +64,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         editable: tree.readBoolean('config.editable', false),
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
-        weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
+        weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         locale,
         timezone: tree.readString('config.timezone', ''),
         showWeekends: tree.readBoolean('config.showWeekends', true),

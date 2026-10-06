@@ -208,7 +208,7 @@ self.props.data.events = events
 ## Month view
 
 - [ ] Renders the current month; today has an accent circular badge; other-month days dimmed.
-- [ ] `weekStart` = monday vs sunday shifts the columns and weekday headers.
+- [ ] `weekStart` = monday vs sunday (and e.g. saturday) shifts the columns and weekday headers.
 - [ ] `showWeekends = false` hides Sat/Sun (5-day weeks).
 - [ ] Events show as coloured chips on the right day(s); `color` is honoured.
 - [ ] A day's cell **auto-fits** as many event chips as its height allows, then shows a **"+N more"** line (resize the component / row → the count adjusts).

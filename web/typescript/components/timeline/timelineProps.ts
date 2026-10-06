@@ -1,6 +1,6 @@
 // Pure mapping from the component's PropertyTree to typed TimelineProps. Kept
 // perspective-client-free (PropReader) so it can be unit-tested under node jest.
-import { toEpochMs } from '../../shared/dateUtils';
+import { WeekStart, toEpochMs, toWeekStart } from '../../shared/dateUtils';
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
@@ -34,7 +34,7 @@ export interface TimelineProps {
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
     animations: boolean;     // enter animation for newly-appearing bars/bands
-    weekStart: 'monday' | 'sunday';   // for the mini month navigator
+    weekStart: WeekStart;             // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
     snapMinutes: number;              // gesture snap override; 0 = each zoom preset's built-in
     collapsedGroups: string[];        // two-way (state.collapsedGroups): clicking a group header writes it back
@@ -109,7 +109,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         showExport: tree.readBoolean('config.showExport', false),
         animations: tree.readBoolean('config.animations', true),
-        weekStart: (tree.readString('config.weekStart', 'monday') === 'sunday' ? 'sunday' : 'monday'),
+        weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         shifts,
         // 0 = keep each zoom preset's built-in snap; anything non-finite/non-positive -> 0.
         // Fractional minutes are allowed (0.25 = 15 s) for the sub-hour presets.

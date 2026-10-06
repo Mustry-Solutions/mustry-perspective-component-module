@@ -2,7 +2,8 @@
 // Extracted from the picker's getPropsReducer so it can be unit-tested without
 // perspective-client.
 import { PropReader } from '../../shared/propReader';
-import { DateTimeRangePickerProps, DisplayMode, LabelConfig, WeekStart } from './pickerTypes';
+import { toWeekStart } from '../../shared/dateUtils';
+import { DateTimeRangePickerProps, DisplayMode, LabelConfig } from './pickerTypes';
 import { DisableMode, Granularity, LayoutMode, PresetType, PresetUnit, PresetPeriod } from './pickerLogic';
 import { EN_PICKER_LABELS, pickerLabelBase } from '../../shared/labelPacks';
 
@@ -35,7 +36,7 @@ export function mapPickerProps(tree: PropReader): DateTimeRangePickerProps {
         maxSpanDays: tree.readNumber('config.spanDays.max', 0),
         durationLabelThresholdHours: tree.readNumber('config.durationLabelThresholdHours', 24),
         granularity: tree.readString('config.granularity', 'second') as Granularity,
-        weekStart: tree.readString('config.weekStart', 'monday') as WeekStart,
+        weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         timezone: tree.readString('config.timezone', ''),
         locale,
         layout: tree.readString('config.layout', 'auto') as LayoutMode,

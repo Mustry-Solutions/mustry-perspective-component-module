@@ -203,7 +203,7 @@ export class ScheduleManager
 
     private gridDays(item: ScheduleItem | null, draft: ScheduleDraft | null): WeekGridDay[] {
         const p = this.props.props;
-        const headers = weekdayHeaders(p.firstDayOfWeek === 'monday', p.locale);
+        const headers = weekdayHeaders(p.firstDayOfWeek === 'monday' ? 1 : 0, p.locale);
         return orderedDays(p.firstDayOfWeek).map((key, i) => ({
             key,
             label: headers[i],
@@ -270,7 +270,7 @@ export class ScheduleManager
                         item={item}
                         dayIndex={dayIndex}
                         minute={minute}
-                        weekdayNames={weekdayHeaders(true, p.locale)}
+                        weekdayNames={weekdayHeaders(1, p.locale)}
                         labels={p.labels}
                     />
                 )}

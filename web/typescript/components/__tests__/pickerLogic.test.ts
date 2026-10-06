@@ -96,8 +96,8 @@ describe('realtime (live rolling window)', () => {
 
 describe('calendarRange', () => {
     const now = new Date(2026, 5, 17, 10, 30, 0); // Wed 2026-06-17; Jun 1 2026 is a Monday
-    const range = (period: any, mondayFirst = true) => calendarRange(period, now, mondayFirst);
-    const span = (p: any, mf = true) => {
+    const range = (period: any, firstDay = 1) => calendarRange(period, now, firstDay);
+    const span = (p: any, mf = 1) => {
         const r = range(p, mf);
         return [fmtDate(r.start), fmtDate(r.end), secondsOfDay(r.start), secondsOfDay(r.end)];
     };
@@ -108,22 +108,23 @@ describe('calendarRange', () => {
     });
 
     it('this* is period-to-date (start of period .. end of today)', () => {
-        expect(span('thisWeek', true)).toEqual(['2026-06-15', '2026-06-17', 0, 86399]);  // Mon-first
-        expect(span('thisWeek', false)).toEqual(['2026-06-14', '2026-06-17', 0, 86399]); // Sun-first
+        expect(span('thisWeek', 1)).toEqual(['2026-06-15', '2026-06-17', 0, 86399]);  // Mon-first
+        expect(span('thisWeek', 0)).toEqual(['2026-06-14', '2026-06-17', 0, 86399]); // Sun-first
         expect(span('thisMonth')).toEqual(['2026-06-01', '2026-06-17', 0, 86399]);
         expect(span('thisYear')).toEqual(['2026-01-01', '2026-06-17', 0, 86399]);
     });
 
     it('last* is the full previous period (honouring weekStart)', () => {
-        expect(span('lastWeek', true)).toEqual(['2026-06-08', '2026-06-14', 0, 86399]);  // Mon..Sun
-        expect(span('lastWeek', false)).toEqual(['2026-06-07', '2026-06-13', 0, 86399]); // Sun..Sat
+        expect(span('lastWeek', 1)).toEqual(['2026-06-08', '2026-06-14', 0, 86399]);  // Mon..Sun
+        expect(span('lastWeek', 0)).toEqual(['2026-06-07', '2026-06-13', 0, 86399]); // Sun..Sat
+        expect(span('lastWeek', 6)).toEqual(['2026-06-06', '2026-06-12', 0, 86399]); // Sat..Fri
         expect(span('lastMonth')).toEqual(['2026-05-01', '2026-05-31', 0, 86399]);
         expect(span('lastYear')).toEqual(['2025-01-01', '2025-12-31', 0, 86399]);
     });
 });
 
 describe('presetRange dispatch', () => {
-    const ctx: PresetContext = { now: new Date(2026, 5, 17, 10, 30, 0), forward: false, mondayFirst: true };
+    const ctx: PresetContext = { now: new Date(2026, 5, 17, 10, 30, 0), forward: false, firstDay: 1 };
     const rolling: PresetDef = { label: 'Last 7 days', type: 'rolling', amount: 7, unit: 'days', period: 'today' };
     const calendar: PresetDef = { label: 'This month', type: 'calendar', amount: 1, unit: 'days', period: 'thisMonth' };
 
@@ -172,7 +173,7 @@ describe('presetConflict', () => {
         presetTooLong: 'Exceeds the {n}-day maximum'
     };
     const mk = (over: any) => presetConflict(last7, {
-        now, forward: false, mondayFirst: true, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, labels, ...over
+        now, forward: false, firstDay: 1, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, labels, ...over
     });
 
     it('passes when within bounds and span', () => {
