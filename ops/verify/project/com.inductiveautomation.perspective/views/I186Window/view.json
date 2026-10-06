@@ -1,0 +1,718 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1200,
+      "height": 776
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186"
+        },
+        "props": {
+          "text": "< Back"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 12,
+          "width": 90,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "title"
+        },
+        "props": {
+          "text": "Custom time window (timezone Europe/Brussels)",
+          "style": {
+            "fontSize": "18px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 130,
+          "y": 12,
+          "width": 900,
+          "height": 32
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "timeline"
+        },
+        "props": {
+          "config": {
+            "timezone": "Europe/Brussels",
+            "locale": "en-GB",
+            "refreshSeconds": 1,
+            "zooms": [
+              "minute",
+              "hour",
+              "day",
+              "shift",
+              "week"
+            ],
+            "shifts": [
+              {
+                "label": "Early",
+                "start": "06:00"
+              },
+              {
+                "label": "Late",
+                "start": "14:00"
+              },
+              {
+                "label": "Night",
+                "start": "22:00"
+              }
+            ],
+            "resources": [
+              {
+                "id": "shifts",
+                "label": "Shifts"
+              },
+              {
+                "id": "cycles",
+                "label": "Cycles (10 s)"
+              }
+            ],
+            "categories": [
+              {
+                "id": "early",
+                "label": "Early",
+                "color": "#0c7bb3"
+              },
+              {
+                "id": "late",
+                "label": "Late",
+                "color": "#16a34a"
+              },
+              {
+                "id": "night",
+                "label": "Night",
+                "color": "#8e44ad"
+              },
+              {
+                "id": "cycle",
+                "label": "Cycle",
+                "color": "#e67e22"
+              }
+            ]
+          },
+          "data": {
+            "events": []
+          },
+          "state": {
+            "zoom": "day"
+          }
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(10000)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# Shift bars for 40 days either side of today on zone-local wall clock\n\t# (naive strings = config.timezone, Europe/Brussels), plus 10-second cycles\n\t# around now for the live 45-second window.\n\tnowms = system.date.toMillis(value)\n\tout = []\n\ttoday = system.date.midnight(value)\n\tfor k in range(-40, 41):\n\t\td = system.date.format(system.date.addDays(today, k), \"yyyy-MM-dd\")\n\t\tnxt = system.date.format(system.date.addDays(today, k + 1), \"yyyy-MM-dd\")\n\t\tout.append({\"id\": \"early-\" + d, \"resourceId\": \"shifts\", \"title\": \"Early\", \"start\": d + \"T06:00:00\", \"end\": d + \"T14:00:00\", \"category\": \"early\"})\n\t\tout.append({\"id\": \"late-\" + d, \"resourceId\": \"shifts\", \"title\": \"Late\", \"start\": d + \"T14:00:00\", \"end\": d + \"T22:00:00\", \"category\": \"late\"})\n\t\tout.append({\"id\": \"night-\" + d, \"resourceId\": \"shifts\", \"title\": \"Night\", \"start\": d + \"T22:00:00\", \"end\": nxt + \"T06:00:00\", \"category\": \"night\"})\n\tdef iso(ms):\n\t\treturn system.date.format(system.date.fromMillis(long(ms)), \"yyyy-MM-dd'T'HH:mm:ss.SSSXXX\")\n\tfirst = int((nowms - 600000) // 10000)\n\tfor n in range(first, first + 120):\n\t\tt = n * 10000\n\t\tout.append({\"id\": \"cycle-%d\" % n, \"resourceId\": \"cycles\", \"title\": \"Cycle %d\" % (n % 1000), \"start\": iso(t), \"end\": iso(t + 8000), \"category\": \"cycle\"})\n\treturn out\n"
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 50,
+          "width": 1150,
+          "height": 260
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "state"
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 316,
+          "width": 1150,
+          "height": 22
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'state:  start=' + coalesce({../timeline.props.state.windowStart}, 'null') + '   end=' + coalesce({../timeline.props.state.windowEnd}, 'null') + '   zoom=' + {../timeline.props.state.zoom} + '   live=' + {../timeline.props.state.followNow}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "types"
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 338,
+          "width": 1150,
+          "height": 22
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'types:  start=' + typeOf({../timeline.props.state.windowStart}) + '   end=' + typeOf({../timeline.props.state.windowEnd})"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "output"
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 360,
+          "width": 1150,
+          "height": 22
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'output: ' + {../timeline.props.output.visibleStart} + '  ->  ' + {../timeline.props.output.visibleEnd}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b0"
+        },
+        "props": {
+          "text": "Today 06:00-14:00"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T14:00:00\"\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 396,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint0"
+        },
+        "props": {
+          "text": "Shift window. Next/Prev step 8 h; Today/Live keep 06/14/22.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 396,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b1"
+        },
+        "props": {
+          "text": "Sat 24 Oct 14:00-22:00 (DST)"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = \"2026-10-24T14:00:00\"\n\ttl.props.state.windowEnd = \"2026-10-24T22:00:00\"\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 436,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint1"
+        },
+        "props": {
+          "text": "Press Next: night shift 22:00-06:00 across the change (9 h), then Next: 06:00-14:00.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 436,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b2"
+        },
+        "props": {
+          "text": "Last 45 s, live (epoch ms)"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = now - 45000\n\ttl.props.state.windowEnd = now\n\tself.getSibling(\"timeline\").props.state.followNow = True\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 476,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint2"
+        },
+        "props": {
+          "text": "Numbers in, numbers out. Live re-strides by 45 s; ticks every 2 s.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 476,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b3"
+        },
+        "props": {
+          "text": "Mixed: epoch start + ISO end"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tnow = system.date.toMillis(system.date.now())\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = now - 3600000\n\ttl.props.state.windowEnd = system.date.format(system.date.fromMillis(now + 3600000), \"yyyy-MM-dd'T'HH:mm:ssXXX\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 516,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint3"
+        },
+        "props": {
+          "text": "Page with Next: start stays a number, end stays a string.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 516,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b4"
+        },
+        "props": {
+          "text": "Half-set: start only"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T06:00:00\"\n\ttl.props.state.windowEnd = None\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 556,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint4"
+        },
+        "props": {
+          "text": "Preset still shows. Click a zoom button, then 'Now set end only'.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 556,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b5"
+        },
+        "props": {
+          "text": "Now set end only"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tself.getSibling(\"timeline\").props.state.windowEnd = system.date.format(system.date.now(), \"yyyy-MM-dd\") + \"T14:00:00\"\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 596,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint5"
+        },
+        "props": {
+          "text": "After a zoom click the stale start was cleared: preset stays.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 596,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b6"
+        },
+        "props": {
+          "text": "Out of range (1e20)"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = 1e20\n\ttl.props.state.windowEnd = 2e20\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 636,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint6"
+        },
+        "props": {
+          "text": "Must fall back to the zoom preset, no crash.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 636,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "b7"
+        },
+        "props": {
+          "text": "Clear window"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = None\n\ttl.props.state.windowEnd = None\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 676,
+          "width": 260,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "hint7"
+        },
+        "props": {
+          "text": "Back to the zoom preset.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 676,
+          "width": 870,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "free"
+        },
+        "props": {
+          "text": "Free input (ISO, naive = Brussels, or epoch ms):",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 724,
+          "width": 340,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.text-field",
+        "version": 0,
+        "meta": {
+          "name": "startText"
+        },
+        "props": {
+          "text": ""
+        },
+        "position": {
+          "x": 370,
+          "y": 724,
+          "width": 230,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.text-field",
+        "version": 0,
+        "meta": {
+          "name": "endText"
+        },
+        "props": {
+          "text": ""
+        },
+        "position": {
+          "x": 610,
+          "y": 724,
+          "width": 230,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "apply"
+        },
+        "props": {
+          "text": "Apply"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tdef val(t):\n\t\tt = (t or \"\").strip()\n\t\treturn long(t) if t.isdigit() else (t or None)\n\ttl = self.getSibling(\"timeline\")\n\ttl.props.state.windowStart = val(self.getSibling(\"startText\").props.text)\n\ttl.props.state.windowEnd = val(self.getSibling(\"endText\").props.text)\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 850,
+          "y": 724,
+          "width": 100,
+          "height": 32
+        }
+      }
+    ]
+  }
+}
