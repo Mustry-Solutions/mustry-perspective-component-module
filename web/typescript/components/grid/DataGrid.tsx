@@ -13,9 +13,9 @@ import { DocDismiss } from '../../shared/dismiss';
 import {
     CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
     aggregateValue, batchPayload, cellText, columnLayout, editDraft, effectiveColumns,
-    formatCell, gridIsEmpty, gridToCsv, matchStyle, nextCell, nextSelection, nextSort,
-    parsePasteMatrix, pastePlan, quickFilterRows, reorderFields, sortRows,
-    validateCell, visibleRowRange
+    formatCell, gridIsEmpty, gridToCsv, locateCell, matchStyle, nextCell, nextSelection, nextSort,
+    parsePasteMatrix, parsePendingKey, pastePlan, pendingKey, quickFilterRows, reorderFields,
+    rowWithPending, sortRows, unusableRowIds, validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
 import { GridCell, GridHeadCell } from './GridCells';
@@ -24,8 +24,10 @@ import { GridToolbar } from './GridToolbar';
 // Must match DataGrid.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.input.datagrid';
 
+// The editor is tied to a row id + field, never to a position: a rebind or a
+// layout change while it is open would otherwise retarget it (#128).
 interface EditState {
-    pos: CellPos;
+    rowId: string;
     field: string;
     draft: string;
     error: EditError;
@@ -46,7 +48,7 @@ interface DataGridState {
     // Editing (M2): the roving focused cell and the open editor.
     focus: CellPos | null;
     editing: EditState | null;
-    // Committed-but-not-yet-rebound values, keyed `rowId::field` — the grid never
+    // Committed-but-not-yet-rebound values, keyed pendingKey(rowId, field) — the grid never
     // mutates data.rows; these overlay the display until the author's write-back
     // rebinds the rows (any data.rows change clears them, calendar semantics).
     pending: Record<string, unknown>;
@@ -85,6 +87,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
 
     componentDidMount(): void {
         this.measure();
+        this.warnUnusableIds();
         if (typeof ResizeObserver !== 'undefined' && this.scrollRef.current) {
             this.resizeObs = new ResizeObserver(() => this.measure());
             this.resizeObs.observe(this.scrollRef.current);
@@ -95,7 +98,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (this.state.filterDraft !== null && this.state.filterDraft === this.props.props.quickFilter) {
             this.setState({ filterDraft: null });   // the write echoed back; the prop leads again
         }
+        const ed = this.state.editing;
+        if (ed && !this.locate(ed.rowId, ed.field)) {
+            this.setState({ editing: null });   // its row or column left the view
+        }
         this.reconcilePending();
+        this.warnUnusableIds();
     }
 
     componentWillUnmount(): void {
@@ -165,14 +173,64 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         return cellText(row[this.props.props.idField]);
     }
 
+    private idsMemo: { deps: unknown[]; bad: Set<string> } | null = null;
+    private warnedIds = '';
+
+    /** Ids shared by several rows, or missing: rows the grid must not act on. */
+    private unusableIds(): Set<string> {
+        const p = this.props.props;
+        const deps = [p.rows, p.idField];
+        if (!this.idsMemo || !this.idsMemo.deps.every((d, i) => d === deps[i])) {
+            this.idsMemo = { deps, bad: unusableRowIds(p.rows, p.idField) };
+        }
+        return this.idsMemo.bad;
+    }
+
+    private rowUsable(row: Row): boolean {
+        return !this.unusableIds().has(this.rowId(row));
+    }
+
+    private warnUnusableIds(): void {
+        const bad = Array.from(this.unusableIds());
+        const sig = bad.join('\n');
+        if (sig !== this.warnedIds) {
+            this.warnedIds = sig;
+            if (bad.length) {
+                const dupes = bad.filter((id) => id);
+                const what: string[] = [];
+                if (bad.indexOf('') >= 0) {
+                    what.push(`rows without a "${this.props.props.idField}" value`);
+                }
+                if (dupes.length) {
+                    what.push(`rows with duplicate ids (${dupes.slice(0, 5).join(', ')}${dupes.length > 5 ? ', ...' : ''})`);
+                }
+                console.warn(`Data Grid: ${what.join(' and ')} cannot be selected, edited or deleted. Check config.idField.`);
+            }
+        }
+    }
+
+    private viewIdsMemo: { rows: Row[]; ids: string[] } | null = null;
+
+    private viewIds(): string[] {
+        const view = this.viewRows();
+        if (!this.viewIdsMemo || this.viewIdsMemo.rows !== view) {
+            this.viewIdsMemo = { rows: view, ids: view.map((r) => this.rowId(r)) };
+        }
+        return this.viewIdsMemo.ids;
+    }
+
+    private locate(rowId: string, field: string): CellPos | null {
+        return locateCell(this.viewIds(), this.effCols(), rowId, field);
+    }
+
     /** The cell's current value: a committed-but-unbound edit wins over the prop. */
     private cellValue(row: Row, field: string): unknown {
-        const k = `${this.rowId(row)}::${field}`;
+        const k = pendingKey(this.rowId(row), field);
         return k in this.state.pending ? this.state.pending[k] : row[field];
     }
 
-    private colEditable(col: GridColumn): boolean {
-        return this.props.props.editable && col.editable;
+    private cellEditable(row: Row, col: GridColumn): boolean {
+        return this.props.props.editable && col.editable && this.rowUsable(row);
     }
 
     // --- two-way state writes -------------------------------------------------
@@ -201,11 +259,11 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
 
     private clickRow(row: Row, e: React.MouseEvent): void {
         const p = this.props.props;
-        if (p.rowSelect === 'none') {
+        if (p.rowSelect === 'none' || !this.rowUsable(row)) {
             return;
         }
         const id = this.rowId(row);
-        const orderedIds = this.viewRows().map((r) => this.rowId(r));
+        const orderedIds = this.viewIds();
         const next = nextSelection(
             p.selection, id, p.rowSelect,
             { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey },
@@ -238,37 +296,40 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private startEdit(pos: CellPos, initial?: string): void {
         const col = this.effCols()[pos.col];
         const row = this.viewRows()[pos.row];
-        if (!col || !row || !this.colEditable(col)) {
+        if (!col || !row || !this.cellEditable(row, col)) {
             return;
         }
         const draft = initial !== undefined ? initial : editDraft(this.cellValue(row, col.field), col, this.props.props.locale);
-        this.setState({ focus: pos, editing: { pos, field: col.field, draft, error: null } },
+        this.setState({ focus: pos, editing: { rowId: this.rowId(row), field: col.field, draft, error: null } },
             () => this.editorRef.current?.focus());
     }
 
-    /** Validate + fire + close. Returns false (and stays open) on a validation error. */
-    private commitEdit(): boolean {
+    /** Validate + fire + close. Returns the edited cell's current position once
+     *  closed, or null while it stays open on a validation error. */
+    private commitEdit(): CellPos | null {
+        const fallback = this.state.focus || { row: 0, col: 0 };
         const ed = this.state.editing;
         if (!ed) {
-            return true;
+            return fallback;
         }
-        const col = this.effCols()[ed.pos.col];
-        const row = this.viewRows()[ed.pos.row];
-        if (!col || !row) {
-            this.setState({ editing: null });
-            return true;
+        const pos = this.locate(ed.rowId, ed.field);
+        if (!pos) {
+            this.setState({ editing: null });   // the record is gone; never write to whatever is there now
+            return fallback;
         }
+        const col = this.effCols()[pos.col];
+        const row = this.viewRows()[pos.row];
         const { value, error } = validateCell(ed.draft, col, this.props.props.locale);
         if (error) {
             this.setState({ editing: { ...ed, error } });
-            return false;
+            return null;
         }
         const oldValue = this.cellValue(row, col.field);
         if (cellText(value) !== cellText(oldValue)) {
             this.fireCellEdit(row, col.field, oldValue, value);
         }
         this.setState({ editing: null });
-        return true;
+        return pos;
     }
 
     private cancelEdit(): void {
@@ -302,9 +363,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         const next: Record<string, unknown> = {};
         let dropped = false;
         for (const k of keys) {
-            const sep = k.indexOf('::');
-            const row = byId.get(k.slice(0, sep));
-            if (row && cellText(row[k.slice(sep + 2)]) === cellText(pending[k])) {
+            const { rowId, field } = parsePendingKey(k);
+            const row = byId.get(rowId);
+            if (row && cellText(row[field]) === cellText(pending[k])) {
                 dropped = true;   // the data caught up with the edit
             } else {
                 next[k] = pending[k];
@@ -320,7 +381,8 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
      *  `acc` is given (multi-cell paste), the overlay entry goes there instead —
      *  setState is async, so per-cell setPending calls would clobber each other. */
     private fireCellEdit(row: Row, field: string, oldValue: unknown, newValue: unknown, acc?: Record<string, unknown>): void {
-        const k = `${this.rowId(row)}::${field}`;
+        const rowId = this.rowId(row);
+        const k = pendingKey(rowId, field);
         if (acc) {
             acc[k] = newValue;
         } else {
@@ -330,11 +392,11 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             return;
         }
         this.fireEvent('onCellEdit', {
-            rowId: this.rowId(row),
+            rowId,
             field,
             oldValue: oldValue === undefined ? null : oldValue,
             newValue,
-            row: { ...row, [field]: newValue }
+            row: rowWithPending(row, rowId, { ...this.state.pending, ...acc, [k]: newValue })
         });
     }
 
@@ -353,6 +415,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
 
     /** A boolean cell's checkbox toggled — commits immediately (no editor). */
     private toggleBoolean(row: Row, col: GridColumn): void {
+        if (!this.cellEditable(row, col)) {
+            return;
+        }
         const cur = this.cellValue(row, col.field);
         this.fireCellEdit(row, col.field, cur, !(cur === true || cur === 'true'));
     }
@@ -371,10 +436,10 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     }
 
     // --- keyboard model -----------------------------------------------------------
-    private moveFocus(key: string, shift: boolean): void {
+    private moveFocus(key: string, shift: boolean, from?: CellPos): void {
         const cols = this.effCols();
         const rows = this.viewRows();
-        const cur = this.state.focus || { row: 0, col: 0 };
+        const cur = from || this.state.focus || { row: 0, col: 0 };
         const pos = nextCell(cur, key === 'Tab' && shift ? 'ShiftTab' : key, rows.length, cols.length);
         this.setState({ focus: pos }, () => this.scrollCellIntoView(pos));
     }
@@ -458,6 +523,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         for (const t of plan) {
             const col = cols[t.col];
             const row = view[t.row];
+            if (!this.rowUsable(row)) {
+                continue;
+            }
             const { value, error } = validateCell(t.draft, col, this.props.props.locale);
             if (!error) {
                 const oldValue = this.cellValue(row, col.field);
@@ -481,8 +549,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             e.preventDefault();
             const key = e.key;
             const shift = e.shiftKey;
-            if (this.commitEdit()) {
-                this.moveFocus(key, shift);
+            const pos = this.commitEdit();
+            if (pos) {
+                this.moveFocus(key, shift, pos);
                 this.scrollRef.current?.focus();
             }
         }
@@ -592,11 +661,11 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         const { col } = lc;
         const p = this.props.props;
         const ed = this.state.editing;
-        const isEditing = !!(ed && ed.pos.row === pos.row && ed.pos.col === pos.col);
+        const isEditing = !!(ed && ed.rowId === this.rowId(row) && ed.field === col.field);
         const isFocused = !!(!isEditing && this.state.focus
             && this.state.focus.row === pos.row && this.state.focus.col === pos.col);
         const value = this.cellValue(row, col.field);
-        const editable = this.colEditable(col);
+        const editable = this.cellEditable(row, col);
         const boolEditable = editable && col.type === 'boolean';
         return (
             <GridCell
@@ -607,7 +676,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 styleRule={col.cellStyles.length ? matchStyle(value, col.cellStyles) : null}
                 editable={editable}
                 isFocused={isFocused}
-                isPending={`${this.rowId(row)}::${col.field}` in this.state.pending}
+                isPending={pendingKey(this.rowId(row), col.field) in this.state.pending}
                 editor={isEditing ? this.renderEditor(col, ed as EditState, rowHeight) : null}
                 boolChecked={!isEditing && boolEditable ? (value === true || value === 'true') : null}
                 onFocus={() => this.setState({ focus: pos })}
@@ -661,7 +730,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private deleteSelected = (): void => {
         const p = this.props.props;
         const selected = new Set(p.selection);
-        const rows = p.rows.filter((r) => selected.has(this.rowId(r)));
+        const rows = p.rows.filter((r) => selected.has(this.rowId(r)) && this.rowUsable(r));
         if (rows.length) {
             this.fireEvent('onRowsDelete', { rowIds: rows.map((r) => this.rowId(r)), rows });
             this.props.store.props.write('state.selection', []);

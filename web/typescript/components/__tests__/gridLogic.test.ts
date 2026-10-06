@@ -237,6 +237,17 @@ describe('effectiveColumns (two-way layout over config)', () => {
         expect(out[1].width).toBe(40);     // MIN_COL_PX
         expect(effectiveColumns(cols, LAYOUT0)).toEqual(cols);
     });
+
+    // #127: cell positions are display indexes, so this order must match the render.
+    it('puts pinned columns first, in display order', () => {
+        const cfg = [col('name'), col('id', { pinned: true })];
+        expect(effectiveColumns(cfg, LAYOUT0).map((c) => c.field)).toEqual(['id', 'name']);
+        const grid = [col('wo', { pinned: true }), col('product'), col('qty')];
+        const out = effectiveColumns(grid, { widths: {}, order: ['qty', 'wo', 'product'], hidden: [] });
+        expect(out.map((c) => c.field)).toEqual(['wo', 'qty', 'product']);
+        const laid = columnLayout(out);
+        expect([...laid.pinned, ...laid.scrolling].map((lc) => lc.col.field)).toEqual(out.map((c) => c.field));
+    });
 });
 
 describe('reorderFields', () => {
@@ -418,13 +429,17 @@ describe('nextCell (keyboard grid navigation)', () => {
     });
 });
 
-import { aggregateValue, batchPayload, parsePasteMatrix, pastePlan } from '../grid/gridLogic';
+import {
+    aggregateValue, batchPayload, locateCell, parsePasteMatrix, pastePlan, pendingKey, parsePendingKey,
+    rowWithPending, unusableRowIds
+} from '../grid/gridLogic';
 
 describe('batchPayload (Save in batch mode)', () => {
     const rows = [{ id: 'r1', a: 1, b: 'x' }, { id: 'r2', a: 2, b: 'y' }] as Array<Record<string, unknown>>;
 
     it('builds per-cell edits and fully-patched changed rows', () => {
-        const { edits, rows: changed } = batchPayload({ 'r1::a': 9, 'r1::b': 'z', 'r2::a': 5 }, rows, 'id');
+        const { edits, rows: changed } = batchPayload(
+            { [pendingKey('r1', 'a')]: 9, [pendingKey('r1', 'b')]: 'z', [pendingKey('r2', 'a')]: 5 }, rows, 'id');
         expect(edits).toHaveLength(3);
         expect(edits.find((e) => e.rowId === 'r1' && e.field === 'a')).toEqual(
             { rowId: 'r1', field: 'a', oldValue: 1, newValue: 9 });
@@ -434,7 +449,52 @@ describe('batchPayload (Save in batch mode)', () => {
     });
 
     it('drops pendings whose row left the dataset', () => {
-        expect(batchPayload({ 'gone::a': 1 }, rows, 'id').edits).toHaveLength(0);
+        expect(batchPayload({ [pendingKey('gone', 'a')]: 1 }, rows, 'id').edits).toHaveLength(0);
+    });
+
+    it('keeps ids and fields that contain the old :: separator apart (#130)', () => {
+        const odd = [{ id: 'Line1::Filler', a: 1 }] as Array<Record<string, unknown>>;
+        const { edits } = batchPayload({ [pendingKey('Line1::Filler', 'a')]: 2 }, odd, 'id');
+        expect(edits).toEqual([{ rowId: 'Line1::Filler', field: 'a', oldValue: 1, newValue: 2 }]);
+        expect(parsePendingKey(pendingKey('a::b', 'c::d'))).toEqual({ rowId: 'a::b', field: 'c::d' });
+    });
+});
+
+describe('rowWithPending (#129: the onCellEdit row carries every pending edit)', () => {
+    it('applies all pending values of that row and none of the others', () => {
+        const pending = { [pendingKey('r1', 'a')]: 9, [pendingKey('r1', 'b')]: 'z', [pendingKey('r2', 'a')]: 5 };
+        expect(rowWithPending({ id: 'r1', a: 1, b: 'x', c: true }, 'r1', pending))
+            .toEqual({ id: 'r1', a: 9, b: 'z', c: true });
+        expect(rowWithPending({ id: 'r3', a: 1 }, 'r3', pending)).toEqual({ id: 'r3', a: 1 });
+    });
+});
+
+describe('unusableRowIds (#130: rows the grid cannot address safely)', () => {
+    it('flags a missing id and every duplicated id', () => {
+        const rows = [{ id: 'a' }, { ID: 'b' }, { id: 'c' }, { id: 'c' }, { id: null }, { id: 7 }];
+        expect(Array.from(unusableRowIds(rows, 'id')).sort()).toEqual(['', 'c']);
+    });
+
+    it('is empty when every row has its own id', () => {
+        expect(unusableRowIds([{ id: 1 }, { id: 2 }], 'id').size).toBe(0);
+    });
+
+    it('flags every row when idField matches no key (case matters)', () => {
+        const ids = unusableRowIds([{ ID: 1 }, { ID: 2 }], 'id');
+        expect(ids.has('')).toBe(true);
+    });
+});
+
+describe('locateCell (#128: an open editor follows its row, not its index)', () => {
+    const cols = [col('wo'), col('qty')];
+
+    it('finds the cell at its current position', () => {
+        expect(locateCell(['n', 'a', 'b'], cols, 'b', 'qty')).toEqual({ row: 2, col: 1 });
+    });
+
+    it('returns null when the row or the column is gone', () => {
+        expect(locateCell(['a'], cols, 'b', 'qty')).toBeNull();
+        expect(locateCell(['b'], cols, 'b', 'notes')).toBeNull();
     });
 });
 

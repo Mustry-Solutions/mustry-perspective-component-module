@@ -240,7 +240,9 @@ export interface ColumnLayoutState {
 
 /** config.columns with the user's layout applied: hidden filtered out, order
  *  permuted (fields in `order` first, in that order; the rest keep config
- *  position), widths overridden (clamped). config stays the authoring truth. */
+ *  position), widths overridden (clamped). config stays the authoring truth.
+ *  Pinned columns come first, as they are drawn: cell positions index this
+ *  list, so it must match the display order (#127). */
 export function effectiveColumns(columns: GridColumn[], layout: ColumnLayoutState): GridColumn[] {
     const hidden = new Set(layout.hidden);
     const visible = columns.filter((c) => !hidden.has(c.field));
@@ -250,7 +252,7 @@ export function effectiveColumns(columns: GridColumn[], layout: ColumnLayoutStat
     };
     return visible
         .slice()
-        .sort((a, b) => pos(a) - pos(b))
+        .sort((a, b) => (a.pinned === b.pinned ? pos(a) - pos(b) : a.pinned ? -1 : 1))
         .map((c) => {
             const w = layout.widths[c.field];
             return Number.isFinite(w) ? { ...c, width: Math.max(MIN_COL_PX, w) } : c;
@@ -502,6 +504,30 @@ export interface CellPos {
     col: number;    // effective-columns index
 }
 
+/** Where a row/field pair is now drawn, or null when either has left the view.
+ *  `viewIds` are the row ids in view order. */
+export function locateCell(viewIds: string[], columns: GridColumn[], rowId: string, field: string): CellPos | null {
+    const row = viewIds.indexOf(rowId);
+    const col = columns.findIndex((c) => c.field === field);
+    return row >= 0 && col >= 0 ? { row, col } : null;
+}
+
+/** Row ids the grid can't act on safely: '' (the row has no idField value) and
+ *  any id shared by two rows. Selecting, editing or deleting by such an id
+ *  would hit other rows too, so those rows are read-only (#130). */
+export function unusableRowIds(rows: Array<Record<string, unknown>>, idField: string): Set<string> {
+    const seen = new Set<string>();
+    const bad = new Set<string>();
+    for (const r of rows) {
+        const id = cellText(r[idField]);
+        if (!id || seen.has(id)) {
+            bad.add(id);
+        }
+        seen.add(id);
+    }
+    return bad;
+}
+
 /** The next focused cell for an arrow/Tab/Enter step, clamped to the grid. */
 export function nextCell(pos: CellPos, key: string, rowCount: number, colCount: number): CellPos {
     let { row, col } = pos;
@@ -534,6 +560,30 @@ export interface PendingEdit {
     newValue: unknown;
 }
 
+/** Key of a pending edit. Structured, because ids and fields may contain any
+ *  separator a plain join would use (#130: `Line1::Filler`). */
+export function pendingKey(rowId: string, field: string): string {
+    return JSON.stringify([rowId, field]);
+}
+
+export function parsePendingKey(key: string): { rowId: string; field: string } {
+    const [rowId, field] = JSON.parse(key) as [string, string];
+    return { rowId, field };
+}
+
+/** The row with every pending value of that row applied: what the author
+ *  should persist, so one edit's event doesn't undo another's (#129). */
+export function rowWithPending(row: Record<string, unknown>, rowId: string, pending: Record<string, unknown>): Record<string, unknown> {
+    const out = { ...row };
+    Object.keys(pending).forEach((k) => {
+        const key = parsePendingKey(k);
+        if (key.rowId === rowId) {
+            out[key.field] = pending[k];
+        }
+    });
+    return out;
+}
+
 /** The batch-save payload from the pending map: per-cell edits plus each
  *  changed row with ALL its pending values applied. */
 export function batchPayload<T extends Record<string, unknown>>(
@@ -544,9 +594,7 @@ export function batchPayload<T extends Record<string, unknown>>(
     const edits: PendingEdit[] = [];
     const changed = new Map<string, Record<string, unknown>>();
     Object.keys(pending).forEach((k) => {
-        const sep = k.indexOf('::');
-        const rowId = k.slice(0, sep);
-        const field = k.slice(sep + 2);
+        const { rowId, field } = parsePendingKey(k);
         const row = byId.get(rowId);
         if (!row) {
             return;   // the row left the dataset while the edit was pending
