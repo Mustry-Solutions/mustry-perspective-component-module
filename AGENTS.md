@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Ignition 8.3 Perspective module: fourteen custom components (date/time range
 picker, calendar/scheduler, resource timeline, data grid, pan & zoom view,

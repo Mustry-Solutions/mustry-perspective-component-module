@@ -34,6 +34,20 @@ Four ways an edit could be written to the wrong place, all without an error:
   longer confuse the pending-edit bookkeeping. (#130)
 - CSV export now lists pinned columns first, as the grid shows them.
 
+## [0.8.0] - 2026-10-06
+
+### Added: toasts from any script with `system.mustry.toast()`
+Projects had no built-in way to show a short notification from a script, and
+add-on modules that offer one either need a component on every page or only
+reach the calling page. `system.mustry.toast(message, title, type, duration,
+className, sessionId, pageId)` shows a toast at the top right of the page.
+The gateway loads a small separate bundle (`MustryToasts.js`) on every page,
+so no component is needed. Without ids it targets the calling page (or every
+page of the calling session); gateway-scope scripts pass `sessionId` and
+optionally `pageId`. Toasts follow the Perspective theme variables, stack up
+to five, pause on hover or keyboard focus, close on `Escape` and are announced to
+screen readers. Titles and messages are rendered as text only.
+
 ## [0.7.0] - 2026-10-06
 
 ### Docs: user manual covers the issue #186 additions

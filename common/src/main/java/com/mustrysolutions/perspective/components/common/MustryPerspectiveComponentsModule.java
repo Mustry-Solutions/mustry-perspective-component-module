@@ -50,6 +50,24 @@ public class MustryPerspectiveComponentsModule {
         )
     );
 
+    /**
+     * The toast bundle (system.mustry.toast). Unlike BROWSER_RESOURCES it is not
+     * tied to a component: the gateway hook adds it to Perspective's own
+     * component descriptors, so every page loads it. Kept small on purpose.
+     */
+    public static final Set<BrowserResource> TOAST_RESOURCES = Set.of(
+        new BrowserResource(
+            "mustry-toasts-js",
+            String.format("/res/%s/MustryToasts.js", URL_ALIAS),
+            BrowserResource.ResourceType.JS
+        ),
+        new BrowserResource(
+            "mustry-toasts-css",
+            String.format("/res/%s/MustryToasts.css", URL_ALIAS),
+            BrowserResource.ResourceType.CSS
+        )
+    );
+
     /** Parse a JSON schema bundled in the common resources (props or event payloads). */
     public static JsonSchema schema(String resourcePath) {
         return JsonSchema.parse(

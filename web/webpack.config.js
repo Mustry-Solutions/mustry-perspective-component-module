@@ -3,21 +3,25 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
-// Bundle name — the gateway serves this at /res/mustry-components/MustryComponents.js
-// (and .css). Must line up with BROWSER_RESOURCES in the common Java module class.
+// Bundle names — the gateway serves them at /res/mustry-components/<name>.js (and
+// .css). Must line up with BROWSER_RESOURCES and TOAST_RESOURCES in the common
+// Java module class. MustryToasts is a small separate bundle because the gateway
+// adds it to every page (toasts need no component), unlike the component bundle.
 const LibName = 'MustryComponents';
+const ToastLibName = 'MustryToasts';
 
 // Mode comes from the CLI (--mode production|development, see package.json scripts).
 // Production is what ships in the .modl: minified, no source maps.
 module.exports = (env, argv) => ({
     entry: {
-        [LibName]: path.join(__dirname, 'typescript/index.ts')
+        [LibName]: path.join(__dirname, 'typescript/index.ts'),
+        [ToastLibName]: path.join(__dirname, 'typescript/toast/index.ts')
     },
     output: {
         // webpack writes straight into the Gradle resources dir for this subproject.
         path: path.resolve(__dirname, 'build/generated-resources/mounted'),
-        filename: `${LibName}.js`,
-        library: [LibName],
+        filename: '[name].js',
+        library: '[name]',
         libraryTarget: 'umd',
         umdNamedDefine: true,
         clean: true
@@ -49,7 +53,7 @@ module.exports = (env, argv) => ({
         ]
     },
     plugins: [
-        new MiniCssExtractPlugin({ filename: `${LibName}.css` }),
+        new MiniCssExtractPlugin({ filename: '[name].css' }),
         // react-markdown@4's vfile dependency also calls process.cwd() at
         // runtime; webpack 5 no longer injects the process shim itself.
         new webpack.ProvidePlugin({ process: 'process/browser' })

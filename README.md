@@ -499,12 +499,44 @@ The three admin components are deliberately separate — tabs and page routing a
 
 ---
 
+## Toasts (`system.mustry.toast`)
+
+Short notifications at the top right of a Perspective page, called from any script. No component is needed: the gateway loads a small toast bundle (`MustryToasts.js`, about 6 KB) on every page.
+
+```python
+# From a component event or any other script that runs on a page:
+system.mustry.toast(message=u"Order 1042 was saved.", title=u"Saved", type="success")
+
+# From gateway scope (timer, message handler, WebDev): name the session, optionally the page.
+system.mustry.toast(message=u"Export finished.", sessionId=sessionId, pageId=pageId, duration=10)
+```
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `message` | | Message text; line breaks are kept. Required unless `title` is given. |
+| `title` | | Optional bold first line. |
+| `type` | `info` | `info`, `success`, `warning` or `error` (case-insensitive). Anything else raises a `ValueError`. |
+| `duration` | `5` | Seconds before the toast closes itself; `0` keeps it until the user closes it. |
+| `className` | | Extra CSS classes on the toast, for project styling. |
+| `sessionId` | current session | Target session. Required from gateway scope. |
+| `pageId` | | One page of that session. |
+
+**Targets.** With no ids the toast goes to the calling page, or to every page of the calling session when the script has no page (a session-scoped message handler). With `sessionId` alone it goes to every page of that session; add `pageId` for one page. The function returns the number of pages it reached; a missing target raises a `ValueError`.
+
+**Behaviour.** Toasts stack (at most five; a sixth pushes the oldest out), pause their countdown while hovered or keyboard-focused, close with the close button or `Escape`, and are announced to screen readers (`role="alert"` for warnings and errors, `role="status"` otherwise). Title and message are always rendered as text, never as HTML.
+
+### Theming
+
+Toasts use the Perspective theme variables (`--neutral-10` background, `--neutral-90` text, `--info`/`--success`/`--warning`/`--error` accents, `--boxShadow2`), so light, dark and custom themes apply as-is. Override with `--mustry-toast-background`, `--mustry-toast-color`, `--mustry-toast-width`, `--mustry-toast-top`, `--mustry-toast-right` and `--mustry-toast-z-index` in a theme stylesheet, or style the classes you pass in `className` (`.mustry-toast__title`, `.mustry-toast__message` and `.mustry-toast--<type>` are stable).
+
+---
+
 ## Project layout
 
 | Path | Scope |
 |---|---|
 | `common/` | Component descriptors (one `Components.ALL` registry) + the props/event JSON schemas (`src/main/resources`). |
-| `gateway/` | Gateway hook (registers components, mounts web resources). |
+| `gateway/` | Gateway hook (registers components, mounts web resources, adds `system.mustry.toast`). |
 | `designer/` | Designer hook (registers components in the Designer). |
 | `web/` | React/TypeScript front-end + styles, built by webpack (production bundle by default). |
 | `e2e/` | Playwright smoke suite rendering every component in a live session — run via `ops/e2e.sh`. |
@@ -567,7 +599,7 @@ Perspective serializes each instance's configured **prop values** into the view'
 1. **Freeze the schema** and stop renaming/re-nesting published props.
 2. **Additive-only policy** thereafter — new props are optional with defaults (non-breaking); renames/moves require a converter.
 3. **Versioned converters** — confirm the exact Perspective 8.3 SDK hook (component descriptor version + prop converter; verify via `javap`) and register migrations that rewrite old prop trees forward. As a cheaper interim, the reducer can read legacy paths as fallbacks.
-4. **Document the policy** here and in `CLAUDE.md`.
+4. **Document the policy** here and in `AGENTS.md`.
 5. ~~*(Optional)* a CI guard that flags a removed/renamed key in `props.json` versus the previous commit.~~ **Done:** `ops/schema-guard.sh`, wired into CI.
 
 Until the component is actively used, breaking schema changes remain acceptable.
