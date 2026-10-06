@@ -29,14 +29,15 @@ test('grid stress: 50k rows virtualize', async ({ page }) => {
 
 /**
  * Count the grid's onCellEdit events in the client, where they are fired. The
- * DataGrid instance is found through React 16's fiber on its scroll container,
+ * DataGrid instance is found through React's fiber on its scroll container,
  * and componentEvents.fireComponentEvent is wrapped where it is defined (own
  * property or prototype), so the count survives re-renders. Counting on the
  * gateway instead would race: two script runs could both read the old counter.
  */
 async function spyCellEdits(page: Page): Promise<void> {
     const found = await page.locator('.mustry-dg-scroll').first().evaluate((el) => {
-        const key = Object.keys(el).find((k) => k.startsWith('__reactInternalInstance$'));
+        // React 17+ (Perspective 8.3 ships 18) names the key __reactFiber$; 16 used __reactInternalInstance$.
+        const key = Object.keys(el).find((k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
         let fiber = key ? (el as any)[key] : null;
         while (fiber && !(fiber.stateNode && fiber.stateNode.props && fiber.stateNode.props.componentEvents)) {
             fiber = fiber.return;
