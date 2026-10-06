@@ -506,8 +506,7 @@
               "type": "property",
               "config": {
                 "path": "session.props.theme"
-              },
-              "bidirectional": true
+              }
             },
             "onChange": {
               "enabled": true,

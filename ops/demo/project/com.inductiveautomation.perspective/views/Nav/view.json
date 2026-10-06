@@ -487,8 +487,7 @@
               "type": "property",
               "config": {
                 "path": "session.custom.demo.locale"
-              },
-              "bidirectional": true
+              }
             },
             "onChange": {
               "enabled": true,
