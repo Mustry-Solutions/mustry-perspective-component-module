@@ -10,7 +10,8 @@ import { ShiftDef } from '../../shared/shifts';
 export { ENTER_MS } from '../../shared/enterAnimation';
 export type { Category, CalLabels };
 
-export type WeekStart = 'monday' | 'sunday';
+import type { WeekStart } from '../../shared/dateUtils';
+export type { WeekStart };
 export type CalView = 'month' | 'week' | 'day' | 'list';
 export type GestureMode = 'move' | 'resize' | 'create';
 

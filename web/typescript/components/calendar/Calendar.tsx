@@ -20,7 +20,8 @@ import {
     startOfMonth,
     instantToZonedIso,
     todayInZone,
-    nowMinutesInZone
+    nowMinutesInZone,
+    weekStartDay
 } from '../../shared/dateUtils';
 import {
     buildMonthGrid,
@@ -412,8 +413,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     // --- window / ranges ---------------------------------------------------
-    private mondayFirst(): boolean {
-        return this.props.props.weekStart === 'monday';
+    private firstDay(): number {
+        return weekStartDay(this.props.props.weekStart);
     }
 
     private days(): DayCol[] {
@@ -424,11 +425,11 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             const dow = d.getDay();
             return [{ iso: fmtDate(d), date: d, isToday: fmtDate(d) === fmtDate(zToday), isWeekend: dow === 0 || dow === 6 }];
         }
-        return weekDays(this.state.cursor, this.mondayFirst(), showWeekends, zToday);
+        return weekDays(this.state.cursor, this.firstDay(), showWeekends, zToday);
     }
 
     private monthGrid(): MonthGrid {
-        return buildMonthGrid(startOfMonth(this.state.cursor), this.mondayFirst(), this.props.props.showWeekends, todayInZone(this.props.props.timezone));
+        return buildMonthGrid(startOfMonth(this.state.cursor), this.firstDay(), this.props.props.showWeekends, todayInZone(this.props.props.timezone));
     }
 
     private visibleRange(): { start: string; end: string } {
@@ -900,7 +901,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             <MiniMonthNav
                 mini={m}
                 locale={this.props.props.locale}
-                mondayFirst={this.mondayFirst()}
+                firstDay={this.firstDay()}
                 range={this.visibleRange()}
                 cursorIso={fmtDate(this.state.cursor)}
                 showRange={this.props.props.view !== 'month'}

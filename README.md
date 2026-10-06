@@ -74,7 +74,7 @@ All public props are grouped under `config` / `selection` / `output` (+ standard
 | `spanDays` | `{ min, max }` allowed range length. |
 | `granularity` | `day` \| `hour` \| `minute` \| `second`. |
 | `durationLabelThresholdHours` | Below this span, the label shows time units instead of days. |
-| `weekStart` | `monday` \| `sunday`. |
+| `weekStart` | Any weekday, `monday` (default) to `sunday`. |
 | `timezone`, `locale` | Empty = browser/session default. |
 | `layout` | `auto` \| `compact` \| `oneMonth` \| `twoMonths`. |
 | `breakpoints` | `{ compactBelowWidth, compactBelowHeight, twoMonthsAboveWidth }` (drive `auto`). |
@@ -166,7 +166,7 @@ self.props.data.events = events
 
 ### Property reference
 
-**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (`monday`/`sunday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `loading` (bind to your query state → thin loading bar + stale-while-revalidate) · `refetchDebounceMs` (coalesce rapid navigation into one visibleStart/End write; default 150, 0 = immediate) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path) · `labels` (override any built-in UI string — defaults follow `locale` for bundled languages, else English; `{n}`/`{tz}` are substituted).
+**`config`** | `view` (`month`/`week`/`day`/`list`, two-way) · `showToolbar` · `showMiniNav` (title opens a mini-month picker) · `showExport` (toolbar CSV-download button) · `editable` · `selectable` · `builtInEditor` (built-in editor popover — for **create** with `selectable`, and **edit/delete** with `editable`) · `weekStart` (any weekday, default `monday`) · `locale` · `timezone` (IANA zone, e.g. `America/Chicago`; converts event instants and today/now to that zone, empty = browser-local) · `showWeekends` · `dayStartHour` / `dayEndHour` / `scrollToHour` (week/day time axis) · `slotMinutes` (week/day grid resolution + snapping — a divisor of 60: 60/30/15/10/5; finer = sub-hour gridlines, taller scrollable grid) · `scrollToNow` (centre week/day on the current time when today is in view) · `refreshSeconds` (re-render every N seconds so the now-indicator ticks live; 0 = off) · `loading` (bind to your query state → thin loading bar + stale-while-revalidate) · `refetchDebounceMs` (coalesce rapid navigation into one visibleStart/End write; default 150, 0 = immediate) · `showLegend` · `emptyMessage` (subtle header badge + list message when no events are configured; empty string = off) · `categories` (`[{id, label, color, icon}]`; `icon` = Ignition icon path) · `labels` (override any built-in UI string — defaults follow `locale` for bundled languages, else English; `{n}`/`{tz}` are substituted).
 
 **`config.data.events`** — array of event objects:
 

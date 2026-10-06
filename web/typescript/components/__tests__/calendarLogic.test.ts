@@ -12,7 +12,7 @@ const td = new Date(2026, 5, 17); // fixed "today": Wed 2026-06-17 (Jun 1 2026 i
 
 describe('buildMonthGrid', () => {
     it('Monday-first June 2026 starts on Jun 1, spans 6 weeks', () => {
-        const g = buildMonthGrid(new Date(2026, 5, 10), true, true, td);
+        const g = buildMonthGrid(new Date(2026, 5, 10), 1, true, td);
         expect(g.weeks.length).toBe(6);
         expect(g.weeks[0].length).toBe(7);
         expect(g.weeks[0][0].iso).toBe('2026-06-01');
@@ -22,13 +22,13 @@ describe('buildMonthGrid', () => {
     });
 
     it('Sunday-first shifts the grid start back to the prior Sunday', () => {
-        const g = buildMonthGrid(new Date(2026, 5, 10), false, true, td);
+        const g = buildMonthGrid(new Date(2026, 5, 10), 0, true, td);
         expect(g.weeks[0][0].iso).toBe('2026-05-31');
         expect(g.visibleStart).toBe('2026-05-31');
     });
 
     it('flags inMonth / today / weekend correctly', () => {
-        const g = buildMonthGrid(new Date(2026, 5, 10), true, true, td);
+        const g = buildMonthGrid(new Date(2026, 5, 10), 1, true, td);
         const all = g.weeks.flat();
         expect(all.find((c) => c.iso === '2026-06-17')!.isToday).toBe(true);
         expect(all.find((c) => c.iso === '2026-06-01')!.inMonth).toBe(true);
@@ -37,7 +37,7 @@ describe('buildMonthGrid', () => {
     });
 
     it('hides weekends when showWeekends is false (5-day weeks)', () => {
-        const g = buildMonthGrid(new Date(2026, 5, 10), true, false, td);
+        const g = buildMonthGrid(new Date(2026, 5, 10), 1, false, td);
         expect(g.weeks[0].length).toBe(5);
         expect(g.weeks.flat().every((c) => !c.isWeekend)).toBe(true);
     });
@@ -140,14 +140,14 @@ describe('layoutWeekSegments / clampWeekLanes', () => {
 
 describe('weekDays', () => {
     it('Monday-first week of Wed 2026-06-24 is Mon 22 .. Sun 28', () => {
-        const cols = weekDays(new Date(2026, 5, 24), true, true, td);
+        const cols = weekDays(new Date(2026, 5, 24), 1, true, td);
         expect(cols.map((c) => c.iso)).toEqual([
             '2026-06-22', '2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26', '2026-06-27', '2026-06-28'
         ]);
     });
 
     it('hides weekends -> Mon..Fri', () => {
-        const cols = weekDays(new Date(2026, 5, 24), true, false, td);
+        const cols = weekDays(new Date(2026, 5, 24), 1, false, td);
         expect(cols.map((c) => c.iso)).toEqual([
             '2026-06-22', '2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26'
         ]);

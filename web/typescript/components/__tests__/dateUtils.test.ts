@@ -3,7 +3,7 @@ import {
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
-    shiftWallDays
+    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders
 } from '../../shared/dateUtils';
 
 describe('pad2', () => {
@@ -52,25 +52,50 @@ describe('startOfWeek', () => {
     const monday = new Date(2026, 5, 15);
 
     it('Monday-first returns that Monday', () => {
-        expect(startOfWeek(monday, true).getDate()).toBe(15);
+        expect(startOfWeek(monday, 1).getDate()).toBe(15);
     });
 
     it('Sunday-first returns the prior Sunday', () => {
-        expect(startOfWeek(monday, false).getDate()).toBe(14);
+        expect(startOfWeek(monday, 0).getDate()).toBe(14);
     });
 
     it('resolves a mid-week day correctly', () => {
         const thu = new Date(2026, 5, 18);
-        expect(startOfWeek(thu, true).getDate()).toBe(15);  // back to Monday
-        expect(startOfWeek(thu, false).getDate()).toBe(14); // back to Sunday
+        expect(startOfWeek(thu, 1).getDate()).toBe(15);  // back to Monday
+        expect(startOfWeek(thu, 0).getDate()).toBe(14); // back to Sunday
+    });
+
+    it('starts on any weekday', () => {
+        const thu = new Date(2026, 5, 18);
+        expect(startOfWeek(thu, 6).getDate()).toBe(13);  // Saturday-first: back to Sat 13
+        expect(startOfWeek(thu, 3).getDate()).toBe(17);  // Wednesday-first: back to Wed 17
+        expect(startOfWeek(thu, 4).getDate()).toBe(18);  // Thursday-first: that Thursday
     });
 });
 
 describe('firstCellOffset', () => {
     it('offsets the first cell by week-start', () => {
         const june = new Date(2026, 5, 1); // a Monday
-        expect(firstCellOffset(june, true)).toBe(0);  // Monday-first: no offset
-        expect(firstCellOffset(june, false)).toBe(1); // Sunday-first: one blank
+        expect(firstCellOffset(june, 1)).toBe(0);  // Monday-first: no offset
+        expect(firstCellOffset(june, 0)).toBe(1); // Sunday-first: one blank
+        expect(firstCellOffset(june, 6)).toBe(2); // Saturday-first: Sat, Sun blank
+        expect(firstCellOffset(june, 2)).toBe(6); // Tuesday-first: Monday is the last cell
+    });
+});
+
+describe('config.weekStart', () => {
+    it('accepts every day and reads anything else as Monday', () => {
+        expect(weekStartDay(toWeekStart('sunday'))).toBe(0);
+        expect(weekStartDay(toWeekStart('wednesday'))).toBe(3);
+        expect(weekStartDay(toWeekStart('saturday'))).toBe(6);
+        expect(toWeekStart('Saturday')).toBe('monday');
+        expect(toWeekStart('')).toBe('monday');
+    });
+
+    it('rotates the weekday headers to the first day', () => {
+        expect(weekdayHeaders(0, 'en-US')).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+        expect(weekdayHeaders(1, 'en-US')).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+        expect(weekdayHeaders(6, 'en-US')).toEqual(['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
     });
 });
 

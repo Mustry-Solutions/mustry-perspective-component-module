@@ -11,7 +11,8 @@ import {
     fmtDate,
     monthLabel,
     startOfMonth,
-    weekdayHeaders
+    weekdayHeaders,
+    weekStartDay
 } from '../../shared/dateUtils';
 import { LabelConfig, WeekStart } from './pickerTypes';
 
@@ -36,7 +37,7 @@ interface PickerCalendarPaneProps {
 }
 
 function renderGrid(p: PickerCalendarPaneProps, monthStart: Date): React.ReactNode {
-    const offset = firstCellOffset(monthStart, p.weekStart === 'monday');
+    const offset = firstCellOffset(monthStart, weekStartDay(p.weekStart));
     const count = daysInMonth(monthStart);
 
     const cells: React.ReactNode[] = [];
@@ -71,7 +72,7 @@ function renderCalendar(p: PickerCalendarPaneProps, monthStart: Date): React.Rea
     return (
         <div className="mustry-dtrp-calendar">
             <div className="mustry-dtrp-weekdays">
-                {weekdayHeaders(p.weekStart === 'monday', p.locale).map((w) => (
+                {weekdayHeaders(weekStartDay(p.weekStart), p.locale).map((w) => (
                     <div key={`${fmtDate(monthStart)}-${w}`} className="mustry-dtrp-weekday">{w}</div>
                 ))}
             </div>

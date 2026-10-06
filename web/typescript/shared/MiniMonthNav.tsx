@@ -21,7 +21,7 @@ export interface MiniNavLabels {
 interface MiniMonthNavProps {
     mini: MiniNav;
     locale: string;
-    mondayFirst: boolean;
+    firstDay: number;   // 0 = Sunday .. 6 = Saturday
     range: { start: string; end: string };
     cursorIso: string;
     showRange: boolean;   // highlight the visible range (multi-day windows)
@@ -31,8 +31,8 @@ interface MiniMonthNavProps {
 }
 
 export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
-    const { mini, locale, mondayFirst, range, cursorIso, showRange, labels, onStep, onPick } = props;
-    const grid = buildMonthGrid(startOfMonth(mini.month), mondayFirst, true);
+    const { mini, locale, firstDay, range, cursorIso, showRange, labels, onStep, onPick } = props;
+    const grid = buildMonthGrid(startOfMonth(mini.month), firstDay, true);
     const wdFmt = intlFormat(locale, { weekday: 'narrow' });
     const MINI_W = 236;
     const left = Math.max(6, Math.min(mini.rect.left, window.innerWidth - MINI_W - 6));
