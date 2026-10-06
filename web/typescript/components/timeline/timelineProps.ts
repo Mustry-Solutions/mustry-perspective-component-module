@@ -33,7 +33,7 @@ export interface TimelineProps {
     selectable: boolean;     // drag empty track to create
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
-    animations: boolean;     // enter animation for newly-appearing bars/bands
+    animations: boolean;     // enter animation for newly-appearing bars/state bands
     weekStart: 'monday' | 'sunday';   // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
     snapMinutes: number;              // gesture snap override; 0 = each zoom preset's built-in
