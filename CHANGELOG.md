@@ -47,6 +47,13 @@ binding later, still animate. The calendar also never registered
 `data.recurringEvents` with the animation, so recurring occurrences faded in on
 every render; they now animate only when their series is new.
 
+### Tooling: release notes fold each entry into a collapsible block
+A release's notes are its whole CHANGELOG section, and with full write-ups per
+entry the GitHub Release page ran long. `ops/changelog-notes.py` now wraps each
+`###` entry in a `<details>` block titled with its heading, so the page opens
+as a list of what changed and each write-up is one click away. Same approach
+as the Designer Dark Mode module.
+
 ### Docs: contributions no longer require a DCO sign-off
 `CONTRIBUTING.md` and the PR template dropped the Developer Certificate of
 Origin requirement (`git commit -s`). It was never enforced by CI and was
