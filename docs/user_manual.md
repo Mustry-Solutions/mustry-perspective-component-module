@@ -269,6 +269,32 @@ own security level or page. The module's verify project ships a reference
 `AdminConsole` view doing exactly this, with all tabs sharing one refresh
 tick so a save in one refreshes the others.
 
+## 18b. Toasts
+
+`system.mustry.toast()` shows a short notification at the top right of a
+Perspective page. It works from any script and needs no component in the
+view: the gateway loads the toast bundle on every page.
+
+```python
+system.mustry.toast(message=u"Order 1042 was saved.", title=u"Saved", type="success")
+```
+
+Arguments: `message` (required unless `title` is given), `title`, `type`
+(`info`, `success`, `warning`, `error`; default `info`), `duration` in
+seconds (default 5, `0` keeps the toast until it is closed), `className`
+for project styling, and `sessionId` / `pageId` to choose the target.
+
+Without ids the toast goes to the calling page, or to every page of the
+calling session when the script has no page. A gateway-scope script (timer,
+gateway message handler, WebDev) has no session of its own and must pass
+`sessionId`; add `pageId` to reach one page only. The function returns the
+number of pages it reached and raises a `ValueError` for an unknown type or a
+missing session.
+
+Toasts stack up to five, pause while hovered or focused, close with their
+close button or `Escape`, and are announced to screen readers. They follow
+the Perspective theme; see the README for the `--mustry-toast-*` variables.
+
 ## 19. Support
 
 - Component reference and prop tables: `README.md` in the repository.
