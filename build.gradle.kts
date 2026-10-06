@@ -52,7 +52,7 @@ ignitionModule {
         if (v.contains("-") && preNumber != null) "$base.$preNumber" else base
     })
 
-    moduleDescription.set("Custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, on-screen keyboard, and the admin family (schedule, roster, user and holiday management).")
+    moduleDescription.set("Custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, on-screen keyboard, and the admin family (schedule, roster, user and holiday management), plus toasts from scripts (system.mustry.toast).")
 
     /*
      * Minimum version of Ignition required for the module to function correctly.  This typically won't change over

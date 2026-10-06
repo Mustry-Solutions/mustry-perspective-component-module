@@ -1,0 +1,346 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "height": 800,
+      "width": 800
+    }
+  },
+  "root": {
+    "type": "ia.container.flex",
+    "meta": {
+      "name": "root"
+    },
+    "props": {
+      "direction": "column",
+      "style": {
+        "padding": "16px",
+        "gap": "6px"
+      }
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "basis": "48px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Toast demo: system.mustry.toast() from button scripts, from a background thread with explicit ids, and the error paths. The view uses only standard components: the toast bundle loads on every page.",
+          "textStyle": {
+            "whiteSpace": "normal"
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_info"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show info"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tn = system.mustry.toast(message='Three new lines arrived.', title='Info', type='info', duration=30)\n\tself.getSibling('result').props.text = 'sent to %d page(s)' % n"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_success"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show success"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tn = system.mustry.toast(message='Order 1042 was saved.', title='Saved', type='success', duration=30)\n\tself.getSibling('result').props.text = 'sent to %d page(s)' % n"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_warning"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show warning"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tn = system.mustry.toast(message='The delivery date is in the past.', title='Check the date', type='warning', duration=30)\n\tself.getSibling('result').props.text = 'sent to %d page(s)' % n"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_error"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show error"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tn = system.mustry.toast(message='Traceback (most recent call last):\\nValueError: broken', title='Export failed', type='error', duration=30)\n\tself.getSibling('result').props.text = 'sent to %d page(s)' % n"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_markup"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show markup as text"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tsystem.mustry.toast(message='<b>not bold</b> <img src=x onerror=alert(1)>', title='Plain text', duration=30)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_short"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show 1 s toast"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tsystem.mustry.toast(message='Closes after one second.', title='Short', duration=1)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "show_sticky"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Show sticky toast"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tsystem.mustry.toast(message='Stays until closed.', title='Sticky', type='info', duration=0, className='demo-sticky')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "bad_type"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Unknown type"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\ttry:\n\t\tsystem.mustry.toast(message='x', type='nope')\n\t\tself.getSibling('result').props.text = 'no error'\n\texcept Exception as e:\n\t\tself.getSibling('result').props.text = 'error: %s' % e"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "gateway_ids"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Gateway thread with ids"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tsid = self.session.props.id\n\tpid = self.page.props.pageId\n\tresult = self.getSibling('result')\n\tdef run():\n\t\ttry:\n\t\t\tn = system.mustry.toast(message='Sent from a background thread.', title='Gateway scope', type='success', duration=30, sessionId=sid, pageId=pid)\n\t\t\tresult.props.text = 'gateway thread: sent to %d page(s)' % n\n\t\texcept Exception as e:\n\t\t\tresult.props.text = 'gateway thread error: %s' % e\n\tsystem.util.invokeAsynchronous(run)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "gateway_no_ids"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Gateway thread without ids"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tresult = self.getSibling('result')\n\tdef run():\n\t\ttry:\n\t\t\tsystem.mustry.toast(message='x')\n\t\t\tresult.props.text = 'gateway thread: no error'\n\t\texcept Exception as e:\n\t\t\tresult.props.text = 'gateway thread error: %s' % e\n\tsystem.util.invokeAsynchronous(run)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "theme_dark"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Dark theme"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.session.props.theme = 'dark'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "meta": {
+          "name": "theme_light"
+        },
+        "position": {
+          "basis": "34px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "Light theme"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.session.props.theme = 'light'"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "meta": {
+          "name": "result"
+        },
+        "position": {
+          "basis": "28px",
+          "shrink": 0
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "monospace",
+            "fontSize": "13px"
+          }
+        }
+      }
+    ]
+  }
+}
