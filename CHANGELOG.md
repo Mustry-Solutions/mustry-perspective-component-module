@@ -8,6 +8,32 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Data Grid edits landing on the wrong row or field
+Four ways an edit could be written to the wrong place, all without an error:
+- With a pinned column that isn't first in `config.columns` (or after
+  dragging a column in front of one), editing or pasting into a cell edited
+  the column next to it. (#127)
+- An editor left open while the binding refreshed committed to whichever row
+  had moved into its position. The editor now stays with its row, keeping
+  the keyboard focus, and closes if the row or column leaves the view or
+  another row takes the same id. (#128)
+- In cell mode, `onCellEdit`'s `row` held only that one new value, so
+  persisting it undid an earlier edit of the same row that hadn't been
+  rebound yet (a two-column paste, or two quick edits). It now carries every
+  pending edit of the row. (#129)
+- A pending edit only cleared when the rebound value matched it, so a
+  write-back that rejected or normalized the value left the old value shown
+  and sent again with the row's next edit. It now also clears when the cell's
+  bound value changes to anything else: the bound data wins. In batch mode
+  this means someone else's change to a cell drops your unsaved edit of that
+  cell, instead of Save overwriting it.
+- Rows without a `config.idField` value, or sharing one, all answered to the
+  same id: clicking one selected all of them and Delete removed all of them.
+  Such rows are now read-only, a Shift-range selection skips them, and a grid
+  that can select, edit or delete logs a warning. Row ids containing `::` no
+  longer confuse the pending-edit bookkeeping. (#130)
+- CSV export now lists pinned columns first, as the grid shows them.
+
 ## [0.8.0] - 2026-10-06
 
 ### Added: toasts from any script with `system.mustry.toast()`
