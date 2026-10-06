@@ -431,7 +431,7 @@ describe('nextCell (keyboard grid navigation)', () => {
 
 import {
     aggregateValue, batchPayload, locateCell, parsePasteMatrix, pastePlan, pendingKey, parsePendingKey,
-    rowWithPending, unusableRowIds
+    rowWithPending, settlePending, unusableIdWarning, unusableRowIds
 } from '../grid/gridLogic';
 
 describe('batchPayload (Save in batch mode)', () => {
@@ -487,14 +487,54 @@ describe('unusableRowIds (#130: rows the grid cannot address safely)', () => {
 
 describe('locateCell (#128: an open editor follows its row, not its index)', () => {
     const cols = [col('wo'), col('qty')];
+    const none = new Set<string>();
 
     it('finds the cell at its current position', () => {
-        expect(locateCell(['n', 'a', 'b'], cols, 'b', 'qty')).toEqual({ row: 2, col: 1 });
+        expect(locateCell(['n', 'a', 'b'], cols, 'b', 'qty', none)).toEqual({ row: 2, col: 1 });
     });
 
     it('returns null when the row or the column is gone', () => {
-        expect(locateCell(['a'], cols, 'b', 'qty')).toBeNull();
-        expect(locateCell(['b'], cols, 'b', 'notes')).toBeNull();
+        expect(locateCell(['a'], cols, 'b', 'qty', none)).toBeNull();
+        expect(locateCell(['b'], cols, 'b', 'notes', none)).toBeNull();
+    });
+
+    it('returns null once a rebind gives another row the same id', () => {
+        const ids = ['a', 'b', 'a'];
+        expect(locateCell(ids, cols, 'a', 'qty', unusableRowIds(ids.map((id) => ({ id })), 'id'))).toBeNull();
+    });
+});
+
+describe('unusableIdWarning', () => {
+    it('names missing and duplicate ids', () => {
+        const msg = unusableIdWarning(new Set(['', 'c']), 'id', true);
+        expect(msg).toContain('rows without a "id" value');
+        expect(msg).toContain('rows with duplicate ids (c)');
+    });
+
+    it('stays quiet when there is nothing wrong or the grid never acts on ids', () => {
+        expect(unusableIdWarning(new Set(), 'id', true)).toBe('');
+        expect(unusableIdWarning(new Set(['']), 'id', false)).toBe('');
+    });
+});
+
+describe('settlePending (which pending edits a data.rows update clears)', () => {
+    const k = pendingKey('r1', 'a');
+
+    it('clears an edit once the bound value matches it', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 9 }], 'id')).toEqual({});
+    });
+
+    it('keeps an edit while the bound value is unchanged or the row is gone', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 1 }], 'id')).toBeNull();
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r2', a: 1 }], 'id')).toBeNull();
+    });
+
+    // A rejected or normalized write-back would otherwise leave the stale value
+    // pending, shown, and re-sent in the next onCellEdit row.
+    it('clears an edit when the author stored something else', () => {
+        const next = settlePending({ [k]: 9, [pendingKey('r1', 'b')]: 'z' }, { [k]: '1', [pendingKey('r1', 'b')]: 'x' },
+            [{ id: 'r1', a: 3, b: 'x' }], 'id');
+        expect(next).toEqual({ [pendingKey('r1', 'b')]: 'z' });
     });
 });
 

@@ -504,9 +504,15 @@ export interface CellPos {
     col: number;    // effective-columns index
 }
 
-/** Where a row/field pair is now drawn, or null when either has left the view.
+/** Where a row/field pair is now drawn, or null when either has left the view
+ *  or the id no longer names one row (`unusable`, see unusableRowIds).
  *  `viewIds` are the row ids in view order. */
-export function locateCell(viewIds: string[], columns: GridColumn[], rowId: string, field: string): CellPos | null {
+export function locateCell(
+    viewIds: string[], columns: GridColumn[], rowId: string, field: string, unusable: Set<string>
+): CellPos | null {
+    if (unusable.has(rowId)) {
+        return null;
+    }
     const row = viewIds.indexOf(rowId);
     const col = columns.findIndex((c) => c.field === field);
     return row >= 0 && col >= 0 ? { row, col } : null;
@@ -526,6 +532,25 @@ export function unusableRowIds(rows: Array<Record<string, unknown>>, idField: st
         seen.add(id);
     }
     return bad;
+}
+
+/** The console warning for unusable row ids, or '' when there is nothing to
+ *  say. A grid that can't select, edit or delete never addresses rows by id,
+ *  so missing ids are harmless there and stay quiet. */
+export function unusableIdWarning(bad: Set<string>, idField: string, interactive: boolean): string {
+    if (!interactive || !bad.size) {
+        return '';
+    }
+    const ids = Array.from(bad);
+    const dupes = ids.filter((id) => id);
+    const what: string[] = [];
+    if (bad.has('')) {
+        what.push(`rows without a "${idField}" value`);
+    }
+    if (dupes.length) {
+        what.push(`rows with duplicate ids (${dupes.slice(0, 5).join(', ')}${dupes.length > 5 ? ', ...' : ''})`);
+    }
+    return `Data Grid: ${what.join(' and ')} cannot be selected, edited or deleted. Check config.idField.`;
 }
 
 /** The next focused cell for an arrow/Tab/Enter step, clamped to the grid. */
@@ -582,6 +607,38 @@ export function rowWithPending(row: Record<string, unknown>, rowId: string, pend
         }
     });
     return out;
+}
+
+/** The pending edits that survive a data.rows update, or null when none clear.
+ *  `base` holds each edit's bound value (as cellText) from when it was made.
+ *  An edit clears once the bound value equals it (the write-back landed) or
+ *  differs from its base (the author stored something else: a rejected,
+ *  normalized or concurrent change, and the bound data wins). It stays while
+ *  the bound value is unchanged or its row is gone. Values compare as text:
+ *  the props reducer rebuilds the rows on every prop write, so identity
+ *  means nothing here. */
+export function settlePending<T extends Record<string, unknown>>(
+    pending: Record<string, unknown>, base: Record<string, string>, rows: T[], idField: string
+): Record<string, unknown> | null {
+    const keys = Object.keys(pending);
+    if (!keys.length) {
+        return null;
+    }
+    const byId = new Map<string, T>();
+    rows.forEach((r) => byId.set(cellText(r[idField]), r));
+    const next: Record<string, unknown> = {};
+    let cleared = false;
+    for (const k of keys) {
+        const { rowId, field } = parsePendingKey(k);
+        const row = byId.get(rowId);
+        const bound = row ? cellText(row[field]) : '';
+        if (row && (bound === cellText(pending[k]) || (k in base && bound !== base[k]))) {
+            cleared = true;
+        } else {
+            next[k] = pending[k];
+        }
+    }
+    return cleared ? next : null;
 }
 
 /** The batch-save payload from the pending map: per-cell edits plus each
