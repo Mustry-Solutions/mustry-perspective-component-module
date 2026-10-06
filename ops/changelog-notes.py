@@ -3,9 +3,14 @@
 notes. Matches the Keep-a-Changelog heading `## [<version>]...` and emits every
 line up to (but not including) the next `## ` heading.
 
+Each `### ` entry folds into a <details> block titled with its heading, so the
+release page opens as a short list of what changed and the full write-up is one
+click away. Text above the first `### ` stays in view.
+
 Usage: ops/changelog-notes.py 0.2.0 [path/to/CHANGELOG.md]
 Exit 0 with the section on stdout; exit 0 with a short fallback if not found
 (a release should still publish even if the notes lookup misses)."""
+import html
 import re
 import sys
 
@@ -27,6 +32,39 @@ def section(changelog: str, version: str) -> str:
     return "\n".join(out).strip()
 
 
+def summary(title: str) -> str:
+    # <summary> sits inside an HTML block, where GitHub does not render
+    # Markdown: escape the heading and turn its `code` spans into <code>.
+    parts = re.split(r"`([^`]*)`", title)
+    return "".join(
+        f"<code>{html.escape(p, quote=False)}</code>" if i % 2 else html.escape(p, quote=False)
+        for i, p in enumerate(parts)
+    )
+
+
+def fold(body: str) -> str:
+    out, title, entry = [], None, []
+
+    def flush():
+        if title is None:
+            return
+        # GitHub needs a blank line after </summary> and before </details>
+        # to render the Markdown inside.
+        text = "\n".join(entry).strip("\n")
+        out.append(f"<details>\n<summary><b>{summary(title)}</b></summary>\n\n{text}\n\n</details>\n")
+
+    for line in body.splitlines():
+        if line.startswith("### "):
+            flush()
+            title, entry = line[4:].strip(), []
+        elif title is None:
+            out.append(line)
+        else:
+            entry.append(line)
+    flush()
+    return "\n".join(out).strip()
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("usage: changelog-notes.py <version> [changelog]", file=sys.stderr)
@@ -35,7 +73,7 @@ def main() -> int:
     path = sys.argv[2] if len(sys.argv) > 2 else "CHANGELOG.md"
     with open(path, encoding="utf-8") as f:
         body = section(f.read(), version)
-    print(body if body else f"Release {version}. See CHANGELOG.md for details.")
+    print(fold(body) if body else f"Release {version}. See CHANGELOG.md for details.")
     return 0
 
 
