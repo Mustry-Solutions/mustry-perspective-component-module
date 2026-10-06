@@ -390,7 +390,7 @@
         "animations": {
           "type": "boolean",
           "default": true,
-          "description": "Fade + scale in a bar/band the first time its event id appears. Set false for live or fast-polled boards (machine cycles) where new events arrive every few seconds; the now-line still moves. Animations are also off when the OS asks for reduced motion."
+          "description": "Fade + scale in a bar or state band (not a background band) the first time its event id appears. Set false for live or fast-polled boards (machine cycles) where new events arrive every few seconds; the now-line still moves. Animations are also off when the OS asks for reduced motion."
         },
         "weekStart": {
           "type": "string",

@@ -33,7 +33,7 @@ export interface TimelineProps {
     selectable: boolean;     // drag empty track to create
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
-    animations: boolean;     // enter animation for newly-appearing bars/bands
+    animations: boolean;     // enter animation for newly-appearing bars/state bands
     weekStart: WeekStart;             // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
     snapMinutes: number;              // gesture snap override; 0 = each zoom preset's built-in
@@ -48,6 +48,7 @@ export interface TimelineProps {
     windowEnd: number | null;     // two-way (state.windowEnd)
     windowStartAsEpoch: boolean;  // windowStart was given as epoch ms, so write it back as a number
     windowEndAsEpoch: boolean;    // likewise for windowEnd
+    windowSet: boolean;           // either edge holds any value, usable or not (a zoom click clears it)
     emptyMessage: string;    // toolbar badge when no events are configured ('' = hidden)
     loading: boolean;
     refetchDebounceMs: number;
@@ -61,10 +62,9 @@ export interface TimelineProps {
 /** A state.windowStart/End value as epoch ms: a number is epoch ms, a string is
  *  read like an event time (offset/Z = instant, naive = config.timezone). */
 function windowEdgeMs(v: unknown, timezone: string): number | null {
-    if (typeof v === 'number') {
-        return Number.isFinite(v) ? v : null;
-    }
-    return typeof v === 'string' ? toEpochMs(v, timezone) : null;
+    const ms = typeof v === 'number' ? v : typeof v === 'string' ? toEpochMs(v, timezone) : null;
+    // Finite is not enough: beyond +-8.64e15 a Date is invalid and formatting it throws.
+    return ms !== null && !isNaN(new Date(ms).getTime()) ? ms : null;
 }
 
 function mapEvent(e: any): TimelineEvent {
@@ -125,6 +125,8 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), tree.readString('config.timezone', '')),
         windowStartAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
         windowEndAsEpoch: typeof tree.read('state.windowEnd', null) === 'number',
+        windowSet: [tree.read('state.windowStart', null), tree.read('state.windowEnd', null)]
+            .some((v) => v !== null && v !== undefined && v !== ''),
         emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         loading: tree.readBoolean('config.loading', false),
         refetchDebounceMs: Math.max(0, tree.readNumber('config.refetchDebounceMs', 150)),
