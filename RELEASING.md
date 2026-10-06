@@ -34,7 +34,9 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
      from `docs/user_manual.md`),
    - creates a **draft** GitHub Release named `v0.2.0`, attaches the
      signed `.modl` and the manual PDF, then flips it public — using the
-     changelog's `[0.2.0]` section as the notes.
+     changelog's `[0.2.0]` section as the notes (`ops/changelog-notes.py`
+     folds each `###` entry into a collapsible block titled with its
+     heading).
 
 The tag should point at a commit already on `main` (hence already green — the
 release build signs the artifact rather than re-running the e2e gateway).
