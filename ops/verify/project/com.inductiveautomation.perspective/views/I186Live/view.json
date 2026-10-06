@@ -1,0 +1,243 @@
+{
+  "custom": {
+    "idMode": "stable"
+  },
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1200,
+      "height": 500
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186"
+        },
+        "props": {
+          "text": "< Back"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 12,
+          "width": 90,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "title"
+        },
+        "props": {
+          "text": "Live board: new events vs loaded data",
+          "style": {
+            "fontSize": "18px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 130,
+          "y": 12,
+          "width": 900,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "help"
+        },
+        "props": {
+          "text": "Expect: on page load nothing fades in. With stable ids, only each newly started phase fades in (that is config.animations doing its job). 'New id every refresh' makes every bar count as new each second: that is the flashing from the issue, and why ids must be stable. Untick 'Fade in new events' and nothing fades at all, while the now-line keeps moving.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 50,
+          "width": 1150,
+          "height": 54
+        }
+      },
+      {
+        "type": "ia.input.checkbox",
+        "version": 0,
+        "meta": {
+          "name": "animations"
+        },
+        "props": {
+          "text": "Fade in new events (config.animations)"
+        },
+        "propConfig": {
+          "props.selected": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../timeline.props.config.animations",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 110,
+          "width": 320,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "idlabel"
+        },
+        "props": {
+          "text": "Event ids:",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 370,
+          "y": 110,
+          "width": 80,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "meta": {
+          "name": "idMode"
+        },
+        "props": {
+          "options": [
+            {
+              "value": "stable",
+              "label": "Stable ids (recommended)"
+            },
+            {
+              "value": "regenerate",
+              "label": "New id every refresh (bad query)"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.idMode",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 450,
+          "y": 110,
+          "width": 280,
+          "height": 32
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "timeline"
+        },
+        "props": {
+          "config": {
+            "zooms": [
+              "second",
+              "minute"
+            ],
+            "refreshSeconds": 1,
+            "animations": true,
+            "resources": [
+              {
+                "id": "stationA",
+                "label": "Station A",
+                "group": "Cell 3"
+              },
+              {
+                "id": "stationB",
+                "label": "Station B",
+                "group": "Cell 3"
+              }
+            ],
+            "categories": [
+              {
+                "id": "move",
+                "label": "Motion",
+                "color": "#0c7bb3"
+              },
+              {
+                "id": "process",
+                "label": "Process",
+                "color": "#8e44ad"
+              }
+            ]
+          },
+          "data": {
+            "events": []
+          },
+          "state": {
+            "zoom": "second",
+            "followNow": true
+          }
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(1000)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# One cycle per station, aligned to absolute time so ids are stable across\n\t# refreshes: \"stationA-<cycle>-<phase>\". Only phases that have started are\n\t# emitted, so a new bar appears every second or two.\n\tnowms = system.date.toMillis(value)\n\tmode = self.view.custom.idMode\n\tperiod = 12000\n\tphases = [(\"Clamp\", 1500, \"move\"), (\"Inject\", 3000, \"process\"), (\"Cool\", 5000, \"process\"), (\"Eject\", 2500, \"move\")]\n\tdef iso(ms):\n\t\treturn system.date.format(system.date.fromMillis(long(ms)), \"yyyy-MM-dd'T'HH:mm:ss.SSSXXX\")\n\tout = []\n\tfor res, offset in [(\"stationA\", 0), (\"stationB\", 4000)]:\n\t\tfirst = int((nowms - 150000 - offset) // period)\n\t\tlast = int((nowms - offset) // period)\n\t\tfor n in range(first, last + 1):\n\t\t\tt = n * period + offset\n\t\t\tfor (name, dur, cat) in phases:\n\t\t\t\tif t > nowms:\n\t\t\t\t\tbreak\n\t\t\t\tif mode == \"regenerate\":\n\t\t\t\t\teid = \"%s-%d-%s-%d\" % (res, n, name, nowms)\n\t\t\t\telse:\n\t\t\t\t\teid = \"%s-%d-%s\" % (res, n, name)\n\t\t\t\tout.append({\"id\": eid, \"resourceId\": res, \"title\": name, \"start\": iso(t), \"end\": iso(t + dur), \"category\": cat})\n\t\t\t\tt += dur\n\treturn out\n"
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 152,
+          "width": 1150,
+          "height": 300
+        }
+      }
+    ]
+  }
+}

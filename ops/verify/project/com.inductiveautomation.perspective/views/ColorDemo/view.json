@@ -83,8 +83,7 @@
        "type": "property",
        "config": {
         "path": "view.custom.color"
-       },
-       "bidirectional": true
+       }
       }
      }
     },
@@ -216,8 +215,7 @@
        "type": "property",
        "config": {
         "path": "view.custom.color"
-       },
-       "bidirectional": true
+       }
       }
      }
     },
@@ -311,8 +309,7 @@
        "type": "property",
        "config": {
         "path": "view.custom.color"
-       },
-       "bidirectional": true
+       }
       }
      }
     },

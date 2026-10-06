@@ -1,0 +1,312 @@
+{
+  "custom": {
+    "weekStart": "saturday"
+  },
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1200,
+      "height": 820
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186"
+        },
+        "props": {
+          "text": "< Back"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 12,
+          "width": 90,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "title"
+        },
+        "props": {
+          "text": "weekStart on any day",
+          "style": {
+            "fontSize": "18px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 130,
+          "y": 12,
+          "width": 600,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "pick"
+        },
+        "props": {
+          "text": "config.weekStart:",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 54,
+          "width": 130,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.dropdown",
+        "version": 0,
+        "meta": {
+          "name": "weekStart"
+        },
+        "props": {
+          "options": [
+            {
+              "value": "monday",
+              "label": "monday"
+            },
+            {
+              "value": "tuesday",
+              "label": "tuesday"
+            },
+            {
+              "value": "wednesday",
+              "label": "wednesday"
+            },
+            {
+              "value": "thursday",
+              "label": "thursday"
+            },
+            {
+              "value": "friday",
+              "label": "friday"
+            },
+            {
+              "value": "saturday",
+              "label": "saturday"
+            },
+            {
+              "value": "sunday",
+              "label": "sunday"
+            }
+          ],
+          "allowClear": false
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.weekStart",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 160,
+          "y": 54,
+          "width": 180,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "help"
+        },
+        "props": {
+          "text": "Check: calendar month columns and week view start on that day; picker headers follow and 'This week' / 'Last week' start on it; the timeline's mini month (click its title) follows.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 360,
+          "y": 50,
+          "width": 820,
+          "height": 40
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.calendar",
+        "version": 0,
+        "meta": {
+          "name": "calendar"
+        },
+        "props": {
+          "config": {},
+          "data": {
+            "events": []
+          },
+          "state": {
+            "view": "month"
+          }
+        },
+        "propConfig": {
+          "props.config.weekStart": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.weekStart"
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 100,
+          "width": 560,
+          "height": 460
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.datetimerangepicker",
+        "version": 0,
+        "meta": {
+          "name": "picker"
+        },
+        "props": {
+          "config": {
+            "layout": "oneMonth",
+            "granularity": "day",
+            "presets": [
+              {
+                "label": "This week",
+                "type": "calendar",
+                "calendar": {
+                  "period": "thisWeek"
+                }
+              },
+              {
+                "label": "Last week",
+                "type": "calendar",
+                "calendar": {
+                  "period": "lastWeek"
+                }
+              }
+            ]
+          }
+        },
+        "propConfig": {
+          "props.config.weekStart": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.weekStart"
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 600,
+          "y": 100,
+          "width": 400,
+          "height": 460
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "pickOut"
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontSize": "12px",
+            "fontFamily": "monospace"
+          }
+        },
+        "position": {
+          "x": 600,
+          "y": 566,
+          "width": 580,
+          "height": 22
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'picker: ' + {../picker.props.output.startDateTime} + '  ->  ' + {../picker.props.output.endDateTime}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "meta": {
+          "name": "timeline"
+        },
+        "props": {
+          "config": {
+            "resources": [
+              {
+                "id": "r1",
+                "label": "Line 1"
+              }
+            ]
+          },
+          "data": {
+            "events": []
+          },
+          "state": {
+            "zoom": "week"
+          }
+        },
+        "propConfig": {
+          "props.config.weekStart": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.custom.weekStart"
+              }
+            }
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 596,
+          "width": 1150,
+          "height": 200
+        }
+      }
+    ]
+  }
+}

@@ -111,6 +111,22 @@
   "/branching-panzoom": {
    "viewPath": "BranchingPanZoom",
    "viewParams": {}
+  },
+  "/i186": {
+   "viewPath": "I186Index",
+   "viewParams": {}
+  },
+  "/i186-live": {
+   "viewPath": "I186Live",
+   "viewParams": {}
+  },
+  "/i186-window": {
+   "viewPath": "I186Window",
+   "viewParams": {}
+  },
+  "/i186-weekstart": {
+   "viewPath": "I186WeekStart",
+   "viewParams": {}
   }
  },
  "shared": {},

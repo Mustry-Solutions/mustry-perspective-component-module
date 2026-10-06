@@ -1,0 +1,341 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1200,
+      "height": 560
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "title"
+        },
+        "props": {
+          "text": "Issue #186: manual test",
+          "style": {
+            "fontSize": "18px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 16,
+          "width": 1000,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "h_64"
+        },
+        "props": {
+          "text": "1. Live board: new events vs loaded data",
+          "style": {
+            "fontSize": "15px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 64,
+          "width": 900,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "t_64"
+        },
+        "props": {
+          "text": "Machine cycles arrive every second. With stable ids only NEW phases fade in; switch to 'new id every refresh' to see the flashing the reporter saw. Untick 'Fade in new events' (config.animations) and nothing fades. Reload the page: nothing fades in on load.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 90,
+          "width": 900,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186_live"
+        },
+        "props": {
+          "text": "Open"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186-live\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 138,
+          "width": 120,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "h_188"
+        },
+        "props": {
+          "text": "2. Paging with a windowed binding",
+          "style": {
+            "fontSize": "15px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 188,
+          "width": 900,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "t_188"
+        },
+        "props": {
+          "text": "Open the timeline and calendar DB demos and page with < and >. The new window's events must appear without fading. (Calendar: Month view, page back to May-Aug 2026 where the one-off events are.)",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 214,
+          "width": 900,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_timeline_db"
+        },
+        "props": {
+          "text": "Open timeline DB demo"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/timeline-db\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 262,
+          "width": 220,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_calendar_db"
+        },
+        "props": {
+          "text": "Open calendar DB demo"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/calendar-db\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 256,
+          "y": 262,
+          "width": 220,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "h_312"
+        },
+        "props": {
+          "text": "3. Custom time window (state.windowStart / windowEnd)",
+          "style": {
+            "fontSize": "15px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 312,
+          "width": 900,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "t_312"
+        },
+        "props": {
+          "text": "Buttons set shifts, the DST weekend (25 Oct, Europe/Brussels), a live 45-second window, mixed epoch/ISO edges, a half-set window and out-of-range values. Labels show state and output.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 338,
+          "width": 900,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186_window"
+        },
+        "props": {
+          "text": "Open"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186-window\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 386,
+          "width": 120,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "h_436"
+        },
+        "props": {
+          "text": "4. weekStart on any day",
+          "style": {
+            "fontSize": "15px",
+            "fontWeight": "bold"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 436,
+          "width": 900,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "t_436"
+        },
+        "props": {
+          "text": "One dropdown drives the calendar, the date/time picker (incl. its This week / Last week presets) and the timeline's mini month navigator (click the timeline title).",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 462,
+          "width": 900,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "nav_i186_weekstart"
+        },
+        "props": {
+          "text": "Open"
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tsystem.perspective.navigate(page=\"/i186-weekstart\")\n"
+                }
+              }
+            ]
+          }
+        },
+        "position": {
+          "x": 24,
+          "y": 510,
+          "width": 120,
+          "height": 32
+        }
+      }
+    ]
+  }
+}
