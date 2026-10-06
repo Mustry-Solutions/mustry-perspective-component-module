@@ -1,0 +1,132 @@
+// Toasts from system.mustry.toast(): a fixed top-right stack on every page.
+// Colours come from the Perspective theme variables, so light, dark and custom
+// themes apply without extra rules. Override per project through the
+// --mustry-toast-* variables or the className passed to the script function.
+.mustry-toasts {
+    position: fixed;
+    top: var(--mustry-toast-top, 16px);
+    right: var(--mustry-toast-right, 16px);
+    z-index: var(--mustry-toast-z-index, 10000);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: var(--mustry-toast-width, 340px);
+    max-width: calc(100vw - 32px);
+    pointer-events: none;
+}
+
+.mustry-toast {
+    --mustry-toast-accent: var(--info, #3272d9);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 10px 14px 12px;
+    overflow: hidden;
+    border-left: 4px solid var(--mustry-toast-accent);
+    border-radius: 6px;
+    background: var(--mustry-toast-background, var(--neutral-10, #fafafa));
+    color: var(--mustry-toast-color, var(--neutral-90, #323232));
+    box-shadow: var(--boxShadow2, 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23));
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.35;
+    pointer-events: auto;
+    animation: mustry-toast-in 180ms ease-out;
+}
+
+.mustry-toast--info { --mustry-toast-accent: var(--info, #3272d9); }
+.mustry-toast--success { --mustry-toast-accent: var(--success, #038537); }
+.mustry-toast--warning { --mustry-toast-accent: var(--warning, #ad5f00); }
+.mustry-toast--error { --mustry-toast-accent: var(--error, #de1b1b); }
+
+.mustry-toast__icon {
+    flex: 0 0 auto;
+    display: flex;
+    color: var(--mustry-toast-accent);
+}
+
+.mustry-toast__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.mustry-toast__title {
+    font-weight: 600;
+}
+
+.mustry-toast__message {
+    white-space: pre-line;
+}
+
+.mustry-toast__title + .mustry-toast__message {
+    margin-top: 2px;
+}
+
+.mustry-toast__close {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    margin: -4px -2px 0 0;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0.6;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        opacity: 1;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--mustry-toast-accent);
+        outline-offset: 1px;
+    }
+}
+
+.mustry-toast__progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--mustry-toast-accent);
+    transform-origin: left;
+    animation-name: mustry-toast-countdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+.mustry-toast--paused .mustry-toast__progress {
+    animation-play-state: paused;
+}
+
+.mustry-toast--leaving {
+    opacity: 0;
+    transform: translateX(16px);
+    transition: opacity 180ms ease-in, transform 180ms ease-in;
+}
+
+@keyframes mustry-toast-in {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes mustry-toast-countdown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mustry-toast,
+    .mustry-toast--leaving {
+        animation: none;
+        transition: none;
+    }
+}

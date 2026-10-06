@@ -8,6 +8,18 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: toasts from any script with `system.mustry.toast()`
+Projects had no built-in way to show a short notification from a script, and
+add-on modules that offer one either need a component on every page or only
+reach the calling page. `system.mustry.toast(message, title, type, duration,
+className, sessionId, pageId)` shows a toast at the top right of the page.
+The gateway loads a small separate bundle (`MustryToasts.js`) on every page,
+so no component is needed. Without ids it targets the calling page (or every
+page of the calling session); gateway-scope scripts pass `sessionId` and
+optionally `pageId`. Toasts follow the Perspective theme variables, stack up
+to five, pause on hover or keyboard focus, close on `Escape` and are announced to
+screen readers. Titles and messages are rendered as text only.
+
 ### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
 In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
 twice with the same payload, so the write-back script ran twice per edit
