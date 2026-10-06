@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-06
+
 ### Docs: user manual covers the issue #186 additions
 The Resource Timeline chapter now describes the zoom presets down to
 millisecond, the custom time window and `config.animations`; the
