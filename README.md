@@ -565,7 +565,7 @@ Perspective serializes each instance's configured **prop values** into the view'
 1. **Freeze the schema** and stop renaming/re-nesting published props.
 2. **Additive-only policy** thereafter — new props are optional with defaults (non-breaking); renames/moves require a converter.
 3. **Versioned converters** — confirm the exact Perspective 8.3 SDK hook (component descriptor version + prop converter; verify via `javap`) and register migrations that rewrite old prop trees forward. As a cheaper interim, the reducer can read legacy paths as fallbacks.
-4. **Document the policy** here and in `CLAUDE.md`.
+4. **Document the policy** here and in `AGENTS.md`.
 5. ~~*(Optional)* a CI guard that flags a removed/renamed key in `props.json` versus the previous commit.~~ **Done:** `ops/schema-guard.sh`, wired into CI.
 
 Until the component is actively used, breaking schema changes remain acceptable.

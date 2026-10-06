@@ -4,7 +4,7 @@
 // back out of it. HSV is the interaction model (saturation/value area + hue
 // slider); HSL and RGB are display/output formats. Keeping all of this pure
 // and exhaustively tested is the whole reason this component is a good fit for
-// the module (see the three-layer architecture note in CLAUDE.md).
+// the module (see the three-layer architecture note in AGENTS.md).
 
 export interface RGB { r: number; g: number; b: number; } // each 0..255 (integer)
 export interface HSL { h: number; s: number; l: number; } // h 0..360, s/l 0..100
