@@ -78,6 +78,31 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     expect(w).toBeLessThan(20);   // a floored 1s phase would be ~144px
 });
 
+test('timeline: state.windowStart/End pin a custom window (issue #186)', async ({ page }) => {
+    await openRoute(page, '/timeline-window', '.mustry-timeline');
+    const lower = page.locator('.mustry-tml-axis-lower .mustry-tml-tick');
+    // 06:00-14:00 UTC in 15-minute steps: 32 ticks, starting on the window edge.
+    await expect(lower).toHaveCount(32);
+    await expect(lower.first()).toHaveText('06:00');
+    await expect(page.locator('.mustry-tml-zoom-btn--active')).toHaveCount(0);
+    await expect(page.getByText('Early run')).toBeVisible();
+    await expect(page.getByText('Late run')).toHaveCount(0);
+    await expect(page.getByText('visible: 2026-06-01T06:00:00.000Z / 2026-06-01T14:00:00.000Z')).toBeVisible();
+
+    // Next pages by the window's own length and writes the window back.
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(lower.first()).toHaveText('14:00');
+    await expect(page.getByText('Late run')).toBeVisible();
+    await expect(page.getByText('visible: 2026-06-01T14:00:00.000Z / 2026-06-01T22:00:00.000Z')).toBeVisible();
+    await expect(page.getByText(/^state: 2026-06-01T14:00:00(\.000)?(Z|\+00:00) \/ 2026-06-01T22:00:00/)).toBeVisible();
+
+    // A zoom button leaves the custom window for the preset.
+    await page.locator('.mustry-tml-zoom-btn', { hasText: /^Day$/ }).click();
+    await expect(page.locator('.mustry-tml-zoom-btn--active')).toHaveText('Day');
+    await expect(lower).toHaveCount(24);
+    await expect(page.getByText(/^state:\s*\/\s*$/)).toBeVisible();   // both cleared (null renders empty)
+});
+
 /** Count every enter-animation class the page ever shows, from first paint. */
 async function countEnterAnimations(page: Page): Promise<void> {
     await page.addInitScript(() => {

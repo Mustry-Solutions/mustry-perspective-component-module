@@ -182,6 +182,132 @@ export function rezoomAnchorMs(anchorMs: number, fromZoom: TimelineZoom, toZoom:
     return containingAnchorMs(target, toZoom, timeZone);
 }
 
+// --- custom window (state.windowStart / state.windowEnd) ----------------------
+
+/** A custom window renders at the presets' common width (see ZOOM_PRESETS). */
+export const CUSTOM_WINDOW_PX = 1440;
+
+/** Longest custom window; longer ones are cut to this (ticks and layout are
+ *  sized for days, not months). */
+export const MAX_CUSTOM_SPAN_MS = 31 * 24 * MS_PER_HOUR;
+
+/** Upper bound on lower-row ticks for a custom window (the presets carry 20-32). */
+const CUSTOM_MAX_TICKS = 32;
+
+// Every step divides a day, so ticks stepped from each zone-local midnight line up.
+const CUSTOM_TICK_STEPS_MS = [
+    100, 200, 500, 1000, 2000, 5000, 10000, 15000, 30000,
+    60000, 2 * 60000, 5 * 60000, 10 * 60000, 15 * 60000, 30 * 60000,
+    MS_PER_HOUR, 2 * MS_PER_HOUR, 3 * MS_PER_HOUR, 6 * MS_PER_HOUR, 12 * MS_PER_HOUR, 24 * MS_PER_HOUR
+];
+
+export interface CustomWindow {
+    startMs: number;
+    endMs: number;
+}
+
+/** The custom window when both edges are set and end > start (span capped at
+ *  MAX_CUSTOM_SPAN_MS), else null and the zoom preset applies. */
+export function customWindow(startMs: number | null, endMs: number | null): CustomWindow | null {
+    if (startMs === null || endMs === null || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+        return null;
+    }
+    return { startMs, endMs: Math.min(endMs, startMs + MAX_CUSTOM_SPAN_MS) };
+}
+
+export function customScale(w: CustomWindow): TimeScale {
+    return { startMs: w.startMs, endMs: w.endMs, pxPerHour: CUSTOM_WINDOW_PX / ((w.endMs - w.startMs) / MS_PER_HOUR) };
+}
+
+/** The preset closest in span to a custom window: it lends the window its snap,
+ *  bar floor, now-line tick and title format. 'shift' is never picked (its ticks
+ *  need config.shifts). */
+export function customZoom(spanMs: number): TimelineZoom {
+    let best: TimelineZoom = 'day';
+    let bestDist = Infinity;
+    for (const z of TIMELINE_ZOOMS) {
+        const dist = Math.abs(Math.log(spanMs / zoomSpanMs(z)));
+        if (z !== 'shift' && dist < bestDist) {
+            best = z;
+            bestDist = dist;
+        }
+    }
+    return best;
+}
+
+/** Lower-row tick step for a custom window: the finest step that keeps the row
+ *  at CUSTOM_MAX_TICKS or fewer. */
+export function customTickStepMs(spanMs: number): number {
+    for (const step of CUSTOM_TICK_STEPS_MS) {
+        if (spanMs / step <= CUSTOM_MAX_TICKS) {
+            return step;
+        }
+    }
+    return CUSTOM_TICK_STEPS_MS[CUSTOM_TICK_STEPS_MS.length - 1];
+}
+
+/** An instant's zone-local wall clock as a naive epoch (wall-clock arithmetic). */
+function wallMs(ms: number, timeZone: string): number {
+    const w = zoneWallClock(new Date(ms), timeZone);
+    return Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) + (((ms % 1000) + 1000) % 1000);
+}
+
+/** The instant showing a naive-epoch wall clock in the zone (inverse of wallMs). */
+function fromWallMs(wall: number, timeZone: string): number {
+    const d = new Date(wall);
+    const local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+    return resolveZoned(local, timeZone).epochMs + d.getUTCMilliseconds();
+}
+
+/** Wall-clock length of a window when it is a whole number of hours (a shift,
+ *  a day), else null. Those windows step on the zone's wall clock, so 06:00-14:00
+ *  stays on 06:00 / 14:00 / 22:00 across a DST change; shorter ones (a machine
+ *  cycle) step in plain time so paging never skips or repeats the DST hour. */
+function wallSpanMs(w: CustomWindow, timeZone: string): number | null {
+    const span = wallMs(w.endMs, timeZone) - wallMs(w.startMs, timeZone);
+    return span > 0 && span % MS_PER_HOUR === 0 ? span : null;
+}
+
+/** Prev/next for a custom window: shift by its own length (on the wall clock
+ *  for whole-hour windows, see wallSpanMs). */
+export function pageCustomWindow(w: CustomWindow, dir: number, timeZone: string): CustomWindow {
+    const wallSpan = wallSpanMs(w, timeZone);
+    if (wallSpan === null) {
+        const span = w.endMs - w.startMs;
+        return { startMs: w.startMs + dir * span, endMs: w.endMs + dir * span };
+    }
+    const start = wallMs(w.startMs, timeZone) + dir * wallSpan;
+    return { startMs: fromWallMs(start, timeZone), endMs: fromWallMs(start + wallSpan, timeZone) };
+}
+
+/** Today / follow-now for a custom window: the window-length stride that holds
+ *  `nowMs`, counted from the window's own start, so a 06:00-14:00 window keeps
+ *  landing on 06:00 / 14:00 / 22:00. */
+export function containingCustomWindow(w: CustomWindow, nowMs: number, timeZone: string): CustomWindow {
+    const wallSpan = wallSpanMs(w, timeZone);
+    let c = w;
+    if (wallSpan !== null) {
+        c = pageCustomWindow(w, Math.floor((wallMs(nowMs, timeZone) - wallMs(w.startMs, timeZone)) / wallSpan), timeZone);
+        if (nowMs >= c.startMs && nowMs < c.endMs) {
+            return c;
+        }
+        // The repeated hour of a DST fall-back reads the same on the wall clock
+        // twice; finish in plain time from the wall-clock guess.
+    }
+    const span = c.endMs - c.startMs;
+    const k = Math.floor((nowMs - c.startMs) / span);
+    return { startMs: c.startMs + k * span, endMs: c.endMs + k * span };
+}
+
+/** Mini-nav day pick for a custom window: the same wall-clock start on that
+ *  date, same length. */
+export function customWindowOnDate(w: CustomWindow, y: number, mo: number, d: number, timeZone: string): CustomWindow {
+    const start = Date.UTC(y, mo - 1, d) + wallMs(w.startMs, timeZone) % (24 * MS_PER_HOUR);
+    const startMs = fromWallMs(start, timeZone);
+    const wallSpan = wallSpanMs(w, timeZone);
+    return { startMs, endMs: wallSpan === null ? startMs + (w.endMs - w.startMs) : fromWallMs(start + wallSpan, timeZone) };
+}
+
 /** How often the now-line re-renders, ms (0 = never; config.refreshSeconds off).
  *  At the sub-hour presets the line covers 12 px/s, so a 5- or 60-second refresh
  *  reads as hopping: the tick is capped at one second there (the line also
@@ -201,13 +327,15 @@ export const FOLLOW_DEFAULT_TICK_MS = 60000;
 /** Follow-now tick interval, ms: config.refreshSeconds when > 0 (floored at 1s so
  *  a fractional/zero setting can't spin), else one minute — but never longer than
  *  a quarter of the window at the sub-day presets, where the default minute would
- *  let the now-line run off a 10-second window long before the next re-anchor. */
-export function followTickMs(refreshSeconds: number, zoom?: TimelineZoom): number {
+ *  let the now-line run off a 10-second window long before the next re-anchor.
+ *  A custom window passes its own `spanMs` in place of the preset's. */
+export function followTickMs(refreshSeconds: number, zoom?: TimelineZoom, spanMs?: number): number {
     const base = refreshSeconds > 0 ? Math.max(1, refreshSeconds) * 1000 : FOLLOW_DEFAULT_TICK_MS;
-    if (!zoom || !isSubDayZoom(zoom)) {
+    const span = spanMs || (zoom ? zoomSpanMs(zoom) : 0);
+    if (!span || span >= 24 * MS_PER_HOUR) {
         return base;
     }
-    return Math.max(1000, Math.min(base, Math.round(zoomSpanMs(zoom) / 4)));
+    return Math.max(1000, Math.min(base, Math.round(span / 4)));
 }
 
 /**
@@ -289,9 +417,12 @@ export interface TickRows {
  * day's own midnight — so across a 23/25h DST day every tick still lands on the
  * wall-clock boundary its label names. At 'shift' zoom the lower row sits on the
  * configured shift boundaries (labelled with the shift names) instead.
+ * A custom window passes `stepMs` (customTickStepMs); the lower labels then
+ * follow the step's resolution rather than the zoom's.
  */
-export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string, shifts?: ShiftDef[]): TickRows {
+export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: string, locale: string, shifts?: ShiftDef[], stepMs?: number): TickRows {
     const preset = ZOOM_PRESETS[zoom];
+    const labelZoom: TimelineZoom = !stepMs ? zoom : stepMs < 1000 ? 'millisecond' : stepMs < 60000 ? 'second' : 'day';
     // Sub-hour windows start mid-day, so the upper (day) label carries the time
     // of the window edge too — at 'second' the whole window is two minutes.
     const upperFmt = zonedFormat(locale, timezone, isSubHourZoom(zoom)
@@ -302,13 +433,13 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
     // Seconds (and tenths) only where the tick step needs them. A second-only
     // format is not reliably zero-padded across engines, so the fine rows keep
     // the full HH:mm:ss(.S) shape; Intl localizes the decimal separator.
-    const lowerFmt = zoom === 'week'
+    const lowerFmt = labelZoom === 'week'
         ? zonedFormat(locale, timezone, { hour: '2-digit', hour12: false })
-        : zoom === 'millisecond'
+        : labelZoom === 'millisecond'
             ? zonedFormat(locale, timezone, {
                 hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 1, hour12: false
             })
-            : zoom === 'second'
+            : labelZoom === 'second'
                 ? zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
                 : zonedFormat(locale, timezone, { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -351,7 +482,7 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
         }
         // Step from the day's midnight, but start at the first step inside the
         // window: a 'second' window is 24 five-second steps, not 17,280.
-        const step = Math.round(preset.lowerStepMin * 60000);
+        const step = stepMs || Math.round(preset.lowerStepMin * 60000);
         const first = dayStarts[i] + Math.max(0, Math.ceil((scale.startMs - dayStarts[i]) / step)) * step;
         for (let ms = first; ms < dayEnd; ms += step) {
             lower.push({ ms, px: msToPx(scale, ms), label: lowerFmt.format(new Date(ms)) });

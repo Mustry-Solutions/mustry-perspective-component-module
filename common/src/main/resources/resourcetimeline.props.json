@@ -387,6 +387,11 @@
           "default": false,
           "description": "Toolbar button that downloads the loaded events (windowed + recurring definitions) as timeline-events.csv."
         },
+        "animations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fade + scale in a bar/band the first time its event id appears. Set false for live or fast-polled boards (machine cycles) where new events arrive every few seconds; the now-line still moves. Animations are also off when the OS asks for reduced motion."
+        },
         "weekStart": {
           "type": "string",
           "enum": [
@@ -489,6 +494,22 @@
           "items": {
             "type": "string"
           }
+        },
+        "windowStart": {
+          "type": [
+            "string",
+            "number",
+            "null"
+          ],
+          "description": "Custom window start (two-way). With state.windowEnd, shows exactly [windowStart, windowEnd) instead of the zoom preset's window, at the presets' width, with ticks and snapping sized to the span (up to 31 days). An ISO-8601 instant (naive = config.timezone) or epoch ms. Prev/next shift it by its own length and Today/Live move it to the stride holding now (keeping its phase: 06:00-14:00 stays on 06:00/14:00/22:00); these write it back in the form it was given. A zoom button clears both. Unset, or end not after start = the zoom preset applies."
+        },
+        "windowEnd": {
+          "type": [
+            "string",
+            "number",
+            "null"
+          ],
+          "description": "Custom window end, exclusive (two-way). See state.windowStart."
         }
       }
     },

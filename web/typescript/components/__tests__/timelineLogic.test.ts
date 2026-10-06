@@ -1,5 +1,7 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_BAR_PX_READONLY, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent,
+    CUSTOM_WINDOW_PX, MAX_CUSTOM_SPAN_MS, containingCustomWindow, customScale, customTickStepMs, customWindow,
+    customWindowOnDate, customZoom, pageCustomWindow,
     ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followTickMs,
     isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
     resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
@@ -522,7 +524,11 @@ describe('mapTimelineProps', () => {
         expect(p.labels.zoomWeek).toBe('Week');
         expect(p.editable).toBe(false);
         expect(p.showExport).toBe(false);
+        expect(p.animations).toBe(true);
+        expect(mapTimelineProps(stubReader({ config: { animations: false } })).animations).toBe(false);
         expect(p.weekStart).toBe('monday');
+        expect(p.windowStart).toBeNull();
+        expect(p.windowEnd).toBeNull();
         expect(p.labels.previousMonth).toBe('Previous month');
         expect(mapTimelineProps(stubReader({ config: { weekStart: 'sunday', locale: 'fr' } })).weekStart).toBe('sunday');
         expect(mapTimelineProps(stubReader({ config: { locale: 'fr' } })).labels.previousMonth).toBe('Mois précédent');
@@ -610,6 +616,34 @@ describe('mapTimelineProps', () => {
     });
 });
 
+describe('mapTimelineProps: custom window', () => {
+    it('reads epoch ms and ISO instants; naive strings use config.timezone', () => {
+        const epoch = mapTimelineProps(stubReader({ state: { windowStart: 1759644000000, windowEnd: 1759672800000 } }));
+        expect(epoch.windowStart).toBe(1759644000000);
+        expect(epoch.windowEnd).toBe(1759672800000);
+        expect(epoch.windowStartAsEpoch).toBe(true);
+        expect(epoch.windowEndAsEpoch).toBe(true);
+        const iso = mapTimelineProps(stubReader({
+            config: { timezone: 'Europe/Brussels' },
+            state: { windowStart: '2026-10-05T06:00:00', windowEnd: '2026-10-05T14:00:00Z' }
+        }));
+        expect(iso.windowStart).toBe(Date.UTC(2026, 9, 5, 4));
+        expect(iso.windowEnd).toBe(Date.UTC(2026, 9, 5, 14));
+        expect(iso.windowStartAsEpoch).toBe(false);
+        expect(iso.windowEndAsEpoch).toBe(false);
+        const mixed = mapTimelineProps(stubReader({ state: { windowStart: 1759644000000, windowEnd: '2026-10-05T14:00:00Z' } }));
+        expect(mixed.windowStartAsEpoch).toBe(true);
+        expect(mixed.windowEndAsEpoch).toBe(false);
+    });
+
+    it('treats null, empty and garbage as unset', () => {
+        const p = mapTimelineProps(stubReader({ state: { windowStart: null, windowEnd: 'soon' } }));
+        expect(p.windowStart).toBeNull();
+        expect(p.windowEnd).toBeNull();
+        expect(mapTimelineProps(stubReader({ state: { windowStart: '' } })).windowStart).toBeNull();
+    });
+});
+
 describe('followScrollLeft (keep the now-line in the visible scroll)', () => {
     const { followScrollLeft } = require('../timeline/timelineLogic');
     const LABEL = 160;
@@ -634,5 +668,116 @@ describe('followScrollLeft (keep the now-line in the visible scroll)', () => {
 
     it('hugging the right edge counts as out (margin)', () => {
         expect(followScrollLeft(0, 1058, LABEL, 1050)).not.toBeNull();
+    });
+});
+
+describe('custom window (state.windowStart / windowEnd)', () => {
+    const t0 = Date.UTC(2026, 9, 5, 6);   // Mon 2026-10-05 06:00Z
+    const H = MS_PER_HOUR;
+
+    it('needs both edges with end after start; caps the span', () => {
+        expect(customWindow(t0, t0 + 8 * H)).toEqual({ startMs: t0, endMs: t0 + 8 * H });
+        expect(customWindow(null, t0)).toBeNull();
+        expect(customWindow(t0, null)).toBeNull();
+        expect(customWindow(t0, t0)).toBeNull();
+        expect(customWindow(t0 + H, t0)).toBeNull();
+        expect(customWindow(t0, t0 + 400 * 24 * H)!.endMs).toBe(t0 + MAX_CUSTOM_SPAN_MS);
+    });
+
+    it('renders at the presets\' width whatever the span', () => {
+        expect(scaleWidth(customScale({ startMs: t0, endMs: t0 + 45000 }))).toBeCloseTo(CUSTOM_WINDOW_PX, 6);
+        expect(scaleWidth(customScale({ startMs: t0, endMs: t0 + 3 * 24 * H }))).toBeCloseTo(CUSTOM_WINDOW_PX, 6);
+    });
+
+    it('borrows snap/format behaviour from the preset nearest in span', () => {
+        expect(customZoom(45000)).toBe('second');
+        expect(customZoom(8 * H)).toBe('hour');
+        expect(customZoom(24 * H)).toBe('day');
+        expect(customZoom(4 * 24 * H)).toBe('week');
+    });
+
+    it('picks a tick step that keeps the lower row at 32 ticks or fewer', () => {
+        expect(customTickStepMs(45000)).toBe(2000);           // 23 ticks
+        expect(customTickStepMs(8 * H)).toBe(15 * 60000);     // 32 ticks
+        expect(customTickStepMs(3 * 24 * H)).toBe(3 * H);     // 24 ticks
+        expect(customTickStepMs(31 * 24 * H)).toBe(24 * H);
+    });
+
+    it('ticks a 06:00-14:00 window from its own edges with the step\'s resolution', () => {
+        const w = { startMs: t0, endMs: t0 + 8 * H };
+        const t = buildTicks(customScale(w), customZoom(8 * H), 'UTC', 'en-US', [], customTickStepMs(8 * H));
+        expect(t.lower).toHaveLength(32);
+        expect(t.lower[0]).toMatchObject({ ms: t0, px: 0, label: '06:00' });
+        expect(t.lower[1].label).toBe('06:15');
+        expect(t.upper).toHaveLength(1);                     // one partial day at the edge
+    });
+
+    it('a sub-minute window labels its ticks with seconds', () => {
+        const w = { startMs: t0, endMs: t0 + 45000 };
+        const t = buildTicks(customScale(w), customZoom(45000), 'UTC', 'en-US', [], customTickStepMs(45000));
+        expect(t.lower[1].label).toBe('06:00:02');
+        expect(t.lower[t.lower.length - 1].px).toBeLessThan(CUSTOM_WINDOW_PX);
+    });
+
+    it('pages by its own length', () => {
+        const w = { startMs: t0, endMs: t0 + 8 * H };
+        expect(pageCustomWindow(w, 1, 'UTC')).toEqual({ startMs: t0 + 8 * H, endMs: t0 + 16 * H });
+        expect(pageCustomWindow(w, -1, 'UTC')).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
+    });
+
+    it('Today keeps the window\'s phase: 06:00-14:00 strides to 22:00-06:00', () => {
+        const w = { startMs: t0, endMs: t0 + 8 * H };
+        expect(containingCustomWindow(w, t0 + 3 * H, 'UTC')).toEqual(w);                       // already there
+        expect(containingCustomWindow(w, t0 + 17 * H, 'UTC')).toEqual({ startMs: t0 + 16 * H, endMs: t0 + 24 * H });
+        expect(containingCustomWindow(w, t0 - 1, 'UTC')).toEqual({ startMs: t0 - 8 * H, endMs: t0 });
+    });
+
+    describe('across the 2026-10-25 Brussels DST change (03:00 CEST -> 02:00 CET)', () => {
+        const tz = 'Europe/Brussels';
+        // Sat 2026-10-24 14:00-22:00 CEST = 12:00Z-20:00Z.
+        const late = { startMs: Date.UTC(2026, 9, 24, 12), endMs: Date.UTC(2026, 9, 24, 20) };
+
+        it('Next keeps the shift on the wall clock: the night shift runs 9 hours', () => {
+            const night = pageCustomWindow(late, 1, tz);
+            // 22:00 CEST Sat -> 06:00 CET Sun.
+            expect(night).toEqual({ startMs: Date.UTC(2026, 9, 24, 20), endMs: Date.UTC(2026, 9, 25, 5) });
+            // ...and the early shift after it is 06:00-14:00 CET.
+            expect(pageCustomWindow(night, 1, tz)).toEqual({ startMs: Date.UTC(2026, 9, 25, 5), endMs: Date.UTC(2026, 9, 25, 13) });
+            expect(pageCustomWindow(night, -1, tz)).toEqual(late);
+        });
+
+        it('Today/Live finds the same wall-clock shift after the change', () => {
+            // Mon 2026-10-26 07:00 CET = 06:00Z -> the 06:00-14:00 CET shift.
+            expect(containingCustomWindow(late, Date.UTC(2026, 9, 26, 6), tz))
+                .toEqual({ startMs: Date.UTC(2026, 9, 26, 5), endMs: Date.UTC(2026, 9, 26, 13) });
+        });
+
+        it('Live holds now even inside the repeated hour', () => {
+            const hour = { startMs: Date.UTC(2026, 9, 24, 22), endMs: Date.UTC(2026, 9, 24, 23) };   // 00:00-01:00 CEST
+            for (const now of [Date.UTC(2026, 9, 25, 0, 30), Date.UTC(2026, 9, 25, 1, 30)]) {   // 02:30 CEST, 02:30 CET
+                const w = containingCustomWindow(hour, now, tz);
+                expect(now).toBeGreaterThanOrEqual(w.startMs);
+                expect(now).toBeLessThan(w.endMs);
+            }
+        });
+
+        it('a sub-hour window steps in plain time, without skipping the repeated hour', () => {
+            const cycle = { startMs: Date.UTC(2026, 9, 25, 0, 59, 15), endMs: Date.UTC(2026, 9, 25, 1, 0) };   // 02:59:15-03:00 CEST
+            expect(pageCustomWindow(cycle, 1, tz)).toEqual({ startMs: Date.UTC(2026, 9, 25, 1, 0), endMs: Date.UTC(2026, 9, 25, 1, 0, 45) });
+        });
+    });
+
+    it('a mini-nav pick keeps the zone-local start time across a DST change', () => {
+        // 06:00 Brussels on Fri 2026-10-23 (CEST, +02:00) -> Mon 2026-10-26 (CET, +01:00).
+        const start = Date.UTC(2026, 9, 23, 4);
+        const w = customWindowOnDate({ startMs: start, endMs: start + 8 * H }, 2026, 10, 26, 'Europe/Brussels');
+        expect(w.startMs).toBe(Date.UTC(2026, 9, 26, 5));
+        expect(w.endMs - w.startMs).toBe(8 * H);
+    });
+
+    it('follow-now ticks at most a quarter of a short custom window', () => {
+        expect(followTickMs(0, 'second', 45000)).toBe(11250);
+        expect(followTickMs(5, 'hour', 8 * H)).toBe(5000);
+        expect(followTickMs(0, 'week', 3 * 24 * H)).toBe(60000);
     });
 });

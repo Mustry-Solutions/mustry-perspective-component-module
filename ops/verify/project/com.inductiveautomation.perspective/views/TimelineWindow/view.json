@@ -1,0 +1,81 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1100, "height": 600 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Custom-window fixture (issue #186) — state.windowStart/windowEnd pin the board to 06:00-14:00 UTC on 2026-06-01, overriding the zoom preset. Prev/next page by 8 hours; a zoom button returns to the presets.", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 10, "width": 1060, "height": 40 }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.resourcetimeline",
+        "version": 0,
+        "props": {
+          "config": {
+            "timezone": "UTC",
+            "locale": "en-US",
+            "resources": [
+              { "id": "press1", "label": "Press 1", "group": "Cell 1" },
+              { "id": "press2", "label": "Press 2", "group": "Cell 1" }
+            ]
+          },
+          "data": {
+            "events": [
+              { "id": "w1", "resourceId": "press1", "title": "Early run", "start": "2026-06-01T06:30:00Z", "end": "2026-06-01T09:00:00Z" },
+              { "id": "w2", "resourceId": "press2", "title": "Changeover", "start": "2026-06-01T10:00:00Z", "end": "2026-06-01T11:15:00Z" },
+              { "id": "w3", "resourceId": "press1", "title": "Late run", "start": "2026-06-01T15:00:00Z", "end": "2026-06-01T19:00:00Z" }
+            ]
+          },
+          "state": {
+            "zoom": "day",
+            "windowStart": "2026-06-01T06:00:00Z",
+            "windowEnd": "2026-06-01T14:00:00Z"
+          }
+        },
+        "custom": {},
+        "meta": { "name": "timeline" },
+        "position": { "x": 16, "y": 56, "width": 1068, "height": 440 }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": { "expression": "'visible: ' + {../timeline.props.output.visibleStart} + ' / ' + {../timeline.props.output.visibleEnd}" }
+            }
+          }
+        },
+        "meta": { "name": "visibleWindow" },
+        "position": { "x": 16, "y": 504, "width": 1060, "height": 24 }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": { "expression": "'state: ' + {../timeline.props.state.windowStart} + ' / ' + {../timeline.props.state.windowEnd}" }
+            }
+          }
+        },
+        "meta": { "name": "stateWindow" },
+        "position": { "x": 16, "y": 532, "width": 1060, "height": 24 }
+      }
+    ]
+  }
+}

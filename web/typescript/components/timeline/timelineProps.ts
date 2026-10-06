@@ -1,6 +1,6 @@
 // Pure mapping from the component's PropertyTree to typed TimelineProps. Kept
 // perspective-client-free (PropReader) so it can be unit-tested under node jest.
-import { WeekStart, toWeekStart } from '../../shared/dateUtils';
+import { WeekStart, toEpochMs, toWeekStart } from '../../shared/dateUtils';
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
@@ -33,6 +33,7 @@ export interface TimelineProps {
     selectable: boolean;     // drag empty track to create
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
+    animations: boolean;     // enter animation for newly-appearing bars/bands
     weekStart: WeekStart;             // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
     snapMinutes: number;              // gesture snap override; 0 = each zoom preset's built-in
@@ -43,6 +44,10 @@ export interface TimelineProps {
     locale: string;
     refreshSeconds: number;  // periodic re-render so the now-line ticks (0 = off)
     followNow: boolean;      // two-way (state.followNow): the toolbar's Live toggle writes it back
+    windowStart: number | null;   // two-way (state.windowStart): custom window, epoch ms (null = unset)
+    windowEnd: number | null;     // two-way (state.windowEnd)
+    windowStartAsEpoch: boolean;  // windowStart was given as epoch ms, so write it back as a number
+    windowEndAsEpoch: boolean;    // likewise for windowEnd
     emptyMessage: string;    // toolbar badge when no events are configured ('' = hidden)
     loading: boolean;
     refetchDebounceMs: number;
@@ -51,6 +56,15 @@ export interface TimelineProps {
     resources: TimelineResource[];
     events: TimelineEvent[];
     recurringEvents: TimelineEvent[];
+}
+
+/** A state.windowStart/End value as epoch ms: a number is epoch ms, a string is
+ *  read like an event time (offset/Z = instant, naive = config.timezone). */
+function windowEdgeMs(v: unknown, timezone: string): number | null {
+    if (typeof v === 'number') {
+        return Number.isFinite(v) ? v : null;
+    }
+    return typeof v === 'string' ? toEpochMs(v, timezone) : null;
 }
 
 function mapEvent(e: any): TimelineEvent {
@@ -94,6 +108,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         showExport: tree.readBoolean('config.showExport', false),
+        animations: tree.readBoolean('config.animations', true),
         weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         shifts,
         // 0 = keep each zoom preset's built-in snap; anything non-finite/non-positive -> 0.
@@ -106,6 +121,10 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         locale,
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
         followNow: tree.readBoolean('state.followNow', false),
+        windowStart: windowEdgeMs(tree.read('state.windowStart', null), tree.readString('config.timezone', '')),
+        windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), tree.readString('config.timezone', '')),
+        windowStartAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
+        windowEndAsEpoch: typeof tree.read('state.windowEnd', null) === 'number',
         emptyMessage: tree.readString('config.emptyMessage', 'No events'),
         loading: tree.readBoolean('config.loading', false),
         refetchDebounceMs: Math.max(0, tree.readNumber('config.refetchDebounceMs', 150)),
