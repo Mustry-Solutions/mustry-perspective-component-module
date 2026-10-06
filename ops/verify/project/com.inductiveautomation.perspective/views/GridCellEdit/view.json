@@ -1,0 +1,79 @@
+{
+  "custom": {
+    "edits": 0
+  },
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1100, "height": 420 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Data Grid CELL editing: every committed edit fires onCellEdit once (Enter, Tab or clicking away), and the script below upserts the row and counts the run. Escape and an unchanged value fire nothing. Used by the e2e suite.", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 8, "width": 880, "height": 34 }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "style": { "fontSize": "13px", "textAlign": "right" } },
+        "propConfig": {
+          "props.text": {
+            "binding": { "type": "expr", "config": { "expression": "'onCellEdit runs: ' + {view.custom.edits}" } }
+          }
+        },
+        "meta": { "name": "edit_count" },
+        "position": { "x": 904, "y": 8, "width": 180, "height": 34 }
+      },
+      {
+        "type": "mustrysolutions.perspective.input.datagrid",
+        "version": 0,
+        "props": {
+          "config": {
+            "rowHeight": 32,
+            "columns": [
+              { "field": "wo", "header": "Order", "width": 110, "pinned": true, "editable": false },
+              { "field": "product", "header": "Product", "width": 160 },
+              { "field": "qty", "header": "Qty", "width": 90, "type": "number", "min": 0 },
+              { "field": "status", "header": "Status", "width": 120, "options": ["draft", "released", "running", "done"] }
+            ],
+            "idField": "wo",
+            "editable": true,
+            "editMode": "cell"
+          },
+          "data": {
+            "rows": [
+              { "wo": "WO-20000", "product": "Widget A", "qty": 10, "status": "draft" },
+              { "wo": "WO-20001", "product": "Widget B", "qty": 20, "status": "released" },
+              { "wo": "WO-20002", "product": "Gasket 12mm", "qty": 30, "status": "running" },
+              { "wo": "WO-20003", "product": "Flange XL", "qty": 40, "status": "done" },
+              { "wo": "WO-20004", "product": "Valve V2", "qty": 50, "status": "draft" }
+            ]
+          }
+        },
+        "custom": {},
+        "meta": { "name": "grid" },
+        "position": { "x": 16, "y": 50, "width": 1068, "height": 340 },
+        "events": {
+          "component": {
+            "onCellEdit": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\t# Persist a validated cell edit: upsert the full row by id and rebind.\n\t# Cell mode runs this once per committed edit (a DB write in a real app).\n\trows = [dict(r) for r in self.props.data.rows]\n\tfor i in range(len(rows)):\n\t\tif rows[i].get(\"wo\") == event.rowId:\n\t\t\trows[i] = dict(event.row)\n\t\t\tbreak\n\tself.props.data.rows = rows\n\tself.view.custom.edits = self.view.custom.edits + 1\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
