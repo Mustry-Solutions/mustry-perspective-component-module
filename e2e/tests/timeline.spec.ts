@@ -7,6 +7,15 @@ test('timeline: day view renders resources and seeded bars', async ({ page }) =>
     await expect(page.getByText('Mixer 1', { exact: true })).toBeVisible();
 });
 
+test('timeline: hovering a bar shows only the detail popover (issue #205)', async ({ page }) => {
+    await openRoute(page, '/timeline', '.mustry-timeline');
+    const bar = page.locator('.mustry-tml-bar', { hasText: 'Batch 4711' }).first();
+    await bar.hover();
+    await expect(page.locator('.mustry-tml-hover')).toBeVisible();
+    // No native title: the browser's own tooltip would pop up over the popover.
+    await expect(bar).not.toHaveAttribute('title', /.*/);
+});
+
 test('timeline: collapsing a resource group hides its rows', async ({ page }) => {
     await openRoute(page, '/timeline', '.mustry-timeline');
     await expect(page.getByText('Mixer 1', { exact: true })).toBeVisible();
@@ -49,7 +58,7 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     const zooms = page.locator('.mustry-tml-zoom-btn');
     // The board is read-only, so the 12px grabbable floor is off: a 40ms 'Vent'
     // phase is a sub-pixel hairline at 'second' zoom rather than a fake second.
-    const vent = page.locator('.mustry-tml-bar[title="Vent"]').first();
+    const vent = page.locator('.mustry-tml-bar[aria-label^="Vent — "]').first();
     await expect(vent).toBeVisible();
     expect(await vent.evaluate((el: HTMLElement) => el.getBoundingClientRect().width)).toBeLessThan(4);
 
@@ -63,7 +72,7 @@ test('timeline: millisecond zoom resolves sub-second phases at their true width'
     // Station A vents once per 19.9 s cycle, so a given clock-aligned 10 s
     // window holds a whole Vent only about half the time: step forward until
     // one does. Two consecutive windows cover a full cycle, so 3 is plenty.
-    const vents = page.locator('.mustry-tml-bar[title="Vent"]');
+    const vents = page.locator('.mustry-tml-bar[aria-label^="Vent — "]');
     let w = 0;
     for (let i = 0; i < 3 && w <= 3; i++) {
         if (i > 0) {
@@ -137,9 +146,9 @@ test('timeline: a windowed binding\'s next page does not fade in', async ({ page
     await countEnterAnimations(page);
     await openRoute(page, '/timeline-db', '.mustry-timeline');
     await expect(page.locator('.mustry-tml-bar').first()).toBeVisible();
-    const firstBar = await page.locator('.mustry-tml-bar').first().getAttribute('title');
+    const firstBar = await page.locator('.mustry-tml-bar').first().getAttribute('aria-label');
     await page.getByRole('button', { name: 'Next' }).click();
-    await expect(page.locator('.mustry-tml-bar').first()).not.toHaveAttribute('title', firstBar || '');
+    await expect(page.locator('.mustry-tml-bar').first()).not.toHaveAttribute('aria-label', firstBar || '');
     await page.waitForTimeout(500);
     expect(await enterSeen(page)).toBe(0);
 });

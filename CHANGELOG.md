@@ -8,6 +8,15 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
+Hovering an event showed the component's detail popover and then, a moment
+later, the browser's native tooltip (from the bar's `title` attribute) on
+top of it, covering the more useful popover (#205). Event bars and chips in
+the Resource Timeline and the Calendar's week/day and month views no longer
+carry a `title`; the popover already shows the title, and screen readers
+keep it through the bar's accessible name. `meta.tooltip.enabled` was never
+involved: that is Perspective's own component tooltip.
+
 ### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
 In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
 twice with the same payload, so the write-back script ran twice per edit
