@@ -15,6 +15,10 @@ test('calendar: week view renders seeded events', async ({ page }) => {
 test('calendar: hovering an event shows only the detail popover (issue #205)', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
     const chip = page.locator('.mustry-cal-tg-event').first();
+    // Scroll first and let the scroll event land: the time grid hides the hover
+    // popover on scroll, so a hover() that scrolls would cancel its own popover.
+    await chip.scrollIntoViewIfNeeded();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     await chip.hover();
     await expect(page.locator('.mustry-cal-popover')).toBeVisible();
     // No native title: the browser's own tooltip would pop up over the popover.
