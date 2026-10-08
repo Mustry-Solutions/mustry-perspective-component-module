@@ -29,7 +29,7 @@ export function EventBar({ seg, colOffset, categories, draggingId, enterClass, h
     const color = resolveColor(categories, ev);
     return (
         <button
-            type="button" title={ev.title}
+            type="button"
             className={cls.join(' ') + statusClass(ev) + enterClass(ev.id || '')}
             style={{
                 gridColumn: `${seg.startCol + colOffset} / ${seg.endCol + colOffset + 1}`,

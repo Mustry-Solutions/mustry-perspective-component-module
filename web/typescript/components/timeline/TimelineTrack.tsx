@@ -127,7 +127,6 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                             height: Math.max(10, laneH - 2),
                             ...(color ? { ['--ev' as string]: color } : {})
                         } as React.CSSProperties}
-                        title={ev.title}
                         role="button"
                         tabIndex={0}
                         aria-label={`${ev.title || ''} — ${row.label}`}

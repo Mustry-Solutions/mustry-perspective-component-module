@@ -12,6 +12,17 @@ test('calendar: week view renders seeded events', async ({ page }) => {
     await expect(page.getByText('Maintenance', { exact: true })).toBeVisible();
 });
 
+test('calendar: hovering an event shows only the detail popover (issue #205)', async ({ page }) => {
+    await openRoute(page, '/calendar', '.mustry-calendar');
+    const chip = page.locator('.mustry-cal-tg-event').first();
+    await chip.hover();
+    await expect(page.locator('.mustry-cal-popover')).toBeVisible();
+    // No native title: the browser's own tooltip would pop up over the popover.
+    await expect(chip).not.toHaveAttribute('title', /.*/);
+    await page.getByRole('button', { name: 'Month', exact: true }).click();
+    await expect(page.locator('.mustry-cal-mbar').first()).not.toHaveAttribute('title', /.*/);
+});
+
 test('calendar: view switch to Month re-renders', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
     await page.getByRole('button', { name: 'Month', exact: true }).click();
