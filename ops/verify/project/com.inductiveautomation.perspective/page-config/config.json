@@ -135,6 +135,42 @@
   "/i186-weekstart": {
    "viewPath": "I186WeekStart",
    "viewParams": {}
+  },
+  "/guard": {
+   "viewPath": "GuardDemo",
+   "viewParams": {
+    "mode": "pipes",
+    "timeout": 30,
+    "wake": "High",
+    "quality": "auto"
+   }
+  },
+  "/guard/:mode/:timeout": {
+   "viewPath": "GuardDemo",
+   "viewParams": {
+    "mode": "pipes",
+    "timeout": 30,
+    "wake": "High",
+    "quality": "auto"
+   }
+  },
+  "/guard/:mode/:timeout/:wake": {
+   "viewPath": "GuardDemo",
+   "viewParams": {
+    "mode": "pipes",
+    "timeout": 30,
+    "wake": "High",
+    "quality": "auto"
+   }
+  },
+  "/guard/:mode/:timeout/:wake/:quality": {
+   "viewPath": "GuardDemo",
+   "viewParams": {
+    "mode": "pipes",
+    "timeout": 30,
+    "wake": "High",
+    "quality": "auto"
+   }
   }
  },
  "shared": {},

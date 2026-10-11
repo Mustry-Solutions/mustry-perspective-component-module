@@ -31,5 +31,6 @@ public final class Components {
         RosterManager.DESCRIPTOR,
         UserManager.DESCRIPTOR,
         HolidayManager.DESCRIPTOR,
-        BranchingDiagram.DESCRIPTOR);
+        BranchingDiagram.DESCRIPTOR,
+        IdleGuard.DESCRIPTOR);
 }

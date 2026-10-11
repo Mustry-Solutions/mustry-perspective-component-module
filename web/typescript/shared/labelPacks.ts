@@ -23,3 +23,4 @@ export * from './labels/roster';
 export * from './labels/users';
 export * from './labels/holiday';
 export * from './labels/branching';
+export * from './labels/guard';

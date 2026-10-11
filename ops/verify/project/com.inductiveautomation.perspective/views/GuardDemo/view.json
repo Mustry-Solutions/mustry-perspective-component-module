@@ -1,0 +1,1003 @@
+{
+  "custom": {
+    "presses": 0,
+    "releases": 0
+  },
+  "params": {
+    "mode": "pipes",
+    "timeout": 30,
+    "wake": "High",
+    "quality": "auto"
+  },
+  "props": {
+    "defaultSize": {
+      "width": 1280,
+      "height": 724
+    }
+  },
+  "propConfig": {
+    "custom.presses": {
+      "persistent": true
+    },
+    "custom.releases": {
+      "persistent": true
+    },
+    "params.mode": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.timeout": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.wake": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.quality": {
+      "paramDirection": "input",
+      "persistent": true
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "meta": {
+      "name": "root"
+    },
+    "props": {
+      "style": {
+        "backgroundColor": "#1f2329"
+      }
+    },
+    "events": {
+      "system": {
+        "onStartup": {
+          "type": "script",
+          "scope": "G",
+          "config": {
+            "script": "\tscreensaver.setupTags()\n\tself.session.custom.guard = {'mode': self.view.params.mode, 'timeout': self.view.params.timeout, 'wake': self.view.params.wake, 'quality': self.view.params.quality}\n\t# The guard's onIdle/onWake events overwrite this; set here so bindings never see a missing path.\n\tself.session.custom.screensaver = {'idle': False, 'mode': '', 'cause': ''}"
+          }
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "ia.display.view",
+        "version": 0,
+        "meta": {
+          "name": "GuardDock"
+        },
+        "position": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 44
+        },
+        "props": {
+          "path": "GuardDock"
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Heading"
+        },
+        "position": {
+          "x": 32,
+          "y": 68,
+          "width": 700,
+          "height": 40
+        },
+        "props": {
+          "text": "Packaging hall · overview",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "26px",
+            "fontWeight": "600"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Sub"
+        },
+        "position": {
+          "x": 32,
+          "y": 108,
+          "width": 1000,
+          "height": 22
+        },
+        "props": {
+          "text": "Leave this page alone and the Idle Guard in the header takes over. Touch, click or press a key to wake it.",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "14px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "RatePanel"
+        },
+        "position": {
+          "x": 32,
+          "y": 152,
+          "width": 280,
+          "height": 120
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#2a2f37",
+            "borderRadius": "6px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "RateTitle"
+        },
+        "position": {
+          "x": 50,
+          "y": 166,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "Line 1 rate",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.08em"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "RateValue",
+          "domId": "tile-rate"
+        },
+        "position": {
+          "x": 50,
+          "y": 194,
+          "width": 244,
+          "height": 48
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "34px",
+            "fontWeight": "300"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "numberFormat(try(tag('[default]Screensaver/LineRate'), 0), '0.0')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "RateUnit"
+        },
+        "position": {
+          "x": 50,
+          "y": 240,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "units/min",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "StatePanel"
+        },
+        "position": {
+          "x": 332,
+          "y": 152,
+          "width": 280,
+          "height": 120
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#2a2f37",
+            "borderRadius": "6px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "StateTitle"
+        },
+        "position": {
+          "x": 350,
+          "y": 166,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "Line 1 state",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.08em"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "StateValue",
+          "domId": "tile-state"
+        },
+        "position": {
+          "x": 350,
+          "y": 194,
+          "width": 244,
+          "height": 48
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "34px",
+            "fontWeight": "300"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try(tag('[default]Screensaver/Line1State'), '?')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "StateUnit"
+        },
+        "position": {
+          "x": 350,
+          "y": 240,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ScreenPanel"
+        },
+        "position": {
+          "x": 632,
+          "y": 152,
+          "width": 280,
+          "height": 120
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#2a2f37",
+            "borderRadius": "6px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ScreenTitle"
+        },
+        "position": {
+          "x": 650,
+          "y": 166,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "Screensaver",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.08em"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ScreenValue",
+          "domId": "tile-screen"
+        },
+        "position": {
+          "x": 650,
+          "y": 194,
+          "width": 244,
+          "height": 48
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "34px",
+            "fontWeight": "300"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try(if({session.custom.screensaver.idle}, 'idle', 'awake'), 'awake')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ScreenUnit"
+        },
+        "position": {
+          "x": 650,
+          "y": 240,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "from the guard's onIdle / onWake events",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "PressesPanel"
+        },
+        "position": {
+          "x": 932,
+          "y": 152,
+          "width": 280,
+          "height": 120
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#2a2f37",
+            "borderRadius": "6px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "PressesTitle"
+        },
+        "position": {
+          "x": 950,
+          "y": 166,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "Pump start presses",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.08em"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "PressesValue",
+          "domId": "tile-presses"
+        },
+        "position": {
+          "x": 950,
+          "y": 194,
+          "width": 244,
+          "height": 48
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "34px",
+            "fontWeight": "300"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "{view.custom.presses}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "PressesUnit"
+        },
+        "position": {
+          "x": 950,
+          "y": 240,
+          "width": 244,
+          "height": 20
+        },
+        "props": {
+          "text": "a waking tap must never count here",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ActionsPanel"
+        },
+        "position": {
+          "x": 32,
+          "y": 296,
+          "width": 1180,
+          "height": 400
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "backgroundColor": "#2a2f37",
+            "borderRadius": "6px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "ActionsTitle"
+        },
+        "position": {
+          "x": 52,
+          "y": 310,
+          "width": 400,
+          "height": 24
+        },
+        "props": {
+          "text": "Try it",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "16px",
+            "fontWeight": "600"
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "Press"
+        },
+        "position": {
+          "x": 52,
+          "y": 348,
+          "width": 200,
+          "height": 48
+        },
+        "props": {
+          "text": "Start pump",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3b6ea8",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.view.custom.presses = self.view.custom.presses + 1"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "PressHint"
+        },
+        "position": {
+          "x": 272,
+          "y": 360,
+          "width": 520,
+          "height": 24
+        },
+        "props": {
+          "text": "Counts clicks. While the screensaver is up, a tap only wakes the page.",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Jog",
+          "domId": "jog"
+        },
+        "position": {
+          "x": 800,
+          "y": 348,
+          "width": 200,
+          "height": 48
+        },
+        "props": {
+          "text": "Jog (acts on release)",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "textAlign": "center",
+            "backgroundColor": "#3a404a",
+            "border": "1px solid #4a5160",
+            "borderRadius": "4px",
+            "cursor": "pointer"
+          }
+        },
+        "events": {
+          "dom": {
+            "onMouseUp": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.view.custom.releases = self.view.custom.releases + 1"
+              }
+            },
+            "onTouchEnd": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.view.custom.releases = self.view.custom.releases + 1"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "JogCount",
+          "domId": "jog-count"
+        },
+        "position": {
+          "x": 1016,
+          "y": 360,
+          "width": 180,
+          "height": 24
+        },
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'releases: ' + {view.custom.releases}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "AlarmTitle"
+        },
+        "position": {
+          "x": 52,
+          "y": 420,
+          "width": 900,
+          "height": 24
+        },
+        "props": {
+          "text": "Raise an alarm in 8 s (time enough to let the page go idle)",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "RaiseMedium"
+        },
+        "position": {
+          "x": 52,
+          "y": 452,
+          "width": 230,
+          "height": 44
+        },
+        "props": {
+          "text": "Medium alarm → banner",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.raiseLater('Medium', 8)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "RaiseHigh"
+        },
+        "position": {
+          "x": 298,
+          "y": 452,
+          "width": 230,
+          "height": 44
+        },
+        "props": {
+          "text": "High alarm → wakes",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.raiseLater('High', 8)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "RaiseCritical"
+        },
+        "position": {
+          "x": 544,
+          "y": 452,
+          "width": 230,
+          "height": 44
+        },
+        "props": {
+          "text": "Critical alarm → wakes",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.raiseLater('Critical', 8)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "Clear"
+        },
+        "position": {
+          "x": 790,
+          "y": 452,
+          "width": 200,
+          "height": 44
+        },
+        "props": {
+          "text": "Clear all alarms",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.clearAll()"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "LineTitle"
+        },
+        "position": {
+          "x": 52,
+          "y": 524,
+          "width": 600,
+          "height": 24
+        },
+        "props": {
+          "text": "Drive the idle modes from tags",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "RateLow"
+        },
+        "position": {
+          "x": 52,
+          "y": 556,
+          "width": 180,
+          "height": 44
+        },
+        "props": {
+          "text": "Rate 10",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.setRate(10)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "RateHigh"
+        },
+        "position": {
+          "x": 248,
+          "y": 556,
+          "width": 180,
+          "height": 44
+        },
+        "props": {
+          "text": "Rate 160",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.setRate(160)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "StateRun"
+        },
+        "position": {
+          "x": 444,
+          "y": 556,
+          "width": 180,
+          "height": 44
+        },
+        "props": {
+          "text": "Line 1 running",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.setState('running')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.input.button",
+        "version": 0,
+        "meta": {
+          "name": "StateFault"
+        },
+        "position": {
+          "x": 640,
+          "y": 556,
+          "width": 180,
+          "height": 44
+        },
+        "props": {
+          "text": "Line 1 fault",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "14px",
+            "backgroundColor": "#3a404a",
+            "borderColor": "#4a5160",
+            "color": "#ffffff"
+          }
+        },
+        "events": {
+          "component": {
+            "onActionPerformed": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tscreensaver.setState('fault')"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

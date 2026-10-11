@@ -6,7 +6,8 @@
     "scripts": {
         "build": "webpack --mode production",
         "build:dev": "webpack --mode development",
-        "test": "jest"
+        "test": "jest",
+        "preview:guard": "webpack --config webpack.guard-preview.js"
     },
     "dependencies": {
         "@codemirror/commands": "^6.11.1",

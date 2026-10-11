@@ -26,7 +26,8 @@ const CONTRACT: Array<{ id: string; readmeHeading: string; demoRoute: string; e2
     { id: 'mustrysolutions.perspective.admin.rostermanager', readmeHeading: '## Roster Manager', demoRoute: '/roster', e2eSpec: 'roster.spec.ts' },
     { id: 'mustrysolutions.perspective.admin.usermanager', readmeHeading: '## User Manager', demoRoute: '/users', e2eSpec: 'users.spec.ts' },
     { id: 'mustrysolutions.perspective.admin.holidaymanager', readmeHeading: '## Holiday Manager', demoRoute: '/holidays', e2eSpec: 'holiday.spec.ts' },
-    { id: 'mustrysolutions.perspective.display.branching', readmeHeading: '## Branching Diagram', demoRoute: '/branching', e2eSpec: 'branching.spec.ts' }
+    { id: 'mustrysolutions.perspective.display.branching', readmeHeading: '## Branching Diagram', demoRoute: '/branching', e2eSpec: 'branching.spec.ts' },
+    { id: 'mustrysolutions.perspective.screensaver.idleguard', readmeHeading: '## Idle Guard (screensaver)', demoRoute: '/guard', e2eSpec: 'guard.spec.ts' }
 ];
 
 const NUMBER_WORDS: { [n: number]: string } = {

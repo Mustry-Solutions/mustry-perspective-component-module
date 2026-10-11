@@ -8,6 +8,24 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: Idle Guard, a screensaver for Perspective pages
+Perspective has no inactivity detection a page can use (its built-in timeout
+only logs out or closes the session, and ignores mouse movement), and 24/7
+wall displays burn in. The Idle Guard
+(`mustrysolutions.perspective.screensaver.idleguard`), dropped once into a
+shared dock, covers the page with an idle mode after `config.timeoutSec`
+without input: a clock by default, line-driven 3D pipes, aurora, halo or
+starfield, showpieces (synthwave, lava, tunnel, flow), funny modes (bounce,
+pong, ducks), or shuffle through them. Any input wakes it, and the tap that
+wakes it never reaches the page. An alarm at or above `alarm.wakePriority`
+wakes it too, lower ones pin a banner, an active Critical alarm is never
+covered, and a guard that stops hearing the gateway removes itself. At night
+an idle screen shows a dimmed clock; reduced motion swaps animations for the
+clock. The gateway's alarm poll runs only while a guard is on screen, so
+projects without one pay nothing. It is a browser overlay, not an access
+control. Details in `docs/idle-guard.md`; the verify project gains `/guard`
+pages, used by the new e2e suite `guard.spec.ts`.
+
 ### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
 In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
 twice with the same payload, so the write-back script ran twice per edit

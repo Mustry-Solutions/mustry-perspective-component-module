@@ -6,6 +6,8 @@
         "test": "playwright test"
     },
     "devDependencies": {
-        "@playwright/test": "^1.54.0"
+        "@playwright/test": "^1.54.0",
+        "@types/pngjs": "^6.0.5",
+        "pngjs": "^7.0.0"
     }
 }
