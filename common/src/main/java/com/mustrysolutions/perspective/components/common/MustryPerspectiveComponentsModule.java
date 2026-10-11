@@ -198,6 +198,14 @@ public class MustryPerspectiveComponentsModule {
             g.drawOval(4, 5, 8, 8);                               // droplet body
             g.drawLine(8, 2, 4, 6); g.drawLine(8, 2, 12, 6);     // droplet tip
             g.fillRect(6, 8, 4, 3);                              // filled swatch core
+        } else if (k.contains("idleguard")) {
+            // A screen with a crescent moon (a resting display).
+            g.drawRoundRect(1, 2, 13, 10, 2, 2);                  // screen
+            g.drawLine(5, 14, 10, 14);                            // stand
+            g.fillOval(5, 4, 6, 6);                               // moon...
+            g.setComposite(java.awt.AlphaComposite.Clear);
+            g.fillOval(7, 3, 6, 6);                               // ...cut to a crescent
+            g.setComposite(java.awt.AlphaComposite.SrcOver);
         } else if (k.contains("calendar")) {
             // Month sheet with day dots.
             g.drawRoundRect(2, 3, 12, 11, 2, 2);

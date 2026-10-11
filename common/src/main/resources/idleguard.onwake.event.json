@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "description": "The page woke up.",
+  "properties": {
+    "cause": {
+      "type": "string",
+      "description": "'input' (touch, key, mouse), 'alarm' (an alarm at or above alarm.wakePriority), 'feed-stale' (the gateway alarm feed went quiet, so the guard failed open) or 'disabled' (config.enabled went false)."
+    },
+    "idleForMs": {
+      "type": "integer",
+      "description": "How long the page was idle."
+    }
+  }
+}

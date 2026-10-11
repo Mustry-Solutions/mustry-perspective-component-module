@@ -13,14 +13,20 @@ import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.perspective.common.api.ComponentRegistry;
+import com.inductiveautomation.perspective.gateway.api.ComponentModelDelegateRegistry;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 
 import com.mustrysolutions.perspective.components.common.comp.Components;
+import com.mustrysolutions.perspective.components.common.comp.IdleGuard;
+import com.mustrysolutions.perspective.components.gateway.guard.AlarmFeed;
+import com.mustrysolutions.perspective.components.gateway.guard.GuardModelDelegate;
 
 /**
  * Gateway-scope hook. Registers this module's Perspective components with the
  * gateway's component registry and serves their front-end resources. Also
- * provides system.mustry.toast() and loads its toast bundle on every page.
+ * provides system.mustry.toast() and loads its toast bundle on every page, and
+ * gives every Idle Guard its gateway half: a model delegate fed by one shared
+ * {@link AlarmFeed}, which only polls while a guard is on screen.
  */
 public class MustryPerspectiveComponentsGatewayHook extends AbstractGatewayModuleHook {
 
@@ -30,6 +36,8 @@ public class MustryPerspectiveComponentsGatewayHook extends AbstractGatewayModul
     private GatewayContext gatewayContext;
     private PerspectiveContext perspectiveContext;
     private ComponentRegistry componentRegistry;
+    private ComponentModelDelegateRegistry delegateRegistry;
+    private AlarmFeed alarmFeed;
 
     @Override
     public void setup(GatewayContext context) {
@@ -58,10 +66,29 @@ public class MustryPerspectiveComponentsGatewayHook extends AbstractGatewayModul
         } else {
             log.error("Perspective component registry not found; components not registered.");
         }
+
+        // The Idle Guard's alarm feed. Created idle: it starts polling with the
+        // first guard that subscribes. Without it every guard fails open (never
+        // covers the page).
+        this.alarmFeed = AlarmFeed.forGateway(this.gatewayContext.getAlarmManager());
+        this.delegateRegistry = this.perspectiveContext.getComponentModelDelegateRegistry();
+        if (this.delegateRegistry != null) {
+            final AlarmFeed feed = this.alarmFeed;
+            this.delegateRegistry.register(IdleGuard.COMPONENT_ID, c -> new GuardModelDelegate(c, feed));
+        } else {
+            log.error("Component model delegate registry not found; Idle Guards get no alarm feed and will not idle.");
+        }
     }
 
     @Override
     public void shutdown() {
+        if (this.delegateRegistry != null) {
+            this.delegateRegistry.remove(IdleGuard.COMPONENT_ID);
+        }
+        if (this.alarmFeed != null) {
+            this.alarmFeed.shutdown();
+            this.alarmFeed = null;
+        }
         if (this.componentRegistry != null) {
             GlobalBrowserResources.remove(this.componentRegistry, TOAST_RESOURCES);
             Components.ALL.forEach(d -> this.componentRegistry.removeComponent(d.id()));
