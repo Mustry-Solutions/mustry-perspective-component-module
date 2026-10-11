@@ -1,0 +1,219 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1280,
+      "height": 44
+    }
+  },
+  "root": {
+    "type": "ia.container.flex",
+    "version": 0,
+    "meta": {
+      "name": "root"
+    },
+    "props": {
+      "alignItems": "center",
+      "style": {
+        "backgroundColor": "#15181d",
+        "borderBottom": "1px solid #2f3540"
+      }
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "Title"
+        },
+        "position": {
+          "basis": "320px",
+          "grow": 1
+        },
+        "props": {
+          "text": "IDLE GUARD · DEMO",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#d7dce4",
+            "fontWeight": "700",
+            "letterSpacing": "0.12em",
+            "fontSize": "14px",
+            "paddingLeft": "16px"
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "meta": {
+          "name": "GuardStatus",
+          "domId": "guard-status"
+        },
+        "position": {
+          "basis": "560px",
+          "shrink": 0
+        },
+        "props": {
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px",
+            "textAlign": "right",
+            "paddingRight": "16px"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'Idle Guard: ' + try({session.custom.guard.mode}, 'pipes') + ' after ' + try({session.custom.guard.timeout}, 600) + ' s · last wake: ' + try(if({session.custom.screensaver.cause} = '', 'none', {session.custom.screensaver.cause}), 'none') + ' · showing: ' + try(if({session.custom.screensaver.mode} = '', '-', {session.custom.screensaver.mode}), '-')"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.screensaver.idleguard",
+        "version": 0,
+        "meta": {
+          "name": "IdleGuard"
+        },
+        "position": {
+          "basis": "220px",
+          "shrink": 0
+        },
+        "props": {
+          "config": {
+            "timeoutSec": 600,
+            "mode": "pipes"
+          },
+          "lines": [
+            {
+              "label": "Line 1",
+              "state": "running",
+              "flow": 0.8
+            },
+            {
+              "label": "Line 2",
+              "state": "running",
+              "flow": 0.5
+            },
+            {
+              "label": "CIP",
+              "state": "idle",
+              "flow": 0.2
+            },
+            {
+              "label": "Utilities",
+              "state": "warning",
+              "flow": 0.6
+            },
+            {
+              "label": "Palletiser",
+              "state": "running",
+              "flow": 1.1
+            }
+          ],
+          "modes": {
+            "clock": {
+              "title": "Packaging hall · shift B"
+            },
+            "shuffle": {
+              "modes": [
+                "lava",
+                "ducks"
+              ],
+              "minutes": 0.5
+            }
+          }
+        },
+        "propConfig": {
+          "props.config.timeoutSec": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "toInt(try({session.custom.guard.timeout}, 600), 600)"
+              }
+            }
+          },
+          "props.config.mode": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try({session.custom.guard.mode}, 'pipes')"
+              }
+            }
+          },
+          "props.alarm.wakePriority": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try({session.custom.guard.wake}, 'High')"
+              }
+            }
+          },
+          "props.config.quality": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try({session.custom.guard.quality}, 'auto')"
+              }
+            }
+          },
+          "props.modes.starfield.speed": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try(tag('[default]Screensaver/LineRate'), 40) / 40.0"
+              }
+            }
+          },
+          "props.modes.starfield.caption": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'Line 1 · ' + numberFormat(try(tag('[default]Screensaver/LineRate'), 0), '0') + ' units/min'"
+              }
+            }
+          },
+          "props.lines[0].state": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try(tag('[default]Screensaver/Line1State'), 'running')"
+              }
+            }
+          },
+          "props.lines[0].flow": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "try(tag('[default]Screensaver/LineRate'), 40) / 50.0"
+              }
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onIdle": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.session.custom.screensaver = {'idle': True, 'mode': event.mode, 'cause': ''}"
+              }
+            },
+            "onWake": {
+              "type": "script",
+              "scope": "G",
+              "config": {
+                "script": "\tself.session.custom.screensaver = {'idle': False, 'mode': '', 'cause': event.cause}"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
