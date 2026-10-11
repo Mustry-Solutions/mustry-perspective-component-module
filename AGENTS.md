@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Ignition 8.3 Perspective module: fourteen custom components (date/time range
+Ignition 8.3 Perspective module: fifteen custom components (date/time range
 picker, calendar/scheduler, resource timeline, data grid, pan & zoom view,
 branching diagram, rich text editor, code/JSON editor, colour picker,
-on-screen keyboard, and the admin family: schedule, roster, user and holiday
-managers). React 16 class components + TypeScript (full strict) on the web
+on-screen keyboard, the admin family: schedule, roster, user and holiday
+managers, and the Idle Guard screensaver). React 16 class components + TypeScript (full strict) on the web
 side; Java scopes for gateway/designer registration. See README.md for the
 component reference.
 
@@ -104,6 +104,28 @@ bind-mounted into the gateway — Designer saves write back into the repo.
   `ops/schema-guard.sh` (CI) flags removed/renamed keys; acknowledge deliberate
   breaks in `ops/schema-guard-acknowledged.txt`. Versioning/migration is
   deliberately deferred until real deployments exist (see README roadmap).
+
+## Idle Guard (screensaver) — safety rules, non-negotiable
+
+`web/typescript/components/guard/` + `gateway/.../gateway/guard/`. Detail in
+`docs/idle-guard.md`; read it before changing the guard.
+
+- An active Critical alarm is never covered, whatever the props say
+  (`evaluateAlarms` clamps the wake priority; tested in jest and e2e).
+- No feed, no cover: a stale or missing alarm feed removes the overlay and
+  prevents idling (fail open). Never add a code path that shows the overlay
+  without a fresh feed.
+- The input that wakes the page must never reach the page. If you touch the
+  input handling, run the e2e click and key tests AND check they still fail
+  with swallowing disabled (break the two `if (this.shielding ...)`
+  conditions, set `FADE_MS` to 0).
+- The gateway `AlarmFeed` polls only while a guard is subscribed; keep it that
+  way, gateways without guards must pay nothing.
+- Never market or document the guard as an access control or a safety
+  function. It is a browser overlay.
+- Its verify views are GENERATED (`ops/verify/tools/build_guard_views.py`):
+  edit the script, rerun it, commit the JSON. Canvas modes: `npm run
+  preview:guard` (in web/), open `web/build/guard-preview/index.html#<mode>`.
 
 ## Working agreements
 
