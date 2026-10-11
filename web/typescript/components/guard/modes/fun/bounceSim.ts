@@ -52,18 +52,26 @@ export class BounceSim {
         this.y += this.vy * speed * dt;
         let hitX = false;
         let hitY = false;
-        if (this.x <= 0 || this.x >= maxX) {
+        // An axis without room to move (the badge as wide or tall as the
+        // screen) stays put: clamping it every frame would count a bounce per
+        // frame, flashing the badge and firing the corner confetti.
+        if (maxX <= 0) {
+            this.x = 0;
+        } else if (this.x <= 0 || this.x >= maxX) {
             this.x = Math.min(maxX, Math.max(0, this.x));
             this.vx = this.x <= 0 ? Math.abs(this.vx) : -Math.abs(this.vx);
             hitX = true;
         }
-        if (this.y <= 0 || this.y >= maxY) {
+        if (maxY <= 0) {
+            this.y = 0;
+        } else if (this.y <= 0 || this.y >= maxY) {
             this.y = Math.min(maxY, Math.max(0, this.y));
             this.vy = this.y <= 0 ? Math.abs(this.vy) : -Math.abs(this.vy);
             hitY = true;
         }
-        const nearY = this.y <= CORNER_PX || this.y >= maxY - CORNER_PX;
-        const nearX = this.x <= CORNER_PX || this.x >= maxX - CORNER_PX;
+        // A pinned axis is always "near" its edge, but a corner needs both to move.
+        const nearY = maxY > 0 && (this.y <= CORNER_PX || this.y >= maxY - CORNER_PX);
+        const nearX = maxX > 0 && (this.x <= CORNER_PX || this.x >= maxX - CORNER_PX);
         // One corner hits both edges within a frame or two: count it once.
         const corner = ((hitX && nearY) || (hitY && nearX)) && this.sinceCorner >= 0.5;
         const bounces = (hitX ? 1 : 0) + (hitY ? 1 : 0);

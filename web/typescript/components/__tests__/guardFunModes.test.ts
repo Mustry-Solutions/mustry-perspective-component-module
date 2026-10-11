@@ -23,6 +23,25 @@ describe('bounce', () => {
         expect(sim.bounces).toBeGreaterThan(50);
     });
 
+    it('keeps still on an axis without room, instead of bouncing every frame', () => {
+        // A badge wider than a portrait screen: x has nowhere to go.
+        const sim = new BounceSim(seededRandom(3));
+        let flashes = 0;
+        let corners = 0;
+        const ys = new Set<number>();
+        for (let i = 0; i < 30 * 60; i++) {
+            const ev = sim.step(1 / 30, 400, H, 600, BH);
+            flashes += ev.bounces;
+            corners += ev.corner ? 1 : 0;
+            ys.add(Math.round(sim.y));
+            expect(sim.x).toBe(0);
+        }
+        // Only the vertical edges count: a handful per minute, not one per frame.
+        expect(flashes).toBeLessThan(60);
+        expect(corners).toBe(0);
+        expect(ys.size).toBeGreaterThan(100);
+    });
+
     it('counts a corner hit once', () => {
         const sim = new BounceSim(seededRandom(2));
         sim.step(0, W, H, BW, BH); // places it

@@ -1,5 +1,5 @@
-// Dev preview of the canvas idle modes, outside Perspective: `npm run preview`,
-// then open build/preview/index.html#pipes (or any canvas mode: #lava, #pong, ...).
+// Dev preview of the canvas idle modes, outside Perspective: `npm run preview:guard`,
+// then open build/guard-preview/index.html#pipes (or any canvas mode: #lava, #pong, ...).
 // Query: ?quality=high|low|auto&fault=1&off=1&lines=3&speed=2&legacy=1 (2D fallback).
 // Not part of the module bundle.
 import { mapGuardProps, Mode, PropReader } from '../typescript/components/guard/guardProps';

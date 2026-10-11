@@ -71,9 +71,16 @@ export class BounceRenderer implements ModeRenderer {
         const h = this.canvas.height;
         const unit = Math.min(w, h);
         const dt = Math.min(dtMs, 100) / 1000;
-        const fontPx = Math.round(unit * 0.075);
+        let fontPx = Math.round(unit * 0.075);
         ctx.font = `800 ${fontPx}px Inter, 'Segoe UI', system-ui, sans-serif`;
-        const textW = ctx.measureText(this.text).width;
+        let textW = ctx.measureText(this.text).width;
+        // A long text on a narrow (portrait) screen: shrink the badge to 80 % of the width.
+        const fit = (w * 0.8) / (textW + fontPx * 1.1);
+        if (fit < 1) {
+            fontPx = Math.max(8, Math.floor(fontPx * fit));
+            ctx.font = `800 ${fontPx}px Inter, 'Segoe UI', system-ui, sans-serif`;
+            textW = ctx.measureText(this.text).width;
+        }
         const bw = textW + fontPx * 1.1;
         const bh = fontPx * 1.7;
         const ev = this.sim.step(dt, w, h, bw, bh);

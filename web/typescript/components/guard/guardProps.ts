@@ -82,12 +82,15 @@ export interface GuardProps {
     };
 }
 
-/** The demo set, so a freshly dropped guard in a line mode shows something. */
+/**
+ * The demo set, so a freshly dropped guard in a line mode shows something.
+ * No labels: unnamed lines take the locale's config.labels.line ('Line 3').
+ */
 export const DEFAULT_LINES: LineSpec[] = [
-    { label: 'Line 1', state: 'running', flow: 0.8, color: '' },
-    { label: 'Line 2', state: 'running', flow: 0.5, color: '' },
-    { label: 'CIP', state: 'idle', flow: 0.2, color: '' },
-    { label: 'Utilities', state: 'warning', flow: 0.6, color: '' }
+    { label: '', state: 'running', flow: 0.8, color: '' },
+    { label: '', state: 'running', flow: 0.5, color: '' },
+    { label: '', state: 'idle', flow: 0.2, color: '' },
+    { label: '', state: 'warning', flow: 0.6, color: '' }
 ];
 
 /** At most this many lines are drawn; more only crowd the screen. */

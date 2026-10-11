@@ -232,22 +232,18 @@
       "description": "Your lines, units or utilities: one pipe, aurora curtain or halo ring each (up to 12). Bind state and flow to tags: the colour follows the state, the motion follows the flow. Empty = a demo set.",
       "default": [
         {
-          "label": "Line 1",
           "state": "running",
           "flow": 0.8
         },
         {
-          "label": "Line 2",
           "state": "running",
           "flow": 0.5
         },
         {
-          "label": "CIP",
           "state": "idle",
           "flow": 0.2
         },
         {
-          "label": "Utilities",
           "state": "warning",
           "flow": 0.6
         }
@@ -257,8 +253,7 @@
         "additionalProperties": false,
         "properties": {
           "label": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "state": {
             "type": "string",
