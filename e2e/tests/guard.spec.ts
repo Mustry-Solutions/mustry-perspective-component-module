@@ -347,7 +347,9 @@ test.describe('night window', () => {
 });
 
 test.describe('reduced motion', () => {
-    test.use({ reducedMotion: 'reduce' });
+    // Through contextOptions: the top-level reducedMotion option is not applied by the runner
+    // here (Playwright 1.61), which left matchMedia reporting no preference.
+    test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
     test('animated modes give way to the clock when the browser asks for less motion', async ({ page }) => {
         await openGuarded(page, 'flow', 5);
