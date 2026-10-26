@@ -10,6 +10,11 @@ test('timeline: day view renders resources and seeded bars', async ({ page }) =>
 test('timeline: hovering a bar shows only the detail popover (issue #205)', async ({ page }) => {
     await openRoute(page, '/timeline', '.mustry-timeline');
     const bar = page.locator('.mustry-tml-bar', { hasText: 'Batch 4711' }).first();
+    // Scroll first and let the scroll event land: the timeline scrolls the now-line
+    // into view on load and hides the hover popover on scroll, so a hover() that
+    // scrolls would cancel its own popover.
+    await bar.scrollIntoViewIfNeeded();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     await bar.hover();
     await expect(page.locator('.mustry-tml-hover')).toBeVisible();
     // No native title: the browser's own tooltip would pop up over the popover.
