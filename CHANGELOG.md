@@ -15,6 +15,25 @@ zoomed back in toward the toolbar's corner (#223). Double-click zoom now only
 reacts to the content and the bare viewport, so the toolbar buttons, the
 minimap, the POI list and the edge indicators act like plain clicks.
 
+### Fixed: Calendar and Timeline treated any event id containing `::` as a recurring occurrence
+Occurrence-ness was read from the id: anything with `::` counted as
+`<seriesId>::<date>` (#143). A plain event with an id such as `WO::1234` got
+the occurrence badge, and dragging it fired `scope: "occurrence"` with
+`seriesId: "WO"` and `occurrenceDate: "1234"`, so the reference scripts added
+an override and an EXDATE to a series that does not exist. A series whose own
+id contains `::` got a wrong `seriesId` for every occurrence. Expanded
+occurrences are now marked when the series is expanded, so any id works for
+plain events and series. Occurrence ids keep the `<seriesId>::<date>` form,
+and the `onChange` and `onEventClick` payloads are unchanged.
+
+### Fixed: recurring events that start before the visible window were missing
+A recurring occurrence was only drawn when it started inside the window, so a
+daily 22:00 to 06:00 night shift showed nothing on Monday 00:00 to 06:00 in a
+week that starts on Monday, and a weekly Saturday 08:00 to Monday 08:00 event
+did not show on Monday at all (#142). Non-recurring events of the same shape
+were fine. The Calendar and the Resource Timeline now keep every occurrence
+that overlaps the window, wherever it starts.
+
 ### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
 Realtime windows and presets took the browser's clock, but the outputs read
 those times in `config.timezone` (#139). With a Brussels browser and
@@ -56,6 +75,17 @@ the visible window, the timezone or the hidden categories change. On 2000
 events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
 and a drag no longer rebuilds it at all. All components that take a
 `config.timezone` share the faster conversion.
+
+### Fixed: Resource Timeline snapped to a UTC grid instead of the display zone
+Drag, resize and click-to-create rounded times on a grid counted from UTC
+midnight, so the result missed the clock of `config.timezone` (#138). In
+`Asia/Kolkata` at week zoom, 10:10 snapped to 10:30. In Brussels with
+`snapMinutes: 120`, 06:10 snapped to 07:00, and with 1440 to 01:00. Snapping
+now counts whole steps from midnight in the display zone (browser-local when
+empty). On DST days the result stays on that wall-clock grid: a 2 h step on
+the 23 h or 25 h day still gives 10:00, and the repeated hour snaps within its
+own occurrence. Moving a bar with a large snap across a DST change now keeps
+its time of day (a day-snapped 06:00 shift stays 06:00, not 07:00).
 
 ### Fixed: times in the spring-forward gap emitted an hour off
 A wall time that does not exist because the clocks jump forward (02:30 on

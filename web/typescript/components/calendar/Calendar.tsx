@@ -285,8 +285,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
     }
 
-    private enterClass(occId: string): string {
-        return this.enter.enterClass(occId);
+    private enterClass(ev: CalEvent): string {
+        return this.enter.enterClass(ev);
     }
 
     private fireEvent(name: string, payload: object): void {
@@ -735,7 +735,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 categories={this.props.props.categories}
                 emptyMessage={this.emptyText()}
                 labels={this.props.props.labels}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
             />
@@ -801,7 +801,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editable={this.props.props.editable}
                 dragEventId={monthDrag ? monthDrag.eventId || '' : ''}
                 dropDayIso={monthDrag ? monthDrag.dayIso : ''}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onDayClick={(iso) => this.onDayClick(iso)}
                 openDayPop={(iso, e) => this.openDayPop(iso, e)}
@@ -893,7 +893,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 categories={this.props.props.categories}
                 labels={this.props.props.labels}
                 scrollRef={this.scrollRef}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
                 onStartCreate={(iso, e) => this.gestures.startCreate(iso, e)}
