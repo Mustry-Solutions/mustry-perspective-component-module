@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Rich Text and Code Editor lost typing done right after Save
+If the operator kept typing after pressing Save, the author's write-back
+marked the editor clean anyway: Save/Discard disappeared, `output.isDirty`
+went false, and the next change to the bound document replaced the unsaved
+text (#134). When a save lands, the editor now only turns clean if it still
+holds what was saved. Otherwise it stays dirty and keeps the typing.
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on
