@@ -2,7 +2,8 @@ import { test, expect, openRoute } from './helpers';
 
 // The CodeDemo view: an edit-mode JSON instance whose onSave writes back to
 // view.custom.doc, a label bound to output.isValid/errorMessage, and a
-// read-only display instance bound to the same value.
+// read-only display instance bound to the same value. A button toggles the
+// edit instance's config.enabled through view.custom.editorEnabled.
 
 test('code: editor and viewer render the bound JSON with highlighting', async ({ page }) => {
     await openRoute(page, '/code', '.mustry-code');
@@ -69,6 +70,28 @@ test('code: display instance is read-only', async ({ page }) => {
     await openRoute(page, '/code', '.mustry-code');
     const viewer = page.locator('.mustry-code--display .cm-content');
     await expect(viewer).toHaveAttribute('contenteditable', 'false');
+});
+
+test('code: toggling config.enabled at runtime switches editability (#135)', async ({ page }) => {
+    await openRoute(page, '/code', '.mustry-code');
+    const root = page.locator('.mustry-code:not(.mustry-code--display)');
+    const editor = root.locator('.cm-content');
+    await expect(editor).toHaveAttribute('contenteditable', 'true');
+
+    // Disabled: CodeMirror itself must go read-only, not just the toolbar.
+    // (The disabled root has pointer-events: none, so no typing attempt here.)
+    await page.getByRole('button', { name: 'Disable editor', exact: true }).click();
+    await expect(root).toHaveClass(/is-disabled/);
+    await expect(editor).toHaveAttribute('contenteditable', 'false');
+
+    // Re-enabled: the same instance becomes editable again without a remount.
+    await page.getByRole('button', { name: 'Enable editor', exact: true }).click();
+    await expect(root).not.toHaveClass(/is-disabled/);
+    await expect(editor).toHaveAttribute('contenteditable', 'true');
+    await editor.click();
+    await page.keyboard.press('End');
+    await editor.pressSequentially(' ');
+    await expect(page.locator('.mustry-commit-badge')).toBeVisible();
 });
 
 test('code: undo button is disabled on a pristine document, enables after edit', async ({ page }) => {
