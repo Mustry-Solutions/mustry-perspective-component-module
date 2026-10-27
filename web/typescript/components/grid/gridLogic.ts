@@ -613,10 +613,11 @@ export function rowWithPending(row: Record<string, unknown>, rowId: string, pend
  *  `base` holds each edit's bound value (as cellText) from when it was made.
  *  An edit clears once the bound value equals it (the write-back landed) or
  *  differs from its base (the author stored something else: a rejected,
- *  normalized or concurrent change, and the bound data wins). It stays while
- *  the bound value is unchanged or its row is gone. Values compare as text:
- *  the props reducer rebuilds the rows on every prop write, so identity
- *  means nothing here. */
+ *  normalized or concurrent change, and the bound data wins). It also clears
+ *  once its row is gone: kept, it would attach to a later record that reuses
+ *  the id (#216). It stays while the bound value is unchanged. Values compare
+ *  as text: the props reducer rebuilds the rows on every prop write, so
+ *  identity means nothing here. */
 export function settlePending<T extends Record<string, unknown>>(
     pending: Record<string, unknown>, base: Record<string, string>, rows: T[], idField: string
 ): Record<string, unknown> | null {
@@ -632,7 +633,7 @@ export function settlePending<T extends Record<string, unknown>>(
         const { rowId, field } = parsePendingKey(k);
         const row = byId.get(rowId);
         const bound = row ? cellText(row[field]) : '';
-        if (row && (bound === cellText(pending[k]) || (k in base && bound !== base[k]))) {
+        if (!row || bound === cellText(pending[k]) || (k in base && bound !== base[k])) {
             cleared = true;
         } else {
             next[k] = pending[k];
