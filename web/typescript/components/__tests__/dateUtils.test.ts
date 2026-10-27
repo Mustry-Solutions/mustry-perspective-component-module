@@ -3,7 +3,8 @@ import {
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
-    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso
+    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
+    wallClockInZone
 } from '../../shared/dateUtils';
 
 describe('pad2', () => {
@@ -318,5 +319,29 @@ describe('todayInZone / nowMinutesInZone', () => {
         const m = nowMinutesInZone('America/Chicago');
         expect(m).toBeGreaterThanOrEqual(0);
         expect(m).toBeLessThan(1440);
+    });
+
+    it('todayInZone reads the date of a given instant in the zone', () => {
+        // 03:00Z on Jun 26 is Jun 25 (22:00) in Chicago and Jun 26 (12:00) in Tokyo.
+        const instant = new Date('2026-06-26T03:00:00Z');
+        expect(fmtDate(todayInZone('America/Chicago', instant))).toBe('2026-06-25');
+        expect(fmtDate(todayInZone('Asia/Tokyo', instant))).toBe('2026-06-26');
+    });
+
+    it('an unknown zone falls back to the browser zone instead of throwing', () => {
+        const instant = new Date('2026-06-26T03:00:00Z');
+        expect(todayInZone('Not/AZone', instant).getTime()).toBe(todayInZone('', instant).getTime());
+    });
+});
+
+describe('wallClockInZone', () => {
+    it('is a local Date whose fields are the zone wall clock', () => {
+        const w = wallClockInZone(new Date('2026-06-25T13:00:00Z'), 'America/Chicago');
+        expect([fmtDate(w), secondsOfDay(w)]).toEqual(['2026-06-25', 8 * 3600]);
+    });
+
+    it('blank zone keeps the instant (browser-local)', () => {
+        const instant = new Date(2026, 5, 25, 13, 0, 0);
+        expect(wallClockInZone(instant, '').getTime()).toBe(instant.getTime());
     });
 });

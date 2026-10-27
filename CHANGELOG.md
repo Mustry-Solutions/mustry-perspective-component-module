@@ -8,6 +8,27 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
+Realtime windows and presets took the browser's clock, but the outputs read
+those times in `config.timezone` (#139). With a Brussels browser and
+`America/Chicago`, "Last 1 hour" at 13:00 UTC selected 14:00 to 15:00, and
+`endEpochMs` was 7 hours in the future. "Today", "This week" and the other
+calendar presets, the `disableDates` past/future bound and the today
+highlight had the same problem near midnight. All of them now read the
+current time in `config.timezone` (browser-local when it is blank), so the
+same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
+real elapsed time across a DST change.
+
+### Fixed: Date/Time Range Picker rolling ranges overflowed month ends and drifted across DST
+A rolling month from a day the target month lacks ran into the next month
+(#140): "Last 1 month" from March 31 started on March 3, and "Next 1 month"
+from January 31 ended on March 3. It now stops on the target month's last
+day (February 28, or 29 in a leap year). Days and weeks were counted as
+24-hour blocks, so "Last 7 days" at 10:00 on October 27 in Brussels started
+at 11:00 on October 20, because the clocks went back in between. Days and
+weeks now step calendar days and keep the wall time (10:00 on October 20).
+Hours still count elapsed time.
+
 ### Fixed: Color Picker hsl and rgba values changed the picked colour
 In `hsl` format the picker wrote whole numbers, which parse back to a
 different colour for most picks: the default swatch `#12b886` became
