@@ -5,7 +5,7 @@
 // returns plain values — no `this`, no I/O.
 
 import {
-    addDays, clampSec, combine, daysBetween, fmtDate, maxDate, minDate,
+    addDays, clampSec, combine, daysBetween, daysInMonth, fmtDate, maxDate, minDate,
     parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek,
     wallClockInZone
 } from '../../shared/dateUtils';
@@ -89,29 +89,40 @@ export interface PresetContext {
     firstDay: number;     // weekStart as 0 = Sunday .. 6 = Saturday
 }
 
+/** A wall-clock Date moved by whole calendar days, keeping its time of day. */
+function addWallDays(w: Date, days: number): Date {
+    return new Date(w.getFullYear(), w.getMonth(), w.getDate() + days, w.getHours(), w.getMinutes(), w.getSeconds());
+}
+
+/** A wall-clock Date moved by whole months, keeping its time of day. A day the target
+ *  month lacks clamps to its last day (Mar 31 minus a month is Feb 28, not Mar 3). */
+function addWallMonths(w: Date, months: number): Date {
+    const first = new Date(w.getFullYear(), w.getMonth() + months, 1);
+    const day = Math.min(w.getDate(), daysInMonth(first));
+    return new Date(first.getFullYear(), first.getMonth(), day, w.getHours(), w.getMinutes(), w.getSeconds());
+}
+
 /** Rolling preset: a window of amount*unit from the instant `now`, in the given
  *  direction. Both ends are wall-clock Dates in `timeZone`, the zone the outputs
- *  resolve them in. */
+ *  resolve them in. Hours are elapsed time; days, weeks and months are calendar
+ *  steps, so "Last 7 days" keeps the wall time across a DST change. */
 export function rollingRange(amount: number, unit: PresetUnit, now: Date, forward: boolean, timeZone: string): DateRange {
-    const sign = forward ? 1 : -1;
+    const n = (forward ? 1 : -1) * amount;
     const wallNow = wallClockInZone(now, timeZone);
     let other: Date;
     switch (unit) {
         case 'hours':
-            other = wallClockInZone(new Date(now.getTime() + sign * amount * 3600000), timeZone);
+            other = wallClockInZone(new Date(now.getTime() + n * 3600000), timeZone);
             break;
         case 'weeks':
-            other = wallClockInZone(new Date(now.getTime() + sign * amount * 7 * 86400000), timeZone);
+            other = addWallDays(wallNow, n * 7);
             break;
         case 'months':
-            other = new Date(
-                wallNow.getFullYear(), wallNow.getMonth() + sign * amount, wallNow.getDate(),
-                wallNow.getHours(), wallNow.getMinutes(), wallNow.getSeconds()
-            );
+            other = addWallMonths(wallNow, n);
             break;
         case 'days':
         default:
-            other = wallClockInZone(new Date(now.getTime() + sign * amount * 86400000), timeZone);
+            other = addWallDays(wallNow, n);
             break;
     }
     return { start: forward ? wallNow : other, end: forward ? other : wallNow };

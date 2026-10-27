@@ -3,7 +3,7 @@ import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
     computeOutputs, realtimeArmed, realtimeSelection, fillLabel, dayWord, focusTrapTarget,
-    PresetContext, PresetDef
+    PresetContext, PresetDef, PresetUnit
 } from '../picker/pickerLogic';
 
 describe('resolveLayout', () => {
@@ -64,6 +64,69 @@ describe('rollingRange', () => {
         expect(fmtDate(rollingRange(24, 'hours', now, true, '').end)).toBe('2026-06-18');
         expect(fmtDate(rollingRange(2, 'weeks', now, false, '').start)).toBe('2026-06-03');
         expect(fmtDate(rollingRange(1, 'months', now, true, '').end)).toBe('2026-07-17');
+    });
+});
+
+// #140: days, weeks and months are calendar steps on the zone wall clock; only
+// hours are elapsed time. Each case pins the instant and the zone (process-TZ free).
+describe('rollingRange calendar arithmetic (#140)', () => {
+    const wall = (d: Date) => `${fmtDate(d)} ${secondsOfDay(d) / 3600}h`;
+    const back = (amount: number, unit: PresetUnit, iso: string, tz = 'UTC') =>
+        wall(rollingRange(amount, unit, new Date(iso), false, tz).start);
+    const fwd = (amount: number, unit: PresetUnit, iso: string, tz = 'UTC') =>
+        wall(rollingRange(amount, unit, new Date(iso), true, tz).end);
+
+    it('a month back from a month end clamps to the shorter month', () => {
+        expect(back(1, 'months', '2026-03-31T10:00:00Z')).toBe('2026-02-28 10h');
+        expect(back(1, 'months', '2026-05-31T10:00:00Z')).toBe('2026-04-30 10h');
+        expect(back(3, 'months', '2026-05-31T10:00:00Z')).toBe('2026-02-28 10h');
+    });
+
+    it('a month forward from a month end clamps too', () => {
+        expect(fwd(1, 'months', '2026-01-31T10:00:00Z')).toBe('2026-02-28 10h');
+        expect(fwd(1, 'months', '2026-08-31T10:00:00Z')).toBe('2026-09-30 10h');
+        expect(fwd(1, 'months', '2026-12-31T10:00:00Z')).toBe('2027-01-31 10h');
+    });
+
+    it('leap years: Feb 29 exists only in a leap year', () => {
+        expect(back(1, 'months', '2028-03-31T10:00:00Z')).toBe('2028-02-29 10h');
+        expect(fwd(1, 'months', '2028-01-31T10:00:00Z')).toBe('2028-02-29 10h');
+        expect(back(12, 'months', '2028-02-29T10:00:00Z')).toBe('2027-02-28 10h');
+        expect(fwd(12, 'months', '2028-02-29T10:00:00Z')).toBe('2029-02-28 10h');
+        expect(fwd(48, 'months', '2028-02-29T10:00:00Z')).toBe('2032-02-29 10h');
+    });
+
+    it('"Last 7 days" across the autumn DST change keeps the wall time', () => {
+        // Oct 27 10:00 CET; Brussels fell back on Oct 25. 7 x 24 h would land on Oct 20 11:00.
+        const now = new Date('2026-10-27T09:00:00Z');
+        expect(back(7, 'days', now.toISOString(), 'Europe/Brussels')).toBe('2026-10-20 10h');
+        expect(back(1, 'weeks', now.toISOString(), 'Europe/Brussels')).toBe('2026-10-20 10h');
+        const s = realtimeSelection(7, 'days', now, false, 'Europe/Brussels');
+        const out = computeOutputs({
+            ...s, granularity: 'second', timezone: 'Europe/Brussels', minSpanDays: 0, maxSpanDays: 0,
+            durationLabelThresholdHours: 48, labels: DUR_LABELS
+        });
+        expect(out.endEpochMs).toBe(now.getTime());
+        expect(out.durationDays).toBe(7);
+        expect(out.durationHours).toBe(7 * 24 + 1);   // the repeated hour is real time
+    });
+
+    it('"Next 7 days" across the spring DST change keeps the wall time', () => {
+        // Mar 25 10:00 CET; Brussels springs forward on Mar 29.
+        expect(fwd(7, 'days', '2026-03-25T09:00:00Z', 'Europe/Brussels')).toBe('2026-04-01 10h');
+        expect(fwd(2, 'weeks', '2026-03-25T09:00:00Z', 'Europe/Brussels')).toBe('2026-04-08 10h');
+        expect(fwd(7, 'days', '2026-03-04T16:00:00Z', 'America/Chicago')).toBe('2026-03-11 10h');
+    });
+
+    it('days cross month and year ends', () => {
+        expect(back(7, 'days', '2026-03-03T10:00:00Z')).toBe('2026-02-24 10h');
+        expect(fwd(3, 'days', '2026-12-30T10:00:00Z')).toBe('2027-01-02 10h');
+        expect(back(1, 'days', '2028-03-01T10:00:00Z')).toBe('2028-02-29 10h');
+    });
+
+    it('hours stay elapsed time across the DST change', () => {
+        // 24 h before Oct 25 12:00 CET is Oct 24 13:00 CEST, not 12:00.
+        expect(back(24, 'hours', '2026-10-25T11:00:00Z', 'Europe/Brussels')).toBe('2026-10-24 13h');
     });
 });
 

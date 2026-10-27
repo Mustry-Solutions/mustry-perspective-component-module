@@ -19,6 +19,16 @@ current time in `config.timezone` (browser-local when it is blank), so the
 same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
 real elapsed time across a DST change.
 
+### Fixed: Date/Time Range Picker rolling ranges overflowed month ends and drifted across DST
+A rolling month from a day the target month lacks ran into the next month
+(#140): "Last 1 month" from March 31 started on March 3, and "Next 1 month"
+from January 31 ended on March 3. It now stops on the target month's last
+day (February 28, or 29 in a leap year). Days and weeks were counted as
+24-hour blocks, so "Last 7 days" at 10:00 on October 27 in Brussels started
+at 11:00 on October 20, because the clocks went back in between. Days and
+weeks now step calendar days and keep the wall time (10:00 on October 20).
+Hours still count elapsed time.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,
