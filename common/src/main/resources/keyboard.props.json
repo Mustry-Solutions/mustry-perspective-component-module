@@ -84,7 +84,7 @@
         "liveUpdate": {
           "type": "boolean",
           "default": false,
-          "description": "Write value.value on every key press (not only on Enter). onCommit still fires on Enter."
+          "description": "Write value.value on every key press (not only on Enter). onCommit still fires on Enter. numpad with enforceRange: only in-range numbers are written while typing (a partial entry is never clamped); Enter clamps."
         },
         "locale": {
           "type": "string",

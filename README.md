@@ -406,7 +406,7 @@ A touch keyboard for the runtime — the piece Perspective leaves to the OS keyb
 - **Numeric keypad** (`config.layout: numpad`) — edits `value.value` (number): `config.min`/`max` with `enforceRange` clamping + an out-of-range badge, `config.decimals`, `config.units` suffix, `allowNegative`. Setpoint-style entry (the first key starts fresh).
 - **QWERTY keyboard** (`config.layout: text` / `email` / `url`) — edits `value.text` (string): one-shot shift, a `?123` symbols/numbers layer, `config.maxLength`; email/url add `@`, `.com`, `/` convenience keys.
 - **Inline or popover** (`config.mode`) — the keyboard in place, or a field trigger (with a keyboard glyph + `config.placeholder`) that opens it in a portalled panel; Enter commits **and** closes, outside-click / Escape discards.
-- **Controlled write-back** — Enter fires **`onCommit`** `{value, text, isValid}` (`value` is a number for numpad, a string for text) and writes `value.value` / `value.text`; live `onChange` `{draft, value}` on every key (`config.liveUpdate` also writes live). Read-only `output.*`: `value`, `text`, `isValid`, `length`, `draft`. 7-language labels. All editing rules are pure + node-tested.
+- **Controlled write-back** — Enter fires **`onCommit`** `{value, text, isValid}` (`value` is a number for numpad, a string for text) and writes `value.value` / `value.text`; live `onChange` `{draft, value}` on every key (`config.liveUpdate` also writes live; with `enforceRange` the numpad only writes in-range numbers while typing and Enter clamps). Read-only `output.*`: `value`, `text`, `isValid`, `length`, `draft`. 7-language labels. All editing rules are pure + node-tested.
 
 ### Theming
 

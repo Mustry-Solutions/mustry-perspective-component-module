@@ -9,7 +9,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    applyKey, clampValue, formatValue, inRange, KeypadKey, parseDraft, valueToDraft
+    applyKey, clampValue, formatValue, inRange, isLiveEcho, KeypadKey, liveValue, parseDraft, valueToDraft
 } from './keyboardLogic';
 import { appendChar, backspaceText, getRows, KeyDef, KeyLayer, TextLayout } from './keyboardLayouts';
 import { KeypadKeys } from './KeypadKeys';
@@ -50,6 +50,8 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
 
     private triggerEl: HTMLElement | null = null;
     private panelEl: HTMLElement | null = null;
+    /** numpad liveUpdate: the number last written to value.value while typing. */
+    private lastLiveWrite: number | null = null;
 
     constructor(props: ComponentProps<KeyboardProps>) {
         super(props);
@@ -67,11 +69,14 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
     componentDidUpdate(prev: ComponentProps<KeyboardProps>): void {
         const p = this.props.props;
         const q = prev.props;
-        const boundChanged = this.isNumeric() ? p.value !== q.value : p.text !== q.text;
-        if (boundChanged || p.layout !== q.layout) {
+        const numeric = this.isNumeric();
+        const boundChanged = numeric ? p.value !== q.value : p.text !== q.text;
+        const echo = numeric && boundChanged && isLiveEcho(p.value, this.lastLiveWrite);
+        if ((boundChanged && !echo) || p.layout !== q.layout) {
+            this.lastLiveWrite = null;
             this.setState({ draft: null });
             this.emitOutputs(null);
-        } else if (p.decimals !== q.decimals || p.units !== q.units || p.enforceRange !== q.enforceRange
+        } else if (echo || p.decimals !== q.decimals || p.units !== q.units || p.enforceRange !== q.enforceRange
             || p.min !== q.min || p.max !== q.max || p.maxLength !== q.maxLength) {
             this.emitOutputs(this.state.draft);
         }
@@ -155,8 +160,10 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
         const parsed = parseDraft(draft);
         this.props.store.props.write('output.draft', draft);
         this.fireEvent('onChange', { draft, value: parsed });
-        if (p.liveUpdate && parsed !== null) {
-            this.props.store.props.write('value.value', p.enforceRange ? clampValue(parsed, p.min, p.max) : parsed);
+        const live = p.liveUpdate ? liveValue(draft, p) : null;
+        if (live !== null) {
+            this.lastLiveWrite = live;
+            this.props.store.props.write('value.value', live);
         }
     };
 
@@ -172,6 +179,7 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
             return;
         }
         const value = p.enforceRange ? clampValue(parsed, p.min, p.max) : parsed;
+        this.lastLiveWrite = null;
         this.props.store.props.write('value.value', value);
         this.setState({ draft: null }, () => this.emitOutputs(null));
         this.fireEvent('onCommit', { value, text: formatValue(value, p.decimals, p.units), isValid: this.numberValid(value) });

@@ -1,5 +1,6 @@
 import {
-    applyKey, clampValue, formatValue, inRange, KeypadOpts, parseDraft, valueToDraft
+    applyKey, clampValue, formatValue, inRange, isLiveEcho, KeypadOpts, liveValue, parseDraft,
+    RangeOpts, valueToDraft
 } from '../keyboard/keyboardLogic';
 
 const opts = (o: Partial<KeypadOpts> = {}): KeypadOpts => ({ decimals: 2, allowNegative: true, ...o });
@@ -94,5 +95,74 @@ describe('formatValue / valueToDraft', () => {
         expect(valueToDraft(0, 2)).toBe('0');
         expect(valueToDraft(null, 2)).toBe('');
         expect(valueToDraft(12.9, 0)).toBe('13');
+    });
+});
+
+// The numpad shell with config.liveUpdate: each key writes value.value, the
+// write comes back as a bound-value change, and the shell keeps the draft only
+// when that change is its own echo. Mirrors OnScreenKeyboard.onKeypadKey +
+// componentDidUpdate.
+const typeLive = (keys: string, range: RangeOpts, start = 0) => {
+    let bound = start;
+    let draft: string | null = null;
+    let lastLive: number | null = null;
+    for (const k of keys.split('')) {
+        draft = applyKey(draft === null ? '' : draft, k as any, opts());
+        const live = liveValue(draft, range);
+        if (live !== null) {
+            lastLive = live;
+            if (live !== bound) {
+                bound = live;
+                if (!isLiveEcho(bound, lastLive)) {
+                    draft = null;
+                    lastLive = null;
+                }
+            }
+        }
+    }
+    return { bound, draft };
+};
+
+const free: RangeOpts = { enforceRange: false, min: 0, max: 100 };
+const tenToFifty: RangeOpts = { enforceRange: true, min: 10, max: 50 };
+
+describe('liveUpdate typing (#151)', () => {
+    it('keeps the draft across its own live writes', () => {
+        expect(typeLive('12', free)).toEqual({ bound: 12, draft: '12' });
+    });
+    it('can enter a decimal', () => {
+        expect(typeLive('1.5', free)).toEqual({ bound: 1.5, draft: '1.5' });
+    });
+    it('enforceRange: a partial entry below min is not clamped or written', () => {
+        expect(typeLive('1', tenToFifty, 20)).toEqual({ bound: 20, draft: '1' });
+        expect(typeLive('15', tenToFifty, 20)).toEqual({ bound: 15, draft: '15' });
+    });
+    it('enforceRange: an entry past max keeps the last in-range write and the draft', () => {
+        expect(typeLive('150', { enforceRange: true, min: 0, max: 100 })).toEqual({ bound: 15, draft: '150' });
+    });
+});
+
+describe('liveValue', () => {
+    it('writes nothing until the draft is a number', () => {
+        expect(liveValue('', free)).toBeNull();
+        expect(liveValue('-', free)).toBeNull();
+        expect(liveValue('0.', free)).toBe(0);
+    });
+    it('writes the typed number as-is without enforceRange', () => {
+        expect(liveValue('150', free)).toBe(150);
+    });
+    it('writes only in-range numbers with enforceRange, never a clamped one', () => {
+        expect(liveValue('1', tenToFifty)).toBeNull();
+        expect(liveValue('60', tenToFifty)).toBeNull();
+        expect(liveValue('10', tenToFifty)).toBe(10);
+        expect(liveValue('50', tenToFifty)).toBe(50);
+    });
+});
+
+describe('isLiveEcho', () => {
+    it('is true only for the value this keyboard last wrote live', () => {
+        expect(isLiveEcho(12, 12)).toBe(true);
+        expect(isLiveEcho(13, 12)).toBe(false);
+        expect(isLiveEcho(12, null)).toBe(false);
     });
 });

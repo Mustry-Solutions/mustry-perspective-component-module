@@ -102,6 +102,34 @@ export function inRange(value: number, min: number | null, max: number | null): 
     return true;
 }
 
+export interface RangeOpts {
+    enforceRange: boolean;
+    min: number | null;
+    max: number | null;
+}
+
+/**
+ * config.liveUpdate: the number a key press should write to value.value, or
+ * null to write nothing. With enforceRange an out-of-range draft is NOT written
+ * (and never clamped): a partial entry like '1' on the way to '15' with min=10
+ * must not push 10 into the bound value. Enter still clamps.
+ */
+export function liveValue(draft: string, range: RangeOpts): number | null {
+    const parsed = parseDraft(draft);
+    if (parsed === null || (range.enforceRange && !inRange(parsed, range.min, range.max))) {
+        return null;
+    }
+    return parsed;
+}
+
+/**
+ * Whether a bound value change is just this keyboard's own live write coming
+ * back. The draft must survive it, or every key would start a fresh entry.
+ */
+export function isLiveEcho(incoming: number, lastLiveWrite: number | null): boolean {
+    return lastLiveWrite !== null && incoming === lastLiveWrite;
+}
+
 /** Format a number for the committed display: fixed decimals + optional unit suffix. */
 export function formatValue(value: number, decimals: number, units: string): string {
     const base = decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));

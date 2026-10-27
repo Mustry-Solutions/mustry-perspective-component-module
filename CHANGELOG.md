@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: On-Screen Keyboard numpad with `liveUpdate` kept only the last digit
+With `config.liveUpdate`, each key wrote `value.value`, the keyboard saw the
+bound value change and threw its draft away, so the next key started a new
+entry: typing `1`, `2` gave 2 and `1.5` could not be entered (#151). The
+keyboard now remembers what it wrote live and keeps the draft when that value
+comes back. With `enforceRange`, a number outside `[min, max]` is no longer
+written while typing: it used to be clamped, so typing `15` with min 10 wrote
+10 on the first key and wiped the entry. The bound value now only ever holds a
+number the operator typed, the out-of-range badge shows meanwhile, and Enter
+still clamps.
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on
