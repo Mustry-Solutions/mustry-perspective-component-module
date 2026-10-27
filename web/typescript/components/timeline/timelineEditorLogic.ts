@@ -2,12 +2,12 @@
 // construction and the save / delete / move / resize ChangeSpecs (what onChange
 // should carry). DOM- and perspective-client-free, unit-tested under node jest.
 //
-// Recurring occurrences (id "base::date") edit like the calendar's: touching ONE
+// Recurring occurrences (tagged by expandEvents) edit like the calendar's: touching ONE
 // occurrence detaches it into a standalone override (id "base-x-date") plus an
 // EXDATE on the series; the editor's apply-to choice can target the whole series
 // instead, which re-anchors on the base's date and keeps its rule.
 import { msToZonedIso, msToWallInput, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
-import { RRule } from '../../shared/recurrence';
+import { occurrenceOf, RRule } from '../../shared/recurrence';
 import { TimelineEvent } from './timelineLogic';
 
 /** Recurrence context of a mutation (same contract as the calendar's onChange). */
@@ -114,7 +114,7 @@ export function tlEditorForCreate(resourceId: string, startMs: number, endMs: nu
 }
 
 /** An editor pre-filled from an existing bar (a missing/invalid end shows one
- *  hour). A recurring occurrence (id "base::date") recovers its series context
+ *  hour). A recurring occurrence recovers its series context
  *  (incl. the series' rule, for the "All events" scope) and defaults the
  *  apply-to choice to "this event". */
 export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventById: TlBaseEventLookup = () => undefined): TlEditor {
@@ -124,8 +124,8 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventB
         endMs = startMs + 3600000;
     }
     const rawId = ev.id || '';
-    const isOcc = rawId.indexOf('::') >= 0;
-    const seriesId = isOcc ? rawId.split('::')[0] : null;
+    const occ = occurrenceOf(ev);
+    const seriesId = occ ? occ.seriesId : null;
     const rr = seriesId ? (baseEventById(seriesId) || {} as TimelineEvent).rrule : ev.rrule;
     return {
         id: rawId, resourceId: ev.resourceId, title: ev.title || '',
@@ -139,8 +139,8 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventB
         },
         ...repeatFromRule(rr),
         seriesId,
-        occurrenceDate: isOcc ? rawId.split('::')[1] : null,
-        scope: isOcc ? 'occurrence' : 'series'
+        occurrenceDate: occ ? occ.occurrenceDate : null,
+        scope: occ ? 'occurrence' : 'series'
     };
 }
 
@@ -254,7 +254,7 @@ export function tlDeleteSpec(ed: TlEditor): TlChangeSpec | null {
 
 /** A complete event payload with epoch overrides applied — for move/resize commits.
  *  `over.resourceId` set to a different row adds the reassign context. Dragging a
- *  recurring occurrence (id "base::date") detaches it into a standalone override
+ *  recurring occurrence detaches it into a standalone override
  *  (id "base-x-date") + an EXDATE on the series, like the calendar. */
 export function tlMoveResizeSpec(
     action: 'move' | 'resize',
@@ -266,13 +266,11 @@ export function tlMoveResizeSpec(
     const startMs = over.startMs ?? toEpochMs(ev.start, timezone);
     const endMs = over.endMs ?? (ev.end ? toEpochMs(ev.end, timezone) : null);
     const rawId = ev.id || '';
-    const isOcc = rawId.indexOf('::') >= 0;
-    const seriesId = isOcc ? rawId.split('::')[0] : '';
-    const occurrenceDate = isOcc ? rawId.split('::')[1] : '';
+    const occ = occurrenceOf(ev);
     const spec: TlChangeSpec = {
         action,
         event: {
-            id: isOcc ? `${seriesId}-x-${occurrenceDate}` : rawId,
+            id: occ ? `${occ.seriesId}-x-${occ.occurrenceDate}` : rawId,
             resourceId,
             title: ev.title || '',
             start: startMs !== null ? msToZonedIso(startMs, timezone) : ev.start,
@@ -285,8 +283,8 @@ export function tlMoveResizeSpec(
             ...(ev.display ? { display: ev.display } : {})
         }
     };
-    if (isOcc) {
-        spec.extra = { scope: 'occurrence', seriesId, occurrenceDate };
+    if (occ) {
+        spec.extra = { scope: 'occurrence', seriesId: occ.seriesId, occurrenceDate: occ.occurrenceDate };
     }
     if (resourceId !== ev.resourceId) {
         spec.fromResourceId = ev.resourceId;

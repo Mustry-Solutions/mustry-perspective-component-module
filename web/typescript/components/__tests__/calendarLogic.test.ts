@@ -444,6 +444,55 @@ describe('expandEvents (recurrence)', () => {
         // count=4 generates Jun 1..4; exdate removes 2 and 3 -> only 1 and 4 remain
         expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-06-01', '2026-06-04']);
     });
+
+    // #142: an occurrence that starts before the window but ends inside it overlaps
+    // the window and must be kept, like a non-recurring event of the same shape.
+    describe('occurrences that start before the window (#142)', () => {
+        const [s, en] = win('2026-09-21', '2026-09-28'); // week of Mon 09-21
+
+        it('keeps the Monday 00:00-06:00 part of a daily 22:00-06:00 night shift', () => {
+            const e: CalEvent = { id: 'n', title: 'Night', start: '2026-09-01T22:00:00', end: '2026-09-02T06:00:00', rrule: { freq: 'daily' } };
+            const occ = expandEvents([e], s, en);
+            expect(occ[0]).toMatchObject({ start: '2026-09-20T22:00:00', end: '2026-09-21T06:00:00' });
+            expect(occ).toHaveLength(8); // Sun 20 through Sun 27
+        });
+
+        it('keeps a count-bounded night shift that started the day before the window', () => {
+            const e: CalEvent = { id: 'n', title: 'Night', start: '2026-09-18T22:00:00', end: '2026-09-19T06:00:00', rrule: { freq: 'daily', count: 3 } };
+            expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-09-20T22:00:00']);
+        });
+
+        it('shows a weekly Sat 08:00 to Mon 08:00 event on Monday', () => {
+            const e: CalEvent = { id: 'w', title: 'Weekend', start: '2026-09-05T08:00:00', end: '2026-09-07T08:00:00', rrule: { freq: 'weekly' } };
+            expect(expandEvents([e], s, en).map((o) => [o.start, o.end])).toEqual([
+                ['2026-09-19T08:00:00', '2026-09-21T08:00:00'],
+                ['2026-09-26T08:00:00', '2026-09-28T08:00:00']
+            ]);
+        });
+
+        it('same for a weekly byweekday series', () => {
+            const e: CalEvent = { id: 'w', title: 'Weekend', start: '2026-09-05T08:00:00', end: '2026-09-07T08:00:00', rrule: { freq: 'weekly', byweekday: [6] } };
+            expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-09-19T08:00:00', '2026-09-26T08:00:00']);
+        });
+
+        it('keeps an occurrence that spans the whole window', () => {
+            const e: CalEvent = { id: 'm', title: 'Shutdown', start: '2026-09-15', end: '2026-10-05', allDay: true, rrule: { freq: 'monthly' } };
+            expect(expandEvents([e], s, en).map((o) => o.start)).toEqual(['2026-09-15']);
+        });
+
+        it('drops an occurrence that ends exactly at the window start', () => {
+            const timed: CalEvent = { id: 't', title: 'Late', start: '2026-09-01T22:00:00', end: '2026-09-02T00:00:00', rrule: { freq: 'daily' } };
+            expect(expandEvents([timed], s, en)[0].start).toBe('2026-09-21T22:00:00');
+            // all-day end is exclusive: a Sat+Sun block ending "Mon" does not reach Monday
+            const allDay: CalEvent = { id: 'a', title: 'Weekend', start: '2026-09-05', end: '2026-09-07', allDay: true, rrule: { freq: 'weekly' } };
+            expect(expandEvents([allDay], s, en).map((o) => o.start)).toEqual(['2026-09-26']);
+        });
+
+        it('respects exdate on the overlapping occurrence', () => {
+            const e: CalEvent = { id: 'n', title: 'Night', start: '2026-09-01T22:00:00', end: '2026-09-02T06:00:00', rrule: { freq: 'daily', exdate: ['2026-09-20'] } };
+            expect(expandEvents([e], s, en)[0].start).toBe('2026-09-21T22:00:00');
+        });
+    });
 });
 
 describe('eventsToCsv', () => {
@@ -500,10 +549,23 @@ describe('eventsToCsv', () => {
 });
 
 describe('isOccurrence', () => {
-    it('detects an expanded occurrence by its "base::date" id', () => {
-        expect(isOccurrence({ id: 'r1::2026-06-24', title: 'R', start: '2026-06-24T06:00:00' })).toBe(true);
+    it('detects an expanded occurrence by its series tag, not its id', () => {
+        expect(isOccurrence({ id: 'r1::2026-06-24', title: 'R', start: '2026-06-24T06:00:00', __seriesId: 'r1', __occDate: '2026-06-24' })).toBe(true);
         expect(isOccurrence({ id: 'r1', title: 'R', start: '2026-06-24T06:00:00' })).toBe(false);
         expect(isOccurrence({ id: '', title: 'R', start: '2026-06-24' })).toBe(false);
+    });
+
+    it('a plain event whose id contains "::" is not an occurrence (#143)', () => {
+        expect(isOccurrence({ id: 'WO::1234', title: 'Work order', start: '2026-06-24T06:00:00' })).toBe(false);
+    });
+
+    it('tags occurrences of a series whose own id contains "::" with the full series id (#143)', () => {
+        const out = expandEvents<CalEvent>([
+            { id: 'line::A', title: 'R', start: '2026-06-22T06:00:00', rrule: { freq: 'daily' } }
+        ], new Date(2026, 5, 22), new Date(2026, 5, 23));
+        expect(out).toHaveLength(1);
+        expect(out[0]).toMatchObject({ id: 'line::A::2026-06-22', __seriesId: 'line::A', __occDate: '2026-06-22' });
+        expect(isOccurrence(out[0])).toBe(true);
     });
 
     it('flags exactly the events expandEvents produced from a series', () => {

@@ -26,7 +26,7 @@ interface TimelineTrackProps {
     movable: (ev: TimelineEvent) => boolean;
     eventExtent: (ev: TimelineEvent) => { startMs: number; endMs: number };
     isOccurrence: (ev: TimelineEvent) => boolean;
-    enterClass: (occId: string) => string;
+    enterClass: (ev: TimelineEvent) => string;
     onBarHover: (it: BarLayout, resourceLabel: string, e: React.MouseEvent) => void;
     onHoverEnd: () => void;
     onBarClick: (ev: TimelineEvent) => void;
@@ -79,7 +79,7 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                 return (
                     <div
                         key={`st-${it.event.id || i}`}
-                        className={`mustry-tml-band mustry-tml-band--state${statusClass(it.event)}${p.enterClass(it.event.id)}`}
+                        className={`mustry-tml-band mustry-tml-band--state${statusClass(it.event)}${p.enterClass(it.event)}`}
                         style={{ ...g, ['--ev' as string]: resolveColor(categories, it.event) } as React.CSSProperties}
                         role="button"
                         tabIndex={0}
@@ -119,7 +119,7 @@ export function TimelineTrack(p: TimelineTrackProps): React.ReactElement {
                 return (
                     <div
                         key={`b-${ev.id || i}`}
-                        className={cls.join(' ') + statusClass(ev) + p.enterClass(ev.id)}
+                        className={cls.join(' ') + statusClass(ev) + p.enterClass(ev)}
                         style={{
                             left: g.left,
                             width: g.width,

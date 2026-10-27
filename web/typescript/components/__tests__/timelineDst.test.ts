@@ -108,6 +108,19 @@ describe('recurrence normalization of absolute-instant bases', () => {
         expect(occ.some((o) => /Z|[+-]\d\d:\d\d$/.test(o.start))).toBe(false);
     });
 
+    it('keeps an offset-based night shift that runs into the window from the day before (#142)', () => {
+        // 22:00-06:00 CDT; the timeline passes the window's own zone-local day, unpadded.
+        const series = {
+            id: 'n', start: '2026-09-02T03:00:00Z', end: '2026-09-02T11:00:00Z',
+            rrule: { freq: 'daily' as const }
+        };
+        const occ = expandEvents([series], new Date(2026, 8, 21), new Date(2026, 8, 22), CHI);
+        expect(occ.map((o) => [o.start, o.end])).toEqual([
+            ['2026-09-20T22:00:00', '2026-09-21T06:00:00'],
+            ['2026-09-21T22:00:00', '2026-09-22T06:00:00']
+        ]);
+    });
+
     it('naive and date-only bases pass through the default (no-zone) path unchanged', () => {
         const naive = { id: 'n', start: '2026-06-10T09:00:00', rrule: { freq: 'daily' as const } };
         const occ = expandEvents([naive], new Date(2026, 5, 10), new Date(2026, 5, 12));

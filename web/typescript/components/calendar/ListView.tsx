@@ -12,7 +12,7 @@ interface ListViewProps {
     categories: Category[];
     emptyMessage: string;
     labels: CalLabels;
-    enterClass: (id: string) => string;
+    enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
 }
@@ -34,7 +34,7 @@ export function ListView({ cols, events, locale, categories, emptyMessage, label
                         const tm = timeMinutes(ev.start);
                         return (
                             <button
-                                type="button" className={`mustry-cal-list-event${statusClass(ev)}${enterClass(ev.id || '')}`} key={ev.id || i}
+                                type="button" className={`mustry-cal-list-event${statusClass(ev)}${enterClass(ev)}`} key={ev.id || i}
                                 onClick={(e) => onEventClick(ev, e)}
                                 {...hoverProps(ev)}
                             >
