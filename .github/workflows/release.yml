@@ -16,19 +16,17 @@ on:
   push:
     tags:
       - 'v*'
-  # Manual trigger to validate signing (and the whole build+sign path) without
-  # publishing: dry_run=true builds + signs and uploads the signed .modl as a
-  # workflow artifact, skipping the GitHub Release.
+  # Manual trigger, ALWAYS a dry run: validates signing (and the whole
+  # build+sign path), uploads the signed .modl as a workflow artifact and never
+  # creates a GitHub Release. Only a pushed vX.Y.Z tag publishes. There used to
+  # be a dry_run checkbox; unticked on a branch it tagged the branch name
+  # (e.g. `main`) and published a release from it (#118).
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to stamp (dry-run only; no tag involved)'
-        default: '0.0.0-test'
+        description: 'Version to stamp, plain x.y.z (dry run; no tag involved)'
+        default: '0.0.0'
         type: string
-      dry_run:
-        description: 'Build + sign only, no GitHub Release'
-        default: true
-        type: boolean
 
 permissions:
   contents: write   # create the release + upload the asset
@@ -42,24 +40,34 @@ jobs:
 
       - name: Derive version + publish flag
         id: ver
+        env:
+          # Through env, never as an expression inside the script: a typed
+          # version is arbitrary text and would otherwise be run as shell.
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          # Only a tag push publishes; a manual run is always a dry run.
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             version="${GITHUB_REF_NAME#v}"
-            # Policy: plain x.y.z tags only. Ignition's module.xml version
-            # parser is numeric-only — a prerelease suffix (v0.4.0-beta.1)
-            # produces a .modl the gateway rejects at install (a class of
-            # failure the observability module shipped once). Bump the patch
-            # number instead.
-            if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "::error::Tag version '$version' is not plain x.y.z — prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
-              exit 1
-            fi
-            echo "version=$version" >> "$GITHUB_OUTPUT"
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            publish=true
           else
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "publish=${{ !inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+            version="$INPUT_VERSION"
+            publish=false
           fi
+          # Policy: plain x.y.z only, for tags and typed versions alike.
+          # Ignition's module.xml version parser is numeric-only: a prerelease
+          # suffix (v0.4.0-beta.1) produces a .modl the gateway rejects at
+          # install (a class of failure the observability module shipped
+          # once). Bump the patch number instead.
+          # A bash match covers the whole string, so a typed value with a
+          # newline cannot slip an extra line into $GITHUB_OUTPUT (a line-based
+          # grep would pass it as long as one line looked valid).
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            shown="$(printf '%s' "$version" | tr -c '[:alnum:]._-' '?')"
+            echo "::error::Version '$shown' is not plain x.y.z. Prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -102,9 +110,10 @@ jobs:
       - name: Build & sign the module
         env:
           ORG_GRADLE_PROJECT_org.gradle.java.installations.auto-download: "false"
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
           ./gradlew clean build --no-daemon --stacktrace \
-            -PreleaseVersion="${{ steps.ver.outputs.version }}" \
+            -PreleaseVersion="$VERSION" \
             -Pignition.signing.keystoreFile="$RUNNER_TEMP/keystore.p12" \
             -Pignition.signing.keystorePassword="${{ secrets.SIGNING_KEYSTORE_PASSWORD }}" \
             -Pignition.signing.certFile="$RUNNER_TEMP/cert.pem" \
@@ -146,19 +155,26 @@ jobs:
 
       - name: Extract release notes
         if: ${{ steps.ver.outputs.publish == 'true' }}
-        run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: python3 ops/changelog-notes.py "$VERSION" > "$RUNNER_TEMP/notes.md"
 
+      # The tag check repeats the publish flag on purpose: `gh release create`
+      # takes $GITHUB_REF_NAME as the tag, so this step must never run on a
+      # branch ref, whatever the flag says.
       - name: Publish GitHub Release
-        if: ${{ steps.ver.outputs.publish == 'true' }}
+        if: ${{ steps.ver.outputs.publish == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          MODL_PATH: ${{ steps.modl.outputs.path }}
         run: |
           # Draft first, publish only once every asset attached — a failed
           # upload must never leave a half-public release.
           gh release create "$GITHUB_REF_NAME" \
-            --title "v${{ steps.ver.outputs.version }}" \
+            --title "v$VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --draft \
-            "${{ steps.modl.outputs.path }}" \
+            "$MODL_PATH" \
             build/user_manual.pdf
           gh release edit "$GITHUB_REF_NAME" --draft=false
