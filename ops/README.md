@@ -33,9 +33,11 @@ certificate is stable across rebuilds — so redeploys (`ops/deploy.sh`) reload 
 module with no prompt. You only commission again after `teardown.sh --purge`.
 
 > **Ports:** the gateway is published on host port **9088** (HTTPS 9043) by default,
-> set in [`../.env`](../.env). The default 8088 was already in use locally. To change
-> it, edit `GATEWAY_HTTP_PORT` in `../.env` — the gateway still listens on 8088 inside
-> the container, so only the published host port changes.
+> the defaults in `../docker-compose.yml`. To change it for one run, set it in the
+> shell (`GATEWAY_HTTP_PORT=9288 ops/e2e.sh --fresh`). To change it for good, put
+> `GATEWAY_HTTP_PORT` / `GATEWAY_HTTPS_PORT` in a local `../.env` (gitignored). The
+> shell wins over `.env`, the same rule compose uses. The gateway still listens on
+> 8088 inside the container, so only the published host port changes.
 
 > The Ignition gateway runs in **trial mode** (no license). Perspective works in
 > trial; the trial resets every 2 hours — just click "reset trial" in the gateway.
@@ -99,6 +101,7 @@ ops/teardown.sh     # stop when done (keeps state)
   a quarantined module can also be accepted under **Config → Modules**.
 - **Wrong / stale version:** `ops/teardown.sh --purge && ops/setup.sh` for a clean cycle.
 - **Port already in use:** another service (maybe another gateway) is using the host
-  port. Change `GATEWAY_HTTP_PORT` (and `GATEWAY_HTTPS_PORT`) in `../.env`, then re-run.
+  port. Set `GATEWAY_HTTP_PORT` (and `GATEWAY_HTTPS_PORT`) in the shell or in a local
+  `../.env`, then re-run.
 - **Gateway slow to start:** first launch initializes the database; give it a minute
   and watch `ops/logs.sh`.

@@ -16,50 +16,94 @@ on:
   push:
     tags:
       - 'v*'
-  # Manual trigger to validate signing (and the whole build+sign path) without
-  # publishing: dry_run=true builds + signs and uploads the signed .modl as a
-  # workflow artifact, skipping the GitHub Release.
+  # Manual trigger, ALWAYS a dry run: validates signing (and the whole
+  # build+sign path), uploads the signed .modl as a workflow artifact and never
+  # creates a GitHub Release. Only a pushed vX.Y.Z tag publishes. There used to
+  # be a dry_run checkbox; unticked on a branch it tagged the branch name
+  # (e.g. `main`) and published a release from it (#118).
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to stamp (dry-run only; no tag involved)'
-        default: '0.0.0-test'
+        description: 'Version to stamp, plain x.y.z (dry run; no tag involved)'
+        default: '0.0.0'
         type: string
-      dry_run:
-        description: 'Build + sign only, no GitHub Release'
-        default: true
-        type: boolean
 
+# Read-only by default; only the job that publishes gets write access.
 permissions:
-  contents: write   # create the release + upload the asset
+  contents: read
 
 jobs:
-  release:
-    name: Build, sign & publish
+  # The user manual is its own job because building it runs code fetched at
+  # build time (npx md-to-pdf, @puppeteer/browsers, Chrome for Testing). Here
+  # it runs on a separate runner that never sees the signing secrets and only
+  # holds a read-only token. Moving the step earlier in the signing job would
+  # not be enough: a step can write $GITHUB_ENV / $GITHUB_PATH or the Gradle
+  # home and so run code in the later signing step.
+  prepare:
+    name: Version & user manual
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      publish: ${{ steps.ver.outputs.publish }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Derive version + publish flag
         id: ver
+        env:
+          # Through env, never as an expression inside the script: a typed
+          # version is arbitrary text and would otherwise be run as shell.
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          # Only a tag push publishes; a manual run is always a dry run.
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             version="${GITHUB_REF_NAME#v}"
-            # Policy: plain x.y.z tags only. Ignition's module.xml version
-            # parser is numeric-only — a prerelease suffix (v0.4.0-beta.1)
-            # produces a .modl the gateway rejects at install (a class of
-            # failure the observability module shipped once). Bump the patch
-            # number instead.
-            if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "::error::Tag version '$version' is not plain x.y.z — prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
-              exit 1
-            fi
-            echo "version=$version" >> "$GITHUB_OUTPUT"
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            publish=true
           else
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "publish=${{ !inputs.dry_run }}" >> "$GITHUB_OUTPUT"
+            version="$INPUT_VERSION"
+            publish=false
           fi
+          # Policy: plain x.y.z only, for tags and typed versions alike.
+          # Ignition's module.xml version parser is numeric-only: a prerelease
+          # suffix (v0.4.0-beta.1) produces a .modl the gateway rejects at
+          # install (a class of failure the observability module shipped
+          # once). Bump the patch number instead.
+          # A bash match covers the whole string, so a typed value with a
+          # newline cannot slip an extra line into $GITHUB_OUTPUT (a line-based
+          # grep would pass it as long as one line looked valid).
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            shown="$(printf '%s' "$version" | tr -c '[:alnum:]._-' '?')"
+            echo "::error::Version '$shown' is not plain x.y.z. Prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - name: Build the user-manual PDF
+        # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
+        # scripts/build_manual_pdf.sh. Runs on dry runs too so the pipeline
+        # itself stays release-gating. Attached to the release by the next job.
+        env:
+          MANUAL_VERSION: ${{ steps.ver.outputs.version }}
+        run: scripts/build_manual_pdf.sh
+
+      - name: Upload the user-manual PDF
+        uses: actions/upload-artifact@v7
+        with:
+          name: user-manual
+          path: build/user_manual.pdf
+          if-no-files-found: error
+
+  release:
+    name: Build, sign & publish
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the release + upload the asset
+    steps:
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -67,41 +111,65 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cache Gradle
+      # Same Gradle and Node caching as ci.yml (see the comments there). The
+      # open-source `basic` provider on purpose: this job holds the signing key.
+      # A tag run reads the Gradle cache main wrote and does not write it back.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Cache Node and npm
         uses: actions/cache@v6
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'web/package-lock.json') }}
-          restore-keys: gradle-${{ runner.os }}-
+            web/.gradle/nodejs
+            ~/.npm
+          key: node-build-${{ runner.os }}-${{ hashFiles('web/build.gradle.kts', 'web/package-lock.json') }}
+          restore-keys: node-build-${{ runner.os }}-
 
+      # Checks all five secrets up front, so a missing password or alias fails
+      # here by name instead of later as an unclear Gradle signing error.
       - name: Decode signing material
         env:
-          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
-          CERT_B64: ${{ secrets.SIGNING_CERT_B64 }}
+          SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          SIGNING_CERT_B64: ${{ secrets.SIGNING_CERT_B64 }}
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_CERT_ALIAS: ${{ secrets.SIGNING_CERT_ALIAS }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_B64" ] || [ -z "$CERT_B64" ]; then
-            echo "::error::Signing secrets missing. Add SIGNING_KEYSTORE_B64, SIGNING_CERT_B64, SIGNING_KEYSTORE_PASSWORD, SIGNING_CERT_ALIAS, SIGNING_CERT_PASSWORD (see RELEASING.md)."
+          missing=()
+          for name in SIGNING_KEYSTORE_B64 SIGNING_CERT_B64 SIGNING_KEYSTORE_PASSWORD SIGNING_CERT_ALIAS SIGNING_CERT_PASSWORD; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Signing secrets missing: ${missing[*]}. Add them under Settings > Secrets and variables > Actions (see RELEASING.md)."
             exit 1
           fi
-          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/keystore.p12"
-          printf '%s' "$CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.pem"
+          printf '%s' "$SIGNING_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$SIGNING_CERT_B64" | base64 -d > "$RUNNER_TEMP/cert.pem"
 
       # `build` runs jest via `check`; the e2e job on the tagged commit already
       # passed on main (branch protection guarantees it), so the release build
       # signs the artifact rather than re-booting a gateway.
+      # Secrets come in through env and are quoted, so a password containing
+      # `"`, `$` or a backtick reaches Gradle as-is instead of being parsed by
+      # the shell.
       - name: Build & sign the module
         env:
           ORG_GRADLE_PROJECT_org.gradle.java.installations.auto-download: "false"
+          VERSION: ${{ needs.prepare.outputs.version }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          CERT_ALIAS: ${{ secrets.SIGNING_CERT_ALIAS }}
+          CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: |
           ./gradlew clean build --no-daemon --stacktrace \
-            -PreleaseVersion="${{ steps.ver.outputs.version }}" \
+            -PreleaseVersion="$VERSION" \
             -Pignition.signing.keystoreFile="$RUNNER_TEMP/keystore.p12" \
-            -Pignition.signing.keystorePassword="${{ secrets.SIGNING_KEYSTORE_PASSWORD }}" \
+            -Pignition.signing.keystorePassword="$KEYSTORE_PASSWORD" \
             -Pignition.signing.certFile="$RUNNER_TEMP/cert.pem" \
-            -Pignition.signing.certAlias="${{ secrets.SIGNING_CERT_ALIAS }}" \
-            -Pignition.signing.certPassword="${{ secrets.SIGNING_CERT_PASSWORD }}"
+            -Pignition.signing.certAlias="$CERT_ALIAS" \
+            -Pignition.signing.certPassword="$CERT_PASSWORD"
 
       - name: Locate the signed .modl
         id: modl
@@ -111,46 +179,60 @@ jobs:
           echo "path=$f" >> "$GITHUB_OUTPUT"
 
       - name: Verify the signature
+        env:
+          MODL_PATH: ${{ steps.modl.outputs.path }}
         run: |
-          echo "Signed artifact: ${{ steps.modl.outputs.path }}"
+          echo "Signed artifact: $MODL_PATH"
           # A signed Ignition .modl carries certificates.p7b + signatures.properties
           # (an unsigned one has neither) — not a JAR-style META-INF block.
-          names="$(unzip -l "${{ steps.modl.outputs.path }}")"
-          echo "$names" | grep -q 'certificates.p7b' && echo "$names" | grep -q 'signatures.properties' \
-            && echo "signature present (certificates.p7b + signatures.properties)" \
-            || (echo "::error::.modl is not signed (missing certificates.p7b / signatures.properties)"; exit 1)
+          names="$(unzip -l "$MODL_PATH")"
+          if echo "$names" | grep -q 'certificates.p7b' && echo "$names" | grep -q 'signatures.properties'; then
+            echo "signature present (certificates.p7b + signatures.properties)"
+          else
+            echo "::error::.modl is not signed (missing certificates.p7b / signatures.properties)"
+            exit 1
+          fi
 
       # Dry run (workflow_dispatch): keep the signed .modl as an artifact instead
       # of publishing — the way to confirm the signing secrets work.
       - name: Upload signed .modl (dry run)
-        if: ${{ steps.ver.outputs.publish != 'true' }}
+        if: ${{ needs.prepare.outputs.publish != 'true' }}
         uses: actions/upload-artifact@v7
         with:
-          name: signed-modl-${{ steps.ver.outputs.version }}
+          name: signed-modl-${{ needs.prepare.outputs.version }}
           path: ${{ steps.modl.outputs.path }}
           if-no-files-found: error
 
-      - name: Build the user-manual PDF
-        # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
-        # scripts/build_manual_pdf.sh — runs on dry runs too so the pipeline
-        # itself stays release-gating. Attached to the release below.
-        run: scripts/build_manual_pdf.sh
+      # After the build on purpose: `gradlew clean` wipes build/. Runs on dry
+      # runs too, so they exercise the hand-off from the prepare job.
+      - name: Download the user-manual PDF
+        uses: actions/download-artifact@v8
+        with:
+          name: user-manual
+          path: build
 
       - name: Extract release notes
-        if: ${{ steps.ver.outputs.publish == 'true' }}
-        run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+        if: ${{ needs.prepare.outputs.publish == 'true' }}
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: python3 ops/changelog-notes.py "$VERSION" > "$RUNNER_TEMP/notes.md"
 
+      # The tag check repeats the publish flag on purpose: `gh release create`
+      # takes $GITHUB_REF_NAME as the tag, so this step must never run on a
+      # branch ref, whatever the flag says.
       - name: Publish GitHub Release
-        if: ${{ steps.ver.outputs.publish == 'true' }}
+        if: ${{ needs.prepare.outputs.publish == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          MODL_PATH: ${{ steps.modl.outputs.path }}
         run: |
           # Draft first, publish only once every asset attached — a failed
           # upload must never leave a half-public release.
           gh release create "$GITHUB_REF_NAME" \
-            --title "v${{ steps.ver.outputs.version }}" \
+            --title "v$VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --draft \
-            "${{ steps.modl.outputs.path }}" \
+            "$MODL_PATH" \
             build/user_manual.pdf
           gh release edit "$GITHUB_REF_NAME" --draft=false

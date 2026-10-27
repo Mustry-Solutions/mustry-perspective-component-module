@@ -196,7 +196,8 @@ PY
 CACHE_DIR="${PUPPETEER_CACHE_DIR:-$HOME/.cache/puppeteer}"
 mkdir -p "$CACHE_DIR"
 echo "Ensuring Chrome-for-Testing in $CACHE_DIR ..."
-CHROME_PATH="$(npx --yes @puppeteer/browsers@latest install chrome@stable --path "$CACHE_DIR" \
+# Pinned like md-to-pdf below: `@latest` ran whatever was published that day.
+CHROME_PATH="$(npx --yes @puppeteer/browsers@3.2.4 install chrome@stable --path "$CACHE_DIR" \
   | tail -1 | sed -E 's/^chrome@[^ ]+ //')"
 echo "Using Chrome: $CHROME_PATH"
 

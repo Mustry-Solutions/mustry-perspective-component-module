@@ -1,6 +1,7 @@
 import {
-    clampAlpha, formatColor, formatHex, formatHsl, formatRgb, hslToRgb, hsvToRgb,
-    isLight, normalizeHue, parseColor, parseHex, rgbToHsl, rgbToHsv, round, Color
+    canonicalColor, clampAlpha, formatColor, formatHex, formatHsl, formatRgb, hslToRgb, hsvToRgb,
+    isLight, normalizeHue, parseColor, parseHex, rgbToHsl, rgbToHsv, rgbToHsvNear, round, Color,
+    ColorFormat
 } from '../color/colorLogic';
 
 const c = (r: number, g: number, b: number, alpha = 1): Color => ({ rgb: { r, g, b }, alpha });
@@ -77,6 +78,101 @@ describe('formatting', () => {
         expect(formatColor(col, 'hex', true)).toBe('#ff880080');
         expect(formatColor(col, 'rgb', true)).toBe('rgba(255, 136, 0, 0.5)');
         expect(formatColor(col, 'hsl', true)).toBe(formatHsl(col, true));
+    });
+});
+
+describe('formatted strings round-trip (#154)', () => {
+    const FORMATS: ColorFormat[] = ['hex', 'rgb', 'hsl'];
+
+    it('hsl keeps the default swatch #12b886 (whole numbers gave #12ba87)', () => {
+        const green = parseHex('#12b886')!;
+        const value = formatColor(green, 'hsl', true);
+        expect(formatHex(parseColor(value)!, true)).toBe('#12b886');
+    });
+
+    it('every format round-trips a dense sample of 8-bit colours', () => {
+        // The full 16.7M cube was checked once offline (1 decimal is the
+        // minimum for hsl); a stride of 5 plus the greys keeps jest fast.
+        const levels: number[] = [];
+        for (let v = 0; v < 256; v += 5) {
+            levels.push(v);
+        }
+        const failures: string[] = [];
+        const check = (r: number, g: number, b: number): void => {
+            FORMATS.forEach((f) => {
+                const value = formatColor(c(r, g, b), f, true);
+                const back = parseColor(value)!.rgb;
+                if (back.r !== r || back.g !== g || back.b !== b) {
+                    failures.push(`${f} ${r},${g},${b} -> ${value}`);
+                }
+            });
+        };
+        levels.forEach((r) => levels.forEach((g) => levels.forEach((b) => check(r, g, b))));
+        for (let v = 0; v < 256; v++) {
+            check(v, v, v);
+        }
+        expect(failures).toEqual([]);
+    });
+
+    it('every 8-bit alpha survives rgba() and hsla() (2 decimals shifted 155 of 256)', () => {
+        const shifted: string[] = [];
+        for (let n = 0; n < 255; n++) {
+            FORMATS.forEach((f) => {
+                const value = formatColor(c(18, 184, 134, n / 255), f, true);
+                if (Math.round(parseColor(value)!.alpha * 255) !== n) {
+                    shifted.push(`${f} ${n} -> ${value}`);
+                }
+            });
+        }
+        expect(shifted).toEqual([]);
+    });
+});
+
+describe('canonicalColor', () => {
+    it('returns the committed string and the colour it parses back to', () => {
+        const { value, color } = canonicalColor(parseHex('#12b886')!, 'hsl', true);
+        expect(value).toBe(formatHsl(parseHex('#12b886')!, true));
+        expect(color).toEqual(parseColor(value));
+        expect(formatHex(color, true)).toBe('#12b886');
+    });
+
+    it('quantises a free slider alpha the same way the string does', () => {
+        // The alpha bar yields any 0..1 number; the hex byte of the raw value
+        // (0.0019 * 255 = 0.48 -> 00) and of the written rgba (0.002 -> 01)
+        // differ, so the payload must come from the parsed string.
+        const { value, color } = canonicalColor(c(10, 20, 30, 0.0019), 'rgb', true);
+        expect(value).toBe('rgba(10, 20, 30, 0.002)');
+        expect(formatHex(color, true)).toBe(formatHex(parseColor(value)!, true));
+    });
+
+    it('drops alpha from the colour when the format omits it', () => {
+        const { value, color } = canonicalColor(c(10, 20, 30, 0.5), 'hex', false);
+        expect(value).toBe('#0a141e');
+        expect(color).toEqual(c(10, 20, 30));
+    });
+});
+
+describe('rgbToHsvNear', () => {
+    it('keeps the previous hue for a grey (fresh derivation says hue 0)', () => {
+        const prev = { h: 200, s: 60, v: 70 };
+        expect(rgbToHsvNear({ r: 128, g: 128, b: 128 }, prev)).toEqual({ h: 200, s: 0, v: rgbToHsv({ r: 128, g: 128, b: 128 }).v });
+    });
+
+    it('keeps the previous hue and saturation for black', () => {
+        expect(rgbToHsvNear({ r: 0, g: 0, b: 0 }, { h: 200, s: 60, v: 70 })).toEqual({ h: 200, s: 60, v: 0 });
+    });
+
+    it('keeps the previous HSV untouched when it already renders to the colour', () => {
+        // A drag released on a grey: the committed colour is exactly what the
+        // working copy showed, so no slider may move.
+        const prev = { h: 213.5, s: 0, v: 41.7 };
+        expect(rgbToHsvNear(hsvToRgb(prev), prev)).toEqual(prev);
+    });
+
+    it('derives fresh HSV for a chromatic colour or without a previous value', () => {
+        const red = { r: 255, g: 0, b: 0 };
+        expect(rgbToHsvNear(red, { h: 200, s: 60, v: 70 })).toEqual(rgbToHsv(red));
+        expect(rgbToHsvNear({ r: 0, g: 0, b: 0 }, null)).toEqual(rgbToHsv({ r: 0, g: 0, b: 0 }));
     });
 });
 
