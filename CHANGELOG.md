@@ -15,6 +15,16 @@ day and nothing after (#146). The band now covers every day the event
 crosses in the week and day views, clamped to `dayStartHour`..`dayEndHour`
 like any other event.
 
+### Fixed: Calendar move or resize jumped an event that ran past the visible hours
+Dragging an event that extends beyond `dayStartHour`..`dayEndHour` clamped
+its real times to the visible window (#147). With hours 06 to 18, moving a
+17:00 to 20:00 event down 15 minutes landed it at 15:00 to 18:00, and
+stretching its end by 15 minutes cut it to 18:00. The drag now shifts the
+real start and end (17:15 to 20:15, and an end of 20:15), and `onChange`
+carries those times. Only the ghost is clipped to the grid; its label shows
+the real times. An edge still stays within its day and at least one slot of
+the event stays on the grid.
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on

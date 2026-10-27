@@ -50,27 +50,48 @@ export function cellAt(cells: CellBound[], x: number, y: number): CellBound | nu
  *  calendar's single pure-logic surface (and its tests in one place). */
 export { hasMoved } from '../../shared/dragGestureController';
 
-/** Move: shift the block by `deltaMin`, clamped so it stays fully within the day window. */
-export function movePreview(origStartMin: number, durationMin: number, deltaMin: number, winStart: number, winEnd: number): MinuteRange {
-    const startMin = Math.max(winStart, Math.min(winEnd - durationMin, origStartMin + deltaMin));
+const DAY_MIN = 24 * 60;
+
+// Move and resize work on the event's real minutes, which may lie outside the visible
+// window (dayStartHour..dayEndHour): clamping them to the window made an event that
+// runs past it jump or lose its tail on the first drag step (#147). Only the drawn
+// ghost is clamped (visibleSpan). The real minutes stay within the event's day, so the
+// committed times stay valid, and keep at least a slot on the grid, so the ghost can't
+// vanish when the pointer leaves it. Neither bound pulls an edge off where it started.
+
+/** Move: shift the block by `deltaMin`, keeping its duration. */
+export function movePreview(
+    origStartMin: number, durationMin: number, deltaMin: number, winStart: number, winEnd: number, snapMin: number
+): MinuteRange {
+    const keep = Math.min(durationMin, snapMin);
+    const lo = Math.min(origStartMin, Math.max(0, winStart + keep - durationMin));
+    const hi = Math.max(origStartMin, Math.min(DAY_MIN - durationMin, winEnd - keep));
+    const startMin = Math.max(lo, Math.min(hi, origStartMin + deltaMin));
     return { startMin, endMin: startMin + durationMin };
 }
 
 /** Which edge of an event a resize gesture grabbed. */
 export type ResizeEdge = 'start' | 'end';
 
-/** Resize one edge by `deltaMin`, keeping at least `snapMin` of duration and clamping
- *  to the window (the untouched edge stays put, matching the timeline's semantics). */
+/** Resize one edge by `deltaMin`, keeping at least `snapMin` of duration (the
+ *  untouched edge stays put, matching the timeline's semantics). */
 export function resizePreview(
     edge: ResizeEdge, origStartMin: number, origEndMin: number, deltaMin: number,
     winStart: number, winEnd: number, snapMin: number
 ): MinuteRange {
     if (edge === 'start') {
-        const startMin = Math.min(origEndMin - snapMin, Math.max(winStart, origStartMin + deltaMin));
+        const hi = Math.min(origEndMin - snapMin, Math.max(origStartMin, winEnd - snapMin));
+        const startMin = Math.max(0, Math.min(hi, origStartMin + deltaMin));
         return { startMin, endMin: origEndMin };
     }
-    const endMin = Math.max(origStartMin + snapMin, Math.min(winEnd, origEndMin + deltaMin));
+    const lo = Math.max(origStartMin + snapMin, Math.min(origEndMin, winStart + snapMin));
+    const endMin = Math.max(lo, Math.min(Math.max(origEndMin, DAY_MIN), origEndMin + deltaMin));
     return { startMin: origStartMin, endMin };
+}
+
+/** The part of a preview the grid draws: its minutes clamped to the visible window. */
+export function visibleSpan(startMin: number, endMin: number, winStart: number, winEnd: number): MinuteRange {
+    return { startMin: Math.max(startMin, winStart), endMin: Math.min(endMin, winEnd) };
 }
 
 /** Whether a committed resize preview is a no-op (snapping pulled the edge back to
