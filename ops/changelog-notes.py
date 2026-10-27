@@ -8,8 +8,10 @@ release page opens as a short list of what changed and the full write-up is one
 click away. Text above the first `### ` stays in view.
 
 Usage: ops/changelog-notes.py 0.2.0 [path/to/CHANGELOG.md]
-Exit 0 with the section on stdout; exit 0 with a short fallback if not found
-(a release should still publish even if the notes lookup misses)."""
+Exit 0 with the section on stdout. Exit 1 with an error on stderr if the
+section is missing or empty: the release workflow only calls this when it is
+about to publish, and a tag pushed without the CHANGELOG step must not
+publish a release with placeholder notes."""
 import html
 import re
 import sys
@@ -73,7 +75,14 @@ def main() -> int:
     path = sys.argv[2] if len(sys.argv) > 2 else "CHANGELOG.md"
     with open(path, encoding="utf-8") as f:
         body = section(f.read(), version)
-    print(fold(body) if body else f"Release {version}. See CHANGELOG.md for details.")
+    if not body:
+        print(
+            f"changelog-notes: no '## [{version.lstrip('v')}]' section with content in {path}. "
+            "Rename '## [Unreleased]' to the release version (RELEASING.md step 1) before tagging.",
+            file=sys.stderr,
+        )
+        return 1
+    print(fold(body))
     return 0
 
 

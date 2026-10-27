@@ -135,7 +135,7 @@ export class CalendarGestureController extends DragGestureController<Gesture, Pr
                 return;
             }
             const col = this.colAt(e.clientX) || this.colRects.filter((c) => c.day === g.origDayIso)[0];
-            const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd);
+            const { startMin, endMin } = movePreview(g.origStartMin, g.durationMin, deltaMin, winStart, winEnd, slotMinutes);
             this.setPreview({ mode: 'move', eventId: g.ev!.id, title: g.ev!.title, color: this.host.resolveColor(g.ev!), dayIso: col.day, startMin, endMin });
         } else if (g.mode === 'resize') {
             const { startMin, endMin } = resizePreview(g.edge || 'end', g.origStartMin, g.origEndMin, deltaMin, winStart, winEnd, slotMinutes);

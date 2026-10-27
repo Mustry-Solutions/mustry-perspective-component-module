@@ -30,6 +30,37 @@ written while typing: it used to be clamped, so typing `15` with min 10 wrote
 number the operator typed, the out-of-range badge shows meanwhile, and Enter
 still clamps.
 
+### Fixed: Calendar multi-day background events only showed on their first day
+A background event spanning midnight, such as a maintenance window from
+20:00 one day to 06:00 two days later, drew only 20:00 to 24:00 on its first
+day and nothing after (#146). The band now covers every day the event
+crosses in the week and day views, clamped to `dayStartHour`..`dayEndHour`
+like any other event.
+
+### Fixed: Calendar move or resize jumped an event that ran past the visible hours
+Dragging an event that extends beyond `dayStartHour`..`dayEndHour` clamped
+its real times to the visible window (#147). With hours 06 to 18, moving a
+17:00 to 20:00 event down 15 minutes landed it at 15:00 to 18:00, and
+stretching its end by 15 minutes cut it to 18:00. The drag now shifts the
+real start and end (17:15 to 20:15, and an end of 20:15), and `onChange`
+carries those times. Only the ghost is clipped to the grid; its label shows
+the real times. An edge still stays within its day and at least one slot of
+the event stays on the grid.
+
+### Fixed: Code Editor ignored runtime changes to `config.enabled` and `mode`
+Binding `config.enabled` (to a permission, say) disabled the toolbar but left
+the document editable, and edits still marked it dirty. The other way round,
+an editor that mounted disabled stayed read-only until it was remounted
+(#135). Changing `config.enabled` or `config.mode` now switches the editor
+between editable and read-only in place, keeping the undo history and cursor.
+
+### Fixed: Rich Text and Code Editor lost typing done right after Save
+If the operator kept typing after pressing Save, the author's write-back
+marked the editor clean anyway: Save/Discard disappeared, `output.isDirty`
+went false, and the next change to the bound document replaced the unsaved
+text (#134). When a save lands, the editor now only turns clean if it still
+holds what was saved. Otherwise it stays dirty and keeps the typing.
+
 ### Fixed: Data Grid sent a stale pending edit with a new record that reused the id
 A pending edit stayed while its row was missing from `data.rows`. When a
 different record later arrived with the same id, the old value showed in its
