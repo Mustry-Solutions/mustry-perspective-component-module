@@ -114,6 +114,17 @@ describe('zone-local snapping', () => {
         expect(snap('2026-01-15T06:10:00+01:00', 1440, BRU)).toBe('2026-01-15T00:00:00+01:00');
         expect(snap('2026-01-15T18:10:00+01:00', 1440, BRU)).toBe('2026-01-16T00:00:00+01:00');
     });
+    it('a step that does not divide 24 h restarts at each zone midnight', () => {
+        // 7 h grid: 00, 07, 14, 21. Next midnight is 10 min away, 21:00 is 2 h 50 away.
+        expect(snap('2026-01-15T23:50:00+01:00', 420, BRU)).toBe('2026-01-16T00:00:00+01:00');
+        expect(snap('2026-01-16T00:20:00+01:00', 420, BRU)).toBe('2026-01-16T00:00:00+01:00');
+        // A 13:00 bar keeps its 6 h phase: lines at 06, 13, 20 each day, never 03:00 or 23:00.
+        const move = (deltaMin: number): string => msToZonedIso(movePreviewMs(
+            at('2026-01-15T13:00:00+01:00'), at('2026-01-15T14:00:00+01:00'), deltaMin * MIN, 420, BRU).startMs, BRU);
+        expect(move(10 * 60 + 50)).toBe('2026-01-15T20:00:00+01:00');   // to 23:50
+        expect(move(11 * 60 + 30)).toBe('2026-01-15T20:00:00+01:00');   // to 00:30 next day
+        expect(move(16 * 60 + 50)).toBe('2026-01-16T06:00:00+01:00');   // to 05:50 next day
+    });
     it('drag-create with an 8 h snap lands on the zone grid', () => {
         expect(range(createPreviewMs(at('2026-07-01T06:00:00+02:00'), at('2026-07-01T13:50:00+02:00'), 480, BRU), BRU))
             .toEqual(['2026-07-01T08:00:00+02:00', '2026-07-01T16:00:00+02:00']);

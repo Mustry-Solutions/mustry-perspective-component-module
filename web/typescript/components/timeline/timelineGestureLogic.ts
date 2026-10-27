@@ -32,7 +32,8 @@ function wallMs(ms: number, timeZone: string): number {
  * instants an hour apart, and before a spring-forward gap the next grid line
  * may be the jump itself. So the grid neighbours are taken under every offset
  * the zone has near `ms`, and only those the zone really shows at that instant
- * are kept.
+ * are kept. Each day's grid restarts at its midnight, so with a step that does
+ * not divide 24 h the line after a day's last one is the next day's first.
  */
 function snapToWallGrid(ms: number, step: number, timeZone: string, phaseMs: number): number {
     const span = step + MS_PER_DAY;
@@ -47,9 +48,14 @@ function snapToWallGrid(ms: number, step: number, timeZone: string, phaseMs: num
     let bestDist = Infinity;
     for (const off of offsets) {
         const wall = ms + off;
-        const midnight = Math.floor(wall / MS_PER_DAY) * MS_PER_DAY;
-        const lo = midnight + phaseMs + Math.floor((wall - midnight - phaseMs) / step) * step;
-        for (const gridWall of [lo, lo + step]) {
+        let midnight = Math.floor(wall / MS_PER_DAY) * MS_PER_DAY;
+        if (wall < midnight + phaseMs) {
+            midnight -= MS_PER_DAY;   // before today's first line: the line below is yesterday's last
+        }
+        const lastK = Math.floor((MS_PER_DAY - 1 - phaseMs) / step);
+        const lo = midnight + phaseMs + Math.min(Math.floor((wall - midnight - phaseMs) / step), lastK) * step;
+        const hi = lo + step < midnight + MS_PER_DAY ? lo + step : midnight + MS_PER_DAY + phaseMs;
+        for (const gridWall of [lo, hi]) {
             const x = gridWall - off;
             const dist = Math.abs(x - ms);
             // Ties go to the later instant, like Math.round.
