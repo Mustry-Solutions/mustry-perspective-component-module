@@ -132,6 +132,9 @@ carries the row, column and new value; your script persists. Typed and
 pasted numbers follow `config.locale` (empty = the browser's): `1,234.5`
 in `en`, `1.234,5` in `de`. Input that is malformed or ambiguous for that
 locale, such as `4,5` in `en`, shows an error instead of being guessed.
+Every row needs its own `config.idField` value: a row without one, or
+sharing one with another row, is shown read-only and can't be selected or
+deleted.
 
 ## 8. Pan & Zoom View
 
