@@ -255,7 +255,7 @@ An editable virtualized data grid. Component id `mustrysolutions.perspective.inp
 
 ### How editing works
 
-Same philosophy as the calendar/timeline: **controlled, read-from-data**. Committed edits overlay the display (`pending`) until a `data.rows` update shows that cell with the new value (your write-back landed) or with any other new value (you stored something else, so the bound data wins). Your `onCellEdit`/`onBatchSave` script persists and rebinds; the demo at `/grid` in the verify project ships a complete write-back script for both modes.
+Same philosophy as the calendar/timeline: **controlled, read-from-data**. Committed edits overlay the display (`pending`) until a `data.rows` update shows that cell with the new value (your write-back landed) or with any other new value (you stored something else, so the bound data wins). An edit whose row leaves `data.rows` is dropped, so it can't attach to a later row that reuses the id; in batch mode, an unsaved edit doesn't come back if its row briefly disappears (for example from a polling query) before Save. Your `onCellEdit`/`onBatchSave` script persists and rebinds; the demo at `/grid` in the verify project ships a complete write-back script for both modes.
 
 Edits, selection and deletes address rows by `config.idField`, so every row needs its own value there. A row without one, or sharing one with another row, stays visible but read-only: it can't be selected, edited or deleted, and when the grid can select, edit or delete it logs a console warning naming the problem (usually an `idField` whose case doesn't match the query's column).
 

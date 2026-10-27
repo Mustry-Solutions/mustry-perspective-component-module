@@ -30,6 +30,16 @@ written while typing: it used to be clamped, so typing `15` with min 10 wrote
 number the operator typed, the out-of-range badge shows meanwhile, and Enter
 still clamps.
 
+### Fixed: Data Grid sent a stale pending edit with a new record that reused the id
+A pending edit stayed while its row was missing from `data.rows`. When a
+different record later arrived with the same id, the old value showed in its
+cell and, in cell mode, was sent in `onCellEdit`'s `row` with that record's
+next edit, so a write-back that persists the whole row stored it (#216). A
+pending edit is now dropped once its row leaves `data.rows`. In batch mode
+this means an unsaved edit no longer comes back if its row disappears and
+returns before Save, for example a polling query that briefly filters it out.
+Save already skipped edits whose row was gone.
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on
