@@ -8,6 +8,26 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Rich Text Editor image size cap and URL policy skipped for pasted HTML and bound content
+`config.maxImageKb` and the image URL policy only applied to the toolbar and
+to pasted image files (#137). Pasted HTML or `data.content` could carry a
+multi-MB `data:image/...` or a source outside the policy, and Save then stored
+it for every session. The editor now checks every image when it parses a
+document and again when it renders one. An image that fails is dropped. The
+toolbar's URL field and image library get the same size cap. Bound content
+that already holds such an image loads without it and is not marked dirty.
+The stored document only changes when the operator next saves.
+
+### Fixed: Rich Text Editor rejected over-limit multi-paragraph pastes
+With `config.charLimit` set, pasting several paragraphs that went over the
+limit usually inserted nothing (#168). For example, with a limit of 5, pasting
+`abcdef` and `g` into an empty editor did nothing. The trim only shortened
+the last pasted paragraph, so the paste stayed over the limit and was
+rejected. The editor now trims from the end of the paste back through earlier
+paragraphs, a whole character (emoji included) at a time, and removes a
+trailing pasted image when needed. The paste is cut to fit the limit instead
+of dropped. Text outside the paste is never trimmed.
+
 ### Fixed: Calendar and Timeline treated any event id containing `::` as a recurring occurrence
 Occurrence-ness was read from the id: anything with `::` counted as
 `<seriesId>::<date>` (#143). A plain event with an id such as `WO::1234` got

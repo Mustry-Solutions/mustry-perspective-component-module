@@ -158,3 +158,25 @@ describe('sanitizeImageSrc', () => {
         expect(dataUriKb('no-comma')).toBeGreaterThan(0);
     });
 });
+
+describe('imageSrcWithinPolicy (every image path: parse, render, toolbar, pasted files)', () => {
+    const { imageSrcWithinPolicy } = require('../richtext/richTextLogic');
+    const kb3 = 'data:image/png;base64,' + 'A'.repeat(4096);
+
+    it('keeps URLs whatever the cap, and data URIs at or under it', () => {
+        expect(imageSrcWithinPolicy('https://example.com/a.png', 1)).toBe('https://example.com/a.png');
+        expect(imageSrcWithinPolicy(kb3, 3)).toBe(kb3);
+        expect(imageSrcWithinPolicy(' ' + kb3 + ' ', 3)).toBe(kb3);
+    });
+
+    it('rejects data URIs over the cap (#137)', () => {
+        expect(imageSrcWithinPolicy(kb3, 2)).toBeNull();
+        expect(imageSrcWithinPolicy('DATA:image/png;base64,' + 'A'.repeat(4096), 2)).toBeNull();
+    });
+
+    it('rejects what sanitizeImageSrc rejects', () => {
+        expect(imageSrcWithinPolicy('javascript:alert(1)', 256)).toBeNull();
+        expect(imageSrcWithinPolicy('data:text/html,<b>x</b>', 256)).toBeNull();
+        expect(imageSrcWithinPolicy(null, 256)).toBeNull();
+    });
+});
