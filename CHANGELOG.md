@@ -29,6 +29,17 @@ at 11:00 on October 20, because the clocks went back in between. Days and
 weeks now step calendar days and keep the wall time (10:00 on October 20).
 Hours still count elapsed time.
 
+### Fixed: Color Picker hsl and rgba values changed the picked colour
+In `hsl` format the picker wrote whole numbers, which parse back to a
+different colour for most picks: the default swatch `#12b886` became
+`hsl(162, 82%, 40%)`, which reads as `#12ba87`, so `onChange.hex` and
+`output.hex` disagreed (#154). Alpha in `rgba()`/`hsla()` was rounded to two
+decimals and shifted 155 of the 256 possible values. `hsl()` now carries one
+decimal (`hsl(161.9, 82.2%, 39.6%)`) and alpha three (`0.502`), which keeps
+every 8-bit colour and alpha exactly. `onChange`, `output.*` and the recent
+row are now built from the written value, so they always agree. Also,
+releasing a drag on a grey or black no longer snaps the hue slider to red.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,

@@ -53,7 +53,7 @@ Because it's bind-mounted, the project is always present in the gateway (survive
 
    **http://localhost:9088/data/perspective/client/verify**
 
-   (host port follows `GATEWAY_HTTP_PORT` in `../../.env`).
+   (host port follows `GATEWAY_HTTP_PORT`, from the shell or a local `../../.env`).
 3. Open the route for the component you changed (table above) and confirm the
    behaviour live. Manual checklists: `docs/calendar-manual-test.md`,
    `docs/timeline-manual-test.md`.

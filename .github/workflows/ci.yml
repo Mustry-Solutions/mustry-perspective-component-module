@@ -65,14 +65,29 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cache Gradle
+      # Caches ~/.gradle keyed on the build files AND gradle-wrapper.properties
+      # (the old hand-rolled key missed the wrapper, so a wrapper bump was
+      # downloaded on every run), and validates the wrapper jar checksum.
+      # `basic` is the open-source provider (plain actions/cache); the default
+      # one is proprietary, and release.yml uses the same step in the job that
+      # holds the signing key. It only writes the cache from main; other refs
+      # read main's entry.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      # The node plugin downloads Node into web/.gradle/nodejs (its default
+      # workDir) and npm keeps its download cache in ~/.npm. The Node version
+      # is pinned in web/build.gradle.kts, so that file is part of the key.
+      - name: Cache Node and npm
         uses: actions/cache@v6
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'web/package-lock.json') }}
-          restore-keys: gradle-${{ runner.os }}-
+            web/.gradle/nodejs
+            ~/.npm
+          key: node-build-${{ runner.os }}-${{ hashFiles('web/build.gradle.kts', 'web/package-lock.json') }}
+          restore-keys: node-build-${{ runner.os }}-
 
       # `build` depends on `check`, which runs the web Jest tests (web/build.gradle.kts).
       # The node plugin downloads its own Node; web deps install from npm + the
@@ -108,14 +123,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cache Gradle
+      # Same as the build job: ops/e2e.sh --fresh builds the module again.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      # Its own key: this job also fills ~/.npm with the e2e/ dependencies, and
+      # sharing the build job's key would hit and never save them.
+      - name: Cache Node and npm
         uses: actions/cache@v6
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'web/package-lock.json') }}
-          restore-keys: gradle-${{ runner.os }}-
+            web/.gradle/nodejs
+            ~/.npm
+          key: node-e2e-${{ runner.os }}-${{ hashFiles('web/build.gradle.kts', 'web/package-lock.json', 'e2e/package-lock.json') }}
+          restore-keys: node-e2e-${{ runner.os }}-
 
       - name: Cache Playwright browsers
         uses: actions/cache@v6
