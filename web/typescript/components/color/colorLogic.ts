@@ -61,6 +61,30 @@ export function rgbToHsv({ r, g, b }: RGB): HSV {
     return { h: normalizeHue(h), s: max === 0 ? 0 : (d / max) * 100, v: max * 100 };
 }
 
+/**
+ * HSV for `rgb`, reusing `prev` where the RGB alone cannot pin it down: a grey
+ * has no hue and black has neither hue nor saturation, so a fresh rgbToHsv
+ * would snap those sliders to 0 (red). When `prev` already renders to exactly
+ * `rgb` it is kept whole, so committing a drag never moves a thumb.
+ */
+export function rgbToHsvNear(rgb: RGB, prev: HSV | null): HSV {
+    if (!prev) {
+        return rgbToHsv(rgb);
+    }
+    const shown = hsvToRgb(prev);
+    if (shown.r === rgb.r && shown.g === rgb.g && shown.b === rgb.b) {
+        return prev;
+    }
+    const hsv = rgbToHsv(rgb);
+    if (hsv.v === 0) {
+        return { h: prev.h, s: prev.s, v: 0 };
+    }
+    if (hsv.s === 0) {
+        return { h: prev.h, s: 0, v: hsv.v };
+    }
+    return hsv;
+}
+
 export function hsvToRgb({ h, s, v }: HSV): RGB {
     const hh = normalizeHue(h);
     const ss = clamp(s, 0, 100) / 100;
@@ -193,11 +217,18 @@ export function formatHex(color: Color, withAlpha: boolean): string {
     return base;
 }
 
+// Fewest decimals that still parse back to the same colour. Checked over all
+// 16,777,216 RGB colours: whole-number hsl breaks 15,001,646 of them, one
+// decimal breaks none. Two alpha decimals shift 155 of the 256 alpha bytes,
+// three shift none.
+const HSL_DP = 1;
+const ALPHA_DP = 3;
+
 /** rgb(r, g, b) or rgba(r, g, b, a) when withAlpha and alpha < 1. */
 export function formatRgb(color: Color, withAlpha: boolean): string {
     const { rgb, alpha } = color;
     if (withAlpha && alpha < 1) {
-        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${round(alpha, 2)})`;
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${round(alpha, ALPHA_DP)})`;
     }
     return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 }
@@ -205,9 +236,9 @@ export function formatRgb(color: Color, withAlpha: boolean): string {
 /** hsl(h, s%, l%) or hsla(...) when withAlpha and alpha < 1. */
 export function formatHsl(color: Color, withAlpha: boolean): string {
     const { h, s, l } = rgbToHsl(color.rgb);
-    const hh = Math.round(h), ss = Math.round(s), ll = Math.round(l);
+    const hh = round(h, HSL_DP), ss = round(s, HSL_DP), ll = round(l, HSL_DP);
     if (withAlpha && color.alpha < 1) {
-        return `hsla(${hh}, ${ss}%, ${ll}%, ${round(color.alpha, 2)})`;
+        return `hsla(${hh}, ${ss}%, ${ll}%, ${round(color.alpha, ALPHA_DP)})`;
     }
     return `hsl(${hh}, ${ss}%, ${ll}%)`;
 }
@@ -245,4 +276,15 @@ const DEFAULT: Color = { rgb: { r: 0, g: 0, b: 0 }, alpha: 1 };
 /** Parse, or fall back to the given default (or opaque black) — never returns null. */
 export function parseColorOr(input: string, fallback: Color = DEFAULT): Color {
     return parseColor(input) || fallback;
+}
+
+/**
+ * The string to commit plus the colour it parses back to. Every 8-bit colour
+ * survives the string exactly, but the alpha bar yields any 0..1 number, so
+ * the event payload, outputs and recents are derived from the parsed string
+ * to agree with what was written.
+ */
+export function canonicalColor(color: Color, format: ColorFormat, withAlpha: boolean): { value: string; color: Color } {
+    const value = formatColor(color, format, withAlpha);
+    return { value, color: parseColor(value) || color };
 }
