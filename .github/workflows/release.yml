@@ -67,14 +67,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cache Gradle
+      # Same Gradle and Node caching as ci.yml (see the comments there). The
+      # open-source `basic` provider on purpose: this job holds the signing key.
+      # A tag run reads the Gradle cache main wrote and does not write it back.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Cache Node and npm
         uses: actions/cache@v6
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'web/package-lock.json') }}
-          restore-keys: gradle-${{ runner.os }}-
+            web/.gradle/nodejs
+            ~/.npm
+          key: node-build-${{ runner.os }}-${{ hashFiles('web/build.gradle.kts', 'web/package-lock.json') }}
+          restore-keys: node-build-${{ runner.os }}-
 
       - name: Decode signing material
         env:
