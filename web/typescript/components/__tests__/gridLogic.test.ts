@@ -524,9 +524,21 @@ describe('settlePending (which pending edits a data.rows update clears)', () => 
         expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 9 }], 'id')).toEqual({});
     });
 
-    it('keeps an edit while the bound value is unchanged or the row is gone', () => {
+    it('keeps an edit while the bound value is unchanged', () => {
         expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 1 }], 'id')).toBeNull();
-        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r2', a: 1 }], 'id')).toBeNull();
+    });
+
+    // Kept, the entry would attach to a later record reusing the id and ride
+    // along in that record's next onCellEdit row (#216).
+    it('clears an edit once its row has left data.rows', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r2', a: 1 }], 'id')).toEqual({});
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [], 'id')).toEqual({});
+    });
+
+    it('keeps the other rows\' edits when one row leaves', () => {
+        const kb = pendingKey('r2', 'a');
+        expect(settlePending({ [k]: 9, [kb]: 5 }, { [k]: '1', [kb]: '2' }, [{ id: 'r2', a: 2 }], 'id'))
+            .toEqual({ [kb]: 5 });
     });
 
     // A rejected or normalized write-back would otherwise leave the stale value
