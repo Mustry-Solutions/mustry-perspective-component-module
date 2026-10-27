@@ -50,6 +50,17 @@ events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
 and a drag no longer rebuilds it at all. All components that take a
 `config.timezone` share the faster conversion.
 
+### Fixed: Resource Timeline snapped to a UTC grid instead of the display zone
+Drag, resize and click-to-create rounded times on a grid counted from UTC
+midnight, so the result missed the clock of `config.timezone` (#138). In
+`Asia/Kolkata` at week zoom, 10:10 snapped to 10:30. In Brussels with
+`snapMinutes: 120`, 06:10 snapped to 07:00, and with 1440 to 01:00. Snapping
+now counts whole steps from midnight in the display zone (browser-local when
+empty). On DST days the result stays on that wall-clock grid: a 2 h step on
+the 23 h or 25 h day still gives 10:00, and the repeated hour snaps within its
+own occurrence. Moving a bar with a large snap across a DST change now keeps
+its time of day (a day-snapped 06:00 shift stays 06:00, not 07:00).
+
 ### Fixed: times in the spring-forward gap emitted an hour off
 A wall time that does not exist because the clocks jump forward (02:30 on
 2026-03-29 in Brussels, or 2026-03-08 in New York) gave an ISO string and an

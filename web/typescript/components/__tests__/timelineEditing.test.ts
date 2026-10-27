@@ -45,28 +45,28 @@ describe('epoch emit helpers', () => {
 
 describe('gesture preview math', () => {
     it('snapMs rounds to the nearest step', () => {
-        expect(snapMs(T0 + 7 * MIN, 15)).toBe(T0);                 // 08:07 -> 08:00
-        expect(snapMs(T0 + 8 * MIN, 15)).toBe(T0 + 15 * MIN);      // 08:08 -> 08:15
-        expect(snapMs(T0 + 7 * MIN, 5)).toBe(T0 + 5 * MIN);        // 08:07 -> 08:05
+        expect(snapMs(T0 + 7 * MIN, 15, TZ)).toBe(T0);                 // 08:07 -> 08:00
+        expect(snapMs(T0 + 8 * MIN, 15, TZ)).toBe(T0 + 15 * MIN);      // 08:08 -> 08:15
+        expect(snapMs(T0 + 7 * MIN, 5, TZ)).toBe(T0 + 5 * MIN);        // 08:07 -> 08:05
         // Sub-minute steps (the second/minute presets): 15 s and 1 s; never below 1 s.
-        expect(snapMs(T0 + 7000, 0.25)).toBe(T0);                   // 08:00:07 -> 08:00:00
-        expect(snapMs(T0 + 8000, 0.25)).toBe(T0 + 15000);           // 08:00:08 -> 08:00:15
-        expect(snapMs(T0 + 1400, 1 / 60)).toBe(T0 + 1000);          // 1 s step is exactly 1000 ms
-        expect(snapMs(T0 + 140, 0.1 / 60)).toBe(T0 + 100);          // 100 ms step (millisecond zoom)
-        expect(snapMs(T0 + 1400, 1e-9)).toBe(T0 + 1400);            // floor at 1 ms
-        expect(createPreviewMs(T0 + 300, T0 + 300, 1 / 60)).toEqual({ startMs: T0, endMs: T0 + 1000 });
+        expect(snapMs(T0 + 7000, 0.25, TZ)).toBe(T0);                   // 08:00:07 -> 08:00:00
+        expect(snapMs(T0 + 8000, 0.25, TZ)).toBe(T0 + 15000);           // 08:00:08 -> 08:00:15
+        expect(snapMs(T0 + 1400, 1 / 60, TZ)).toBe(T0 + 1000);          // 1 s step is exactly 1000 ms
+        expect(snapMs(T0 + 140, 0.1 / 60, TZ)).toBe(T0 + 100);          // 100 ms step (millisecond zoom)
+        expect(snapMs(T0 + 1400, 1e-9, TZ)).toBe(T0 + 1400);            // floor at 1 ms
+        expect(createPreviewMs(T0 + 300, T0 + 300, 1 / 60, TZ)).toEqual({ startMs: T0, endMs: T0 + 1000 });
     });
     it('move preserves duration and snaps the start', () => {
-        const r = movePreviewMs(T0, T0 + 90 * MIN, 22 * MIN, 15);
+        const r = movePreviewMs(T0, T0 + 90 * MIN, 22 * MIN, 15, TZ);
         expect(r.startMs).toBe(T0 + 15 * MIN);
         expect(r.endMs - r.startMs).toBe(90 * MIN);
     });
     it('move snaps the DELTA, so an off-grid start keeps its offset', () => {
         const orig = T0 + 7 * MIN;   // 08:07, off the 15-min grid
-        expect(movePreviewMs(orig, orig + 60 * MIN, 0, 15).startMs).toBe(orig);            // untouched
-        expect(movePreviewMs(orig, orig + 60 * MIN, 5 * MIN, 15).startMs).toBe(orig);      // sub-step wobble -> no shift
-        expect(movePreviewMs(orig, orig + 60 * MIN, 20 * MIN, 15).startMs).toBe(orig + 15 * MIN);   // one step, :07 preserved
-        expect(movePreviewMs(orig, orig + 60 * MIN, -8 * MIN, 15).startMs).toBe(orig - 15 * MIN);
+        expect(movePreviewMs(orig, orig + 60 * MIN, 0, 15, TZ).startMs).toBe(orig);            // untouched
+        expect(movePreviewMs(orig, orig + 60 * MIN, 5 * MIN, 15, TZ).startMs).toBe(orig);      // sub-step wobble -> no shift
+        expect(movePreviewMs(orig, orig + 60 * MIN, 20 * MIN, 15, TZ).startMs).toBe(orig + 15 * MIN);   // one step, :07 preserved
+        expect(movePreviewMs(orig, orig + 60 * MIN, -8 * MIN, 15, TZ).startMs).toBe(orig - 15 * MIN);
     });
     it('isNoopMove: same start + same row only', () => {
         expect(isNoopMove(T0, 'm1', T0, 'm1')).toBe(true);
@@ -74,21 +74,101 @@ describe('gesture preview math', () => {
         expect(isNoopMove(T0, 'm1', T0, 'm2')).toBe(false);
     });
     it('resize keeps at least one snap step of duration on either edge', () => {
-        expect(resizePreviewMs('end', T0, T0 + 60 * MIN, -120 * MIN, 15))
+        expect(resizePreviewMs('end', T0, T0 + 60 * MIN, -120 * MIN, 15, TZ))
             .toEqual({ startMs: T0, endMs: T0 + 15 * MIN });
-        expect(resizePreviewMs('start', T0, T0 + 60 * MIN, 120 * MIN, 15))
+        expect(resizePreviewMs('start', T0, T0 + 60 * MIN, 120 * MIN, 15, TZ))
             .toEqual({ startMs: T0 + 45 * MIN, endMs: T0 + 60 * MIN });
-        expect(resizePreviewMs('start', T0, T0 + 60 * MIN, -30 * MIN, 15).startMs).toBe(T0 - 30 * MIN);
+        expect(resizePreviewMs('start', T0, T0 + 60 * MIN, -30 * MIN, 15, TZ).startMs).toBe(T0 - 30 * MIN);
     });
     it('create orders the anchor and pointer with a minimum length', () => {
-        expect(createPreviewMs(T0 + 60 * MIN, T0, 15)).toEqual({ startMs: T0, endMs: T0 + 60 * MIN });
-        expect(createPreviewMs(T0, T0 + 3 * MIN, 15)).toEqual({ startMs: T0, endMs: T0 + 15 * MIN });
+        expect(createPreviewMs(T0 + 60 * MIN, T0, 15, TZ)).toEqual({ startMs: T0, endMs: T0 + 60 * MIN });
+        expect(createPreviewMs(T0, T0 + 3 * MIN, 15, TZ)).toEqual({ startMs: T0, endMs: T0 + 15 * MIN });
     });
     it('rowAtY hit-tests row tracks', () => {
         const rows = [{ resourceId: 'a', top: 0, bottom: 40 }, { resourceId: 'b', top: 40, bottom: 80 }];
         expect(rowAtY(rows, 39)!.resourceId).toBe('a');
         expect(rowAtY(rows, 40)!.resourceId).toBe('b');
         expect(rowAtY(rows, 99)).toBeNull();
+    });
+});
+
+// #138: the snap grid is the display zone's wall clock, counted from zone
+// midnight, not a UTC grid. Inputs and expectations are offset-bearing ISO
+// strings, so the cases do not depend on the process TZ.
+describe('zone-local snapping', () => {
+    const BRU = 'Europe/Brussels';   // 2026: 23 h day on 03-29, 25 h day on 10-25
+    const KOL = 'Asia/Kolkata';      // +05:30, no DST
+    const at = (iso: string): number => Date.parse(iso);
+    const snap = (iso: string, step: number, tz: string): string => msToZonedIso(snapMs(at(iso), step, tz), tz);
+    const range = (r: { startMs: number; endMs: number }, tz: string): string[] =>
+        [msToZonedIso(r.startMs, tz), msToZonedIso(r.endMs, tz)];
+
+    it('snaps on the wall clock of a half-hour zone', () => {
+        expect(snap('2026-07-01T10:10:00+05:30', 60, KOL)).toBe('2026-07-01T10:00:00+05:30');
+        expect(snap('2026-07-01T10:40:00+05:30', 60, KOL)).toBe('2026-07-01T11:00:00+05:30');
+        expect(range(resizePreviewMs('end', at('2026-07-01T08:00:00+05:30'), at('2026-07-01T10:00:00+05:30'),
+            70 * MIN, 60, KOL), KOL)).toEqual(['2026-07-01T08:00:00+05:30', '2026-07-01T11:00:00+05:30']);
+    });
+    it('counts multi-hour and day steps from zone midnight', () => {
+        expect(snap('2026-01-15T06:10:00+01:00', 120, BRU)).toBe('2026-01-15T06:00:00+01:00');
+        expect(snap('2026-01-15T06:10:00+01:00', 1440, BRU)).toBe('2026-01-15T00:00:00+01:00');
+        expect(snap('2026-01-15T18:10:00+01:00', 1440, BRU)).toBe('2026-01-16T00:00:00+01:00');
+    });
+    it('a step that does not divide 24 h restarts at each zone midnight', () => {
+        // 7 h grid: 00, 07, 14, 21. Next midnight is 10 min away, 21:00 is 2 h 50 away.
+        expect(snap('2026-01-15T23:50:00+01:00', 420, BRU)).toBe('2026-01-16T00:00:00+01:00');
+        expect(snap('2026-01-16T00:20:00+01:00', 420, BRU)).toBe('2026-01-16T00:00:00+01:00');
+        // A 13:00 bar keeps its 6 h phase: lines at 06, 13, 20 each day, never 03:00 or 23:00.
+        const move = (deltaMin: number): string => msToZonedIso(movePreviewMs(
+            at('2026-01-15T13:00:00+01:00'), at('2026-01-15T14:00:00+01:00'), deltaMin * MIN, 420, BRU).startMs, BRU);
+        expect(move(10 * 60 + 50)).toBe('2026-01-15T20:00:00+01:00');   // to 23:50
+        expect(move(11 * 60 + 30)).toBe('2026-01-15T20:00:00+01:00');   // to 00:30 next day
+        expect(move(16 * 60 + 50)).toBe('2026-01-16T06:00:00+01:00');   // to 05:50 next day
+    });
+    it('drag-create with an 8 h snap lands on the zone grid', () => {
+        expect(range(createPreviewMs(at('2026-07-01T06:00:00+02:00'), at('2026-07-01T13:50:00+02:00'), 480, BRU), BRU))
+            .toEqual(['2026-07-01T08:00:00+02:00', '2026-07-01T16:00:00+02:00']);
+    });
+    it('empty zone means the browser zone', () => {
+        const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        for (const iso of ['2026-07-01T10:10:00+05:30', '2026-03-29T01:50:00+01:00', '2026-10-25T02:50:00+02:00']) {
+            expect(snapMs(at(iso), 60, '')).toBe(snapMs(at(iso), 60, local));
+            expect(snapMs(at(iso), 1440, '')).toBe(snapMs(at(iso), 1440, local));
+        }
+    });
+    it('23 h day: steps stay on the wall grid after the jump', () => {
+        // Counting elapsed time from midnight would give 11:00 here.
+        expect(snap('2026-03-29T10:10:00+02:00', 120, BRU)).toBe('2026-03-29T10:00:00+02:00');
+        expect(snap('2026-03-29T10:00:00+02:00', 1440, BRU)).toBe('2026-03-29T00:00:00+01:00');
+        expect(snap('2026-03-29T20:00:00+02:00', 1440, BRU)).toBe('2026-03-30T00:00:00+02:00');
+        // 02:00 does not exist; the nearest grid instant is the jump itself, 10 min on.
+        expect(snap('2026-03-29T01:50:00+01:00', 60, BRU)).toBe('2026-03-29T03:00:00+02:00');
+        // With a 2 h step the nearest instant on the grid is 04:00, not a gap time.
+        expect(snap('2026-03-29T01:40:00+01:00', 120, BRU)).toBe('2026-03-29T04:00:00+02:00');
+    });
+    it('25 h day: the repeated hour snaps within its own occurrence', () => {
+        expect(snap('2026-10-25T02:10:00+02:00', 60, BRU)).toBe('2026-10-25T02:00:00+02:00');
+        expect(snap('2026-10-25T02:10:00+01:00', 60, BRU)).toBe('2026-10-25T02:00:00+01:00');
+        // 10 min before the clocks go back, the next grid line is the second 02:00.
+        expect(snap('2026-10-25T02:50:00+02:00', 60, BRU)).toBe('2026-10-25T02:00:00+01:00');
+        // Counting elapsed time from midnight would give 09:00 here.
+        expect(snap('2026-10-25T10:10:00+01:00', 120, BRU)).toBe('2026-10-25T10:00:00+01:00');
+        expect(snap('2026-10-25T23:00:00+01:00', 1440, BRU)).toBe('2026-10-26T00:00:00+01:00');
+    });
+    it('move keeps the wall time of day across a DST change', () => {
+        const DAY = 24 * 60 * MIN;
+        // A day-snapped 06:00-14:00 shift dragged one day onto the 23 h day.
+        expect(range(movePreviewMs(at('2026-03-28T06:00:00+01:00'), at('2026-03-28T14:00:00+01:00'), DAY, 1440, BRU), BRU))
+            .toEqual(['2026-03-29T06:00:00+02:00', '2026-03-29T14:00:00+02:00']);
+        // An 8 h-snapped 22:00 night shift dragged one day onto the 25 h day keeps 22:00.
+        expect(msToZonedIso(movePreviewMs(at('2026-10-24T22:00:00+02:00'), at('2026-10-25T06:00:00+02:00'), DAY, 480, BRU)
+            .startMs, BRU)).toBe('2026-10-25T22:00:00+01:00');
+        // Small steps follow the pointer: 72 elapsed hours over the 23 h day is 09:00.
+        expect(msToZonedIso(movePreviewMs(at('2026-03-27T08:00:00+01:00'), at('2026-03-27T09:00:00+01:00'), 72 * 60 * MIN, 60, BRU)
+            .startMs, BRU)).toBe('2026-03-30T09:00:00+02:00');
+        // An off-grid start keeps its offset in a half-hour zone too.
+        expect(msToZonedIso(movePreviewMs(at('2026-07-01T10:07:00+05:30'), at('2026-07-01T11:07:00+05:30'), 20 * MIN, 15, KOL)
+            .startMs, KOL)).toBe('2026-07-01T10:22:00+05:30');
     });
 });
 

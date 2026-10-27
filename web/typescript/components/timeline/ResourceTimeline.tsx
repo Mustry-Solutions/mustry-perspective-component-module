@@ -94,6 +94,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
             editable: this.props.props.editable,
             selectable: this.props.props.selectable,
             snapMinutes: resolveSnapMinutes(viewZoomOf(this.props.props), this.props.props.snapMinutes),
+            timeZone: this.props.props.timezone,
             scale: this.scale()
         }),
         flags: () => ({
