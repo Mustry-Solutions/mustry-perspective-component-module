@@ -6,7 +6,8 @@
 
 import {
     addDays, clampSec, combine, daysBetween, fmtDate, maxDate, minDate,
-    parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek, today
+    parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek,
+    wallClockInZone
 } from '../../shared/dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
@@ -62,7 +63,7 @@ export function resolveLayout(i: LayoutInput): ResolvedLayout {
 // --- selectable bounds ------------------------------------------------------
 
 /** Earliest selectable day: explicit bound, else today in forward-only ('past') mode. */
-export function effMin(disableDates: DisableMode, earliestDate: string, todayDate: Date = today()): Date | null {
+export function effMin(disableDates: DisableMode, earliestDate: string, todayDate: Date): Date | null {
     const parsed = parseDate(earliestDate);
     if (parsed) {
         return parsed;
@@ -71,7 +72,7 @@ export function effMin(disableDates: DisableMode, earliestDate: string, todayDat
 }
 
 /** Latest selectable day: explicit bound, else today in backward-only ('future') mode. */
-export function effMax(disableDates: DisableMode, latestDate: string, todayDate: Date = today()): Date | null {
+export function effMax(disableDates: DisableMode, latestDate: string, todayDate: Date): Date | null {
     const parsed = parseDate(latestDate);
     if (parsed) {
         return parsed;
@@ -83,37 +84,42 @@ export function effMax(disableDates: DisableMode, latestDate: string, todayDate:
 
 export interface PresetContext {
     now: Date;            // the "current" instant
+    timeZone: string;     // config.timezone: where `now` is read ('' = browser-local)
     forward: boolean;     // rolling direction (disableDates === 'past')
     firstDay: number;     // weekStart as 0 = Sunday .. 6 = Saturday
 }
 
-/** Rolling preset: a window of amount*unit from `now`, in the given direction. */
-export function rollingRange(amount: number, unit: PresetUnit, now: Date, forward: boolean): DateRange {
+/** Rolling preset: a window of amount*unit from the instant `now`, in the given
+ *  direction. Both ends are wall-clock Dates in `timeZone`, the zone the outputs
+ *  resolve them in. */
+export function rollingRange(amount: number, unit: PresetUnit, now: Date, forward: boolean, timeZone: string): DateRange {
     const sign = forward ? 1 : -1;
+    const wallNow = wallClockInZone(now, timeZone);
     let other: Date;
     switch (unit) {
         case 'hours':
-            other = new Date(now.getTime() + sign * amount * 3600000);
+            other = wallClockInZone(new Date(now.getTime() + sign * amount * 3600000), timeZone);
             break;
         case 'weeks':
-            other = new Date(now.getTime() + sign * amount * 7 * 86400000);
+            other = wallClockInZone(new Date(now.getTime() + sign * amount * 7 * 86400000), timeZone);
             break;
         case 'months':
             other = new Date(
-                now.getFullYear(), now.getMonth() + sign * amount, now.getDate(),
-                now.getHours(), now.getMinutes(), now.getSeconds()
+                wallNow.getFullYear(), wallNow.getMonth() + sign * amount, wallNow.getDate(),
+                wallNow.getHours(), wallNow.getMinutes(), wallNow.getSeconds()
             );
             break;
         case 'days':
         default:
-            other = new Date(now.getTime() + sign * amount * 86400000);
+            other = wallClockInZone(new Date(now.getTime() + sign * amount * 86400000), timeZone);
             break;
     }
-    return { start: forward ? now : other, end: forward ? other : now };
+    return { start: forward ? wallNow : other, end: forward ? other : wallNow };
 }
 
 /** Calendar preset: a period snapped to boundaries. 'this*' = period-to-date,
- *  'last*' = the full previous period. Week periods start on `firstDay` (0 = Sunday). */
+ *  'last*' = the full previous period. Week periods start on `firstDay` (0 = Sunday).
+ *  `now` is a wall-clock Date: its local fields are the current time in the zone. */
 export function calendarRange(period: PresetPeriod, now: Date, firstDay: number): DateRange {
     const todayStart = startOfDay(now);
     const endOfToday = combine(todayStart, 86399);
@@ -150,9 +156,9 @@ export function calendarRange(period: PresetPeriod, now: Date, firstDay: number)
 /** The (datetime) endpoints a preset would set. */
 export function presetRange(p: PresetDef, ctx: PresetContext): DateRange {
     if (p.type === 'calendar') {
-        return calendarRange(p.period, ctx.now, ctx.firstDay);
+        return calendarRange(p.period, wallClockInZone(ctx.now, ctx.timeZone), ctx.firstDay);
     }
-    return rollingRange(p.amount, p.unit, ctx.now, ctx.forward);
+    return rollingRange(p.amount, p.unit, ctx.now, ctx.forward, ctx.timeZone);
 }
 
 // --- realtime (live rolling window) ------------------------------------------
@@ -171,9 +177,12 @@ export interface RealtimeSelection {
 }
 
 /** One realtime tick: the selection writes for the armed rolling window re-derived
- *  from `now` (the alarm-journal-style "last N hours, live" behaviour). */
-export function realtimeSelection(amount: number, unit: PresetUnit, now: Date, forward: boolean): RealtimeSelection {
-    const { start, end } = rollingRange(amount, unit, now, forward);
+ *  from the instant `now`, read in `timeZone` (the alarm-journal-style "last N
+ *  hours, live" behaviour). */
+export function realtimeSelection(
+    amount: number, unit: PresetUnit, now: Date, forward: boolean, timeZone: string
+): RealtimeSelection {
+    const { start, end } = rollingRange(amount, unit, now, forward, timeZone);
     return {
         startDate: fmtDate(startOfDay(start)),
         startTimeSec: secondsOfDay(start),

@@ -1,4 +1,4 @@
-import { fmtDate, secondsOfDay } from '../../shared/dateUtils';
+import { fmtDate, secondsOfDay, todayInZone } from '../../shared/dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
@@ -49,21 +49,21 @@ describe('rollingRange', () => {
     const now = new Date(2026, 5, 17, 10, 30, 0); // Wed 2026-06-17 10:30
 
     it('rolls forward (start = now)', () => {
-        const r = rollingRange(7, 'days', now, true);
-        expect(r.start).toBe(now);
+        const r = rollingRange(7, 'days', now, true, '');
+        expect(r.start).toEqual(now);
         expect(fmtDate(r.end)).toBe('2026-06-24');
     });
 
     it('rolls backward (end = now)', () => {
-        const r = rollingRange(7, 'days', now, false);
-        expect(r.end).toBe(now);
+        const r = rollingRange(7, 'days', now, false, '');
+        expect(r.end).toEqual(now);
         expect(fmtDate(r.start)).toBe('2026-06-10');
     });
 
     it('supports hours / weeks / months', () => {
-        expect(fmtDate(rollingRange(24, 'hours', now, true).end)).toBe('2026-06-18');
-        expect(fmtDate(rollingRange(2, 'weeks', now, false).start)).toBe('2026-06-03');
-        expect(fmtDate(rollingRange(1, 'months', now, true).end)).toBe('2026-07-17');
+        expect(fmtDate(rollingRange(24, 'hours', now, true, '').end)).toBe('2026-06-18');
+        expect(fmtDate(rollingRange(2, 'weeks', now, false, '').start)).toBe('2026-06-03');
+        expect(fmtDate(rollingRange(1, 'months', now, true, '').end)).toBe('2026-07-17');
     });
 });
 
@@ -77,7 +77,7 @@ describe('realtime (live rolling window)', () => {
     });
 
     it('a tick derives the historian-style backward window from now', () => {
-        const s = realtimeSelection(8, 'hours', now, false);
+        const s = realtimeSelection(8, 'hours', now, false, '');
         expect(s).toEqual({
             startDate: '2026-06-17', startTimeSec: secondsOfDay(new Date(2026, 5, 17, 2, 30, 0)),
             endDate: '2026-06-17', endTimeSec: secondsOfDay(now)
@@ -85,10 +85,10 @@ describe('realtime (live rolling window)', () => {
     });
 
     it('windows cross midnight and roll forward in forward-booking mode', () => {
-        const back = realtimeSelection(24, 'hours', now, false);
+        const back = realtimeSelection(24, 'hours', now, false, '');
         expect(back.startDate).toBe('2026-06-16');   // yesterday, same wall time
         expect(back.startTimeSec).toBe(secondsOfDay(now));
-        const fwd = realtimeSelection(7, 'days', now, true);
+        const fwd = realtimeSelection(7, 'days', now, true, '');
         expect(fwd.startDate).toBe('2026-06-17');
         expect(fwd.endDate).toBe('2026-06-24');
     });
@@ -124,7 +124,7 @@ describe('calendarRange', () => {
 });
 
 describe('presetRange dispatch', () => {
-    const ctx: PresetContext = { now: new Date(2026, 5, 17, 10, 30, 0), forward: false, firstDay: 1 };
+    const ctx: PresetContext = { now: new Date(2026, 5, 17, 10, 30, 0), timeZone: '', forward: false, firstDay: 1 };
     const rolling: PresetDef = { label: 'Last 7 days', type: 'rolling', amount: 7, unit: 'days', period: 'today' };
     const calendar: PresetDef = { label: 'This month', type: 'calendar', amount: 1, unit: 'days', period: 'thisMonth' };
 
@@ -173,7 +173,7 @@ describe('presetConflict', () => {
         presetTooLong: 'Exceeds the {n}-day maximum'
     };
     const mk = (over: any) => presetConflict(last7, {
-        now, forward: false, firstDay: 1, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, labels, ...over
+        now, timeZone: '', forward: false, firstDay: 1, min: null, max: null, minSpanDays: 0, maxSpanDays: 0, labels, ...over
     });
 
     it('passes when within bounds and span', () => {
@@ -293,5 +293,75 @@ describe('computeOutputs', () => {
         expect(out.isValid).toBe(true);
         expect(out.durationDays).toBe(0);
         expect(out.durationLabel).toBe('Same day');
+    });
+});
+
+// #139: "now" and "today" are read in config.timezone, not the browser zone. Each
+// case pins the instant and the zone, so the result is the same under any process TZ.
+describe('now and today in config.timezone (#139)', () => {
+    const outputs = (s: { startDate: string; startTimeSec: number; endDate: string; endTimeSec: number }, timezone: string) =>
+        computeOutputs({
+            ...s, granularity: 'second', timezone, minSpanDays: 0, maxSpanDays: 0,
+            durationLabelThresholdHours: 48, labels: DUR_LABELS
+        });
+
+    it('"Last 1 hour" at 13:00Z in America/Chicago is 07:00 to 08:00, ending now', () => {
+        const now = new Date('2026-06-25T13:00:00Z');
+        const s = realtimeSelection(1, 'hours', now, false, 'America/Chicago');
+        expect(s).toEqual({
+            startDate: '2026-06-25', startTimeSec: 7 * 3600,
+            endDate: '2026-06-25', endTimeSec: 8 * 3600
+        });
+        const out = outputs(s, 'America/Chicago');
+        expect(out.endEpochMs).toBe(now.getTime());
+        expect(out.startEpochMs).toBe(now.getTime() - 3600000);
+        expect(out.endDateTime).toBe('2026-06-25T08:00:00-05:00');
+    });
+
+    it('rolling hours span real elapsed time across a DST change', () => {
+        // Brussels falls back at 03:00 CEST on 2026-10-25: 3 h before 03:30 CET is 01:30 CEST.
+        const now = new Date('2026-10-25T02:30:00Z');
+        const s = realtimeSelection(3, 'hours', now, false, 'Europe/Brussels');
+        expect(s).toEqual({
+            startDate: '2026-10-25', startTimeSec: 3600 + 1800,
+            endDate: '2026-10-25', endTimeSec: 3 * 3600 + 1800
+        });
+        const out = outputs(s, 'Europe/Brussels');
+        expect(out.endEpochMs).toBe(now.getTime());
+        expect(out.durationHours).toBe(3);
+    });
+
+    it('"Today" follows the zone date, not the UTC or browser date', () => {
+        // 03:00Z on Jun 26 is still Jun 25 (22:00) in Chicago, already Jun 26 in Tokyo.
+        const now = new Date('2026-06-26T03:00:00Z');
+        const today: PresetDef = { label: 'Today', type: 'calendar', amount: 1, unit: 'days', period: 'today' };
+        const day = (timeZone: string) => fmtDate(presetRange(today, { now, timeZone, forward: false, firstDay: 1 }).start);
+        expect(day('America/Chicago')).toBe('2026-06-25');
+        expect(day('Asia/Tokyo')).toBe('2026-06-26');
+    });
+
+    it('"This week" starts on the zone week, not the UTC week', () => {
+        // Mon 2026-06-29 03:00Z is still Sunday Jun 28 in Chicago: the Monday-first week began Jun 22.
+        const now = new Date('2026-06-29T03:00:00Z');
+        const week: PresetDef = { label: 'This week', type: 'calendar', amount: 1, unit: 'days', period: 'thisWeek' };
+        const r = (timeZone: string) => presetRange(week, { now, timeZone, forward: false, firstDay: 1 });
+        expect([fmtDate(r('America/Chicago').start), fmtDate(r('America/Chicago').end)]).toEqual(['2026-06-22', '2026-06-28']);
+        expect(fmtDate(r('UTC').start)).toBe('2026-06-29');
+    });
+
+    it('a rolling preset ends on the zone today, so a muted future does not block it', () => {
+        // Chicago today is Jun 25: "Last 7 days" ends there and fits under effMax.
+        const now = new Date('2026-06-26T03:00:00Z');
+        const zoneToday = todayInZone('America/Chicago', now);
+        expect(fmtDate(effMax('future', '', zoneToday)!)).toBe('2026-06-25');
+        const last7: PresetDef = { label: 'Last 7 days', type: 'rolling', amount: 7, unit: 'days', period: 'today' };
+        expect(presetConflict(last7, {
+            now, timeZone: 'America/Chicago', forward: false, firstDay: 1,
+            min: null, max: effMax('future', '', zoneToday), minSpanDays: 0, maxSpanDays: 0,
+            labels: {
+                presetBeforeEarliest: 'before {date}', presetAfterLatest: 'after {date}',
+                presetTooShort: 'short {n}', presetTooLong: 'long {n}'
+            }
+        })).toBe('');
     });
 });

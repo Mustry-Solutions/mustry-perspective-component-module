@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
+Realtime windows and presets took the browser's clock, but the outputs read
+those times in `config.timezone` (#139). With a Brussels browser and
+`America/Chicago`, "Last 1 hour" at 13:00 UTC selected 14:00 to 15:00, and
+`endEpochMs` was 7 hours in the future. "Today", "This week" and the other
+calendar presets, the `disableDates` past/future bound and the today
+highlight had the same problem near midnight. All of them now read the
+current time in `config.timezone` (browser-local when it is blank), so the
+same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
+real elapsed time across a DST change.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,
