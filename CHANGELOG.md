@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Rich Text Editor image size cap and URL policy skipped for pasted HTML and bound content
+`config.maxImageKb` and the image URL policy only applied to the toolbar and
+to pasted image files (#137). Pasted HTML or `data.content` could carry a
+multi-MB `data:image/...` or a source outside the policy, and Save then stored
+it for every session. The editor now checks every image when it parses a
+document and again when it renders one. An image that fails is dropped. The
+toolbar's URL field and image library get the same size cap. Bound content
+that already holds such an image loads without it and is not marked dirty.
+The stored document only changes when the operator next saves.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,

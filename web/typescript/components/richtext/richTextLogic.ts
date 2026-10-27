@@ -76,6 +76,20 @@ export function dataUriKb(dataUri: string): number {
     return (body * 3) / 4 / 1024;
 }
 
+/**
+ * The image src to keep, or null to drop the image: sanitizeImageSrc's scheme
+ * rules, plus config.maxImageKb for embedded data URIs. One check for every
+ * way an image enters (bound content, pasted HTML or files, the toolbar), so
+ * none of them can skip the cap.
+ */
+export function imageSrcWithinPolicy(raw: string | null | undefined, maxKb: number): string | null {
+    const src = sanitizeImageSrc(raw);
+    if (src && /^data:/i.test(src) && dataUriKb(src) > maxKb) {
+        return null;
+    }
+    return src;
+}
+
 /** Minimal entity decoding for the plain-text mirror (the common five + nbsp). */
 function decodeEntities(s: string): string {
     return s
