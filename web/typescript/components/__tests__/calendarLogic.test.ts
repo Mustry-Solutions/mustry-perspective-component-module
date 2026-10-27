@@ -549,10 +549,23 @@ describe('eventsToCsv', () => {
 });
 
 describe('isOccurrence', () => {
-    it('detects an expanded occurrence by its "base::date" id', () => {
-        expect(isOccurrence({ id: 'r1::2026-06-24', title: 'R', start: '2026-06-24T06:00:00' })).toBe(true);
+    it('detects an expanded occurrence by its series tag, not its id', () => {
+        expect(isOccurrence({ id: 'r1::2026-06-24', title: 'R', start: '2026-06-24T06:00:00', __seriesId: 'r1', __occDate: '2026-06-24' })).toBe(true);
         expect(isOccurrence({ id: 'r1', title: 'R', start: '2026-06-24T06:00:00' })).toBe(false);
         expect(isOccurrence({ id: '', title: 'R', start: '2026-06-24' })).toBe(false);
+    });
+
+    it('a plain event whose id contains "::" is not an occurrence (#143)', () => {
+        expect(isOccurrence({ id: 'WO::1234', title: 'Work order', start: '2026-06-24T06:00:00' })).toBe(false);
+    });
+
+    it('tags occurrences of a series whose own id contains "::" with the full series id (#143)', () => {
+        const out = expandEvents<CalEvent>([
+            { id: 'line::A', title: 'R', start: '2026-06-22T06:00:00', rrule: { freq: 'daily' } }
+        ], new Date(2026, 5, 22), new Date(2026, 5, 23));
+        expect(out).toHaveLength(1);
+        expect(out[0]).toMatchObject({ id: 'line::A::2026-06-22', __seriesId: 'line::A', __occDate: '2026-06-22' });
+        expect(isOccurrence(out[0])).toBe(true);
     });
 
     it('flags exactly the events expandEvents produced from a series', () => {

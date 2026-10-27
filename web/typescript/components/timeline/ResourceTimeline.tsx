@@ -10,7 +10,7 @@ import {
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { CSV_BOM } from '../../shared/csv';
 import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
-import { expandEvents } from '../../shared/recurrence';
+import { expandEvents, occurrenceOf } from '../../shared/recurrence';
 import { resolveColor } from '../../shared/eventStyle';
 import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
@@ -202,8 +202,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     /** Enter-animation class for a bar/band, keyed on the event's base id. Empty
      *  while a drag is in flight so the ghost and mid-gesture re-renders never
      *  animate (the shared tracker returns the calendar's class; mapped to .mustry-tml-). */
-    private enterClass = (occId: string): string => {
-        return this.props.props.animations && !this.gestures.active && this.enter.enterClass(occId)
+    private enterClass = (ev: TimelineEvent): string => {
+        return this.props.props.animations && !this.gestures.active && this.enter.enterClass(ev)
             ? ' mustry-tml-anim-enter' : '';
     }
 
@@ -416,10 +416,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return this.props.props.builtInEditor && this.props.props.editable;
     }
 
-    /** A recurring occurrence (id "base::date"): draggable/editable like the
+    /** A recurring occurrence (tagged by expandEvents): draggable/editable like the
      *  calendar's — touching one detaches it into an override + series EXDATE. */
     private isOccurrence = (ev: TimelineEvent): boolean => {
-        return (ev.id || '').indexOf('::') >= 0;
+        return occurrenceOf(ev) !== null;
     }
 
     private movable = (ev: TimelineEvent): boolean => {

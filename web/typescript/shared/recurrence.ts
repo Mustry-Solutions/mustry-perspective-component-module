@@ -13,8 +13,24 @@ export interface RRule {
     exdate?: string[];     // 'YYYY-MM-DD' occurrence dates to skip (deleted / overridden)
 }
 
+/** Set by expandEvents on every occurrence it generates. Code tells an occurrence
+ *  from a plain event by these fields, never by parsing its id: a plain event's id
+ *  may itself contain "::" (#143). Internal only: the onChange / onEventClick
+ *  payloads are built field by field and never carry them. */
+export interface OccurrenceTag {
+    __seriesId?: string;   // id of the series the occurrence was expanded from
+    __occDate?: string;    // its start date 'YYYY-MM-DD' (the series' EXDATE key)
+}
+
+/** The series context of an expanded occurrence, or null for any other item. */
+export function occurrenceOf(item: OccurrenceTag): { seriesId: string; occurrenceDate: string } | null {
+    return typeof item.__seriesId === 'string' && typeof item.__occDate === 'string'
+        ? { seriesId: item.__seriesId, occurrenceDate: item.__occDate }
+        : null;
+}
+
 /** What expansion needs from an item; everything else is carried through untouched. */
-export interface RecurringItem {
+export interface RecurringItem extends OccurrenceTag {
     id: string;
     start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'
     end?: string;
@@ -153,7 +169,9 @@ function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date,
             id: `${ev.id}::${fmtDate(d)}`,
             start: occStart,
             end: occEnd,
-            rrule: undefined
+            rrule: undefined,
+            __seriesId: ev.id,
+            __occDate: fmtDate(d)
         });
     }
     return out;

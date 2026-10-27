@@ -10,7 +10,7 @@ interface EventBarProps {
     colOffset: number;
     categories: Category[];
     draggingId?: string;   // id of the bar being month-dragged — dims all its segments
-    enterClass: (id: string) => string;
+    enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
     // Month drag: when set, pointerdown starts a move gesture and the gesture's commit
@@ -30,7 +30,7 @@ export function EventBar({ seg, colOffset, categories, draggingId, enterClass, h
     return (
         <button
             type="button"
-            className={cls.join(' ') + statusClass(ev) + enterClass(ev.id || '')}
+            className={cls.join(' ') + statusClass(ev) + enterClass(ev)}
             style={{
                 gridColumn: `${seg.startCol + colOffset} / ${seg.endCol + colOffset + 1}`,
                 gridRow: seg.lane + 1,

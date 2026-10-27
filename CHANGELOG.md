@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Calendar and Timeline treated any event id containing `::` as a recurring occurrence
+Occurrence-ness was read from the id: anything with `::` counted as
+`<seriesId>::<date>` (#143). A plain event with an id such as `WO::1234` got
+the occurrence badge, and dragging it fired `scope: "occurrence"` with
+`seriesId: "WO"` and `occurrenceDate: "1234"`, so the reference scripts added
+an override and an EXDATE to a series that does not exist. A series whose own
+id contains `::` got a wrong `seriesId` for every occurrence. Expanded
+occurrences are now marked when the series is expanded, so any id works for
+plain events and series. Occurrence ids keep the `<seriesId>::<date>` form,
+and the `onChange` and `onEventClick` payloads are unchanged.
+
 ### Fixed: recurring events that start before the visible window were missing
 A recurring occurrence was only drawn when it started inside the window, so a
 daily 22:00 to 06:00 night shift showed nothing on Monday 00:00 to 06:00 in a
