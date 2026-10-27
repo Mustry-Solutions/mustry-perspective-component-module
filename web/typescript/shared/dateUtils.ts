@@ -174,16 +174,28 @@ export interface ZonedResult {
     iso: string;       // ISO 8601 with offset, e.g. "2026-06-25T09:00:00+02:00"
 }
 
+// Building an Intl.DateTimeFormat costs far more than using one, and every zone
+// conversion needs two to four offsets: one formatter per zone, kept for good.
+const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function offsetFormatter(timeZone: string): Intl.DateTimeFormat {
+    let dtf = offsetFormatters.get(timeZone);
+    if (!dtf) {
+        dtf = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            hour12: false,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        offsetFormatters.set(timeZone, dtf);
+    }
+    return dtf;
+}
+
 /** Offset (minutes, east-positive) of `timeZone` at the instant `date`. */
 function tzOffsetMinutes(date: Date, timeZone: string): number {
-    const dtf = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        hour12: false,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
     const map: { [k: string]: number } = {};
-    for (const p of dtf.formatToParts(date)) {
+    for (const p of offsetFormatter(timeZone).formatToParts(date)) {
         if (p.type !== 'literal') {
             map[p.type] = parseInt(p.value, 10);
         }
@@ -225,21 +237,21 @@ export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
     const s = wall.getSeconds();
 
     let epochMs: number;
-    let offMin: number;
+    let zone = timeZone;
     if (!timeZone) {
         epochMs = wall.getTime();
-        offMin = -wall.getTimezoneOffset();
     } else {
         try {
             epochMs = zonedWallClockToEpoch(y, mo, d, h, mi, s, timeZone);
-            offMin = tzOffsetMinutes(new Date(epochMs), timeZone);
         } catch (e) {
             epochMs = wall.getTime();
-            offMin = -wall.getTimezoneOffset();
+            zone = '';
         }
     }
-    const iso = `${fmtDate(wall)}T${pad2(h)}:${pad2(mi)}:${pad2(s)}${offsetToStr(offMin)}`;
-    return { epochMs, iso };
+    // Format the ISO from the resolved instant, not the input fields: a wall time
+    // in the spring-forward gap does not exist, and the input fields with the
+    // post-change offset would name an instant an hour away from epochMs.
+    return { epochMs, iso: msToZonedIso(epochMs, zone) };
 }
 
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
