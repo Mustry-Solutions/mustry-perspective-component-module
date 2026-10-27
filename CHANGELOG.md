@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Changed: faster timezone handling; smoother Calendar drags
+With `config.timezone` set, every time conversion built a new date formatter,
+and the Calendar re-converted all its events on every pointer move of a drag,
+so drags stuttered on large calendars (#145). Formatters are now built once
+per timezone, and the Calendar only rebuilds its event list when the events,
+the visible window, the timezone or the hidden categories change. On 2000
+events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
+and a drag no longer rebuilds it at all. All components that take a
+`config.timezone` share the faster conversion.
+
 ### Fixed: times in the spring-forward gap emitted an hour off
 A wall time that does not exist because the clocks jump forward (02:30 on
 2026-03-29 in Brussels, or 2026-03-08 in New York) gave an ISO string and an

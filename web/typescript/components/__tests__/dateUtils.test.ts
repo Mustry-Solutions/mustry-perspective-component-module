@@ -3,7 +3,7 @@ import {
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
-    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs
+    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso
 } from '../../shared/dateUtils';
 
 describe('pad2', () => {
@@ -235,6 +235,35 @@ describe('resolveZoned', () => {
         // fields, and a process running in a US zone has already shifted 02:30.
         const r = resolveZoned(new Date(2026, 2, 8, 2, 30, 0), 'America/New_York');
         expect(Date.parse(r.iso)).toBe(r.epochMs);
+    });
+
+    it('keeps every zone right when calls alternate between zones', () => {
+        // One cached formatter per zone (#145): a mix-up between zones, or a
+        // formatter reused across them, would show up as a wrong offset here.
+        const summer = Date.UTC(2026, 6, 1, 12, 0, 0);
+        const winter = Date.UTC(2026, 0, 15, 12, 0, 0);
+        const cases: Array<[string, number, string]> = [
+            ['Europe/Brussels', summer, '2026-07-01T14:00:00+02:00'],
+            ['America/Chicago', summer, '2026-07-01T07:00:00-05:00'],
+            ['Asia/Kolkata', summer, '2026-07-01T17:30:00+05:30'],
+            ['Europe/Brussels', winter, '2026-01-15T13:00:00+01:00'],
+            ['America/Chicago', winter, '2026-01-15T06:00:00-06:00'],
+            ['Pacific/Auckland', winter, '2026-01-16T01:00:00+13:00'],
+            ['UTC', winter, '2026-01-15T12:00:00+00:00']
+        ];
+        for (let round = 0; round < 2; round++) {
+            for (const [zone, ms, iso] of cases) {
+                expect(msToZonedIso(ms, zone)).toBe(iso);
+                expect(toEpochMs(iso.slice(0, 19), zone)).toBe(ms);
+            }
+        }
+    });
+
+    it('an unknown zone falls back to local time on every call', () => {
+        const wall = new Date(2026, 5, 15, 12, 0, 0);
+        for (let i = 0; i < 2; i++) {
+            expect(resolveZoned(wall, 'Not/AZone').epochMs).toBe(wall.getTime());
+        }
     });
 
     it('emitWall in the gap writes back the instant toEpochMs reads', () => {

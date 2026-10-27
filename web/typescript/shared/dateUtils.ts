@@ -174,16 +174,28 @@ export interface ZonedResult {
     iso: string;       // ISO 8601 with offset, e.g. "2026-06-25T09:00:00+02:00"
 }
 
+// Building an Intl.DateTimeFormat costs far more than using one, and every zone
+// conversion needs two to four offsets: one formatter per zone, kept for good.
+const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function offsetFormatter(timeZone: string): Intl.DateTimeFormat {
+    let dtf = offsetFormatters.get(timeZone);
+    if (!dtf) {
+        dtf = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            hour12: false,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        offsetFormatters.set(timeZone, dtf);
+    }
+    return dtf;
+}
+
 /** Offset (minutes, east-positive) of `timeZone` at the instant `date`. */
 function tzOffsetMinutes(date: Date, timeZone: string): number {
-    const dtf = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        hour12: false,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
     const map: { [k: string]: number } = {};
-    for (const p of dtf.formatToParts(date)) {
+    for (const p of offsetFormatter(timeZone).formatToParts(date)) {
         if (p.type !== 'literal') {
             map[p.type] = parseInt(p.value, 10);
         }
