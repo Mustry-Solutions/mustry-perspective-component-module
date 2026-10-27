@@ -17,7 +17,10 @@ allprojects {
     // The release workflow passes -PreleaseVersion=<tag> (the git tag drives the
     // module version — see .github/workflows/release.yml). Local and main-branch
     // builds carry a SNAPSHOT so a dev .modl is never mistaken for a release.
-    version = (project.findProperty("releaseVersion") as String?)?.removePrefix("v") ?: "0.5.0-SNAPSHOT"
+    // module.xml drops the suffix (0.8.1-SNAPSHOT -> 0.8.1), so keep this one
+    // patch ahead of the latest tag: bump it after every release (RELEASING.md),
+    // or a dev build installs as a downgrade of the released module.
+    version = (project.findProperty("releaseVersion") as String?)?.removePrefix("v") ?: "0.8.1-SNAPSHOT"
 }
 
 ignitionModule {
