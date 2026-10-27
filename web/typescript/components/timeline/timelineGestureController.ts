@@ -39,6 +39,7 @@ export interface TlGestureEnv {
     editable: boolean;
     selectable: boolean;
     snapMinutes: number;
+    timeZone: string;   // display zone the snap grid follows (config.timezone; '' = browser-local)
     scale: TimeScale;   // current window + density (px<->ms)
 }
 
@@ -112,8 +113,8 @@ export class TimelineGestureController extends DragGestureController<TlGesture, 
         if (!row) {
             return;
         }
-        const { scale, snapMinutes } = this.host.env();
-        const anchorMs = snapMs(pxToMs(scale, e.clientX - row.left), snapMinutes);
+        const { scale, snapMinutes, timeZone } = this.host.env();
+        const anchorMs = snapMs(pxToMs(scale, e.clientX - row.left), snapMinutes, timeZone);
         this.startGesture({
             mode: 'create', startClientX: e.clientX, startClientY: e.clientY,
             origStartMs: anchorMs, origEndMs: anchorMs, origResourceId: resourceId, moved: false
@@ -123,13 +124,13 @@ export class TimelineGestureController extends DragGestureController<TlGesture, 
     // --- lifecycle hooks (geometry) ------------------------------------------
 
     protected handleMove(e: PointerEvent, g: TlGesture): void {
-        const { editable, selectable, snapMinutes, scale } = this.host.env();
+        const { editable, selectable, snapMinutes, timeZone, scale } = this.host.env();
         const deltaMs = ((e.clientX - g.startClientX) / scale.pxPerHour) * 3600000;
         if (g.mode === 'move') {
             if (!editable) {
                 return;
             }
-            const { startMs, endMs } = movePreviewMs(g.origStartMs, g.origEndMs, deltaMs, snapMinutes);
+            const { startMs, endMs } = movePreviewMs(g.origStartMs, g.origEndMs, deltaMs, snapMinutes, timeZone);
             // Vertical drag reassigns: the row under the pointer (fallback: origin row).
             const row = rowAtY(this.rowRects, e.clientY);
             this.setPreview({
@@ -138,7 +139,7 @@ export class TimelineGestureController extends DragGestureController<TlGesture, 
             });
         } else if (g.mode === 'resize-start' || g.mode === 'resize-end') {
             const { startMs, endMs } = resizePreviewMs(
-                g.mode === 'resize-start' ? 'start' : 'end', g.origStartMs, g.origEndMs, deltaMs, snapMinutes);
+                g.mode === 'resize-start' ? 'start' : 'end', g.origStartMs, g.origEndMs, deltaMs, snapMinutes, timeZone);
             this.setPreview({
                 mode: g.mode, eventId: g.ev!.id, title: g.ev!.title, color: this.host.resolveColor(g.ev!),
                 resourceId: g.origResourceId, startMs, endMs
@@ -150,7 +151,7 @@ export class TimelineGestureController extends DragGestureController<TlGesture, 
                 return;
             }
             const cur = pxToMs(scale, e.clientX - row.left);
-            const { startMs, endMs } = createPreviewMs(g.origStartMs, cur, snapMinutes);
+            const { startMs, endMs } = createPreviewMs(g.origStartMs, cur, snapMinutes, timeZone);
             this.setPreview({ mode: 'create', resourceId: g.origResourceId, startMs, endMs });
         }
     }

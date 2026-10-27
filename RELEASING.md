@@ -64,6 +64,11 @@ Signing runs only in the Release workflow, from repository secrets
 | `SIGNING_CERT_ALIAS` | Key alias inside the keystore |
 | `SIGNING_CERT_PASSWORD` | Key password (often the same as the keystore password) |
 
+To check the secrets without releasing, run the **Release** workflow by hand
+(**Actions → Release → Run workflow**) with a plain `x.y.z` version. A manual
+run is always a dry run: it builds and signs, and uploads the signed `.modl`
+as a workflow artifact. Only a pushed tag publishes a release.
+
 If any are missing, the release fails fast with a message naming them. The
 signing material is **never** committed; the local dev keystore under
 `ops/signing/` (git-ignored, self-signed) is for the dev gateway only and is

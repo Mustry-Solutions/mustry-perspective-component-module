@@ -18,6 +18,9 @@ node_modules/
 **/node_modules/
 web/.gradle/
 
+# --- Local dev gateway overrides (host ports, timezone); compose has defaults ---
+.env
+
 # --- Staged module artifacts for the local dev gateway ---
 ops/modules/*.modl
 

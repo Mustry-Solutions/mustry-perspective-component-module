@@ -410,10 +410,22 @@ export function wallInputStep(value: string): string {
     return /T\d\d:\d\d:\d\d/.test(value) ? '1' : '';
 }
 
+/** Local Date whose fields are the wall clock of `instant` in `timeZone` (browser-local
+ *  if empty), so field-based day math matches what an operator in that zone sees. An
+ *  unknown zone reads as browser-local, as `resolveZoned` does, instead of throwing. */
+export function wallClockInZone(instant: Date, timeZone: string): Date {
+    let w: ReturnType<typeof zoneWallClock>;
+    try {
+        w = zoneWallClock(instant, timeZone);
+    } catch (e) {
+        w = zoneWallClock(instant, '');
+    }
+    return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
+}
+
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
-export function todayInZone(timeZone: string): Date {
-    const w = zoneWallClock(new Date(), timeZone);
-    return new Date(w.y, w.mo - 1, w.d);
+export function todayInZone(timeZone: string, instant: Date = new Date()): Date {
+    return startOfDay(wallClockInZone(instant, timeZone));
 }
 
 /** Minutes-from-midnight of "now" in `timeZone`. */

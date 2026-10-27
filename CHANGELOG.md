@@ -27,6 +27,38 @@ did not show on Monday at all (#142). Non-recurring events of the same shape
 were fine. The Calendar and the Resource Timeline now keep every occurrence
 that overlaps the window, wherever it starts.
 
+### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
+Realtime windows and presets took the browser's clock, but the outputs read
+those times in `config.timezone` (#139). With a Brussels browser and
+`America/Chicago`, "Last 1 hour" at 13:00 UTC selected 14:00 to 15:00, and
+`endEpochMs` was 7 hours in the future. "Today", "This week" and the other
+calendar presets, the `disableDates` past/future bound and the today
+highlight had the same problem near midnight. All of them now read the
+current time in `config.timezone` (browser-local when it is blank), so the
+same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
+real elapsed time across a DST change.
+
+### Fixed: Date/Time Range Picker rolling ranges overflowed month ends and drifted across DST
+A rolling month from a day the target month lacks ran into the next month
+(#140): "Last 1 month" from March 31 started on March 3, and "Next 1 month"
+from January 31 ended on March 3. It now stops on the target month's last
+day (February 28, or 29 in a leap year). Days and weeks were counted as
+24-hour blocks, so "Last 7 days" at 10:00 on October 27 in Brussels started
+at 11:00 on October 20, because the clocks went back in between. Days and
+weeks now step calendar days and keep the wall time (10:00 on October 20).
+Hours still count elapsed time.
+
+### Fixed: Color Picker hsl and rgba values changed the picked colour
+In `hsl` format the picker wrote whole numbers, which parse back to a
+different colour for most picks: the default swatch `#12b886` became
+`hsl(162, 82%, 40%)`, which reads as `#12ba87`, so `onChange.hex` and
+`output.hex` disagreed (#154). Alpha in `rgba()`/`hsla()` was rounded to two
+decimals and shifted 155 of the 256 possible values. `hsl()` now carries one
+decimal (`hsl(161.9, 82.2%, 39.6%)`) and alpha three (`0.502`), which keeps
+every 8-bit colour and alpha exactly. `onChange`, `output.*` and the recent
+row are now built from the written value, so they always agree. Also,
+releasing a drag on a grey or black no longer snaps the hue slider to red.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,
@@ -36,6 +68,17 @@ the visible window, the timezone or the hidden categories change. On 2000
 events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
 and a drag no longer rebuilds it at all. All components that take a
 `config.timezone` share the faster conversion.
+
+### Fixed: Resource Timeline snapped to a UTC grid instead of the display zone
+Drag, resize and click-to-create rounded times on a grid counted from UTC
+midnight, so the result missed the clock of `config.timezone` (#138). In
+`Asia/Kolkata` at week zoom, 10:10 snapped to 10:30. In Brussels with
+`snapMinutes: 120`, 06:10 snapped to 07:00, and with 1440 to 01:00. Snapping
+now counts whole steps from midnight in the display zone (browser-local when
+empty). On DST days the result stays on that wall-clock grid: a 2 h step on
+the 23 h or 25 h day still gives 10:00, and the repeated hour snaps within its
+own occurrence. Moving a bar with a large snap across a DST change now keeps
+its time of day (a day-snapped 06:00 shift stays 06:00, not 07:00).
 
 ### Fixed: times in the spring-forward gap emitted an hour off
 A wall time that does not exist because the clocks jump forward (02:30 on
