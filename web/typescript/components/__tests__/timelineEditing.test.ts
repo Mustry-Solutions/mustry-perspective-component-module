@@ -310,10 +310,12 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
         start: '2026-07-01T06:45:00', end: '2026-07-01T07:00:00',
         category: 'meeting', rrule: { freq: 'daily', exdate: ['2026-07-02'] }
     };
-    const occ: TimelineEvent = {
+    const plain: TimelineEvent = {
         id: 'r1::2026-07-06', resourceId: 'crew-a', title: 'Handover',
         start: '2026-07-06T06:45:00', end: '2026-07-06T07:00:00', category: 'meeting'
     };
+    // As expandEvents tags it; the id format alone does not make an occurrence (#143).
+    const occ: TimelineEvent = { ...plain, __seriesId: 'r1', __occDate: '2026-07-06' };
     const lookup = (id: string): TimelineEvent | undefined => (id === 'r1' ? base : undefined);
 
     it('editorForEvent recovers the series context and rule, scoped to this event', () => {
@@ -323,7 +325,24 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
             repeatFreq: 'daily'   // the series' rule, editable under "All events"
         });
         // a plain event has no series context
-        expect(tlEditorForEvent({ ...occ, id: 'plain' }, TZ)).toMatchObject({ seriesId: null, scope: 'series', repeatFreq: '' });
+        expect(tlEditorForEvent({ ...plain, id: 'plain' }, TZ)).toMatchObject({ seriesId: null, scope: 'series', repeatFreq: '' });
+    });
+
+    it('a plain event whose id contains "::" has no series context (#143)', () => {
+        const wo: TimelineEvent = { ...plain, id: 'WO::1234' };
+        expect(tlEditorForEvent(wo, TZ, lookup)).toMatchObject({ id: 'WO::1234', seriesId: null, occurrenceDate: null, scope: 'series' });
+        const spec = tlMoveResizeSpec('move', wo, { startMs: Date.UTC(2026, 6, 6, 8) }, TZ);
+        expect(spec.event).toMatchObject({ id: 'WO::1234' });
+        expect(spec.extra).toBeUndefined();
+    });
+
+    it('an occurrence of a series whose id contains "::" keeps the whole series id (#143)', () => {
+        const o: TimelineEvent = { ...plain, id: 'line::A::2026-07-06', __seriesId: 'line::A', __occDate: '2026-07-06' };
+        expect(tlEditorForEvent(o, TZ)).toMatchObject({ seriesId: 'line::A', occurrenceDate: '2026-07-06', scope: 'occurrence' });
+        const spec = tlMoveResizeSpec('move', o, { startMs: Date.UTC(2026, 6, 6, 8) }, TZ);
+        expect(spec.event).toMatchObject({ id: 'line::A-x-2026-07-06' });
+        expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'line::A', occurrenceDate: '2026-07-06' });
+        expect(Object.keys(spec.event).filter((k) => k.indexOf('__') === 0)).toEqual([]);
     });
 
     it('occurrence save detaches into an override that must NOT carry the rule', () => {
