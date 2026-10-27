@@ -8,6 +8,15 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: times in the spring-forward gap emitted an hour off
+A wall time that does not exist because the clocks jump forward (02:30 on
+2026-03-29 in Brussels, or 2026-03-08 in New York) gave an ISO string and an
+epoch value one hour apart (#144). The Date/Time Range Picker's
+`startDateTime` disagreed with `startEpochMs`, and the Calendar wrote back a
+time an hour away from the one it then showed. The ISO string is now built
+from the resolved instant, so both name the same moment (03:30+02:00 in the
+Brussels example).
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on

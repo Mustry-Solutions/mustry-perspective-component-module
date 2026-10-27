@@ -3,7 +3,7 @@ import {
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
-    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders
+    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs
 } from '../../shared/dateUtils';
 
 describe('pad2', () => {
@@ -219,6 +219,28 @@ describe('resolveZoned', () => {
         const r = resolveZoned(wall, 'America/New_York');
         expect(r.iso).toBe('2026-01-15T12:00:00-05:00');
         expect(r.epochMs).toBe(Date.UTC(2026, 0, 15, 17, 0, 0)); // 12:00 EST = 17:00 UTC
+    });
+
+    // A wall time in the spring-forward gap does not exist. Whichever instant it
+    // resolves to, the ISO string must name that same instant (#144).
+    it('Europe/Brussels spring-forward gap: ISO and epoch name the same instant', () => {
+        const r = resolveZoned(new Date(2026, 2, 29, 2, 30, 0), 'Europe/Brussels');
+        expect(r.epochMs).toBe(Date.UTC(2026, 2, 29, 1, 30, 0));
+        expect(r.iso).toBe('2026-03-29T03:30:00+02:00');
+        expect(Date.parse(r.iso)).toBe(r.epochMs);
+    });
+
+    it('America/New_York spring-forward gap: ISO and epoch name the same instant', () => {
+        // Only the agreement is asserted: the wall Date carries process-local
+        // fields, and a process running in a US zone has already shifted 02:30.
+        const r = resolveZoned(new Date(2026, 2, 8, 2, 30, 0), 'America/New_York');
+        expect(Date.parse(r.iso)).toBe(r.epochMs);
+    });
+
+    it('emitWall in the gap writes back the instant toEpochMs reads', () => {
+        const out = emitWall('2026-03-29T02:30:00', false, 'Europe/Brussels');
+        expect(out).toBe('2026-03-29T03:30:00+02:00');
+        expect(Date.parse(out)).toBe(toEpochMs('2026-03-29T02:30:00', 'Europe/Brussels'));
     });
 });
 

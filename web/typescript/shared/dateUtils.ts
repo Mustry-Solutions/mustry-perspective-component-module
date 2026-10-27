@@ -225,21 +225,21 @@ export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
     const s = wall.getSeconds();
 
     let epochMs: number;
-    let offMin: number;
+    let zone = timeZone;
     if (!timeZone) {
         epochMs = wall.getTime();
-        offMin = -wall.getTimezoneOffset();
     } else {
         try {
             epochMs = zonedWallClockToEpoch(y, mo, d, h, mi, s, timeZone);
-            offMin = tzOffsetMinutes(new Date(epochMs), timeZone);
         } catch (e) {
             epochMs = wall.getTime();
-            offMin = -wall.getTimezoneOffset();
+            zone = '';
         }
     }
-    const iso = `${fmtDate(wall)}T${pad2(h)}:${pad2(mi)}:${pad2(s)}${offsetToStr(offMin)}`;
-    return { epochMs, iso };
+    // Format the ISO from the resolved instant, not the input fields: a wall time
+    // in the spring-forward gap does not exist, and the input fields with the
+    // post-change offset would name an instant an hour away from epochMs.
+    return { epochMs, iso: msToZonedIso(epochMs, zone) };
 }
 
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
