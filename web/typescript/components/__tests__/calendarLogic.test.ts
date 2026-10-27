@@ -282,6 +282,37 @@ describe('backgroundBandsForDay', () => {
         expect(bands).toEqual([{ id: 'dt', startMin: 120, endMin: 240, color: '#fee' }]);
     });
 
+    it('draws a multi-day background event on every day it covers (#146)', () => {
+        const events: CalEvent[] = [
+            { id: 'mw', title: 'Maintenance', start: '2026-09-21T20:00:00', end: '2026-09-23T06:00:00', display: 'background' }
+        ];
+        const band = (day: string) => backgroundBandsForDay(events, day, 0, 1440).map((b) => [b.startMin, b.endMin]);
+        expect(band('2026-09-20')).toEqual([]);
+        expect(band('2026-09-21')).toEqual([[1200, 1440]]);   // 20:00-24:00
+        expect(band('2026-09-22')).toEqual([[0, 1440]]);      // the whole day
+        expect(band('2026-09-23')).toEqual([[0, 360]]);       // 00:00-06:00
+        expect(band('2026-09-24')).toEqual([]);
+    });
+
+    it('clamps each day of a multi-day background event to the visible window', () => {
+        const events: CalEvent[] = [
+            { id: 'mw', title: 'Maintenance', start: '2026-09-21T20:00:00', end: '2026-09-23T06:00:00', display: 'background' }
+        ];
+        // window 06:00-18:00: the first day starts after it, the last day ends at its top
+        expect(backgroundBandsForDay(events, '2026-09-21', 360, 1080)).toEqual([]);
+        expect(backgroundBandsForDay(events, '2026-09-22', 360, 1080).map((b) => [b.startMin, b.endMin])).toEqual([[360, 1080]]);
+        expect(backgroundBandsForDay(events, '2026-09-23', 360, 1080)).toEqual([]);
+    });
+
+    it('keeps the single-day fallbacks: no end runs to the window end, a bad end gets an hour', () => {
+        const events: CalEvent[] = [
+            { id: 'open', title: 'Open', start: '2026-06-24T02:00:00', display: 'background' },
+            { id: 'bad', title: 'Bad', start: '2026-06-24T10:00:00', end: '2026-06-24T09:00:00', display: 'background' }
+        ];
+        expect(backgroundBandsForDay(events, '2026-06-24', 0, 1080).map((b) => [b.id, b.startMin, b.endMin]))
+            .toEqual([['open', 120, 1080], ['bad', 600, 660]]);
+    });
+
     it('excludes background events from the packed layout', () => {
         const events: CalEvent[] = [
             { id: 'dt', title: 'Downtime', start: '2026-06-24T02:00:00', end: '2026-06-24T04:00:00', display: 'background' }
