@@ -16,7 +16,7 @@ interface MonthViewProps {
     editable: boolean;
     dragEventId: string;   // event id of an in-flight month drag ('' = none) — dims its bars
     dropDayIso: string;    // drop-target day cell of that drag ('' = none) — highlights the cell
-    enterClass: (id: string) => string;
+    enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onDayClick: (iso: string) => void;
     openDayPop: (iso: string, e: React.MouseEvent) => void;

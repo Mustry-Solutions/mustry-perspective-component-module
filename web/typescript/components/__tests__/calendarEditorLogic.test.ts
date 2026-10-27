@@ -16,6 +16,10 @@ const ed = (o: Partial<Editor> = {}): Editor => ({
 
 const none = (): CalEvent | undefined => undefined;
 
+/** An occurrence as expandEvents tags it. */
+const occOf = (seriesId: string, date: string, ev: Omit<CalEvent, 'id'>): CalEvent =>
+    ({ ...ev, id: `${seriesId}::${date}`, __seriesId: seriesId, __occDate: date });
+
 describe('emitWall', () => {
     it('emits an offset-bearing instant for timed values', () => {
         expect(emitWall('2026-06-15T09:00:00', false, TZ)).toBe('2026-06-15T09:00:00+00:00');
@@ -50,13 +54,13 @@ describe('editorForEvent', () => {
             { id: 'a', title: 'T', start: '2026-06-15T09:00:00', end: '2026-06-15T10:00:00' }, none);
         expect(e).toMatchObject({ id: 'a', start: '2026-06-15T09:00', end: '2026-06-15T10:00', seriesId: null, scope: 'series', repeatFreq: '' });
     });
-    it('occurrence (id "base::date"): recovers the series rule and scopes to "this event"', () => {
+    it('occurrence: recovers the series rule and scopes to "this event"', () => {
         const base: CalEvent = {
             id: 'a', title: 'T', start: '2026-06-01T09:00:00',
             rrule: { freq: 'weekly', interval: 2, byweekday: [1, 3], until: '2026-08-01' }
         };
         const e = editorForEvent(
-            { id: 'a::2026-06-17', title: 'T', start: '2026-06-17T09:00:00' },
+            occOf('a', '2026-06-17', { title: 'T', start: '2026-06-17T09:00:00' }),
             (id) => (id === 'a' ? base : undefined));
         expect(e).toMatchObject({
             seriesId: 'a', occurrenceDate: '2026-06-17', scope: 'occurrence',
@@ -66,9 +70,19 @@ describe('editorForEvent', () => {
     });
     it('maps a count-ended rule to the count end mode', () => {
         const base: CalEvent = { id: 'a', title: 'T', start: '2026-06-01', rrule: { freq: 'daily', count: 5 } };
-        const e = editorForEvent({ id: 'a::2026-06-03', title: 'T', start: '2026-06-03' }, () => base);
+        const e = editorForEvent(occOf('a', '2026-06-03', { title: 'T', start: '2026-06-03' }), () => base);
         expect(e.repeatEndMode).toBe('count');
         expect(e.repeatCount).toBe(5);
+    });
+    it('a plain event whose id contains "::" stays a plain event (#143)', () => {
+        const lookup = jest.fn(none);
+        const e = editorForEvent({ id: 'WO::1234', title: 'T', start: '2026-06-15T09:00:00' }, lookup);
+        expect(e).toMatchObject({ id: 'WO::1234', seriesId: null, occurrenceDate: null, scope: 'series' });
+        expect(lookup).not.toHaveBeenCalled();
+    });
+    it('an occurrence of a series whose id contains "::" keeps the whole series id (#143)', () => {
+        const e = editorForEvent(occOf('line::A', '2026-06-17', { title: 'T', start: '2026-06-17T09:00:00' }), none);
+        expect(e).toMatchObject({ seriesId: 'line::A', occurrenceDate: '2026-06-17', scope: 'occurrence' });
     });
 });
 
@@ -210,7 +224,7 @@ describe('carry-through of fields the editor does not edit', () => {
 
     it('the series branch carries them too, without disturbing the explicit rrule', () => {
         const base: CalEvent = { ...rich, rrule: { freq: 'daily' } };
-        const e = editorForEvent({ ...rich, id: 'a::2026-06-17', start: '2026-06-17T09:00:00' }, () => base);
+        const e = editorForEvent(occOf('a', '2026-06-17', { ...rich, start: '2026-06-17T09:00:00' }), () => base);
         const spec = editorSaveSpec({ ...e, scope: 'series' }, TZ, () => base);
         expect(spec.event).toMatchObject({ status: 'tentative', rrule: { freq: 'daily' } });
     });
@@ -259,8 +273,22 @@ describe('moveResizeSpec', () => {
         expect(spec.event).toMatchObject({ start: '2026-06-15T09:00:00+00:00', end: '2026-06-15T11:30:00+00:00' });
     });
     it('dragging a recurring occurrence detaches it into an override with occurrence context', () => {
-        const spec = moveResizeSpec('move', { ...ev, id: 'a::2026-06-17' }, { start: '2026-06-17T11:00:00', end: '2026-06-17T12:00:00' }, TZ);
+        const spec = moveResizeSpec('move', occOf('a', '2026-06-17', ev), { start: '2026-06-17T11:00:00', end: '2026-06-17T12:00:00' }, TZ);
         expect((spec.event as { id: string }).id).toBe('a-x-2026-06-17');
         expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'a', occurrenceDate: '2026-06-17' });
+    });
+    it('the occurrence tags never reach the onChange event payload', () => {
+        const spec = moveResizeSpec('move', occOf('a', '2026-06-17', ev), { start: '2026-06-17T11:00:00' }, TZ);
+        expect(Object.keys(spec.event).filter((k) => k.indexOf('__') === 0)).toEqual([]);
+    });
+    it('dragging a plain event whose id contains "::" is a plain move (#143)', () => {
+        const spec = moveResizeSpec('move', { ...ev, id: 'WO::1234' }, { start: '2026-06-16T11:00:00', end: '2026-06-16T12:00:00' }, TZ);
+        expect((spec.event as { id: string }).id).toBe('WO::1234');
+        expect(spec.extra).toBeUndefined();
+    });
+    it('an occurrence of a series whose id contains "::" detaches against the whole series id (#143)', () => {
+        const spec = moveResizeSpec('move', occOf('line::A', '2026-06-17', ev), { start: '2026-06-17T11:00:00' }, TZ);
+        expect((spec.event as { id: string }).id).toBe('line::A-x-2026-06-17');
+        expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'line::A', occurrenceDate: '2026-06-17' });
     });
 });

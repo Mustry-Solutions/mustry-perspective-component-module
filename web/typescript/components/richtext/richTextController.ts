@@ -4,7 +4,7 @@
 // event-handler attributes can never enter), and exposes the small imperative
 // surface the class component drives. DOM-facing, hence untested; anything
 // with logic lives in richTextLogic.ts.
-import { Editor, Extension } from '@tiptap/core';
+import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -13,47 +13,14 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
-import Image from '@tiptap/extension-image';
 import CharacterCount from '@tiptap/extension-character-count';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Node as PMNode } from '@tiptap/pm/model';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
 import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
-import { RteFeatures, countChars, dataUriKb, graphemeTailLength, sanitizeImageSrc, sanitizeUrl } from './richTextLogic';
-
-const docChars = (doc: PMNode): number => countChars(doc.textBetween(0, doc.content.size, undefined, ' '));
-
-// CharacterCount trims an over-limit paste by deleting `over` POSITIONS, but
-// its textCounter (countChars) counts graphemes, so an emoji paste is trimmed
-// short and then rejected outright. Trim it first, by grapheme, so the
-// transaction reaching CharacterCount is already within the limit.
-function pasteTrimToLimit(limit: number): Extension {
-    return Extension.create({
-        name: 'pasteTrimToLimit',
-        priority: 101, // ahead of CharacterCount (100)
-        addProseMirrorPlugins() {
-            return [new Plugin({
-                key: new PluginKey('pasteTrimToLimit'),
-                filterTransaction: (tr, state) => {
-                    if (!tr.docChanged || !tr.getMeta('paste') || docChars(state.doc) > limit) {
-                        return true;
-                    }
-                    const over = docChars(tr.doc) - limit;
-                    if (over > 0) {
-                        const $head = tr.selection.$head;
-                        const len = graphemeTailLength($head.parent.textBetween(0, $head.parentOffset, undefined, ' '), over);
-                        if (len > 0) {
-                            tr.deleteRange($head.pos - len, $head.pos);
-                        }
-                    }
-                    return true;
-                }
-            })];
-        }
-    });
-}
+import { RteFeatures, countChars, imageSrcWithinPolicy, sanitizeUrl } from './richTextLogic';
+import { pasteTrimToLimit, policyImage } from './richTextExtensions';
 
 export interface RteControllerOpts {
     element: HTMLElement;
@@ -63,7 +30,8 @@ export interface RteControllerOpts {
     features: RteFeatures;
     /** 0 = unlimited. Enforced by the CharacterCount extension. */
     charLimit: number;
-    /** Max embedded (pasted) image size in KB; larger pastes are dropped. */
+    /** Max embedded (data URI) image size in KB; larger images are dropped
+     *  wherever they come from: bound content, paste, or the toolbar. */
     maxImageKb: number;
     /** Font families operators may pick; empty = font feature off. */
     fonts: string[];
@@ -76,9 +44,11 @@ export interface RteControllerOpts {
 
 export class RichTextController {
     private editor: Editor;
+    private maxImageKb: number;
 
     constructor(opts: RteControllerOpts) {
         const f = opts.features;
+        this.maxImageKb = opts.maxImageKb;
         this.editor = new Editor({
             element: opts.element,
             editable: opts.editable,
@@ -119,7 +89,7 @@ export class RichTextController {
                     Table.configure({ resizable: false }),
                     TableRow, TableHeader, TableCell
                 ] : []),
-                ...(f.image ? [Image.configure({ inline: false, allowBase64: true })] : []),
+                ...(f.image ? [policyImage(opts.maxImageKb)] : []),
                 ...(f.checklist ? [
                     TaskList,
                     TaskItem.configure({
@@ -178,9 +148,9 @@ export class RichTextController {
                     }
                     const reader = new FileReader();
                     reader.onload = () => {
-                        const uri = String(reader.result || '');
-                        if (uri && dataUriKb(uri) <= opts.maxImageKb) {
-                            this.editor.chain().focus().setImage({ src: uri }).run();
+                        const src = imageSrcWithinPolicy(String(reader.result || ''), opts.maxImageKb);
+                        if (src) {
+                            this.editor.chain().focus().setImage({ src }).run();
                         }
                     };
                     reader.readAsDataURL(file);
@@ -267,9 +237,10 @@ export class RichTextController {
         }
     }
 
-    /** Insert an image by (sanitized) URL — http(s), relative, or data:image/*. */
+    /** Insert an image by (sanitized) URL: http(s), relative, or data:image/*
+     *  within config.maxImageKb. */
     setImage(src: string): void {
-        const safe = sanitizeImageSrc(src);
+        const safe = imageSrcWithinPolicy(src, this.maxImageKb);
         if (safe) {
             this.editor.chain().focus().setImage({ src: safe }).run();
         }
