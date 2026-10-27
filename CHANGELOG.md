@@ -8,6 +8,16 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Changed: Data Grid number error shows the expected format
+A number cell typed in another locale's format, such as `4,5` with
+`config.locale: "en"`, was rejected with only "Must be a number" (#174).
+The operator had typed a number and could not tell what the grid expected.
+The message now carries an example in the grid's own format: `Must be a
+number, like 1,234.5` in `en`, `Muss eine Zahl sein, z. B. 1.234,5` in `de`.
+The example follows the column's `decimals` (`1,234` for `decimals: 0`).
+`config.labels.errNumber` takes the new `{example}` placeholder; an
+override without it keeps its text unchanged.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,

@@ -1,6 +1,8 @@
 // Pure geometry/layout logic for the Data Grid — no DOM, no React, fully unit-tested.
 // Fixed row height is the contract that keeps virtualization exact (see the schema).
 
+import { GridLabels } from '../../shared/labelPacks';
+
 export type ColumnType = 'text' | 'number' | 'date' | 'datetime' | 'boolean';
 
 /** One conditional-styling rule; the first matching rule wins. */
@@ -436,7 +438,31 @@ export function parseLocaleNumber(text: string, locale: string): number {
     return Number(m[1] + body);
 }
 
+/** A sample number in the column's display format, for the errNumber hint
+ *  (#174). Built with the display formatter, so it shows exactly what the grid
+ *  shows and parseLocaleNumber accepts. Whole number when decimals is 0;
+ *  1234 rather than 1234.5, which would round up to 1,235. */
+export function numberExample(col: GridColumn, locale: string): string {
+    return col.decimals === 0
+        ? numFmt(locale, 0).format(1234)
+        : numFmt(locale, col.decimals >= 0 ? col.decimals : 1).format(1234.5);
+}
+
 export type EditError = 'required' | 'number' | 'min' | 'max' | 'pattern' | 'option' | null;
+
+/** The localized message for a validation error, placeholders filled. A label
+ *  without the placeholder (an author override) passes through unchanged. */
+export function editErrorText(error: EditError, col: GridColumn, labels: GridLabels, locale: string): string {
+    switch (error) {
+        case 'required': return labels.errRequired;
+        case 'number': return labels.errNumber.replace('{example}', numberExample(col, locale));
+        case 'min': return labels.errMin.replace('{min}', String(col.min));
+        case 'max': return labels.errMax.replace('{max}', String(col.max));
+        case 'pattern': return labels.errPattern;
+        case 'option': return labels.errOption;
+        default: return '';
+    }
+}
 
 /** Parse + validate an editor draft against its column. Returns the typed value
  *  to commit and the (localizable) error key — commit only when error is null.

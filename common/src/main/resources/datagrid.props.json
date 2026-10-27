@@ -208,7 +208,7 @@
             },
             "errNumber": {
               "type": "string",
-              "description": "Validation: not a number."
+              "description": "Validation: not a number; '{example}' = a sample number in the column's locale format and decimals (e.g. 1,234.5 in en)."
             },
             "errMin": {
               "type": "string",
