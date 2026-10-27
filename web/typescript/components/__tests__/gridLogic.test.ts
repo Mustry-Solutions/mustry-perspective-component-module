@@ -398,6 +398,59 @@ describe('parseLocaleNumber (#131: thousands separators are not decimal points)'
     });
 });
 
+import { editErrorText, numberExample } from '../grid/gridLogic';
+import { EN_GRID_LABELS, gridLabelBase } from '../../shared/labelPacks';
+
+describe('numberExample (#174: the errNumber hint shows the expected format)', () => {
+    it('formats like the grid displays: one decimal by default, the column decimals when set', () => {
+        expect(numberExample(col('n', { type: 'number' }), 'en')).toBe('1,234.5');
+        expect(numberExample(col('n', { type: 'number' }), 'de')).toBe('1.234,5');
+        expect(numberExample(col('n', { type: 'number', decimals: 2 }), 'en')).toBe('1,234.50');
+        expect(numberExample(col('n', { type: 'number', decimals: 0 }), 'en')).toBe('1,234');
+        expect(numberExample(col('n', { type: 'number', decimals: 0 }), 'de')).toBe('1.234');
+    });
+
+    it('parses back with the grid\'s own number parser in every bundled locale', () => {
+        for (const loc of ['en', 'fr', 'de', 'es', 'nl', 'it', 'pt']) {
+            for (const [decimals, expected] of [[-1, 1234.5], [0, 1234], [2, 1234.5], [6, 1234.5]]) {
+                const c = col('n', { type: 'number', decimals });
+                const example = numberExample(c, loc);
+                expect([loc, decimals, parseLocaleNumber(example, loc)]).toEqual([loc, decimals, expected]);
+                expect(validateCell(example, c, loc)).toEqual({ value: expected, error: null });
+            }
+        }
+    });
+});
+
+describe('editErrorText (localized validation message)', () => {
+    const num = col('n', { type: 'number', min: 0, max: 10 });
+
+    it('fills {example} in every bundled errNumber text', () => {
+        expect(editErrorText('number', num, gridLabelBase('en'), 'en')).toBe('Must be a number, like 1,234.5');
+        expect(editErrorText('number', num, gridLabelBase('de'), 'de')).toBe('Muss eine Zahl sein, z. B. 1.234,5');
+        expect(editErrorText('number', col('n', { type: 'number', decimals: 0 }), gridLabelBase('en'), 'en'))
+            .toBe('Must be a number, like 1,234');
+        for (const loc of ['en', 'fr', 'de', 'es', 'nl', 'it', 'pt']) {
+            const text = editErrorText('number', num, gridLabelBase(loc), loc);
+            expect(text).not.toContain('{example}');
+            expect(text).toContain(numberExample(num, loc));
+        }
+    });
+
+    it('leaves an author override without {example} unchanged', () => {
+        const labels = { ...EN_GRID_LABELS, errNumber: 'Numbers only' };
+        expect(editErrorText('number', num, labels, 'en')).toBe('Numbers only');
+    });
+
+    it('still fills {min}/{max} and maps the other errors', () => {
+        const L = gridLabelBase('en');
+        expect(editErrorText('min', num, L, 'en')).toBe('Must be at least 0');
+        expect(editErrorText('max', num, L, 'en')).toBe('Must be at most 10');
+        expect(editErrorText('required', num, L, 'en')).toBe(L.errRequired);
+        expect(editErrorText(null, num, L, 'en')).toBe('');
+    });
+});
+
 describe('editDraft', () => {
     it('edits the RAW value, not the localized rendering', () => {
         expect(editDraft(1234.5, col('n', { type: 'number' }), 'en')).toBe('1234.5');
