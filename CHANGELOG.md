@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Calendar multi-day background events only showed on their first day
+A background event spanning midnight, such as a maintenance window from
+20:00 one day to 06:00 two days later, drew only 20:00 to 24:00 on its first
+day and nothing after (#146). The band now covers every day the event
+crosses in the week and day views, clamped to `dayStartHour`..`dayEndHour`
+like any other event.
+
 ### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
 Hovering an event showed the component's detail popover and then, a moment
 later, the browser's native tooltip (from the bar's `title` attribute) on
