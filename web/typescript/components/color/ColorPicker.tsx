@@ -9,8 +9,8 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    Color, ColorFormat, formatColor, formatHex, HSV, hsvToRgb, isLight, parseColor,
-    parseColorOr, rgbToHsl, rgbToHsv, round
+    canonicalColor, Color, ColorFormat, formatColor, formatHex, HSV, hsvToRgb, isLight, parseColor,
+    parseColorOr, rgbToHsl, rgbToHsvNear, round
 } from './colorLogic';
 import { alphaFromPointer, hueFromPointer, svFromPointer } from './colorGeometry';
 import { ColorDragController, ColorDragHost, ColorDragKind } from './colorDragController';
@@ -32,6 +32,8 @@ interface ColorPickerState {
     editValid: boolean;
     /** Live working copy while a surface is being dragged (null = mirror value). */
     work: { hsv: HSV; alpha: number } | null;
+    /** Slider position before the last value change, so greys and black keep their hue. */
+    lastHsv: HSV | null;
     /** Runtime display/output format (seeded from config.format, user-togglable). */
     fmt: ColorFormat;
     /** Popover open (popover mode only). */
@@ -64,7 +66,7 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
     constructor(props: ComponentProps<ColorPickerProps>) {
         super(props);
         this.state = {
-            editing: null, editValid: true, work: null, fmt: props.props.format,
+            editing: null, editValid: true, work: null, lastHsv: null, fmt: props.props.format,
             open: false, panelTop: 0, panelLeft: 0, recent: []
         };
     }
@@ -84,7 +86,9 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
             this.emitOutputs(p.color);
         }
         if (p.color !== prev.props.color) {
-            const reset: Partial<ColorPickerState> = { work: null };
+            // Remember the slider position: a new grey or black value cannot say
+            // which hue to show, and committing a drag must not move a thumb.
+            const reset: Partial<ColorPickerState> = { work: null, lastHsv: this.working(prev.props.color).hsv };
             if (this.state.editing !== null) {
                 reset.editing = null;
                 reset.editValid = true;
@@ -102,8 +106,8 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
 
     // --- current colour -----------------------------------------------------
 
-    private bound(): Color {
-        return parseColor(this.props.props.color) || BLACK;
+    private bound(raw: string = this.props.props.color): Color {
+        return parseColor(raw) || BLACK;
     }
 
     private displayColor(): Color {
@@ -113,12 +117,12 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
         return this.bound();
     }
 
-    private working(): { hsv: HSV; alpha: number } {
+    private working(raw?: string): { hsv: HSV; alpha: number } {
         if (this.state.work) {
             return this.state.work;
         }
-        const c = this.bound();
-        return { hsv: rgbToHsv(c.rgb), alpha: c.alpha };
+        const c = this.bound(raw);
+        return { hsv: rgbToHsvNear(c.rgb, this.state.lastHsv), alpha: c.alpha };
     }
 
     private isUnset(): boolean {
@@ -150,14 +154,15 @@ export class ColorPicker extends Component<ComponentProps<ColorPickerProps>, Col
     }
 
     /** Commit a picked colour: write the canonical value back, remember it, notify. */
-    private commit(color: Color): void {
-        const value = formatColor(color, this.state.fmt, this.props.props.showAlpha);
+    private commit(picked: Color): void {
+        const { value, color } = canonicalColor(picked, this.state.fmt, this.props.props.showAlpha);
+        const hex = formatHex(color, this.props.props.showAlpha);
         this.props.store.props.write('value.color', value);
         this.emitOutputs(value);
-        this.pushRecent(formatHex(color, this.props.props.showAlpha));
+        this.pushRecent(hex);
         this.fireEvent('onChange', {
             value,
-            hex: formatHex(color, this.props.props.showAlpha),
+            hex,
             rgb: { ...color.rgb },
             hsl: this.hslOut(color),
             alpha: round(color.alpha, 3)
