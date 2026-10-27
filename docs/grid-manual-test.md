@@ -55,6 +55,8 @@ with full write-back scripts (batch mode).
 - [ ] **Cell mode** (`config.editMode: 'cell'`): each commit fires `onCellEdit`
       {rowId, field, oldValue, newValue, row}; the value shows italic + dot
       until the write-back rebinds `data.rows` with the matching value.
+      On `/grid-cell`, Enter, Tab and clicking away each add exactly ONE to
+      the "onCellEdit runs" counter; Escape adds none.
 - [ ] `+` (config.allowAdd) fires `onRowAdd`; the trash (config.allowDelete)
       fires `onRowsDelete` for the selection and clears it.
 

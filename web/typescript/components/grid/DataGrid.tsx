@@ -73,6 +73,11 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private selectionAnchor = '';   // last plainly-clicked row id (shift-range endpoint)
     private filterTimer = 0;        // debounces the state.quickFilter write while typing
     private suppressSort = false;   // a header drag/resize just ended — swallow its click
+    // True from startEdit until the editor closes. this.state.editing lags inside a
+    // batched React handler: Enter/Tab commit, then hand focus back to the grid,
+    // which blurs the editor synchronously — its onBlur must not commit (and fire
+    // onCellEdit) a second time.
+    private editorOpen = false;
     private chooserDismiss = new DocDismiss(
         ['.mustry-dg-chooser', '.mustry-dg-chooser-btn'], () => this.setState({ chooserOpen: false }));
 
@@ -100,7 +105,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         }
         const ed = this.state.editing;
         if (ed && !this.editTarget(ed)) {
-            this.setState({ editing: null });
+            this.closeEditor();
         }
         this.reconcilePending();
         this.warnUnusableIds();
@@ -308,8 +313,14 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             return;
         }
         const draft = initial !== undefined ? initial : editDraft(this.cellValue(row, col.field), col, this.props.props.locale);
+        this.editorOpen = true;
         this.setState({ focus: pos, editing: { rowId: this.rowId(row), field: col.field, draft, error: null } },
             () => this.editorRef.current?.focus());
+    }
+
+    private closeEditor(then?: () => void): void {
+        this.editorOpen = false;
+        this.setState({ editing: null }, then);
     }
 
     /** Validate + fire + close. Returns the edited cell's current position once
@@ -317,12 +328,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private commitEdit(): CellPos | null {
         const fallback = this.state.focus || { row: 0, col: 0 };
         const ed = this.state.editing;
-        if (!ed) {
-            return fallback;
+        if (!ed || !this.editorOpen) {
+            return fallback;   // already closed (state.editing may not have caught up yet)
         }
         const target = this.editTarget(ed);
         if (!target) {
-            this.setState({ editing: null });   // never write to whatever is there now
+            this.closeEditor();   // never write to whatever is there now
             return fallback;
         }
         const { pos, row, col } = target;
@@ -335,12 +346,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (cellText(value) !== cellText(oldValue)) {
             this.fireCellEdit(row, col.field, oldValue, value);
         }
-        this.setState({ editing: null });
+        this.closeEditor();
         return pos;
     }
 
     private cancelEdit(): void {
-        this.setState({ editing: null }, () => this.scrollRef.current?.focus());
+        this.closeEditor(() => this.scrollRef.current?.focus());
     }
 
     private lastDirtyCount = -1;
@@ -635,8 +646,8 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             onKeyDown: this.onEditorKeyDown,
             onBlur: () => {
                 // blur commits when valid; an invalid draft reverts (never trap focus)
-                if (this.state.editing && !this.commitEdit()) {
-                    this.setState({ editing: null });
+                if (this.editorOpen && !this.commitEdit()) {
+                    this.closeEditor();
                 }
             },
             onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>

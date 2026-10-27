@@ -34,6 +34,15 @@ Four ways an edit could be written to the wrong place, all without an error:
   longer confuse the pending-edit bookkeeping. (#130)
 - CSV export now lists pinned columns first, as the grid shows them.
 
+### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
+In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
+twice with the same payload, so the write-back script ran twice per edit
+(double database writes, double audit entries). The commit handed focus back
+to the grid, and the editor's blur committed again before the closed editor
+had rendered. Batch mode was not affected. The verify project gains a
+`/grid-cell` page (cell mode, with a counter of script runs) that the e2e
+suite now checks.
+
 ## [0.8.0] - 2026-10-06
 
 ### Added: toasts from any script with `system.mustry.toast()`
