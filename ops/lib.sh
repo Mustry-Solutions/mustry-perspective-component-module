@@ -29,10 +29,22 @@ if [[ -d "${JAVA_17_HOME}" ]]; then
   export JAVA_HOME="${JAVA_17_HOME}"
 fi
 
-# Read host port overrides from .env (if present) so the printed URL matches compose.
+# Resolve settings the way compose does: the shell environment wins, then an
+# optional local .env (gitignored), then the defaults in docker-compose.yml.
+# Sourcing .env directly would overwrite a shell `GATEWAY_HTTP_PORT=9288`, so
+# each .env key is only filled in (and exported for compose) when it is unset.
 if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-  # shellcheck disable=SC1091
-  set -a; source "${PROJECT_ROOT}/.env"; set +a
+  # SC2094: the loop and the subshell only ever read .env.
+  # shellcheck disable=SC1091,SC2094
+  while IFS= read -r env_line || [[ -n "${env_line}" ]]; do
+    [[ "${env_line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)= ]] || continue
+    env_key="${BASH_REMATCH[1]}"
+    [[ -z "${!env_key+set}" ]] || continue
+    # A subshell does the parsing (quotes, escapes) without touching this shell.
+    env_value="$(source "${PROJECT_ROOT}/.env"; printf '%s' "${!env_key-}")"
+    export "${env_key}=${env_value}"
+  done < "${PROJECT_ROOT}/.env"
+  unset env_line env_key env_value
 fi
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-9088}"
 GATEWAY_URL="http://localhost:${GATEWAY_HTTP_PORT}"
