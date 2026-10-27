@@ -157,7 +157,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                     <button
                                         type="button"
                                         className={cls.join(' ') + statusClass(ev) + enterClass(ev.id || '')}
-                                        key={ev.id || i} title={ev.title}
+                                        key={ev.id || i}
                                         style={{
                                             top, height,
                                             left: `${(it.lane / it.lanes) * 100}%`,
