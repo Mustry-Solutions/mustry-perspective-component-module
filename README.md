@@ -548,7 +548,7 @@ Toasts use the Perspective theme variables (`--neutral-10` background, `--neutra
 
 ## Build, test, deploy
 
-Requires JDK 17 (`JAVA_HOME`). Node 18.20.4 is downloaded automatically by the build.
+Requires JDK 17 (`JAVA_HOME`). Node 22.23.2 (pinned in `web/build.gradle.kts`) is downloaded automatically by the build.
 
 ```bash
 # Build the signed-or-unsigned .modl (web bundle + Java).

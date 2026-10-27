@@ -36,7 +36,8 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
      signed `.modl` and the manual PDF, then flips it public — using the
      changelog's `[0.2.0]` section as the notes (`ops/changelog-notes.py`
      folds each `###` entry into a collapsible block titled with its
-     heading).
+     heading). If that section is missing or empty, the workflow stops
+     before creating the release, so do step 1 before tagging.
 
 4. **Bump the dev version.** In a follow-up PR, set the fallback version in
    `build.gradle.kts` to the next patch as a SNAPSHOT (after `v0.2.0`:
