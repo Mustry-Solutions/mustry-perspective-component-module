@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: double-clicking a Pan & Zoom button also zoomed in
+The toolbar sits inside the viewport, so a fast double-click on the zoom-out
+button zoomed out twice and then ran the viewport's double-click zoom, which
+zoomed back in toward the toolbar's corner (#223). Double-click zoom now only
+reacts to the content and the bare viewport, so the toolbar buttons, the
+minimap, the POI list and the edge indicators act like plain clicks.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,
