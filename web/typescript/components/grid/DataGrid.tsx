@@ -50,7 +50,7 @@ interface DataGridState {
     editing: EditState | null;
     // Committed-but-not-yet-rebound values, keyed pendingKey(rowId, field) — the grid never
     // mutates data.rows; these overlay the display until a data.rows update settles
-    // them (settlePending: the write-back landed, or the bound value changed).
+    // them (settlePending: the write-back landed, the bound value changed, or the row left).
     pending: Record<string, unknown>;
 }
 
