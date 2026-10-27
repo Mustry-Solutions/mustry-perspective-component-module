@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: Code Editor ignored runtime changes to `config.enabled` and `mode`
+Binding `config.enabled` (to a permission, say) disabled the toolbar but left
+the document editable, and edits still marked it dirty. The other way round,
+an editor that mounted disabled stayed read-only until it was remounted
+(#135). Changing `config.enabled` or `config.mode` now switches the editor
+between editable and read-only in place, keeping the undo history and cursor.
+
 ### Fixed: Rich Text and Code Editor lost typing done right after Save
 If the operator kept typing after pressing Save, the author's write-back
 marked the editor clean anyway: Save/Discard disappeared, `output.isDirty`
