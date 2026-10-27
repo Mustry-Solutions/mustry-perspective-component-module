@@ -83,19 +83,25 @@ export abstract class ControlledDraftHost<P extends PlainObject, S extends Draft
     }
 
     /** Call from componentDidUpdate: reconcile a changed bound document against
-     *  the draft (our-save-round-tripped → clean; external-while-clean → follow;
+     *  the draft (our-save-round-tripped → clean unless typed since;
+     *  external-while-clean → follow;
      *  external-while-dirty → keep draft but outputs track the bound doc). */
     protected reconcileBoundDoc(prevProps: P): void {
         const cur = this.readBoundDoc(this.props.props);
         if (cur === this.readBoundDoc(prevProps) || !this.hasEditor()) {
             return;
         }
-        if (cur === (this.lastSaved !== null ? this.lastSaved : this.getDraftDoc())) {
+        const draft = this.getDraftDoc();
+        if (cur === (this.lastSaved !== null ? this.lastSaved : draft)) {
             this.lastSaved = null;
-            if (this.state.dirty) {
-                this.setState({ dirty: false } as Pick<S, 'dirty'>);
+            // The operator may have kept typing after Save: only a draft that
+            // still matches the landed save is clean. Otherwise it stays dirty,
+            // or the next bound-doc change would overwrite the typing.
+            const dirty = draft !== cur;
+            if (this.state.dirty !== dirty) {
+                this.setState({ dirty } as Pick<S, 'dirty'>);
             }
-            this.emitOutputs(cur, false);
+            this.emitOutputs(cur, dirty);
         } else if (!this.state.dirty) {
             this.setEditorDoc(cur);
             this.emitOutputs(cur, false);
