@@ -78,8 +78,7 @@
         },
         "placeholder": {
           "type": "string",
-          "default": "Tap to enter…",
-          "description": "popover mode: text shown on the trigger field when the value is empty."
+          "description": "popover mode: text shown on the trigger field when the value is empty. Unset follows config.locale."
         },
         "liveUpdate": {
           "type": "boolean",

@@ -9,7 +9,7 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    applyKey, clampValue, formatValue, inRange, isLiveEcho, KeypadKey, liveValue, parseDraft, valueToDraft
+    applyKey, clampValue, commitNumber, formatValue, inRange, isLiveEcho, KeypadKey, liveValue, parseDraft, valueToDraft
 } from './keyboardLogic';
 import { appendChar, backspaceText, getRows, KeyDef, KeyLayer, TextLayout } from './keyboardLayouts';
 import { KeypadKeys } from './KeypadKeys';
@@ -178,11 +178,11 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
             this.closeIfPopover();
             return;
         }
-        const value = p.enforceRange ? clampValue(parsed, p.min, p.max) : parsed;
+        const { value, isValid } = commitNumber(parsed, p);
         this.lastLiveWrite = null;
         this.props.store.props.write('value.value', value);
         this.setState({ draft: null }, () => this.emitOutputs(null));
-        this.fireEvent('onCommit', { value, text: formatValue(value, p.decimals, p.units), isValid: this.numberValid(value) });
+        this.fireEvent('onCommit', { value, text: formatValue(value, p.decimals, p.units), isValid });
         this.closeIfPopover();
     };
 
@@ -422,7 +422,7 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
                 onClick={this.togglePanel}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.togglePanel(); } }}
             >
-                <span className="mustry-kbd-trigger-text">{empty ? p.placeholder : text}</span>
+                <span className="mustry-kbd-trigger-text">{empty ? p.labels.placeholder : text}</span>
                 <svg className="mustry-kbd-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/>
                     <path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 13.5h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>

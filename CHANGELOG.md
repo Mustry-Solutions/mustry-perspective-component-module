@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: On-Screen Keyboard placeholder was always English; numpad `onCommit.isValid` was always true
+`config.placeholder` had the schema default "Tap to enter…", so every view
+carried the English text and non-English sessions showed it too (#153). The
+default is gone and the placeholder now comes from the keyboard label pack
+for `config.locale` (all seven languages), like the other keyboard labels. A
+set `config.placeholder` still wins, and views that still hold the old
+English default get the locale text. Also, the numpad's `onCommit.isValid`
+was checked after clamping, so it was `true` even when the operator typed a
+number outside `[min, max]`. It now reports whether the typed number was in
+range; `value` is still the clamped number.
+
 ### Fixed: On-Screen Keyboard numpad with `liveUpdate` kept only the last digit
 With `config.liveUpdate`, each key wrote `value.value`, the keyboard saw the
 bound value change and threw its draft away, so the next key started a new

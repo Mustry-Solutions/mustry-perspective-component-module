@@ -1,5 +1,5 @@
 import {
-    applyKey, clampValue, formatValue, inRange, isLiveEcho, KeypadOpts, liveValue, parseDraft,
+    applyKey, clampValue, commitNumber, formatValue, inRange, isLiveEcho, KeypadOpts, liveValue, parseDraft,
     RangeOpts, valueToDraft
 } from '../keyboard/keyboardLogic';
 
@@ -164,5 +164,16 @@ describe('isLiveEcho', () => {
         expect(isLiveEcho(12, 12)).toBe(true);
         expect(isLiveEcho(13, 12)).toBe(false);
         expect(isLiveEcho(12, null)).toBe(false);
+    });
+});
+
+describe('commitNumber (#153)', () => {
+    it('clamps with enforceRange and reports validity of the typed number', () => {
+        expect(commitNumber(150, { enforceRange: true, min: 0, max: 100 })).toEqual({ value: 100, isValid: false });
+        expect(commitNumber(5, tenToFifty)).toEqual({ value: 10, isValid: false });
+        expect(commitNumber(42, tenToFifty)).toEqual({ value: 42, isValid: true });
+    });
+    it('passes the number through and is always valid without enforceRange', () => {
+        expect(commitNumber(150, free)).toEqual({ value: 150, isValid: true });
     });
 });

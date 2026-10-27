@@ -1,6 +1,6 @@
 // Reads the Perspective PropertyTree into the typed props the component uses.
-import { PropertyTree } from '@inductiveautomation/perspective-client';
-import { KeyboardLabels, keyboardLabelBase } from '../../shared/labels/keyboard';
+import { PropReader } from '../../shared/propReader';
+import { EN_KEYBOARD_LABELS, KeyboardLabels, keyboardLabelBase } from '../../shared/labels/keyboard';
 import { TextLayout } from './keyboardLayouts';
 
 /** 'numpad' is the numeric keypad; the rest are alphanumeric (QWERTY) layouts. */
@@ -23,7 +23,6 @@ export interface KeyboardProps {
     // shared
     showValue: boolean;
     liveUpdate: boolean;
-    placeholder: string;
     locale: string;
     labels: KeyboardLabels;
     /** The two-way numeric value (value.value) — used by the 'numpad' layout. */
@@ -36,13 +35,21 @@ function normLayout(s: string): KeyboardLayout {
     return s === 'text' || s === 'email' || s === 'url' ? s : 'numpad';
 }
 
-export function mapKeyboardProps(tree: PropertyTree): KeyboardProps {
+// The placeholder override predates config.labels and stays at config.placeholder.
+function overridePath(k: keyof KeyboardLabels): string {
+    return k === 'placeholder' ? 'config.placeholder' : `config.labels.${k}`;
+}
+
+export function mapKeyboardProps(tree: PropReader): KeyboardProps {
     const locale = tree.readString('config.locale', '');
     const base = keyboardLabelBase(locale);
     const labels = {} as Record<string, string>;
     (Object.keys(base) as Array<keyof KeyboardLabels>).forEach((k) => {
-        const v = tree.readString(`config.labels.${k}`, '');
-        labels[k] = v !== '' ? v : base[k];
+        const v = tree.readString(overridePath(k), '');
+        // The schema used to default config.placeholder to the English text, so
+        // older views carry it materialized; it must not shadow the locale pack.
+        const unset = v === '' || (k === 'placeholder' && v === EN_KEYBOARD_LABELS.placeholder);
+        labels[k] = unset ? base[k] : v;
     });
 
     return {
@@ -58,7 +65,6 @@ export function mapKeyboardProps(tree: PropertyTree): KeyboardProps {
         maxLength: Math.max(0, tree.readNumber('config.maxLength', 0)),
         showValue: tree.readBoolean('config.showValue', true),
         liveUpdate: tree.readBoolean('config.liveUpdate', false),
-        placeholder: tree.readString('config.placeholder', ''),
         locale,
         labels: labels as unknown as KeyboardLabels,
         value: tree.readNumber('value.value', 0),

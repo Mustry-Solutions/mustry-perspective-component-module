@@ -123,6 +123,17 @@ export function liveValue(draft: string, range: RangeOpts): number | null {
 }
 
 /**
+ * Enter on the numpad: the value to write (clamped with enforceRange) and
+ * whether the typed number was in range BEFORE clamping, for onCommit.isValid.
+ */
+export function commitNumber(parsed: number, range: RangeOpts): { value: number; isValid: boolean } {
+    if (!range.enforceRange) {
+        return { value: parsed, isValid: true };
+    }
+    return { value: clampValue(parsed, range.min, range.max), isValid: inRange(parsed, range.min, range.max) };
+}
+
+/**
  * Whether a bound value change is just this keyboard's own live write coming
  * back. The draft must survive it, or every key would start a fresh entry.
  */

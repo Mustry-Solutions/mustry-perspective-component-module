@@ -12,7 +12,7 @@
     },
     "isValid": {
       "type": "boolean",
-      "description": "Whether the value is within [min,max] (always true when enforceRange is false)."
+      "description": "Whether the typed value was within [min,max] before clamping (always true when enforceRange is false)."
     }
   }
 }
