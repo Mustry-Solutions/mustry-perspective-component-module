@@ -1,7 +1,7 @@
 // Recurrence (rrule) expansion, shared by every component that renders recurring
 // items (calendar events, timeline bars, …). Pure and framework-free; operates on
 // any item shape that carries id/start/end/rrule and preserves the rest verbatim.
-import { addDays, daysBetween, fmtDate, instantToZonedIso, parseDate } from './dateUtils';
+import { addDays, daysBetween, fmtDate, instantToZonedIso, parseDate, toEpochMs } from './dateUtils';
 
 export interface RRule {
     freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -36,8 +36,8 @@ function weekStartOf(r: RRule): number {
  *  not with how far the window is from the base. Without this, a never-ending daily event
  *  would vanish once viewed more than MAX_OCC days (~2.7y) after its start. Count-bounded
  *  series must be enumerated from the base (their `count` is the real bound), so they are
- *  left as-is. The starting index is biased low; the `< base` / `< winStart` guards drop
- *  any extras. */
+ *  left as-is. The starting index is biased low; the `< base` guard here and the
+ *  overlap check in expandOne drop any extras. */
 function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date): Date[] {
     const interval = Math.max(1, r.interval || 1);
     const until = r.until ? parseDate(r.until) : null;
@@ -132,9 +132,18 @@ function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date,
     const endTime = endWall && endWall.length > 10 ? endWall.slice(10) : '';
     const exdate = new Set(ev.rrule.exdate || []);   // dates removed/overridden (EXDATE)
     const out: T[] = [];
-    for (const d of occurrenceStartDates(base, ev.rrule, winStart, winEnd)) {
-        if (d.getTime() < winStart.getTime()) {
-            continue; // before the visible window
+    // An occurrence that starts before the window can still run into it (a 22:00-06:00
+    // night shift, a Sat-Mon weekend block), so generate from one series duration (+1
+    // day of slack) earlier and keep what OVERLAPS the window, as for a plain event.
+    const genStart = addDays(winStart, -(Math.max(0, endOffsetDays) + 1));
+    for (const d of occurrenceStartDates(base, ev.rrule, genStart, winEnd)) {
+        const occStart = fmtDate(d) + startTime;
+        const occEnd = endWall ? fmtDate(addDays(d, endOffsetDays)) + endTime : undefined;
+        // Both are naive wall strings, read in the same local frame as winStart.
+        const startMs = toEpochMs(occStart, '') as number;
+        const endMs = occEnd ? toEpochMs(occEnd, '') : null;
+        if (startMs < winStart.getTime() && !(endMs !== null && endMs > winStart.getTime())) {
+            continue; // over before the visible window
         }
         if (exdate.has(fmtDate(d))) {
             continue; // excluded occurrence (deleted, or replaced by a standalone override)
@@ -142,17 +151,18 @@ function expandOne<T extends RecurringItem>(ev: T, winStart: Date, winEnd: Date,
         out.push({
             ...ev,
             id: `${ev.id}::${fmtDate(d)}`,
-            start: fmtDate(d) + startTime,
-            end: endWall ? fmtDate(addDays(d, endOffsetDays)) + endTime : undefined,
+            start: occStart,
+            end: occEnd,
             rrule: undefined
         });
     }
     return out;
 }
 
-/** Expand recurring items into concrete occurrences within [winStart, winEnd).
- *  `timezone` is the display zone occurrences recur in ('' = browser-local);
- *  non-recurring items pass through verbatim, whatever their format. */
+/** Expand recurring items into the concrete occurrences that overlap [winStart, winEnd),
+ *  including one that starts before winStart but ends after it. `timezone` is the
+ *  display zone occurrences recur in ('' = browser-local); non-recurring items pass
+ *  through verbatim, whatever their format. */
 export function expandEvents<T extends RecurringItem>(events: T[], winStart: Date, winEnd: Date, timezone = ''): T[] {
     const out: T[] = [];
     for (const ev of events) {

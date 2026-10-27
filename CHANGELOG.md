@@ -8,6 +8,14 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: recurring events that start before the visible window were missing
+A recurring occurrence was only drawn when it started inside the window, so a
+daily 22:00 to 06:00 night shift showed nothing on Monday 00:00 to 06:00 in a
+week that starts on Monday, and a weekly Saturday 08:00 to Monday 08:00 event
+did not show on Monday at all (#142). Non-recurring events of the same shape
+were fine. The Calendar and the Resource Timeline now keep every occurrence
+that overlaps the window, wherever it starts.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,

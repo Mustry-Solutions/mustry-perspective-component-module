@@ -393,10 +393,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private visibleEvents(): TimelineEvent[] {
         const p = this.props.props;
         const s = this.scale();
-        // Recurrence expands on zone-local DATES; cover the window generously.
+        // Recurrence expands on zone-local DATES; round the window out to whole days.
+        // expandEvents keeps occurrences that started earlier but overlap winStart.
         const ws = zoneWallClock(new Date(s.startMs), p.timezone);
         const we = zoneWallClock(new Date(s.endMs), p.timezone);
-        const winStart = new Date(ws.y, ws.mo - 1, ws.d - 1);
+        const winStart = new Date(ws.y, ws.mo - 1, ws.d);
         const winEnd = new Date(we.y, we.mo - 1, we.d + 2);
         const merged = [...(p.events || []), ...(p.recurringEvents || [])];
         const hidden = new Set(this.props.props.hiddenCategories || []);
