@@ -1,6 +1,8 @@
 // Pure logic for the rich text editor: URL sanitization for links, plain-text
 // derivation for the search/indexing outputs, and the feature model. No DOM,
-// no TipTap — everything here runs under plain-node jest.
+// no TipTap at runtime (ProseMirror types only). Everything here runs under
+// plain-node jest.
+import type { Node as PMNode } from '@tiptap/pm/model';
 
 /** Which formatting features the toolbar and the document schema allow. */
 export interface RteFeatures {
@@ -165,6 +167,52 @@ export function graphemeTailLength(text: string, n: number): number {
         parts.push(...Array.from(text));
     }
     return parts.slice(-n).join('').length;
+}
+
+/**
+ * Delete ranges that trim `over` characters (countChars, leaf nodes count 1,
+ * as in CharacterCount) off the END of the pasted range [from, to] of `doc`.
+ * Walks back through the textblocks in the range, taking grapheme tails, and
+ * removes a block leaf (image) that sits wholly inside it, until the overflow
+ * is used up (#168). Trimming only the textblock holding the cursor left a
+ * multi-paragraph paste over the limit, and CharacterCount then rejected it.
+ * Ranges come last-first, so applying them in order needs no remapping.
+ */
+export function pasteTrimRanges(doc: PMNode, from: number, to: number, over: number): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    if (over <= 0 || to <= from) {
+        return ranges;
+    }
+    const blocks: Array<{ node: PMNode; pos: number; parent: PMNode | null; index: number }> = [];
+    doc.nodesBetween(from, to, (node, pos, parent, index) => {
+        if (node.isTextblock || (node.isBlock && node.isLeaf)) {
+            blocks.push({ node, pos, parent, index });
+            return false;
+        }
+        return true;
+    });
+    let left = over;
+    for (let i = blocks.length - 1; i >= 0 && left > 0; i--) {
+        const { node, pos, parent, index } = blocks[i];
+        if (node.isTextblock) {
+            const start = Math.max(from, pos + 1);
+            const end = Math.min(to, pos + node.nodeSize - 1);
+            if (end <= start) {
+                continue;
+            }
+            const text = doc.textBetween(start, end, undefined, ' ');
+            const n = Math.min(left, countChars(text));
+            const len = graphemeTailLength(text, n);
+            if (len > 0) {
+                ranges.push([end - len, end]);
+                left -= n;
+            }
+        } else if (pos >= from && pos + node.nodeSize <= to && parent && parent.canReplace(index, index + 1)) {
+            ranges.push([pos, pos + node.nodeSize]);
+            left -= 1;
+        }
+    }
+    return ranges;
 }
 
 /**

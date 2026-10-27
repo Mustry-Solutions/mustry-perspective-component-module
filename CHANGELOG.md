@@ -18,6 +18,16 @@ toolbar's URL field and image library get the same size cap. Bound content
 that already holds such an image loads without it and is not marked dirty.
 The stored document only changes when the operator next saves.
 
+### Fixed: Rich Text Editor rejected over-limit multi-paragraph pastes
+With `config.charLimit` set, pasting several paragraphs that went over the
+limit usually inserted nothing (#168). For example, with a limit of 5, pasting
+`abcdef` and `g` into an empty editor did nothing. The trim only shortened
+the last pasted paragraph, so the paste stayed over the limit and was
+rejected. The editor now trims from the end of the paste back through earlier
+paragraphs, a whole character (emoji included) at a time, and removes a
+trailing pasted image when needed. The paste is cut to fit the limit instead
+of dropped. Text outside the paste is never trimmed.
+
 ### Changed: faster timezone handling; smoother Calendar drags
 With `config.timezone` set, every time conversion built a new date formatter,
 and the Calendar re-converted all its events on every pointer move of a drag,
