@@ -243,3 +243,23 @@
         white-space: nowrap;
     }
 }
+
+// Minimap content preview: an inert, scaled clone of the embedded view
+// (minimapSnapshot.ts). Never interactive — presses go to the minimap.
+.mustry-pz-mini-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.mustry-pz-mini-snapshot {
+    position: relative;
+    background: var(--pz-bg);
+}
+
+.mustry-pz-mini-placeholder {
+    background: var(--pz-canvas);
+}

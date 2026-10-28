@@ -17,6 +17,7 @@ import {
     resolveViewport, rubberBandCenter, viewTransform, zoomAt
 } from './panZoomLogic';
 import { PanZoomGestureController } from './panZoomGestureController';
+import { MinimapSnapshot } from './minimapSnapshot';
 import { PanZoomProps, mapPanZoomProps } from './panZoomProps';
 
 // Must match PanZoomView.COMPONENT_ID on the Java side.
@@ -55,6 +56,9 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     // inertia glide after a flick
     private glideRaf = 0;
     private miniRef = React.createRef<HTMLDivElement>();
+    private contentRef = React.createRef<HTMLDivElement>();
+    // the minimap's content preview: an inert clone of the embedded view
+    private snapshot = new MinimapSnapshot(() => this.contentRef.current);
     private pendingTarget = '';   // state.target pre-set before the first measure
 
     // Pan/pinch/wheel/double-click live in the controller; it reads the live
@@ -96,10 +100,14 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         if (this.props.props.target) {
             this.pendingTarget = this.props.props.target;
         }
+        this.syncSnapshot();
     }
 
     componentDidUpdate(prevProps: ComponentProps<PanZoomProps>): void {
         const p = this.props.props;
+        if (p.showMinimap !== prevProps.props.showMinimap) {
+            this.syncSnapshot();
+        }
         const d = this.state.draft;
         if (d && !this.flyRaf && Math.abs(p.zoom - d.zoom) < 1e-6
             && Math.abs(p.center.x - d.center.x) < 0.5
@@ -132,6 +140,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
 
     componentWillUnmount(): void {
         this.gestures.dispose();
+        this.snapshot.dispose();
         this.cancelMotion();
         if (this.resizeObs) {
             this.resizeObs.disconnect();
@@ -429,6 +438,18 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         el.addEventListener('pointercancel', up);
     };
 
+    /** Only pay for the preview while a minimap can show it. */
+    private syncSnapshot(): void {
+        if (this.props.props.showMinimap) {
+            this.snapshot.watch();
+        } else {
+            this.snapshot.dispose();
+        }
+    }
+
+    // stable callback ref: the minimap (and so the preview host) unmounts while the content fits
+    private previewHost = (el: HTMLDivElement | null): void => this.snapshot.attach(el);
+
     private renderMinimap(vp: PzViewport): React.ReactNode {
         const p = this.props.props;
         const c = this.cs();
@@ -446,6 +467,11 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 style={{ width: layout.w, height: layout.h }}
                 onPointerDown={(e) => this.onMiniPointerDown(e, layout.scale)}
             >
+                <div
+                    className="mustry-pz-mini-preview"
+                    ref={this.previewHost}
+                    style={{ width: c.w, height: c.h, transform: `scale(${layout.scale})` }}
+                />
                 {p.pois.map((poi, i) => (
                     <div
                         key={`${poi.name}-${i}`}
@@ -557,6 +583,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     onDoubleClick={this.gestures.doubleClick}
                 >
                     <div
+                        ref={this.contentRef}
                         className={`mustry-pz-content${this.measured() ? '' : ' mustry-pz-unsized'}`}
                         style={{
                             width: c.w,
