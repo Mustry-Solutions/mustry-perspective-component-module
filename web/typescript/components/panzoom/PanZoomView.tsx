@@ -105,7 +105,8 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
 
     componentDidUpdate(prevProps: ComponentProps<PanZoomProps>): void {
         const p = this.props.props;
-        if (p.showMinimap !== prevProps.props.showMinimap || p.minimapPreview !== prevProps.props.minimapPreview) {
+        const m = p.minimap, pm = prevProps.props.minimap;
+        if (m.show !== pm.show || m.preview !== pm.preview) {
             this.syncSnapshot();
         }
         const d = this.state.draft;
@@ -450,7 +451,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     /** Only pay for the preview while a minimap can show it. */
     private syncSnapshot(): void {
         const p = this.props.props;
-        if (p.showMinimap && p.minimapPreview) {
+        if (p.minimap.show && p.minimap.preview) {
             this.snapshot.watch();
         } else {
             this.snapshot.dispose();
@@ -463,13 +464,13 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     /** The minimap hides itself while the whole content is visible. */
     private minimapShown(vp: PzViewport): boolean {
         const c = this.cs();
-        return this.props.props.showMinimap && this.state.viewportW > 0
+        return this.props.props.minimap.show && this.state.viewportW > 0
             && !contentFullyVisible(vp, c.w, c.h, this.state.viewportW, this.state.viewportH);
     }
 
     private minimapPlacement(): ReturnType<typeof minimapAnchor> {
         const p = this.props.props;
-        return minimapAnchor(p.minimapPosition, p.showControls, p.showPoiList && p.pois.length > 0);
+        return minimapAnchor(p.minimap.position, p.showControls, p.showPoiList && p.pois.length > 0);
     }
 
     private renderMinimap(vp: PzViewport): React.ReactNode {
@@ -478,7 +479,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         if (!this.minimapShown(vp)) {
             return null;
         }
-        const layout = minimapLayout(c.w, c.h, p.minimapWidth, p.minimapHeight);
+        const layout = minimapLayout(c.w, c.h, p.minimap.width, p.minimap.height);
         const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
         const { badgeRight, ...anchor } = this.minimapPlacement();
         return (
@@ -490,7 +491,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                 onPointerDown={(e) => this.onMiniPointerDown(e, layout.scale)}
                 onDoubleClick={(e) => e.stopPropagation()}   // no viewport double-click zoom
             >
-                {p.minimapPreview && (
+                {p.minimap.preview && (
                     <div
                         className="mustry-pz-mini-preview"
                         ref={this.previewHost}

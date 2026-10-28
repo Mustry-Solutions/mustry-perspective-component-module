@@ -20,11 +20,7 @@
         "showControls": true,
         "locale": "",
         "flyToMs": 350,
-        "showMinimap": true,
-        "minimapPreview": true,
-        "minimapPosition": "bottom-right",
-        "minimapWidth": 160,
-        "minimapHeight": 110,
+        "minimap": { "show": true, "preview": true, "position": "bottom-right", "width": 160, "height": 110 },
         "showPoiList": true,
         "home": { "x": -1, "y": -1, "zoom": 0 }
       },
@@ -70,31 +66,39 @@
           "description": "When a script/binding writes state.zoom/center, the viewport animates there over this many ms (0 = snap).",
           "default": 350
         },
-        "showMinimap": {
-          "type": "boolean",
-          "description": "Corner overview with a draggable view rectangle and POI dots. Hides itself while the whole content is visible.",
-          "default": true
-        },
-        "minimapPreview": {
-          "type": "boolean",
-          "description": "Draw a live, scaled preview of the embedded view behind the minimap's view rectangle (refreshed at most once per second). Off = POI dots only.",
-          "default": true
-        },
-        "minimapPosition": {
-          "type": "string",
-          "enum": ["bottom-right", "bottom-left", "top-right", "top-left"],
-          "description": "Viewport corner the minimap sits in. It steps aside for the zoom controls (top-right) and the Go-to dropdown (top-left); at bottom-left the zoom badge moves right.",
-          "default": "bottom-right"
-        },
-        "minimapWidth": {
-          "type": "number",
-          "description": "Maximum minimap width in px (60–640). The minimap keeps the content's aspect ratio inside minimapWidth × minimapHeight.",
-          "default": 160
-        },
-        "minimapHeight": {
-          "type": "number",
-          "description": "Maximum minimap height in px (40–480).",
-          "default": 110
+        "minimap": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Corner overview of the content: a live preview, a draggable view rectangle and clickable POI dots. Hides itself while the whole content is visible.",
+          "default": { "show": true, "preview": true, "position": "bottom-right", "width": 160, "height": 110 },
+          "properties": {
+            "show": {
+              "type": "boolean",
+              "description": "Show the minimap.",
+              "default": true
+            },
+            "preview": {
+              "type": "boolean",
+              "description": "Draw a live, scaled preview of the embedded view behind the view rectangle (refreshed at most once per second). Off = POI dots only.",
+              "default": true
+            },
+            "position": {
+              "type": "string",
+              "enum": ["bottom-right", "bottom-left", "top-right", "top-left"],
+              "description": "Viewport corner the minimap sits in. It steps aside for the zoom controls (top-right) and the Go-to dropdown (top-left); at bottom-left the zoom badge moves right.",
+              "default": "bottom-right"
+            },
+            "width": {
+              "type": "number",
+              "description": "Maximum width in px (60–640). The minimap keeps the content's aspect ratio inside width × height.",
+              "default": 160
+            },
+            "height": {
+              "type": "number",
+              "description": "Maximum height in px (40–480).",
+              "default": 110
+            }
+          }
         },
         "showPoiList": {
           "type": "boolean",

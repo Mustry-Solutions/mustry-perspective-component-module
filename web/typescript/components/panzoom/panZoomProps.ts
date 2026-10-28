@@ -2,6 +2,14 @@
 import { PropReader } from '../../shared/propReader';
 import { PZ_MINIMAP_POSITIONS, PzHome, PzMinimapPosition, PzPoi, PzPoint } from './panZoomLogic';
 
+export interface PzMinimapConfig {
+    show: boolean;
+    preview: boolean;              // live content preview behind the view rect
+    position: PzMinimapPosition;
+    width: number;                 // max box; the content aspect is kept inside it
+    height: number;
+}
+
 export interface PanZoomProps {
     viewPath: string;
     viewParams: Record<string, unknown>;
@@ -15,11 +23,7 @@ export interface PanZoomProps {
     showControls: boolean;
     locale: string;
     flyToMs: number;     // externally-written state.zoom/center animate over this; 0 = snap
-    showMinimap: boolean;
-    minimapPreview: boolean;              // live content preview behind the view rect
-    minimapPosition: PzMinimapPosition;
-    minimapWidth: number;                 // max box; the content aspect is kept inside it
-    minimapHeight: number;
+    minimap: PzMinimapConfig;
     showPoiList: boolean;
     home: PzHome;
     pois: PzPoi[];       // data.pois — named fly-to targets
@@ -59,12 +63,14 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         showControls: tree.readBoolean('config.showControls', true),
         locale: tree.readString('config.locale', ''),
         flyToMs: Math.min(5000, Math.max(0, num('config.flyToMs', 350))),
-        showMinimap: tree.readBoolean('config.showMinimap', true),
-        minimapPreview: tree.readBoolean('config.minimapPreview', true),
-        minimapPosition: ((pos) => (PZ_MINIMAP_POSITIONS as string[]).includes(pos)
-            ? pos as PzMinimapPosition : 'bottom-right')(tree.readString('config.minimapPosition', 'bottom-right')),
-        minimapWidth: Math.min(640, Math.max(60, num('config.minimapWidth', 160))),
-        minimapHeight: Math.min(480, Math.max(40, num('config.minimapHeight', 110))),
+        minimap: {
+            show: tree.readBoolean('config.minimap.show', true),
+            preview: tree.readBoolean('config.minimap.preview', true),
+            position: ((pos) => (PZ_MINIMAP_POSITIONS as string[]).includes(pos)
+                ? pos as PzMinimapPosition : 'bottom-right')(tree.readString('config.minimap.position', 'bottom-right')),
+            width: Math.min(640, Math.max(60, num('config.minimap.width', 160))),
+            height: Math.min(480, Math.max(40, num('config.minimap.height', 110)))
+        },
         showPoiList: tree.readBoolean('config.showPoiList', true),
         home: {
             x: num('config.home.x', -1),

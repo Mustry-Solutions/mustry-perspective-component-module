@@ -67,19 +67,19 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       `zoom` (`0` = keep the current zoom); writing a name to `state.target`
       from a script/binding flies there and the component clears the target
       back to `''`, so writing the SAME name later re-flies.
-- [ ] **Minimap** (`config.showMinimap`): appears only when part of the
+- [ ] **Minimap** (`config.minimap.show`): appears only when part of the
       content is off-screen; shows POI dots (flagged in the alert color) and
       the view rectangle; clicking outside the rectangle jumps the view
       there; dragging the rectangle pans from where it was grabbed (no jump,
       zoom unchanged); a press or double-click on the minimap never starts a
       viewport pan or zoom.
-- [ ] **Minimap preview** (`config.minimapPreview`): the embedded view shows
+- [ ] **Minimap preview** (`config.minimap.preview`): the embedded view shows
       scaled behind the rectangle and follows live changes within about a
       second; off = dots only. Nothing in the preview reacts to taps.
 - [ ] **Minimap POI dots**: tapping a dot flies to that POI (an easy target
       on a tablet); with a mouse, hovering shows its name.
-- [ ] **Minimap placement** (`config.minimapPosition`, `minimapWidth`/
-      `minimapHeight`): each corner works; top-right sits left of the zoom
+- [ ] **Minimap placement** (`config.minimap.position`, `width`/
+      `height`): each corner works; top-right sits left of the zoom
       controls, top-left below the Go-to dropdown, bottom-left moves the zoom
       badge to the right; the size changes within the configured box.
 - [ ] **Flagged POIs** (bind `flagged` to alarm state): a pulse ring at the

@@ -109,7 +109,7 @@
     border: 1px solid var(--pz-border);
     pointer-events: none;
 
-    // the minimap took bottom-left (config.minimapPosition)
+    // the minimap took bottom-left (config.minimap.position)
     &--right {
         left: auto;
         right: 10px;
@@ -137,7 +137,7 @@
 }
 
 .mustry-pz-minimap {
-    position: absolute;    // corner offsets inline (config.minimapPosition)
+    position: absolute;    // corner offsets inline (config.minimap.position)
     z-index: 6;
     overflow: hidden;
     background: color-mix(in srgb, var(--pz-bg) 85%, transparent);

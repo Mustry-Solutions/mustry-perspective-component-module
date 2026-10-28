@@ -8,3 +8,5 @@ calendar.props.json:output.hiddenCategories
 resourcetimeline.props.json:config.zoom
 resourcetimeline.props.json:config.collapsedGroups
 resourcetimeline.props.json:output.hiddenCategories
+# 2026-10-28 minimap config grouped under config.minimap (pre-1.0; see CHANGELOG):
+panzoomview.props.json:config.showMinimap

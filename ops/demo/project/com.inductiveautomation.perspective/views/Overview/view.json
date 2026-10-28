@@ -686,7 +686,6 @@
             "viewPath": "PlantLayout",
             "contentWidth": 0,
             "contentHeight": 0,
-            "showMinimap": true,
             "showPoiList": true,
             "home": {
               "x": -1,
