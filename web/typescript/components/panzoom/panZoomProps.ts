@@ -1,6 +1,6 @@
 // Prop-tree -> typed props for the Pan & Zoom View.
 import { PropReader } from '../../shared/propReader';
-import { PzHome, PzPoi, PzPoint } from './panZoomLogic';
+import { PZ_MINIMAP_POSITIONS, PzHome, PzMinimapPosition, PzPoi, PzPoint } from './panZoomLogic';
 
 export interface PanZoomProps {
     viewPath: string;
@@ -16,6 +16,10 @@ export interface PanZoomProps {
     locale: string;
     flyToMs: number;     // externally-written state.zoom/center animate over this; 0 = snap
     showMinimap: boolean;
+    minimapPreview: boolean;              // live content preview behind the view rect
+    minimapPosition: PzMinimapPosition;
+    minimapWidth: number;                 // max box; the content aspect is kept inside it
+    minimapHeight: number;
     showPoiList: boolean;
     home: PzHome;
     pois: PzPoi[];       // data.pois — named fly-to targets
@@ -56,6 +60,11 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         locale: tree.readString('config.locale', ''),
         flyToMs: Math.min(5000, Math.max(0, num('config.flyToMs', 350))),
         showMinimap: tree.readBoolean('config.showMinimap', true),
+        minimapPreview: tree.readBoolean('config.minimapPreview', true),
+        minimapPosition: ((pos) => (PZ_MINIMAP_POSITIONS as string[]).includes(pos)
+            ? pos as PzMinimapPosition : 'bottom-right')(tree.readString('config.minimapPosition', 'bottom-right')),
+        minimapWidth: Math.min(640, Math.max(60, num('config.minimapWidth', 160))),
+        minimapHeight: Math.min(480, Math.max(40, num('config.minimapHeight', 110))),
         showPoiList: tree.readBoolean('config.showPoiList', true),
         home: {
             x: num('config.home.x', -1),

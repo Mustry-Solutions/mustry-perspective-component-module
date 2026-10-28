@@ -1,6 +1,7 @@
 import {
     clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, dragVelocity,
-    edgeIndicator, fitZoom, flyStep, glideFrame, homeViewport, minimapLayout,
+    edgeIndicator, fitZoom, flyStep, glideFrame, homeViewport, minimapAnchor,
+    minimapGrabOffset, minimapLayout,
     minimapViewRect, panBy, panRelease, pinchViewport, resolveViewport,
     rubberBandCenter, viewTransform, wheelZoomFactor, zoomAt
 } from '../panzoom/panZoomLogic';
@@ -213,6 +214,38 @@ describe('minimap geometry', () => {
         // centered content -> centered rect
         expect(r.x + r.w / 2).toBeCloseTo(1000 * scale, 6);
         expect(r.y + r.h / 2).toBeCloseTo(600 * scale, 6);
+    });
+});
+
+describe('minimapAnchor', () => {
+    it('defaults to the bottom-right corner', () => {
+        expect(minimapAnchor('bottom-right', true, true)).toEqual({ bottom: 8, right: 10, badgeRight: false });
+    });
+    it('sits left of the zoom controls at top-right, flush when they are hidden', () => {
+        expect(minimapAnchor('top-right', true, true)).toEqual({ top: 10, right: 48, badgeRight: false });
+        expect(minimapAnchor('top-right', false, true)).toEqual({ top: 10, right: 10, badgeRight: false });
+    });
+    it('sits below the Go-to dropdown at top-left, flush when it is hidden', () => {
+        expect(minimapAnchor('top-left', true, true)).toEqual({ top: 44, left: 10, badgeRight: false });
+        expect(minimapAnchor('top-left', true, false)).toEqual({ top: 10, left: 10, badgeRight: false });
+    });
+    it('moves the zoom badge right when it takes bottom-left', () => {
+        expect(minimapAnchor('bottom-left', true, true)).toEqual({ bottom: 8, left: 10, badgeRight: true });
+    });
+});
+
+describe('minimapGrabOffset', () => {
+    const rect = { x: 20, y: 10, w: 40, h: 30 };   // center (40, 25)
+    it('keeps the press offset from the rect center when pressed inside', () => {
+        expect(minimapGrabOffset({ x: 30, y: 20 }, rect)).toEqual({ x: -10, y: -5 });
+        expect(minimapGrabOffset({ x: 40, y: 25 }, rect)).toEqual({ x: 0, y: 0 });
+    });
+    it('counts the rect border as inside', () => {
+        expect(minimapGrabOffset({ x: 60, y: 40 }, rect)).toEqual({ x: 20, y: 15 });
+    });
+    it('jumps (zero offset) when pressed outside', () => {
+        expect(minimapGrabOffset({ x: 100, y: 25 }, rect)).toEqual({ x: 0, y: 0 });
+        expect(minimapGrabOffset({ x: 40, y: 41 }, rect)).toEqual({ x: 0, y: 0 });
     });
 });
 

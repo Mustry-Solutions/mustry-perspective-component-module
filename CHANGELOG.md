@@ -8,6 +8,19 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: Pan & Zoom minimap shows the content, and can be placed and sized
+The minimap only showed POI dots and the view rectangle, so it said little
+about what was where. It now draws a live, scaled preview of the embedded
+view behind them (`config.minimapPreview`, on by default). The preview is an
+inert copy, refreshed at most once per second, so the embedded view is never
+loaded twice and its bindings and scripts never run twice.
+`config.minimapPosition` puts the minimap in any corner; it steps aside for
+the zoom controls and the Go-to dropdown. `config.minimapWidth` and
+`config.minimapHeight` set its maximum size (default 160 × 110). Dragging
+the view rectangle now moves it from where it was grabbed instead of jumping
+its center to the pointer. POI dots show their name on hover and fly there
+on click. A double-click on the minimap no longer zooms the viewport.
+
 ### Changed: Data Grid number error shows the expected format
 A number cell typed in another locale's format, such as `4,5` with
 `config.locale: "en"`, was rejected with only "Must be a number" (#174).

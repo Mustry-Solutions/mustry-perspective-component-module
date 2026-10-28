@@ -21,6 +21,10 @@
         "locale": "",
         "flyToMs": 350,
         "showMinimap": true,
+        "minimapPreview": true,
+        "minimapPosition": "bottom-right",
+        "minimapWidth": 160,
+        "minimapHeight": 110,
         "showPoiList": true,
         "home": { "x": -1, "y": -1, "zoom": 0 }
       },
@@ -70,6 +74,27 @@
           "type": "boolean",
           "description": "Corner overview with a draggable view rectangle and POI dots. Hides itself while the whole content is visible.",
           "default": true
+        },
+        "minimapPreview": {
+          "type": "boolean",
+          "description": "Draw a live, scaled preview of the embedded view behind the minimap's view rectangle (refreshed at most once per second). Off = POI dots only.",
+          "default": true
+        },
+        "minimapPosition": {
+          "type": "string",
+          "enum": ["bottom-right", "bottom-left", "top-right", "top-left"],
+          "description": "Viewport corner the minimap sits in. It steps aside for the zoom controls (top-right) and the Go-to dropdown (top-left); at bottom-left the zoom badge moves right.",
+          "default": "bottom-right"
+        },
+        "minimapWidth": {
+          "type": "number",
+          "description": "Maximum minimap width in px (60–640). The minimap keeps the content's aspect ratio inside minimapWidth × minimapHeight.",
+          "default": 160
+        },
+        "minimapHeight": {
+          "type": "number",
+          "description": "Maximum minimap height in px (40–480).",
+          "default": 110
         },
         "showPoiList": {
           "type": "boolean",
