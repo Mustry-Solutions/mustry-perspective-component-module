@@ -259,6 +259,17 @@ export function contentFullyVisible(vp: PzViewport, contentW: number, contentH: 
     return contentW * vp.zoom <= viewportW + 0.5 && contentH * vp.zoom <= viewportH + 0.5;
 }
 
+/** The box the minimap may use: the configured size, but never more than half
+ *  the viewport, so a large minimap in a small component still leaves room to
+ *  pan (presses on the minimap never pan the viewport). */
+export function minimapMaxBox(width: number, height: number, viewportW: number, viewportH: number):
+    { w: number; h: number } {
+    return {
+        w: Math.max(1, Math.min(width, viewportW / 2)),
+        h: Math.max(1, Math.min(height, viewportH / 2))
+    };
+}
+
 /** Minimap geometry: the content scaled into a maxW×maxH box (aspect preserved). */
 export function minimapLayout(contentW: number, contentH: number, maxW: number, maxH: number):
     { w: number; h: number; scale: number } {

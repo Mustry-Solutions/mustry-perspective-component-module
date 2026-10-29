@@ -13,10 +13,11 @@ import { PzLabels, pzLabelBase } from '../../shared/labelPacks';
 import {
     PzPoi, PzPoint, PzViewport, clampCenter, clampZoom,
     contentFullyVisible, contentToViewportPt, edgeIndicator, fitZoom,
-    flyStep, glideFrame, homeViewport, minimapAnchor, minimapGrabOffset, minimapLayout, minimapViewRect, panBy,
-    resolveViewport, rubberBandCenter, viewTransform, zoomAt
+    flyStep, glideFrame, homeViewport, minimapAnchor, minimapGrabOffset, minimapLayout, minimapMaxBox,
+    minimapViewRect, panBy, resolveViewport, rubberBandCenter, viewTransform, zoomAt
 } from './panZoomLogic';
 import { PanZoomGestureController } from './panZoomGestureController';
+import { Minimap } from './Minimap';
 import { MinimapSnapshot } from './minimapSnapshot';
 import { PanZoomProps, mapPanZoomProps } from './panZoomProps';
 
@@ -479,38 +480,24 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         if (!this.minimapShown(vp)) {
             return null;
         }
-        const layout = minimapLayout(c.w, c.h, p.minimap.width, p.minimap.height);
-        const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
+        const box = minimapMaxBox(p.minimap.width, p.minimap.height, this.state.viewportW, this.state.viewportH);
+        const layout = minimapLayout(c.w, c.h, box.w, box.h);
         const { badgeRight, ...anchor } = this.minimapPlacement();
         return (
-            <div
-                className="mustry-pz-minimap"
-                ref={this.miniRef}
-                aria-label={this.labels().overview}
-                style={{ ...anchor, width: layout.w, height: layout.h }}
-                onPointerDown={(e) => this.onMiniPointerDown(e, layout.scale)}
-                onDoubleClick={(e) => e.stopPropagation()}   // no viewport double-click zoom
-            >
-                {p.minimap.preview && (
-                    <div
-                        className="mustry-pz-mini-preview"
-                        ref={this.previewHost}
-                        style={{ width: c.w, height: c.h, transform: `scale(${layout.scale})` }}
-                    />
-                )}
-                <div className="mustry-pz-mini-view" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
-                {p.pois.map((poi, i) => (
-                    <button
-                        key={`${poi.name}-${i}`}
-                        type="button"
-                        className={`mustry-pz-mini-poi${poi.flagged ? ' mustry-pz-mini-poi--flagged' : ''}`}
-                        style={{ left: poi.x * layout.scale, top: poi.y * layout.scale }}
-                        title={poi.name}
-                        aria-label={poi.name}
-                        onClick={() => this.flyToPoi(poi)}
-                    />
-                ))}
-            </div>
+            <Minimap
+                rootRef={this.miniRef}
+                previewRef={this.previewHost}
+                label={this.labels().overview}
+                anchor={anchor}
+                layout={layout}
+                viewRect={minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale)}
+                contentW={c.w}
+                contentH={c.h}
+                preview={p.minimap.preview}
+                pois={p.pois}
+                onPointerDown={this.onMiniPointerDown}
+                onPoiClick={(poi) => this.flyToPoi(poi)}
+            />
         );
     }
 

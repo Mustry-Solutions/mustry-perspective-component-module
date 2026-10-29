@@ -1,7 +1,7 @@
 import {
     clampCenter, clampZoom, contentFullyVisible, contentToViewportPt, dragVelocity,
     edgeIndicator, fitZoom, flyStep, glideFrame, homeViewport, minimapAnchor,
-    minimapGrabOffset, minimapLayout,
+    minimapGrabOffset, minimapLayout, minimapMaxBox,
     minimapViewRect, panBy, panRelease, pinchViewport, resolveViewport,
     rubberBandCenter, viewTransform, wheelZoomFactor, zoomAt
 } from '../panzoom/panZoomLogic';
@@ -231,6 +231,19 @@ describe('minimapAnchor', () => {
     });
     it('moves the zoom badge right when it takes bottom-left', () => {
         expect(minimapAnchor('bottom-left', true, true)).toEqual({ bottom: 8, left: 10, badgeRight: true });
+    });
+});
+
+describe('minimapMaxBox', () => {
+    it('keeps the configured size when the viewport has room', () => {
+        expect(minimapMaxBox(160, 110, 800, 600)).toEqual({ w: 160, h: 110 });
+    });
+    it('caps each side at half the viewport', () => {
+        expect(minimapMaxBox(640, 480, 400, 300)).toEqual({ w: 200, h: 150 });
+        expect(minimapMaxBox(160, 480, 800, 300)).toEqual({ w: 160, h: 150 });
+    });
+    it('never collapses below 1px before the viewport is measured', () => {
+        expect(minimapMaxBox(160, 110, 0, 0)).toEqual({ w: 1, h: 1 });
     });
 });
 
