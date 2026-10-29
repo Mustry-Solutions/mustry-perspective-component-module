@@ -1,6 +1,6 @@
 # Local development gateway for testing the Mustry Perspective Components module.
 #
-# Runs a disposable Ignition 8.3.6 gateway in Docker. DEVELOPMENT ONLY: it accepts
+# Runs a disposable Ignition 8.3.10 gateway in Docker. DEVELOPMENT ONLY: it accepts
 # the EULA automatically and uses a fixed weak admin password. Do NOT use in production.
 #
 # The module is self-signed with a local dev certificate (see ops/lib.sh). On a fresh
@@ -18,7 +18,7 @@ services:
   # user BEFORE the gateway ever starts (user resolved by name inside the
   # image, so an image upgrade changing the uid keeps working). Idempotent.
   init:
-    image: inductiveautomation/ignition:8.3.6
+    image: inductiveautomation/ignition:8.3.10
     user: root
     entrypoint:
       - sh
@@ -30,7 +30,7 @@ services:
     restart: "no"
 
   gateway:
-    image: inductiveautomation/ignition:8.3.6
+    image: inductiveautomation/ignition:8.3.10
     container_name: mspc-ignition
     depends_on:
       init:
