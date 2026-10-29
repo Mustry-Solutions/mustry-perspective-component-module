@@ -314,7 +314,8 @@ Never call a guard change done because the build is green: open
 `/guard/pipes/5`, wait, see the pipes, move the mouse, see the page, and check
 the console is clean.
 
-What the e2e suite proves, on a real 8.3.6 gateway:
+What the e2e suite proves, on a real gateway (the dev/e2e gateway runs
+Ignition 8.3.10; the module supports 8.3.6 and newer):
 
 - idle after the timeout, wake on movement beyond the jitter threshold, page
   state intact;

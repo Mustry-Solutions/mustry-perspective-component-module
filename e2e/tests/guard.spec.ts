@@ -347,8 +347,9 @@ test.describe('night window', () => {
 });
 
 test.describe('reduced motion', () => {
-    // Through contextOptions: the top-level reducedMotion option is not applied by the runner
-    // here (Playwright 1.61), which left matchMedia reporting no preference.
+    // Through contextOptions: under Playwright 1.61 the top-level reducedMotion option did not
+    // reach the page (matchMedia reported no preference). From 1.64 both routes set the same
+    // context option, so this is the explicit form rather than a workaround.
     test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
     test('animated modes give way to the clock when the browser asks for less motion', async ({ page }) => {
