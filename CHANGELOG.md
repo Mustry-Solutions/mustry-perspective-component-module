@@ -16,10 +16,11 @@ inert copy, refreshed at most once per second, so the embedded view is never
 loaded twice and its bindings and scripts never run twice.
 `config.minimap.position` puts the minimap in any corner; it steps aside for
 the zoom controls and the Go-to dropdown. `config.minimap.width` and
-`config.minimap.height` set its maximum size (default 160 × 110). Dragging
+`config.minimap.height` set its maximum size (default 160 × 110), capped at
+half the component so there is always room left to pan. Dragging
 the view rectangle now moves it from where it was grabbed instead of jumping
 its center to the pointer. POI dots show their name on hover and fly there
-on click. A double-click on the minimap no longer zooms the viewport.
+on click.
 
 **Breaking:** the minimap and zoom settings are grouped into objects. A view
 that changed one of the old keys falls back to the default until it sets

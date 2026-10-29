@@ -29,7 +29,6 @@ export function Minimap(p: MinimapProps): React.ReactElement {
             aria-label={p.label}
             style={{ ...p.anchor, width: layout.w, height: layout.h }}
             onPointerDown={(e) => p.onPointerDown(e, layout.scale)}
-            onDoubleClick={(e) => e.stopPropagation()}   // no viewport double-click zoom
         >
             {p.preview && (
                 <div

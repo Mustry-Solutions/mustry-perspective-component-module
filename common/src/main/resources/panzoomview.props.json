@@ -94,12 +94,12 @@
             },
             "width": {
               "type": "number",
-              "description": "Maximum width in px (60–640). The minimap keeps the content's aspect ratio inside width × height.",
+              "description": "Maximum width in px (60–640), and never more than half the component's width. The minimap keeps the content's aspect ratio inside width × height.",
               "default": 160
             },
             "height": {
               "type": "number",
-              "description": "Maximum height in px (40–480).",
+              "description": "Maximum height in px (40–480), and never more than half the component's height.",
               "default": 110
             }
           }
