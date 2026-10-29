@@ -30,8 +30,6 @@ const FADE_MS = 300;
 const LAST_INPUT_WRITE_MS = 5000;
 /** While the feed is stale, ask the gateway to subscribe us again this often (a reconnected session lost it). */
 const RESUBSCRIBE_MS = 5000;
-/** How many alarms the gateway lists for the banner. */
-const BANNER_TOP = 3;
 
 /**
  * Presses and releases, tracked for the whole session by passive listeners:
@@ -232,7 +230,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
 
     private subscribe(force: boolean): void {
         this.lastResubscribe = mono();
-        this.delegate()?.subscribeAlarms(this.props.props.alarm.sources, BANNER_TOP, force);
+        this.delegate()?.subscribeAlarms(this.props.props.alarm.sources, force);
     }
 
     // --- input ----------------------------------------------------------------------

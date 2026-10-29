@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.inductiveautomation.ignition.common.gson.JsonPrimitive;
+import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
+
 /**
  * The guard's {@code alarm.sources}: glob patterns matched against an alarm's
  * display path and its source path, case-insensitively. {@code *} matches any
@@ -60,6 +63,42 @@ public final class SourceFilter {
             }
         }
         return kept.isEmpty() ? ALL : new SourceFilter(kept);
+    }
+
+    /**
+     * The patterns in a property value as the gateway's PropertyTree reads
+     * {@code alarm.sources}: an array node reads as a {@code QualifiedValue[]};
+     * plain arrays, collections and a single string are accepted too. Anything
+     * that is not a string is skipped.
+     */
+    public static List<String> patternsOf(Object value) {
+        List<String> out = new ArrayList<>();
+        Object v = unwrap(value);
+        if (v instanceof Object[] array) {
+            for (Object el : array) {
+                addString(out, el);
+            }
+        } else if (v instanceof Iterable<?> items) {
+            for (Object el : items) {
+                addString(out, el);
+            }
+        } else {
+            addString(out, v);
+        }
+        return out;
+    }
+
+    private static Object unwrap(Object value) {
+        return value instanceof QualifiedValue qv ? qv.getValue() : value;
+    }
+
+    private static void addString(List<String> out, Object el) {
+        Object v = unwrap(el);
+        if (v instanceof JsonPrimitive p && p.isString()) {
+            out.add(p.getAsString());
+        } else if (v instanceof String s) {
+            out.add(s);
+        }
     }
 
     /** Lower-case, and collapse runs of stars (they mean the same as one). */

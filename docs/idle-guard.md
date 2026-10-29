@@ -279,7 +279,9 @@ The animated modes are opt-in.
   not a regex, so no pattern can stall the shared poll thread; at most 32
   patterns of up to 256 characters (longer ones match nothing).
 - `GuardModelDelegate`: subscribes on `screensaver-subscribe`, unsubscribes on
-  shutdown.
+  shutdown. The message is only a trigger: the delegate reads `alarm.sources`
+  from the component's props in the gateway's property tree and lists
+  `DEFAULT_TOP` (3) alarms; nothing in the message is used.
 
 Event names live in `guardDelegate.ts` and `GuardModelDelegate.java`; change
 both.
@@ -297,8 +299,13 @@ is easy to forget.
   alarms that screen may show. A pattern that matches nothing hides every
   alarm from it, but then no alarm wakes that screen either.
 - The counts and labels never leave the gateway for a session without a
-  guard, and the delegate never accepts anything from the browser but its
-  source patterns.
+  guard. The delegate takes nothing from the browser's subscribe message: it
+  reads `alarm.sources` from the component's props on the gateway, so a
+  crafted message cannot widen what a screen receives.
+- Perspective lets a session write its own component props unless the
+  property is restricted. On a screen where `alarm.sources` matters, set that
+  property's access to **Protected** in the Designer's property editor, so
+  the browser cannot rewrite it either.
 
 
 ## Props

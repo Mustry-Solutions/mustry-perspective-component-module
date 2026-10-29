@@ -6,7 +6,11 @@ import { AlarmFeed, parseFeed } from './idleLogic';
 
 /** Event names shared with GuardModelDelegate.java. */
 export const GUARD_EVENTS = {
-    /** page -> gateway: { sources: [patterns], top } (again whenever they change) */
+    /**
+     * page -> gateway: a bare trigger, {} (again whenever alarm.sources changes,
+     * and while the feed is stale). The gateway reads alarm.sources from the
+     * component's props on its side and never trusts the browser for them.
+     */
     SUBSCRIBE: 'screensaver-subscribe',
     /** gateway -> page: { active, unacked, top, seq, sentAt } */
     ALARMS: 'screensaver-alarms'
@@ -34,14 +38,18 @@ export class GuardStoreDelegate extends ComponentStoreDelegate {
         return this.feed;
     }
 
-    /** (Re)subscribe with these source patterns; a no-op when nothing changed unless forced. */
-    subscribeAlarms(sources: string[], top: number, force = false): void {
-        const key = JSON.stringify([sources, top]);
+    /**
+     * Ask the gateway to (re)subscribe; a no-op when `sources` did not change
+     * unless forced. The patterns only decide when to ask: the gateway reads
+     * its own copy of alarm.sources.
+     */
+    subscribeAlarms(sources: string[], force = false): void {
+        const key = JSON.stringify(sources);
         if (!force && key === this.subscribed) {
             return;
         }
         this.subscribed = key;
-        this.fireEvent(GUARD_EVENTS.SUBSCRIBE, { sources, top });
+        this.fireEvent(GUARD_EVENTS.SUBSCRIBE, {});
     }
 
     handleEvent(eventName: string, eventObject: JsObject): void {

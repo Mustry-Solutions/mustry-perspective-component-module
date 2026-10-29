@@ -13,6 +13,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.inductiveautomation.ignition.common.model.values.BasicQualifiedValue;
+import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
+
 class SourceFilterTest {
 
     private static ActiveAlarm alarm(String source, String display) {
@@ -106,5 +109,19 @@ class SourceFilterTest {
         String tooLong = "*" + "x".repeat(SourceFilter.MAX_PATTERN_LENGTH);
         assertFalse(SourceFilter.of(List.of(tooLong)).matches(LINE1));
         assertTrue(SourceFilter.of(List.of(tooLong, "*Line2*")).matches(LINE2));
+    }
+
+    @Test
+    void readsPatternsFromAPropertyTreeValue() {
+        // An array node reads as QualifiedValue[]; non-strings are skipped.
+        QualifiedValue[] array = {
+            new BasicQualifiedValue("Line 1/*"), new BasicQualifiedValue(42), new BasicQualifiedValue("*Line2*")
+        };
+        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.patternsOf(array));
+        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.patternsOf(new BasicQualifiedValue(array)));
+        assertEquals(List.of("a", "b"), SourceFilter.patternsOf(List.of("a", "b")));
+        assertEquals(List.of("solo"), SourceFilter.patternsOf("solo"));
+        assertEquals(List.of(), SourceFilter.patternsOf(null));
+        assertEquals(List.of(), SourceFilter.patternsOf(7));
     }
 }
