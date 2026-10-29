@@ -393,9 +393,10 @@ Ignition 8.3.10; the module supports 8.3.6 and newer):
 
 - idle after the timeout, wake on movement beyond the jitter threshold, page
   state intact;
-- a waking mouse press/release and a waking key press never reach the page
-  (the mouse and key tests fail when the swallowing is disabled; the touch test
-  cannot, because Chromium already drops a tap whose target vanished);
+- a waking mouse press/release, key press and tap never reach the page (the
+  mouse, key and touch tests all fail when the swallowing is disabled; the
+  touch test checks page listeners on the document, because Chromium already
+  drops a tap whose target vanished before it reaches the controls under it);
 - a High alarm wakes the page within the poll budget and keeps it awake;
 - a Medium alarm pins a banner without waking;
 - Critical wakes even with `wakePriority` Critical, and is never covered;

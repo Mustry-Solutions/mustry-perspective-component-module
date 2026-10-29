@@ -140,6 +140,9 @@ test.describe('touch', () => {
     // disabled every event of the tap, touchstart through click, reaches them,
     // so this checks they see none. Verified by mutation (handleInput never
     // cancels, FADE_MS 0): the document counts went from {} to 1 of each.
+    // A cancelled touchstart/touchend means Chromium never makes the tap's
+    // mouse events and click, so a regression limited to swallowing those is
+    // the mouse test's to catch, not this one's.
 
     test('a waking tap never reaches the page underneath', async ({ page }) => {
         await openGuarded(page, 'starfield', 5);

@@ -27,9 +27,10 @@ pixels above a threshold calibrated against its dark background). They do
 
 ## Touch
 
-- [ ] The touch test passes even with input swallowing disabled, because
-      headless Chromium already drops a tap whose target vanished. Real touch
-      browsers (iOS/iPadOS Safari, Android Chrome, WPE WebKit kiosks) may not.
+- [ ] The e2e touch test only proves the swallowing in headless Chromium, which
+      also drops a tap whose target vanished on its own. Real touch browsers
+      (iOS/iPadOS Safari, Android Chrome, WPE WebKit kiosks) may behave
+      differently.
       On a real touchscreen, tap a button under the screensaver about 20 times:
       it must only wake the page, never press the button. Include a
       release-acting control (the demo page's "Jog" control counts releases).
