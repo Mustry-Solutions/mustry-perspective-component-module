@@ -108,6 +108,12 @@
     background: color-mix(in srgb, var(--pz-bg) 80%, transparent);
     border: 1px solid var(--pz-border);
     pointer-events: none;
+
+    // the minimap took bottom-left (config.minimap.position)
+    &--right {
+        left: auto;
+        right: 10px;
+    }
 }
 
 .mustry-pz-poi-select {
@@ -131,9 +137,7 @@
 }
 
 .mustry-pz-minimap {
-    position: absolute;
-    right: 10px;
-    bottom: 8px;
+    position: absolute;    // corner offsets inline (config.minimap.position)
     z-index: 6;
     overflow: hidden;
     background: color-mix(in srgb, var(--pz-bg) 85%, transparent);
@@ -148,19 +152,41 @@
     position: absolute;
     border: 1px solid var(--pz-accent);
     background: color-mix(in srgb, var(--pz-accent) 15%, transparent);
-    pointer-events: none;
+    cursor: grab;          // presses bubble to the minimap, which drags it from the grab point
 }
 
+// POI dot: a 14px hit area (click flies there, title = name) around a 5px dot.
 .mustry-pz-mini-poi {
     position: absolute;
-    width: 5px;
-    height: 5px;
-    margin: -2.5px 0 0 -2.5px;   // center on the coordinate
-    border-radius: 50%;
-    background: var(--pz-muted);
-    pointer-events: none;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;   // center on the coordinate
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
 
-    &--flagged {
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--pz-muted);
+        transform: translate(-50%, -50%);
+        transition: width 0.1s, height 0.1s;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+        width: 8px;
+        height: 8px;
+        box-shadow: 0 0 0 2px var(--pz-bg);
+    }
+
+    &--flagged::after {
         background: var(--pz-alert);
     }
 }
@@ -242,4 +268,26 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+}
+
+// Minimap content preview: an inert, scaled clone of the embedded view
+// (minimapSnapshot.ts). Never interactive — presses go to the minimap.
+.mustry-pz-mini-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+    opacity: 0.85;
+    // a full-size copy of the content: keep its layout and paint to itself
+    contain: strict;
+}
+
+.mustry-pz-mini-snapshot {
+    position: relative;
+    background: var(--pz-bg);
+}
+
+.mustry-pz-mini-placeholder {
+    background: var(--pz-canvas);
 }

@@ -12,15 +12,11 @@
         "viewParams": [],
         "contentWidth": 0,
         "contentHeight": 0,
-        "minZoom": 0.1,
-        "maxZoom": 8,
-        "zoomStep": 1.25,
-        "wheelZoom": true,
-        "doubleClickZoom": true,
+        "zoom": { "min": 0.1, "max": 8, "step": 1.25, "wheel": true, "doubleClick": true },
         "showControls": true,
         "locale": "",
         "flyToMs": 350,
-        "showMinimap": true,
+        "minimap": { "show": true, "preview": true, "position": "bottom-right", "width": 160, "height": 110 },
         "showPoiList": true,
         "home": { "x": -1, "y": -1, "zoom": 0 }
       },
@@ -51,11 +47,19 @@
           "description": "The embedded view's natural height in px. 0 (default) = auto.",
           "default": 0
         },
-        "minZoom": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
-        "maxZoom": { "type": "number", "description": "Largest zoom factor.", "default": 8 },
-        "zoomStep": { "type": "number", "description": "Zoom multiplier per wheel tick / button press (1.05–3).", "default": 1.25 },
-        "wheelZoom": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
-        "doubleClickZoom": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true },
+        "zoom": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "How far and by which gestures the viewport zooms. (The current zoom itself is state.zoom.)",
+          "default": { "min": 0.1, "max": 8, "step": 1.25, "wheel": true, "doubleClick": true },
+          "properties": {
+            "min": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
+            "max": { "type": "number", "description": "Largest zoom factor.", "default": 8 },
+            "step": { "type": "number", "description": "Zoom multiplier per wheel tick / button press (1.05–3).", "default": 1.25 },
+            "wheel": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
+            "doubleClick": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true }
+          }
+        },
         "showControls": { "type": "boolean", "description": "Show the zoom / reset / fit buttons.", "default": true },
         "locale": {
           "type": "string",
@@ -66,10 +70,39 @@
           "description": "When a script/binding writes state.zoom/center, the viewport animates there over this many ms (0 = snap).",
           "default": 350
         },
-        "showMinimap": {
-          "type": "boolean",
-          "description": "Corner overview with a draggable view rectangle and POI dots. Hides itself while the whole content is visible.",
-          "default": true
+        "minimap": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Corner overview of the content: a live preview, a draggable view rectangle and clickable POI dots. Hides itself while the whole content is visible.",
+          "default": { "show": true, "preview": true, "position": "bottom-right", "width": 160, "height": 110 },
+          "properties": {
+            "show": {
+              "type": "boolean",
+              "description": "Show the minimap.",
+              "default": true
+            },
+            "preview": {
+              "type": "boolean",
+              "description": "Draw a live, scaled preview of the embedded view behind the view rectangle (refreshed at most once per second). Off = POI dots only.",
+              "default": true
+            },
+            "position": {
+              "type": "string",
+              "enum": ["bottom-right", "bottom-left", "top-right", "top-left"],
+              "description": "Viewport corner the minimap sits in. It steps aside for the zoom controls (top-right) and the Go-to dropdown (top-left); at bottom-left the zoom badge moves right.",
+              "default": "bottom-right"
+            },
+            "width": {
+              "type": "number",
+              "description": "Maximum width in px (60–640), and never more than half the component's width. The minimap keeps the content's aspect ratio inside width × height.",
+              "default": 160
+            },
+            "height": {
+              "type": "number",
+              "description": "Maximum height in px (40–480), and never more than half the component's height.",
+              "default": 110
+            }
+          }
         },
         "showPoiList": {
           "type": "boolean",

@@ -28,17 +28,17 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       plain CLICK (< 5 px movement) still reaches buttons/inputs inside the
       embedded view (the demo's click-counter proves it); after a real drag,
       no phantom click fires.
-- [ ] **Wheel zoom** (`config.wheelZoom`): zooms toward the cursor — the
+- [ ] **Wheel zoom** (`config.zoom.wheel`): zooms toward the cursor — the
       content under the pointer stays put; the page never scrolls while
       wheeling over the viewport.
-- [ ] **Double-click zoom** (`config.doubleClickZoom`): two zoom steps toward
+- [ ] **Double-click zoom** (`config.zoom.doubleClick`): two zoom steps toward
       the click point.
 - [ ] **Controls** (`config.showControls`): + / − step at the viewport center;
       home resets to `config.home` (zoom 0 = fit, x/y −1 = content center);
       fit always fits; tooltips follow `config.locale` (en/fr/de/es/nl/it/pt).
 - [ ] **Bounds**: you can't lose the content — panning stops with ≥ 25% of the
       viewport still covered; content smaller than the viewport stays
-      centered; zoom clamps to `config.minZoom`/`maxZoom`.
+      centered; zoom clamps to `config.zoom.min`/`max`.
 - [ ] **Two-way state**: gestures write `state.zoom`/`state.center` (debounced
       ~200 ms, flushed on gesture end); writing them from a script/binding
       moves the viewport ("Fly to Pump 3" in the demo).
@@ -67,10 +67,21 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       `zoom` (`0` = keep the current zoom); writing a name to `state.target`
       from a script/binding flies there and the component clears the target
       back to `''`, so writing the SAME name later re-flies.
-- [ ] **Minimap** (`config.showMinimap`): appears only when part of the
+- [ ] **Minimap** (`config.minimap.show`): appears only when part of the
       content is off-screen; shows POI dots (flagged in the alert color) and
-      the view rectangle; clicking jumps the view there, dragging pans it
-      (zoom unchanged); a press on the minimap never starts a viewport pan.
+      the view rectangle; clicking outside the rectangle jumps the view
+      there; dragging the rectangle pans from where it was grabbed (no jump,
+      zoom unchanged); a press or double-click on the minimap never starts a
+      viewport pan or zoom.
+- [ ] **Minimap preview** (`config.minimap.preview`): the embedded view shows
+      scaled behind the rectangle and follows live changes within about a
+      second; off = dots only. Nothing in the preview reacts to taps.
+- [ ] **Minimap POI dots**: tapping a dot flies to that POI (an easy target
+      on a tablet); with a mouse, hovering shows its name.
+- [ ] **Minimap placement** (`config.minimap.position`, `width`/
+      `height`): each corner works; top-right sits left of the zoom
+      controls, top-left below the Go-to dropdown, bottom-left moves the zoom
+      badge to the right; the size changes within the configured box.
 - [ ] **Flagged POIs** (bind `flagged` to alarm state): a pulse ring at the
       POI while it's visible (never blocks clicks — `pointer-events: none`);
       off-screen, a clickable edge chip (name + arrow rotated toward the real
@@ -80,7 +91,7 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
 ## Feel + robustness (M4)
 
 - [ ] **Trackpad zoom** is smooth (proportional to the pinch), while a mouse
-      wheel tick still zooms exactly one `config.zoomStep`.
+      wheel tick still zooms exactly one `config.zoom.step`.
 - [ ] **Flick to glide**: releasing a fast drag keeps the view moving with
       friction; it decelerates smoothly, stops at pan bounds, and a grab
       mid-glide (or mid-fly) freezes it in place. The rest position lands in

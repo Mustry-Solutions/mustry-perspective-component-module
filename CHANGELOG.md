@@ -27,6 +27,43 @@ projects without one pay nothing. It is a browser overlay, not an access
 control. Details in `docs/idle-guard.md`; the verify project gains `/guard`
 pages, used by the new e2e suite `guard.spec.ts`.
 
+### Added: Pan & Zoom minimap shows the content, and can be placed and sized
+The minimap only showed POI dots and the view rectangle, so it said little
+about what was where. It now draws a live, scaled preview of the embedded
+view behind them (`config.minimap.preview`, on by default). The preview is an
+inert copy, refreshed at most once per second, so the embedded view is never
+loaded twice and its bindings and scripts never run twice.
+`config.minimap.position` puts the minimap in any corner; it steps aside for
+the zoom controls and the Go-to dropdown. `config.minimap.width` and
+`config.minimap.height` set its maximum size (default 160 × 110), capped at
+half the component so there is always room left to pan. Dragging
+the view rectangle now moves it from where it was grabbed instead of jumping
+its center to the pointer. POI dots show their name on hover and fly there
+on click.
+
+**Breaking:** the minimap and zoom settings are grouped into objects. A view
+that changed one of the old keys falls back to the default until it sets
+the new one. Delete the old keys from the view as well: `config` accepts no
+unknown keys, so the Designer flags any that are left as invalid.
+
+| Before | After |
+|---|---|
+| `config.showMinimap` | `config.minimap.show` |
+| `config.minZoom` | `config.zoom.min` |
+| `config.maxZoom` | `config.zoom.max` |
+| `config.zoomStep` | `config.zoom.step` |
+| `config.wheelZoom` | `config.zoom.wheel` |
+| `config.doubleClickZoom` | `config.zoom.doubleClick` |
+
+### Fixed: double-clicking a Pan & Zoom button also zoomed in
+The toolbar sits inside the viewport, so a fast double-click on the zoom-out
+button zoomed out twice and then ran the viewport's double-click zoom, which
+zoomed back in toward the toolbar's corner (#223). Double-click zoom now only
+reacts to the content and the bare viewport, so the toolbar buttons, the
+minimap, the POI list and the edge indicators act like plain clicks. A Pan &
+Zoom nested in another one's embedded view no longer zooms the outer one too,
+and the event still reaches the author's own double-click scripts.
+
 ### Changed: Data Grid number error shows the expected format
 A number cell typed in another locale's format, such as `4,5` with
 `config.locale: "en"`, was rejected with only "Must be a number" (#174).

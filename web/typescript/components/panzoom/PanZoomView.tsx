@@ -13,10 +13,12 @@ import { PzLabels, pzLabelBase } from '../../shared/labelPacks';
 import {
     PzPoi, PzPoint, PzViewport, clampCenter, clampZoom,
     contentFullyVisible, contentToViewportPt, edgeIndicator, fitZoom,
-    flyStep, glideFrame, homeViewport, minimapLayout, minimapViewRect, panBy,
-    resolveViewport, rubberBandCenter, viewTransform, zoomAt
+    flyStep, glideFrame, homeViewport, minimapAnchor, minimapGrabOffset, minimapLayout, minimapMaxBox,
+    minimapViewRect, panBy, resolveViewport, rubberBandCenter, viewTransform, zoomAt
 } from './panZoomLogic';
 import { PanZoomGestureController } from './panZoomGestureController';
+import { Minimap } from './Minimap';
+import { MinimapSnapshot } from './minimapSnapshot';
 import { PanZoomProps, mapPanZoomProps } from './panZoomProps';
 
 // Must match PanZoomView.COMPONENT_ID on the Java side.
@@ -55,6 +57,9 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     // inertia glide after a flick
     private glideRaf = 0;
     private miniRef = React.createRef<HTMLDivElement>();
+    private contentRef = React.createRef<HTMLDivElement>();
+    // the minimap's content preview: an inert clone of the embedded view
+    private snapshot = new MinimapSnapshot(() => this.contentRef.current);
     private pendingTarget = '';   // state.target pre-set before the first measure
 
     // Pan/pinch/wheel/double-click live in the controller; it reads the live
@@ -96,10 +101,15 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         if (this.props.props.target) {
             this.pendingTarget = this.props.props.target;
         }
+        this.syncSnapshot();
     }
 
     componentDidUpdate(prevProps: ComponentProps<PanZoomProps>): void {
         const p = this.props.props;
+        const m = p.minimap, pm = prevProps.props.minimap;
+        if (m.show !== pm.show || m.preview !== pm.preview) {
+            this.syncSnapshot();
+        }
         const d = this.state.draft;
         if (d && !this.flyRaf && Math.abs(p.zoom - d.zoom) < 1e-6
             && Math.abs(p.center.x - d.center.x) < 0.5
@@ -132,6 +142,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
 
     componentWillUnmount(): void {
         this.gestures.dispose();
+        this.snapshot.dispose();
         this.cancelMotion();
         if (this.resizeObs) {
             this.resizeObs.disconnect();
@@ -404,12 +415,21 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
     private onMiniPointerDown = (e: React.PointerEvent, scale: number): void => {
         e.stopPropagation();   // never starts a viewport pan
         const el = this.miniRef.current;
-        if (!el || (e.pointerType === 'mouse' && e.button !== 0)) {
-            return;
+        if (!el || (e.pointerType === 'mouse' && e.button !== 0)
+            || (e.target instanceof Element && e.target.closest('.mustry-pz-mini-poi'))) {
+            return;   // a POI dot flies there on click instead
         }
-        const toCenter = (clientX: number, clientY: number): PzPoint => {
+        // minimap px, measured from the padding box the children are laid out in
+        const toMini = (clientX: number, clientY: number): PzPoint => {
             const rect = el.getBoundingClientRect();
-            return { x: (clientX - rect.left) / scale, y: (clientY - rect.top) / scale };
+            return { x: clientX - rect.left - el.clientLeft, y: clientY - rect.top - el.clientTop };
+        };
+        // pressed on the view rectangle: drag it from where it was grabbed; elsewhere: jump there
+        const grab = minimapGrabOffset(toMini(e.clientX, e.clientY),
+            minimapViewRect(this.vp(), this.state.viewportW, this.state.viewportH, scale));
+        const toCenter = (clientX: number, clientY: number): PzPoint => {
+            const m = toMini(clientX, clientY);
+            return { x: (m.x - grab.x) / scale, y: (m.y - grab.y) / scale };
         };
         this.applyViewport({ zoom: this.vp().zoom, center: toCenter(e.clientX, e.clientY) });   // jump
         try {
@@ -429,32 +449,55 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
         el.addEventListener('pointercancel', up);
     };
 
+    /** Only pay for the preview while a minimap can show it. */
+    private syncSnapshot(): void {
+        const p = this.props.props;
+        if (p.minimap.show && p.minimap.preview) {
+            this.snapshot.watch();
+        } else {
+            this.snapshot.dispose();
+        }
+    }
+
+    // stable callback ref: the minimap (and so the preview host) unmounts while the content fits
+    private previewHost = (el: HTMLDivElement | null): void => this.snapshot.attach(el);
+
+    /** The minimap hides itself while the whole content is visible. */
+    private minimapShown(vp: PzViewport): boolean {
+        const c = this.cs();
+        return this.props.props.minimap.show && this.state.viewportW > 0
+            && !contentFullyVisible(vp, c.w, c.h, this.state.viewportW, this.state.viewportH);
+    }
+
+    private minimapPlacement(): ReturnType<typeof minimapAnchor> {
+        const p = this.props.props;
+        return minimapAnchor(p.minimap.position, p.showControls, p.showPoiList && p.pois.length > 0);
+    }
+
     private renderMinimap(vp: PzViewport): React.ReactNode {
         const p = this.props.props;
         const c = this.cs();
-        if (!p.showMinimap || this.state.viewportW <= 0
-            || contentFullyVisible(vp, c.w, c.h, this.state.viewportW, this.state.viewportH)) {
+        if (!this.minimapShown(vp)) {
             return null;
         }
-        const layout = minimapLayout(c.w, c.h, 160, 110);
-        const r = minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale);
+        const box = minimapMaxBox(p.minimap.width, p.minimap.height, this.state.viewportW, this.state.viewportH);
+        const layout = minimapLayout(c.w, c.h, box.w, box.h);
+        const { badgeRight, ...anchor } = this.minimapPlacement();
         return (
-            <div
-                className="mustry-pz-minimap"
-                ref={this.miniRef}
-                aria-label={this.labels().overview}
-                style={{ width: layout.w, height: layout.h }}
-                onPointerDown={(e) => this.onMiniPointerDown(e, layout.scale)}
-            >
-                {p.pois.map((poi, i) => (
-                    <div
-                        key={`${poi.name}-${i}`}
-                        className={`mustry-pz-mini-poi${poi.flagged ? ' mustry-pz-mini-poi--flagged' : ''}`}
-                        style={{ left: poi.x * layout.scale, top: poi.y * layout.scale }}
-                    />
-                ))}
-                <div className="mustry-pz-mini-view" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
-            </div>
+            <Minimap
+                rootRef={this.miniRef}
+                previewRef={this.previewHost}
+                label={this.labels().overview}
+                anchor={anchor}
+                layout={layout}
+                viewRect={minimapViewRect(vp, this.state.viewportW, this.state.viewportH, layout.scale)}
+                contentW={c.w}
+                contentH={c.h}
+                preview={p.minimap.preview}
+                pois={p.pois}
+                onPointerDown={this.onMiniPointerDown}
+                onPoiClick={(poi) => this.flyToPoi(poi)}
+            />
         );
     }
 
@@ -557,6 +600,7 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     onDoubleClick={this.gestures.doubleClick}
                 >
                     <div
+                        ref={this.contentRef}
                         className={`mustry-pz-content${this.measured() ? '' : ' mustry-pz-unsized'}`}
                         style={{
                             width: c.w,
@@ -595,7 +639,12 @@ export class PanZoomView extends Component<ComponentProps<PanZoomProps>, PanZoom
                     {this.renderControls()}
                     {this.renderPoiList()}
                     {this.renderMinimap(vp)}
-                    <div className="mustry-pz-zoom-badge">{Math.round(vp.zoom * 100)}%</div>
+                    <div
+                        className={`mustry-pz-zoom-badge${this.minimapShown(vp) && this.minimapPlacement().badgeRight
+                            ? ' mustry-pz-zoom-badge--right' : ''}`}
+                    >
+                        {Math.round(vp.zoom * 100)}%
+                    </div>
                 </div>
             </div>
         );

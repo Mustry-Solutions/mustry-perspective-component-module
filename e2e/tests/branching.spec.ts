@@ -118,7 +118,7 @@ test.describe('Branching Diagram', () => {
     // nested ways to move the same picture.
     test('wrapped in a Pan & Zoom View: whole tree fits, no scrollbars of its own', async ({ page }) => {
         await openRoute(page, '/branching-panzoom', '.mustry-panzoom');
-        const root = page.locator('.mustry-branching');
+        const root = page.locator('.mustry-pz-content .mustry-branching');   // not the minimap's copy
         await expect(root).toBeVisible();
         await expect(root.locator('.mustry-branch-node')).toHaveCount(20);
         // The wrapper is doing the navigating — without this, swapping the Pan &
@@ -149,7 +149,7 @@ test.describe('Branching Diagram', () => {
 
     test('wrapped in a Pan & Zoom View: node clicks survive the wrapper', async ({ page }) => {
         await openRoute(page, '/branching-panzoom', '.mustry-panzoom');
-        const root = page.locator('.mustry-branching');
+        const root = page.locator('.mustry-pz-content .mustry-branching');
         await root.getByRole('button', { name: 'Clear jam', exact: true }).click();
         // Assert the accessible name, not text content: a node's markdown card is
         // part of its subtree, so getByText would also pass on a different node
