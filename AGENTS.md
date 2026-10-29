@@ -117,7 +117,7 @@ bind-mounted into the gateway — Designer saves write back into the repo.
   without a fresh feed.
 - The input that wakes the page must never reach the page, and a held press
   (a hold-to-run button) never goes idle and always gets its release. If you
-  touch the input handling, run the e2e click and key tests AND check they
+  touch the input handling, run the e2e click, key and tap tests AND check they
   still fail with swallowing disabled (make `handleInput` never cancel, set
   `FADE_MS` to 0).
 - The gateway `AlarmFeed` polls only while a guard is subscribed; keep it that

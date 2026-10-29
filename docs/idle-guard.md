@@ -23,7 +23,7 @@ These hold whatever the props say, and every change to the guard keeps them:
   window capture-phase; the rest of the gesture (its key repeats, its release,
   the trailing mouse, click and touch events) is swallowed until it is
   released plus `SWALLOW_TAIL_MS`, capped at `SWALLOW_CAP_MS` (`idleLogic.ts`,
-  `PressTracker`). If you touch this, run the e2e click and key tests and
+  `PressTracker`). If you touch this, run the e2e click, key and tap tests and
   check they still fail with swallowing disabled (mutation check: make
   `handleInput` in `IdleGuard.tsx` never cancel, i.e. `if (swallow &&
   canCancel)` → `if (false)`, and set `FADE_MS` to 0).
