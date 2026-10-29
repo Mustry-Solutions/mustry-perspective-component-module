@@ -22,10 +22,16 @@ public class MustryPerspectiveComponentsDesignerHook extends AbstractDesignerMod
 
     @Override
     public void startup(DesignerContext context, LicenseState activationState) throws Exception {
+        // get() is a plain module lookup: null when Perspective's designer hook isn't loaded.
         PerspectiveDesignerInterface pdi = PerspectiveDesignerInterface.get(context);
-        this.registry = pdi.getDesignerComponentRegistry();
-        log.info("Registering Mustry Perspective Components components in the Designer.");
-        Components.ALL.forEach(this.registry::registerComponent);
+        this.registry = pdi != null ? pdi.getDesignerComponentRegistry() : null;
+
+        if (this.registry != null) {
+            log.info("Registering Mustry Perspective Components components in the Designer.");
+            Components.ALL.forEach(this.registry::registerComponent);
+        } else {
+            log.error("Perspective designer component registry not found; components not registered.");
+        }
     }
 
     @Override

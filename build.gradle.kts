@@ -17,7 +17,10 @@ allprojects {
     // The release workflow passes -PreleaseVersion=<tag> (the git tag drives the
     // module version — see .github/workflows/release.yml). Local and main-branch
     // builds carry a SNAPSHOT so a dev .modl is never mistaken for a release.
-    version = (project.findProperty("releaseVersion") as String?)?.removePrefix("v") ?: "0.5.0-SNAPSHOT"
+    // module.xml drops the suffix (0.8.1-SNAPSHOT -> 0.8.1), so keep this one
+    // patch ahead of the latest tag: bump it after every release (RELEASING.md),
+    // or a dev build installs as a downgrade of the released module.
+    version = (project.findProperty("releaseVersion") as String?)?.removePrefix("v") ?: "0.8.1-SNAPSHOT"
 }
 
 ignitionModule {
@@ -138,10 +141,18 @@ ignitionModule {
      * into Ignition's trial/activation flow and contradict the EULA we ask the
      * user to accept at install time — so set it explicitly rather than
      * inheriting a default that means the opposite of what we promise.
-     * The EULA itself is unaffected: acceptance is driven by the <license>
-     * element staged below, not by this flag.
+     * The EULA itself is unaffected: acceptance is driven by `license` below,
+     * not by this flag.
      */
     freeModule.set(true)
+
+    /*
+     * The EULA ships inside the .modl and is shown at install time, free module
+     * or not: a free module still states its terms, it just doesn't run a trial.
+     * The plugin stages the file into the module root and writes
+     * <license>license.html</license> into module.xml.
+     */
+    license.set("license.html")
 
     /*
      * Sign the module only when signing credentials are supplied via -Pignition.signing.*
@@ -149,30 +160,4 @@ ignitionModule {
      * A plain `./gradlew build` with no signing properties stays unsigned.
      */
     skipModlSigning.set(!project.hasProperty("ignition.signing.keystoreFile"))
-}
-
-// The EULA ships inside the .modl and is shown at install time — independent of
-// `freeModule` above: a free module still states its terms, it just doesn't run
-// a trial. The plugin has no `license` property, so the file is staged into the
-// module content and referenced from module.xml, where the gateway picks it up
-// and requires acceptance. (Pattern proven in the AMQP + observability modules.)
-tasks.named("assembleModlStructure") {
-    doLast {
-        copy {
-            from("license.html")
-            into(layout.buildDirectory.dir("moduleContent"))
-        }
-    }
-}
-
-tasks.named("zipModule") {
-    doFirst {
-        val moduleXml = layout.buildDirectory.file("moduleContent/module.xml").get().asFile
-        val content = moduleXml.readText()
-        if (!content.contains("<license>")) {
-            moduleXml.writeText(
-                content.replace("</module>", "\t\t<license>license.html</license>\n\t</module>")
-            )
-        }
-    }
 }

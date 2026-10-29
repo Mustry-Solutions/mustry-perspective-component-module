@@ -5,7 +5,7 @@ import { intlFormat } from '../../shared/dateUtils';
 import {
     CalEvent, DayCol, hhmm, isOccurrence, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
 } from './calendarLogic';
-import { ResizeEdge } from './calendarGestureLogic';
+import { ResizeEdge, visibleSpan } from './calendarGestureLogic';
 import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
 import { ShiftDef, visibleShifts } from '../../shared/shifts';
@@ -26,7 +26,7 @@ interface TimeGridProps {
     categories: Category[];
     labels: CalLabels;
     scrollRef: React.RefObject<HTMLDivElement>;
-    enterClass: (id: string) => string;
+    enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
     onStartCreate: (iso: string, e: React.PointerEvent) => void;
@@ -71,8 +71,11 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
         if (!preview || preview.dayIso !== dayIso) {
             return null;
         }
-        const top = ((preview.startMin - winStart) / 60) * hourPx;
-        const height = ((preview.endMin - preview.startMin) / 60) * hourPx;
+        // The preview holds the event's real minutes; draw only the part on the grid,
+        // but label the real times.
+        const drawn = visibleSpan(preview.startMin, preview.endMin, winStart, winEnd);
+        const top = ((drawn.startMin - winStart) / 60) * hourPx;
+        const height = ((drawn.endMin - drawn.startMin) / 60) * hourPx;
         const timeLabel = `${hhmm(preview.startMin)} – ${hhmm(preview.endMin)}`;
         if (preview.mode === 'create') {
             return (
@@ -156,8 +159,8 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                 return (
                                     <button
                                         type="button"
-                                        className={cls.join(' ') + statusClass(ev) + enterClass(ev.id || '')}
-                                        key={ev.id || i} title={ev.title}
+                                        className={cls.join(' ') + statusClass(ev) + enterClass(ev)}
+                                        key={ev.id || i}
                                         style={{
                                             top, height,
                                             left: `${(it.lane / it.lanes) * 100}%`,

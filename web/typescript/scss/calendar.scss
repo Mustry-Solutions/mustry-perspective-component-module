@@ -1384,7 +1384,7 @@
 
 .mustry-cal-legend-icon svg { width: 14px; height: 14px; }
 
-// Recurring-occurrence marker (id "base::date") on chips / bars / rows — dragging
+// Recurring-occurrence marker (an expanded occurrence) on chips / bars / rows — dragging
 // or editing one detaches it from its series. (Top-level so portaled popovers match.)
 .mustry-cal-ev-recur {
     flex: 0 0 auto;

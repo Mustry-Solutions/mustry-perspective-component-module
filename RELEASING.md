@@ -36,7 +36,14 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
      signed `.modl` and the manual PDF, then flips it public — using the
      changelog's `[0.2.0]` section as the notes (`ops/changelog-notes.py`
      folds each `###` entry into a collapsible block titled with its
-     heading).
+     heading). If that section is missing or empty, the workflow stops
+     before creating the release, so do step 1 before tagging.
+
+4. **Bump the dev version.** In a follow-up PR, set the fallback version in
+   `build.gradle.kts` to the next patch as a SNAPSHOT (after `v0.2.0`:
+   `0.2.1-SNAPSHOT`). module.xml drops the `-SNAPSHOT` suffix, so a dev build
+   left on the old number would claim to be the release it follows and
+   install as a downgrade.
 
 The tag should point at a commit already on `main` (hence already green — the
 release build signs the artifact rather than re-running the e2e gateway).
@@ -57,6 +64,11 @@ Signing runs only in the Release workflow, from repository secrets
 | `SIGNING_CERT_ALIAS` | Key alias inside the keystore |
 | `SIGNING_CERT_PASSWORD` | Key password (often the same as the keystore password) |
 
+To check the secrets without releasing, run the **Release** workflow by hand
+(**Actions → Release → Run workflow**) with a plain `x.y.z` version. A manual
+run is always a dry run: it builds and signs, and uploads the signed `.modl`
+as a workflow artifact. Only a pushed tag publishes a release.
+
 If any are missing, the release fails fast with a message naming them. The
 signing material is **never** committed; the local dev keystore under
 `ops/signing/` (git-ignored, self-signed) is for the dev gateway only and is
@@ -64,7 +76,9 @@ unrelated to release signing.
 
 ## Local / dev builds
 
-`./gradlew build` locally produces version `0.2.0-SNAPSHOT` (the
-`releaseVersion` property is unset). Only the tagged Release workflow stamps a
-real version. `ops/setup.sh`/`deploy.sh` sign with the local dev keystore for
+`./gradlew build` locally produces the fallback SNAPSHOT version from
+`build.gradle.kts` (the `releaseVersion` property is unset), one patch ahead
+of the latest release. module.xml carries it without the suffix
+(`0.8.1-SNAPSHOT` → `0.8.1`). Only the tagged Release workflow stamps a real
+version. `ops/setup.sh`/`deploy.sh` sign with the local dev keystore for
 the disposable gateway, which is independent of release signing.

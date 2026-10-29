@@ -6,13 +6,13 @@ import { csvCell } from '../../shared/csv';
 import {
     addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today, toEpochMs
 } from '../../shared/dateUtils';
-import { RRule } from '../../shared/recurrence';
+import { occurrenceOf, OccurrenceTag, RRule } from '../../shared/recurrence';
 import { DayCell, MonthGrid, buildMonthGrid } from '../../shared/monthGrid';
 
 export type { RRule, DayCell, MonthGrid };
 export { buildMonthGrid };
 
-export interface CalEvent {
+export interface CalEvent extends OccurrenceTag {
     id: string;
     title: string;
     start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'
@@ -65,9 +65,9 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
     return map;
 }
 
-/** Whether an event is an expanded occurrence of a recurring series (id "base::date"). */
+/** Whether an event is an expanded occurrence of a recurring series (tagged by expandEvents). */
 export function isOccurrence(ev: CalEvent): boolean {
-    return (ev.id || '').indexOf('::') >= 0;
+    return occurrenceOf(ev) !== null;
 }
 
 /** Serialise events to CSV text (one row per event, CRLF line endings). Recurring
@@ -335,6 +335,43 @@ export interface TimedLayout {
     continuesDown?: boolean;  // event continues onto a later day (segment bottom is a continuation)
 }
 
+interface DaySegment {
+    startMin: number;  // clamped to the visible window
+    endMin: number;
+    isStart: boolean;  // dayIso is the event's first day
+    isEnd: boolean;    // dayIso is the event's last day
+}
+
+/** The part of a timed event that falls on `dayIso`, clamped to the visible window,
+ *  or null when none of it shows. A multi-day event covers every day it crosses;
+ *  `fallbackEnd` gives the end of a single-day event whose end is missing or not
+ *  after its start. */
+function daySegment(
+    ev: CalEvent, dayIso: string, winStart: number, winEnd: number, fallbackEnd: (sMin: number) => number
+): DaySegment | null {
+    const startDay = ev.start.slice(0, 10);
+    const endDay = ev.end && ev.end.length >= 10 ? ev.end.slice(0, 10) : startDay;
+    if (dayIso < startDay || dayIso > endDay) {
+        return null; // not on this day
+    }
+    const isStart = dayIso === startDay;
+    const isEnd = dayIso === endDay;
+    const sMin = isStart ? (timeMinutes(ev.start) as number) : winStart;
+    let eMin: number | null = isEnd ? (ev.end ? timeMinutes(ev.end) : null) : winEnd;
+    if (eMin === null || eMin <= sMin) {
+        if (!(isStart && isEnd)) {
+            return null; // e.g. ends at 00:00 on the end day -> nothing to show
+        }
+        eMin = fallbackEnd(sMin);
+    }
+    const top = Math.max(sMin, winStart);
+    const bot = Math.min(eMin, winEnd);
+    if (bot <= winStart || top >= winEnd) {
+        return null; // entirely outside the visible window
+    }
+    return { startMin: top, endMin: Math.max(bot, top + 1), isStart, isEnd };
+}
+
 /**
  * Lay out the timed events of one day on a vertical time grid: clamp to the visible
  * window, then pack overlapping events into side-by-side lanes. Events that
@@ -349,31 +386,13 @@ export function layoutDayEvents(
         if (!ev || !ev.start || ev.display === 'background' || !isTimed(ev)) {
             continue;
         }
-        // Multi-day timed events render a clamped segment on each day they cross.
-        const startDay = ev.start.slice(0, 10);
-        const endDay = ev.end && ev.end.length >= 10 ? ev.end.slice(0, 10) : startDay;
-        if (dayIso < startDay || dayIso > endDay) {
-            continue; // not on this day
-        }
-        const isStart = dayIso === startDay;
-        const isEnd = dayIso === endDay;
-        const sMin = isStart ? (timeMinutes(ev.start) as number) : winStart;
-        let eMin: number | null = isEnd ? (ev.end ? timeMinutes(ev.end) : null) : winEnd;
-        if (eMin === null || eMin <= sMin) {
-            if (isStart && isEnd) {
-                eMin = sMin + defaultDur;   // single-day, no/invalid end -> default duration
-            } else {
-                continue;                   // e.g. ends at 00:00 on the end day -> nothing to show
-            }
-        }
-        const top = Math.max(sMin, winStart);
-        const bot = Math.min(eMin, winEnd);
-        if (bot <= winStart || top >= winEnd) {
-            continue; // entirely outside the visible window
+        const seg = daySegment(ev, dayIso, winStart, winEnd, (sMin) => sMin + defaultDur);
+        if (!seg) {
+            continue;
         }
         items.push({
-            event: ev, startMin: top, endMin: Math.max(bot, top + 1), lane: 0, lanes: 1,
-            continuesUp: !isStart, continuesDown: !isEnd
+            event: ev, startMin: seg.startMin, endMin: seg.endMin, lane: 0, lanes: 1,
+            continuesUp: !seg.isStart, continuesDown: !seg.isEnd
         });
     }
     items.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
@@ -439,24 +458,19 @@ export interface BgBand {
     color?: string;
 }
 
-/** Timed background events on `dayIso` as clamped bands (no packing — full width). */
+/** Timed background events on `dayIso` as clamped bands (no packing — full width).
+ *  A multi-day band covers each day it crosses, like a multi-day event. */
 export function backgroundBandsForDay(events: CalEvent[], dayIso: string, winStart: number, winEnd: number): BgBand[] {
     const out: BgBand[] = [];
     for (const ev of events) {
-        if (!ev || ev.display !== 'background' || !ev.start || !isTimed(ev) || ev.start.slice(0, 10) !== dayIso) {
+        if (!ev || ev.display !== 'background' || !ev.start || !isTimed(ev)) {
             continue;
         }
-        const sMin = timeMinutes(ev.start) as number;
-        let eMin = ev.end && ev.end.slice(0, 10) === dayIso ? timeMinutes(ev.end) : winEnd;
-        if (eMin === null || eMin <= sMin) {
-            eMin = sMin + 60;
+        // A band with no end runs to the window end; one with a bad end gets an hour.
+        const seg = daySegment(ev, dayIso, winStart, winEnd, (sMin) => (ev.end ? sMin + 60 : winEnd));
+        if (seg) {
+            out.push({ id: ev.id, startMin: seg.startMin, endMin: seg.endMin, color: ev.color });
         }
-        const top = Math.max(sMin, winStart);
-        const bot = Math.min(eMin, winEnd);
-        if (bot <= winStart || top >= winEnd) {
-            continue;
-        }
-        out.push({ id: ev.id, startMin: top, endMin: Math.max(bot, top + 1), color: ev.color });
     }
     return out;
 }

@@ -3,7 +3,8 @@ import {
     startOfWeek, firstCellOffset, daysBetween, sameDay, minDate, maxDate,
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
-    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders
+    shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
+    wallClockInZone
 } from '../../shared/dateUtils';
 
 describe('pad2', () => {
@@ -220,6 +221,57 @@ describe('resolveZoned', () => {
         expect(r.iso).toBe('2026-01-15T12:00:00-05:00');
         expect(r.epochMs).toBe(Date.UTC(2026, 0, 15, 17, 0, 0)); // 12:00 EST = 17:00 UTC
     });
+
+    // A wall time in the spring-forward gap does not exist. Whichever instant it
+    // resolves to, the ISO string must name that same instant (#144).
+    it('Europe/Brussels spring-forward gap: ISO and epoch name the same instant', () => {
+        const r = resolveZoned(new Date(2026, 2, 29, 2, 30, 0), 'Europe/Brussels');
+        expect(r.epochMs).toBe(Date.UTC(2026, 2, 29, 1, 30, 0));
+        expect(r.iso).toBe('2026-03-29T03:30:00+02:00');
+        expect(Date.parse(r.iso)).toBe(r.epochMs);
+    });
+
+    it('America/New_York spring-forward gap: ISO and epoch name the same instant', () => {
+        // Only the agreement is asserted: the wall Date carries process-local
+        // fields, and a process running in a US zone has already shifted 02:30.
+        const r = resolveZoned(new Date(2026, 2, 8, 2, 30, 0), 'America/New_York');
+        expect(Date.parse(r.iso)).toBe(r.epochMs);
+    });
+
+    it('keeps every zone right when calls alternate between zones', () => {
+        // One cached formatter per zone (#145): a mix-up between zones, or a
+        // formatter reused across them, would show up as a wrong offset here.
+        const summer = Date.UTC(2026, 6, 1, 12, 0, 0);
+        const winter = Date.UTC(2026, 0, 15, 12, 0, 0);
+        const cases: Array<[string, number, string]> = [
+            ['Europe/Brussels', summer, '2026-07-01T14:00:00+02:00'],
+            ['America/Chicago', summer, '2026-07-01T07:00:00-05:00'],
+            ['Asia/Kolkata', summer, '2026-07-01T17:30:00+05:30'],
+            ['Europe/Brussels', winter, '2026-01-15T13:00:00+01:00'],
+            ['America/Chicago', winter, '2026-01-15T06:00:00-06:00'],
+            ['Pacific/Auckland', winter, '2026-01-16T01:00:00+13:00'],
+            ['UTC', winter, '2026-01-15T12:00:00+00:00']
+        ];
+        for (let round = 0; round < 2; round++) {
+            for (const [zone, ms, iso] of cases) {
+                expect(msToZonedIso(ms, zone)).toBe(iso);
+                expect(toEpochMs(iso.slice(0, 19), zone)).toBe(ms);
+            }
+        }
+    });
+
+    it('an unknown zone falls back to local time on every call', () => {
+        const wall = new Date(2026, 5, 15, 12, 0, 0);
+        for (let i = 0; i < 2; i++) {
+            expect(resolveZoned(wall, 'Not/AZone').epochMs).toBe(wall.getTime());
+        }
+    });
+
+    it('emitWall in the gap writes back the instant toEpochMs reads', () => {
+        const out = emitWall('2026-03-29T02:30:00', false, 'Europe/Brussels');
+        expect(out).toBe('2026-03-29T03:30:00+02:00');
+        expect(Date.parse(out)).toBe(toEpochMs('2026-03-29T02:30:00', 'Europe/Brussels'));
+    });
 });
 
 describe('instantToZonedIso (timezone normalisation)', () => {
@@ -267,5 +319,29 @@ describe('todayInZone / nowMinutesInZone', () => {
         const m = nowMinutesInZone('America/Chicago');
         expect(m).toBeGreaterThanOrEqual(0);
         expect(m).toBeLessThan(1440);
+    });
+
+    it('todayInZone reads the date of a given instant in the zone', () => {
+        // 03:00Z on Jun 26 is Jun 25 (22:00) in Chicago and Jun 26 (12:00) in Tokyo.
+        const instant = new Date('2026-06-26T03:00:00Z');
+        expect(fmtDate(todayInZone('America/Chicago', instant))).toBe('2026-06-25');
+        expect(fmtDate(todayInZone('Asia/Tokyo', instant))).toBe('2026-06-26');
+    });
+
+    it('an unknown zone falls back to the browser zone instead of throwing', () => {
+        const instant = new Date('2026-06-26T03:00:00Z');
+        expect(todayInZone('Not/AZone', instant).getTime()).toBe(todayInZone('', instant).getTime());
+    });
+});
+
+describe('wallClockInZone', () => {
+    it('is a local Date whose fields are the zone wall clock', () => {
+        const w = wallClockInZone(new Date('2026-06-25T13:00:00Z'), 'America/Chicago');
+        expect([fmtDate(w), secondsOfDay(w)]).toEqual(['2026-06-25', 8 * 3600]);
+    });
+
+    it('blank zone keeps the instant (browser-local)', () => {
+        const instant = new Date(2026, 5, 25, 13, 0, 0);
+        expect(wallClockInZone(instant, '').getTime()).toBe(instant.getTime());
     });
 });

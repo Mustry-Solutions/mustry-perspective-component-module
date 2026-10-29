@@ -21,7 +21,10 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Resource Timeline demo — data is seeded relative to TODAY on view load. Drag a bar to retime, drag it onto another row to reassign, drag an edge to resize, drag empty track to create. Bars marked ↻ are recurring (drag/edit one detaches that occurrence). Try the Live toggle: the window follows the now-line; paging disarms it. Every change persists via one onChange script."
+          "text": "Resource Timeline demo — data is seeded relative to TODAY on view load. Drag a bar to retime, drag it onto another row to reassign, drag an edge to resize, drag empty track to create. Bars marked ↻ are recurring (drag/edit one detaches that occurrence). Try the Live toggle: the window follows the now-line; paging disarms it. Every change persists via one onChange script.",
+          "style": {
+            "fontSize": "13px"
+          }
         },
         "meta": {
           "name": "Header"
@@ -30,7 +33,7 @@
           "x": 10,
           "y": 4,
           "width": 880,
-          "height": 50
+          "height": 64
         }
       },
       {
@@ -41,9 +44,9 @@
         },
         "position": {
           "x": 10,
-          "y": 58,
+          "y": 72,
           "width": 1060,
-          "height": 460
+          "height": 446
         },
         "props": {
           "config": {

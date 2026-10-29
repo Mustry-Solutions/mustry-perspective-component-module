@@ -68,6 +68,12 @@ function languageExtensions(lang: CodeLanguage) {
     }
 }
 
+/** Both facets: `editable` only drops contenteditable, while `readOnly` is
+ *  what makes the keymap commands refuse to change the document. */
+function editableExtensions(editable: boolean) {
+    return [EditorView.editable.of(editable), EditorState.readOnly.of(!editable)];
+}
+
 export class CodeController {
     private view: EditorView;
     // Everything tunable at runtime lives in a compartment so a config change
@@ -98,10 +104,7 @@ export class CodeController {
                     syntaxHighlighting(themeHighlight),
                     this.langComp.of(languageExtensions(opts.language)),
                     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, ...foldKeymap, indentWithTab]),
-                    this.editableComp.of([
-                        EditorView.editable.of(opts.editable),
-                        EditorState.readOnly.of(!opts.editable)
-                    ]),
+                    this.editableComp.of(editableExtensions(opts.editable)),
                     EditorView.updateListener.of((u) => {
                         if (u.docChanged && u.transactions.some((tr) => tr.annotation(Transaction.addToHistory) !== false)) {
                             opts.onUpdate();
@@ -126,7 +129,8 @@ export class CodeController {
                 this.wrapComp.reconfigure(opts.lineWrapping ? [EditorView.lineWrapping] : []),
                 this.tabComp.reconfigure([indentUnit.of(' '.repeat(opts.tabSize)), EditorState.tabSize.of(opts.tabSize)]),
                 this.placeholderComp.reconfigure(opts.placeholder && opts.editable ? [cmPlaceholder(opts.placeholder)] : []),
-                this.langComp.reconfigure(languageExtensions(opts.language))
+                this.langComp.reconfigure(languageExtensions(opts.language)),
+                this.editableComp.reconfigure(editableExtensions(opts.editable))
             ]
         });
     }
@@ -161,15 +165,6 @@ export class CodeController {
     applyUserEdit(code: string): void {
         this.view.dispatch({
             changes: { from: 0, to: this.view.state.doc.length, insert: code }
-        });
-    }
-
-    setEditable(editable: boolean): void {
-        this.view.dispatch({
-            effects: this.editableComp.reconfigure([
-                EditorView.editable.of(editable),
-                EditorState.readOnly.of(!editable)
-            ])
         });
     }
 

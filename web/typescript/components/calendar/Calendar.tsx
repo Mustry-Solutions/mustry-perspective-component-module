@@ -285,8 +285,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
     }
 
-    private enterClass(occId: string): string {
-        return this.enter.enterClass(occId);
+    private enterClass(ev: CalEvent): string {
+        return this.enter.enterClass(ev);
     }
 
     private fireEvent(name: string, payload: object): void {
@@ -735,7 +735,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 categories={this.props.props.categories}
                 emptyMessage={this.emptyText()}
                 labels={this.props.props.labels}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
             />
@@ -801,7 +801,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editable={this.props.props.editable}
                 dragEventId={monthDrag ? monthDrag.eventId || '' : ''}
                 dropDayIso={monthDrag ? monthDrag.dayIso : ''}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onDayClick={(iso) => this.onDayClick(iso)}
                 openDayPop={(iso, e) => this.openDayPop(iso, e)}
@@ -840,15 +840,26 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         );
     }
 
-    /** The events to render for the current window, with recurring series expanded. */
+    private visibleEventsMemo: { deps: unknown[]; events: CalEvent[] } | null = null;
+
+    /** The events to render for the current window, with recurring series expanded.
+     *  Recomputed only when an input changes, NOT on each hover/preview setState:
+     *  a drag re-renders per pointer move, and zone-converting every event each
+     *  move made drags stutter on large calendars. */
     private visibleEvents(): CalEvent[] {
-        const tz = this.props.props.timezone;
+        const p = this.props.props;
+        const tz = p.timezone;
         const r = this.visibleRange();
         const s = parseDate(r.start) || todayInZone(tz);
         const e = parseDate(r.end) || todayInZone(tz);
+        const deps: unknown[] = [p.events, p.recurringEvents, p.hiddenCategories, tz, s.getTime(), e.getTime()];
+        const m = this.visibleEventsMemo;
+        if (m && m.deps.every((d, i) => d === deps[i])) {
+            return m.events;
+        }
         // Merge the windowed `events` with the always-loaded `recurringEvents` so a windowed
         // query never drops a series (each binding stays trivially correct).
-        const merged = [...(this.props.props.events || []), ...(this.props.props.recurringEvents || [])];
+        const merged = [...(p.events || []), ...(p.recurringEvents || [])];
         // Normalise absolute instants (offset / Z / epoch) to naive wall-clock in the
         // display zone, so all downstream grid/layout logic runs in plant-local terms.
         // (All-day / date-only values pass through unchanged.) Colour stays raw and is
@@ -860,7 +871,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }));
         // Legend filter: state.hiddenCategories is the source of truth, so a pre-set
         // (or bound) value hides those categories from the very first render.
-        return filterHiddenCategories(expandEvents(zoned, s, e, tz), this.props.props.hiddenCategories || []);
+        const events = filterHiddenCategories(expandEvents(zoned, s, e, tz), p.hiddenCategories || []);
+        this.visibleEventsMemo = { deps, events };
+        return events;
     }
 
     private renderTimeGrid(): React.ReactNode {
@@ -880,7 +893,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 categories={this.props.props.categories}
                 labels={this.props.props.labels}
                 scrollRef={this.scrollRef}
-                enterClass={(id) => this.enterClass(id)}
+                enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
                 onStartCreate={(iso, e) => this.gestures.startCreate(iso, e)}

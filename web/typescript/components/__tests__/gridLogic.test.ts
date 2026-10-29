@@ -237,6 +237,17 @@ describe('effectiveColumns (two-way layout over config)', () => {
         expect(out[1].width).toBe(40);     // MIN_COL_PX
         expect(effectiveColumns(cols, LAYOUT0)).toEqual(cols);
     });
+
+    // #127: cell positions are display indexes, so this order must match the render.
+    it('puts pinned columns first, in display order', () => {
+        const cfg = [col('name'), col('id', { pinned: true })];
+        expect(effectiveColumns(cfg, LAYOUT0).map((c) => c.field)).toEqual(['id', 'name']);
+        const grid = [col('wo', { pinned: true }), col('product'), col('qty')];
+        const out = effectiveColumns(grid, { widths: {}, order: ['qty', 'wo', 'product'], hidden: [] });
+        expect(out.map((c) => c.field)).toEqual(['wo', 'qty', 'product']);
+        const laid = columnLayout(out);
+        expect([...laid.pinned, ...laid.scrolling].map((lc) => lc.col.field)).toEqual(out.map((c) => c.field));
+    });
 });
 
 describe('reorderFields', () => {
@@ -387,6 +398,59 @@ describe('parseLocaleNumber (#131: thousands separators are not decimal points)'
     });
 });
 
+import { editErrorText, numberExample } from '../grid/gridLogic';
+import { EN_GRID_LABELS, gridLabelBase } from '../../shared/labelPacks';
+
+describe('numberExample (#174: the errNumber hint shows the expected format)', () => {
+    it('formats like the grid displays: one decimal by default, the column decimals when set', () => {
+        expect(numberExample(col('n', { type: 'number' }), 'en')).toBe('1,234.5');
+        expect(numberExample(col('n', { type: 'number' }), 'de')).toBe('1.234,5');
+        expect(numberExample(col('n', { type: 'number', decimals: 2 }), 'en')).toBe('1,234.50');
+        expect(numberExample(col('n', { type: 'number', decimals: 0 }), 'en')).toBe('1,234');
+        expect(numberExample(col('n', { type: 'number', decimals: 0 }), 'de')).toBe('1.234');
+    });
+
+    it('parses back with the grid\'s own number parser in every bundled locale', () => {
+        for (const loc of ['en', 'fr', 'de', 'es', 'nl', 'it', 'pt']) {
+            for (const [decimals, expected] of [[-1, 1234.5], [0, 1234], [2, 1234.5], [6, 1234.5]]) {
+                const c = col('n', { type: 'number', decimals });
+                const example = numberExample(c, loc);
+                expect([loc, decimals, parseLocaleNumber(example, loc)]).toEqual([loc, decimals, expected]);
+                expect(validateCell(example, c, loc)).toEqual({ value: expected, error: null });
+            }
+        }
+    });
+});
+
+describe('editErrorText (localized validation message)', () => {
+    const num = col('n', { type: 'number', min: 0, max: 10 });
+
+    it('fills {example} in every bundled errNumber text', () => {
+        expect(editErrorText('number', num, gridLabelBase('en'), 'en')).toBe('Must be a number, like 1,234.5');
+        expect(editErrorText('number', num, gridLabelBase('de'), 'de')).toBe('Muss eine Zahl sein, z. B. 1.234,5');
+        expect(editErrorText('number', col('n', { type: 'number', decimals: 0 }), gridLabelBase('en'), 'en'))
+            .toBe('Must be a number, like 1,234');
+        for (const loc of ['en', 'fr', 'de', 'es', 'nl', 'it', 'pt']) {
+            const text = editErrorText('number', num, gridLabelBase(loc), loc);
+            expect(text).not.toContain('{example}');
+            expect(text).toContain(numberExample(num, loc));
+        }
+    });
+
+    it('leaves an author override without {example} unchanged', () => {
+        const labels = { ...EN_GRID_LABELS, errNumber: 'Numbers only' };
+        expect(editErrorText('number', num, labels, 'en')).toBe('Numbers only');
+    });
+
+    it('still fills {min}/{max} and maps the other errors', () => {
+        const L = gridLabelBase('en');
+        expect(editErrorText('min', num, L, 'en')).toBe('Must be at least 0');
+        expect(editErrorText('max', num, L, 'en')).toBe('Must be at most 10');
+        expect(editErrorText('required', num, L, 'en')).toBe(L.errRequired);
+        expect(editErrorText(null, num, L, 'en')).toBe('');
+    });
+});
+
 describe('editDraft', () => {
     it('edits the RAW value, not the localized rendering', () => {
         expect(editDraft(1234.5, col('n', { type: 'number' }), 'en')).toBe('1234.5');
@@ -418,13 +482,17 @@ describe('nextCell (keyboard grid navigation)', () => {
     });
 });
 
-import { aggregateValue, batchPayload, parsePasteMatrix, pastePlan } from '../grid/gridLogic';
+import {
+    aggregateValue, batchPayload, locateCell, parsePasteMatrix, pastePlan, pendingKey, parsePendingKey,
+    rowWithPending, settlePending, unusableIdWarning, unusableRowIds
+} from '../grid/gridLogic';
 
 describe('batchPayload (Save in batch mode)', () => {
     const rows = [{ id: 'r1', a: 1, b: 'x' }, { id: 'r2', a: 2, b: 'y' }] as Array<Record<string, unknown>>;
 
     it('builds per-cell edits and fully-patched changed rows', () => {
-        const { edits, rows: changed } = batchPayload({ 'r1::a': 9, 'r1::b': 'z', 'r2::a': 5 }, rows, 'id');
+        const { edits, rows: changed } = batchPayload(
+            { [pendingKey('r1', 'a')]: 9, [pendingKey('r1', 'b')]: 'z', [pendingKey('r2', 'a')]: 5 }, rows, 'id');
         expect(edits).toHaveLength(3);
         expect(edits.find((e) => e.rowId === 'r1' && e.field === 'a')).toEqual(
             { rowId: 'r1', field: 'a', oldValue: 1, newValue: 9 });
@@ -434,7 +502,104 @@ describe('batchPayload (Save in batch mode)', () => {
     });
 
     it('drops pendings whose row left the dataset', () => {
-        expect(batchPayload({ 'gone::a': 1 }, rows, 'id').edits).toHaveLength(0);
+        expect(batchPayload({ [pendingKey('gone', 'a')]: 1 }, rows, 'id').edits).toHaveLength(0);
+    });
+
+    it('keeps ids and fields that contain the old :: separator apart (#130)', () => {
+        const odd = [{ id: 'Line1::Filler', a: 1 }] as Array<Record<string, unknown>>;
+        const { edits } = batchPayload({ [pendingKey('Line1::Filler', 'a')]: 2 }, odd, 'id');
+        expect(edits).toEqual([{ rowId: 'Line1::Filler', field: 'a', oldValue: 1, newValue: 2 }]);
+        expect(parsePendingKey(pendingKey('a::b', 'c::d'))).toEqual({ rowId: 'a::b', field: 'c::d' });
+    });
+});
+
+describe('rowWithPending (#129: the onCellEdit row carries every pending edit)', () => {
+    it('applies all pending values of that row and none of the others', () => {
+        const pending = { [pendingKey('r1', 'a')]: 9, [pendingKey('r1', 'b')]: 'z', [pendingKey('r2', 'a')]: 5 };
+        expect(rowWithPending({ id: 'r1', a: 1, b: 'x', c: true }, 'r1', pending))
+            .toEqual({ id: 'r1', a: 9, b: 'z', c: true });
+        expect(rowWithPending({ id: 'r3', a: 1 }, 'r3', pending)).toEqual({ id: 'r3', a: 1 });
+    });
+});
+
+describe('unusableRowIds (#130: rows the grid cannot address safely)', () => {
+    it('flags a missing id and every duplicated id', () => {
+        const rows = [{ id: 'a' }, { ID: 'b' }, { id: 'c' }, { id: 'c' }, { id: null }, { id: 7 }];
+        expect(Array.from(unusableRowIds(rows, 'id')).sort()).toEqual(['', 'c']);
+    });
+
+    it('is empty when every row has its own id', () => {
+        expect(unusableRowIds([{ id: 1 }, { id: 2 }], 'id').size).toBe(0);
+    });
+
+    it('flags every row when idField matches no key (case matters)', () => {
+        const ids = unusableRowIds([{ ID: 1 }, { ID: 2 }], 'id');
+        expect(ids.has('')).toBe(true);
+    });
+});
+
+describe('locateCell (#128: an open editor follows its row, not its index)', () => {
+    const cols = [col('wo'), col('qty')];
+    const none = new Set<string>();
+
+    it('finds the cell at its current position', () => {
+        expect(locateCell(['n', 'a', 'b'], cols, 'b', 'qty', none)).toEqual({ row: 2, col: 1 });
+    });
+
+    it('returns null when the row or the column is gone', () => {
+        expect(locateCell(['a'], cols, 'b', 'qty', none)).toBeNull();
+        expect(locateCell(['b'], cols, 'b', 'notes', none)).toBeNull();
+    });
+
+    it('returns null once a rebind gives another row the same id', () => {
+        const ids = ['a', 'b', 'a'];
+        expect(locateCell(ids, cols, 'a', 'qty', unusableRowIds(ids.map((id) => ({ id })), 'id'))).toBeNull();
+    });
+});
+
+describe('unusableIdWarning', () => {
+    it('names missing and duplicate ids', () => {
+        const msg = unusableIdWarning(new Set(['', 'c']), 'id', true);
+        expect(msg).toContain('rows without a "id" value');
+        expect(msg).toContain('rows with duplicate ids (c)');
+    });
+
+    it('stays quiet when there is nothing wrong or the grid never acts on ids', () => {
+        expect(unusableIdWarning(new Set(), 'id', true)).toBe('');
+        expect(unusableIdWarning(new Set(['']), 'id', false)).toBe('');
+    });
+});
+
+describe('settlePending (which pending edits a data.rows update clears)', () => {
+    const k = pendingKey('r1', 'a');
+
+    it('clears an edit once the bound value matches it', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 9 }], 'id')).toEqual({});
+    });
+
+    it('keeps an edit while the bound value is unchanged', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r1', a: 1 }], 'id')).toBeNull();
+    });
+
+    // Kept, the entry would attach to a later record reusing the id and ride
+    // along in that record's next onCellEdit row (#216).
+    it('clears an edit once its row has left data.rows', () => {
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [{ id: 'r2', a: 1 }], 'id')).toEqual({});
+        expect(settlePending({ [k]: 9 }, { [k]: '1' }, [], 'id')).toEqual({});
+    });
+
+    it('keeps the other rows\' edits when one row leaves', () => {
+        const kb = pendingKey('r2', 'a');
+        expect(settlePending({ [k]: 9, [kb]: 5 }, { [k]: '1', [kb]: '2' }, [{ id: 'r2', a: 2 }], 'id'))
+            .toEqual({ [kb]: 5 });
+    });
+
+    // A rejected or normalized write-back would otherwise leave the stale value
+    // pending, shown, and re-sent in the next onCellEdit row.
+    it('clears an edit when the author stored something else', () => {
+        const next = settlePending({ [k]: 9, [pendingKey('r1', 'b')]: 'z' }, { [k]: '1', [pendingKey('r1', 'b')]: 'x' },
+            [{ id: 'r1', a: 3, b: 'x' }], 'id');
+        expect(next).toEqual({ [pendingKey('r1', 'b')]: 'z' });
     });
 });
 

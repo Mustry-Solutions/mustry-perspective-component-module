@@ -26,6 +26,215 @@ projects without one pay nothing. It is a browser overlay, not an access
 control. Details in `docs/idle-guard.md`; the verify project gains `/guard`
 pages, used by the new e2e suite `guard.spec.ts`.
 
+### Changed: Data Grid number error shows the expected format
+A number cell typed in another locale's format, such as `4,5` with
+`config.locale: "en"`, was rejected with only "Must be a number" (#174).
+The operator had typed a number and could not tell what the grid expected.
+The message now carries an example in the grid's own format: `Must be a
+number, like 1,234.5` in `en`, `Muss eine Zahl sein, z. B. 1.234,5` in `de`.
+The example follows the column's `decimals` (`1,234` for `decimals: 0`).
+`config.labels.errNumber` takes the new `{example}` placeholder; an
+override without it keeps its text unchanged.
+
+### Fixed: Rich Text Editor image size cap and URL policy skipped for pasted HTML and bound content
+`config.maxImageKb` and the image URL policy only applied to the toolbar and
+to pasted image files (#137). Pasted HTML or `data.content` could carry a
+multi-MB `data:image/...` or a source outside the policy, and Save then stored
+it for every session. The editor now checks every image when it parses a
+document and again when it renders one. An image that fails is dropped. The
+toolbar's URL field and image library get the same size cap. Bound content
+that already holds such an image loads without it and is not marked dirty.
+The stored document only changes when the operator next saves.
+
+### Fixed: Rich Text Editor rejected over-limit multi-paragraph pastes
+With `config.charLimit` set, pasting several paragraphs that went over the
+limit usually inserted nothing (#168). For example, with a limit of 5, pasting
+`abcdef` and `g` into an empty editor did nothing. The trim only shortened
+the last pasted paragraph, so the paste stayed over the limit and was
+rejected. The editor now trims from the end of the paste back through earlier
+paragraphs, a whole character (emoji included) at a time, and removes a
+trailing pasted image when needed. The paste is cut to fit the limit instead
+of dropped. Text outside the paste is never trimmed.
+
+### Fixed: Calendar and Timeline treated any event id containing `::` as a recurring occurrence
+Occurrence-ness was read from the id: anything with `::` counted as
+`<seriesId>::<date>` (#143). A plain event with an id such as `WO::1234` got
+the occurrence badge, and dragging it fired `scope: "occurrence"` with
+`seriesId: "WO"` and `occurrenceDate: "1234"`, so the reference scripts added
+an override and an EXDATE to a series that does not exist. A series whose own
+id contains `::` got a wrong `seriesId` for every occurrence. Expanded
+occurrences are now marked when the series is expanded, so any id works for
+plain events and series. Occurrence ids keep the `<seriesId>::<date>` form,
+and the `onChange` and `onEventClick` payloads are unchanged.
+
+### Fixed: recurring events that start before the visible window were missing
+A recurring occurrence was only drawn when it started inside the window, so a
+daily 22:00 to 06:00 night shift showed nothing on Monday 00:00 to 06:00 in a
+week that starts on Monday, and a weekly Saturday 08:00 to Monday 08:00 event
+did not show on Monday at all (#142). Non-recurring events of the same shape
+were fine. The Calendar and the Resource Timeline now keep every occurrence
+that overlaps the window, wherever it starts.
+
+### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
+Realtime windows and presets took the browser's clock, but the outputs read
+those times in `config.timezone` (#139). With a Brussels browser and
+`America/Chicago`, "Last 1 hour" at 13:00 UTC selected 14:00 to 15:00, and
+`endEpochMs` was 7 hours in the future. "Today", "This week" and the other
+calendar presets, the `disableDates` past/future bound and the today
+highlight had the same problem near midnight. All of them now read the
+current time in `config.timezone` (browser-local when it is blank), so the
+same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
+real elapsed time across a DST change.
+
+### Fixed: Date/Time Range Picker rolling ranges overflowed month ends and drifted across DST
+A rolling month from a day the target month lacks ran into the next month
+(#140): "Last 1 month" from March 31 started on March 3, and "Next 1 month"
+from January 31 ended on March 3. It now stops on the target month's last
+day (February 28, or 29 in a leap year). Days and weeks were counted as
+24-hour blocks, so "Last 7 days" at 10:00 on October 27 in Brussels started
+at 11:00 on October 20, because the clocks went back in between. Days and
+weeks now step calendar days and keep the wall time (10:00 on October 20).
+Hours still count elapsed time.
+
+### Fixed: Color Picker hsl and rgba values changed the picked colour
+In `hsl` format the picker wrote whole numbers, which parse back to a
+different colour for most picks: the default swatch `#12b886` became
+`hsl(162, 82%, 40%)`, which reads as `#12ba87`, so `onChange.hex` and
+`output.hex` disagreed (#154). Alpha in `rgba()`/`hsla()` was rounded to two
+decimals and shifted 155 of the 256 possible values. `hsl()` now carries one
+decimal (`hsl(161.9, 82.2%, 39.6%)`) and alpha three (`0.502`), which keeps
+every 8-bit colour and alpha exactly. `onChange`, `output.*` and the recent
+row are now built from the written value, so they always agree. Also,
+releasing a drag on a grey or black no longer snaps the hue slider to red.
+
+### Changed: faster timezone handling; smoother Calendar drags
+With `config.timezone` set, every time conversion built a new date formatter,
+and the Calendar re-converted all its events on every pointer move of a drag,
+so drags stuttered on large calendars (#145). Formatters are now built once
+per timezone, and the Calendar only rebuilds its event list when the events,
+the visible window, the timezone or the hidden categories change. On 2000
+events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
+and a drag no longer rebuilds it at all. All components that take a
+`config.timezone` share the faster conversion.
+
+### Fixed: Resource Timeline snapped to a UTC grid instead of the display zone
+Drag, resize and click-to-create rounded times on a grid counted from UTC
+midnight, so the result missed the clock of `config.timezone` (#138). In
+`Asia/Kolkata` at week zoom, 10:10 snapped to 10:30. In Brussels with
+`snapMinutes: 120`, 06:10 snapped to 07:00, and with 1440 to 01:00. Snapping
+now counts whole steps from midnight in the display zone (browser-local when
+empty). On DST days the result stays on that wall-clock grid: a 2 h step on
+the 23 h or 25 h day still gives 10:00, and the repeated hour snaps within its
+own occurrence. Moving a bar with a large snap across a DST change now keeps
+its time of day (a day-snapped 06:00 shift stays 06:00, not 07:00).
+
+### Fixed: times in the spring-forward gap emitted an hour off
+A wall time that does not exist because the clocks jump forward (02:30 on
+2026-03-29 in Brussels, or 2026-03-08 in New York) gave an ISO string and an
+epoch value one hour apart (#144). The Date/Time Range Picker's
+`startDateTime` disagreed with `startEpochMs`, and the Calendar wrote back a
+time an hour away from the one it then showed. The ISO string is now built
+from the resolved instant, so both name the same moment (03:30+02:00 in the
+Brussels example).
+
+### Fixed: On-Screen Keyboard placeholder was always English; numpad `onCommit.isValid` was always true
+`config.placeholder` had the schema default "Tap to enter…", so every view
+carried the English text and non-English sessions showed it too (#153). The
+default is gone and the placeholder now comes from the keyboard label pack
+for `config.locale` (all seven languages), like the other keyboard labels. A
+set `config.placeholder` still wins, and views that still hold the old
+English default get the locale text. Also, the numpad's `onCommit.isValid`
+was checked after clamping, so it was `true` even when the operator typed a
+number outside `[min, max]`. It now reports whether the typed number was in
+range; `value` is still the clamped number.
+
+### Fixed: On-Screen Keyboard numpad with `liveUpdate` kept only the last digit
+With `config.liveUpdate`, each key wrote `value.value`, the keyboard saw the
+bound value change and threw its draft away, so the next key started a new
+entry: typing `1`, `2` gave 2 and `1.5` could not be entered (#151). The
+keyboard now remembers what it wrote live and keeps the draft when that value
+comes back. With `enforceRange`, a number outside `[min, max]` is no longer
+written while typing: it used to be clamped, so typing `15` with min 10 wrote
+10 on the first key and wiped the entry. The bound value now only ever holds a
+number the operator typed, the out-of-range badge shows meanwhile, and Enter
+still clamps.
+
+### Fixed: Calendar multi-day background events only showed on their first day
+A background event spanning midnight, such as a maintenance window from
+20:00 one day to 06:00 two days later, drew only 20:00 to 24:00 on its first
+day and nothing after (#146). The band now covers every day the event
+crosses in the week and day views, clamped to `dayStartHour`..`dayEndHour`
+like any other event.
+
+### Fixed: Calendar move or resize jumped an event that ran past the visible hours
+Dragging an event that extends beyond `dayStartHour`..`dayEndHour` clamped
+its real times to the visible window (#147). With hours 06 to 18, moving a
+17:00 to 20:00 event down 15 minutes landed it at 15:00 to 18:00, and
+stretching its end by 15 minutes cut it to 18:00. The drag now shifts the
+real start and end (17:15 to 20:15, and an end of 20:15), and `onChange`
+carries those times. Only the ghost is clipped to the grid; its label shows
+the real times. An edge still stays within its day and at least one slot of
+the event stays on the grid.
+
+### Fixed: Code Editor ignored runtime changes to `config.enabled` and `mode`
+Binding `config.enabled` (to a permission, say) disabled the toolbar but left
+the document editable, and edits still marked it dirty. The other way round,
+an editor that mounted disabled stayed read-only until it was remounted
+(#135). Changing `config.enabled` or `config.mode` now switches the editor
+between editable and read-only in place, keeping the undo history and cursor.
+
+### Fixed: Rich Text and Code Editor lost typing done right after Save
+If the operator kept typing after pressing Save, the author's write-back
+marked the editor clean anyway: Save/Discard disappeared, `output.isDirty`
+went false, and the next change to the bound document replaced the unsaved
+text (#134). When a save lands, the editor now only turns clean if it still
+holds what was saved. Otherwise it stays dirty and keeps the typing.
+
+### Fixed: Data Grid sent a stale pending edit with a new record that reused the id
+A pending edit stayed while its row was missing from `data.rows`. When a
+different record later arrived with the same id, the old value showed in its
+cell and, in cell mode, was sent in `onCellEdit`'s `row` with that record's
+next edit, so a write-back that persists the whole row stored it (#216). A
+pending edit is now dropped once its row leaves `data.rows`. In batch mode
+this means an unsaved edit no longer comes back if its row disappears and
+returns before Save, for example a polling query that briefly filters it out.
+Save already skipped edits whose row was gone.
+
+### Fixed: Resource Timeline and Calendar showed two tooltips on event hover
+Hovering an event showed the component's detail popover and then, a moment
+later, the browser's native tooltip (from the bar's `title` attribute) on
+top of it, covering the more useful popover (#205). Event bars and chips in
+the Resource Timeline and the Calendar's week/day and month views no longer
+carry a `title`; the popover already shows the title, and screen readers
+keep it through the bar's accessible name. `meta.tooltip.enabled` was never
+involved: that is Perspective's own component tooltip.
+
+### Fixed: Data Grid edits landing on the wrong row or field
+Four ways an edit could be written to the wrong place, all without an error:
+- With a pinned column that isn't first in `config.columns` (or after
+  dragging a column in front of one), editing or pasting into a cell edited
+  the column next to it. (#127)
+- An editor left open while the binding refreshed committed to whichever row
+  had moved into its position. The editor now stays with its row, keeping
+  the keyboard focus, and closes if the row or column leaves the view or
+  another row takes the same id. (#128)
+- In cell mode, `onCellEdit`'s `row` held only that one new value, so
+  persisting it undid an earlier edit of the same row that hadn't been
+  rebound yet (a two-column paste, or two quick edits). It now carries every
+  pending edit of the row. (#129)
+- A pending edit only cleared when the rebound value matched it, so a
+  write-back that rejected or normalized the value left the old value shown
+  and sent again with the row's next edit. It now also clears when the cell's
+  bound value changes to anything else: the bound data wins. In batch mode
+  this means someone else's change to a cell drops your unsaved edit of that
+  cell, instead of Save overwriting it.
+- Rows without a `config.idField` value, or sharing one, all answered to the
+  same id: clicking one selected all of them and Delete removed all of them.
+  Such rows are now read-only, a Shift-range selection skips them, and a grid
+  that can select, edit or delete logs a warning. Row ids containing `::` no
+  longer confuse the pending-edit bookkeeping. (#130)
+- CSV export now lists pinned columns first, as the grid shows them.
+
 ### Fixed: Data Grid fired `onCellEdit` twice on Enter or Tab
 In cell edit mode, committing an edit with Enter or Tab fired `onCellEdit`
 twice with the same payload, so the write-back script ran twice per edit

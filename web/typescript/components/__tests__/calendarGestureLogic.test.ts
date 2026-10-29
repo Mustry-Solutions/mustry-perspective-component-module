@@ -1,5 +1,6 @@
 import {
-    cellAt, colAtX, hasMoved, movePreview, resizePreview, isNoopResize, createPreview, commitDecision, GestureFlags
+    cellAt, colAtX, hasMoved, movePreview, resizePreview, isNoopResize, createPreview, commitDecision, GestureFlags,
+    visibleSpan
 } from '../calendar/calendarGestureLogic';
 import { hourHeightPx, SLOT_PX } from '../calendar/calendarTypes';
 
@@ -60,17 +61,26 @@ describe('hasMoved', () => {
 
 describe('movePreview', () => {
     it('shifts by the delta and preserves duration', () => {
-        expect(movePreview(540, 60, 30, 0, 1440)).toEqual({ startMin: 570, endMin: 630 });
+        expect(movePreview(540, 60, 30, 0, 1440, 15)).toEqual({ startMin: 570, endMin: 630 });
     });
-    it('clamps to the start of the window', () => {
-        expect(movePreview(60, 60, -120, 0, 1440)).toEqual({ startMin: 0, endMin: 60 });
+    it('clamps to the start of the day', () => {
+        expect(movePreview(60, 60, -120, 0, 1440, 15)).toEqual({ startMin: 0, endMin: 60 });
     });
-    it('clamps so the block stays inside the end of the window', () => {
-        expect(movePreview(1380, 60, 120, 0, 1440)).toEqual({ startMin: 1380, endMin: 1440 });
+    it('clamps so the block stays inside the end of the day', () => {
+        expect(movePreview(1380, 60, 120, 0, 1440, 15)).toEqual({ startMin: 1380, endMin: 1440 });
     });
-    it('respects a custom day window', () => {
-        // window 8:00-18:00 (480..1080), drag a 60-min block down past the end
-        expect(movePreview(1000, 60, 200, 480, 1080)).toEqual({ startMin: 1020, endMin: 1080 });
+    it('moves an event that runs past dayEndHour by the delta, no jump (#147)', () => {
+        // window 06:00-18:00, event 17:00-20:00, +15 min -> 17:15-20:15 (was 15:00-18:00)
+        expect(movePreview(1020, 180, 15, 360, 1080, 15)).toEqual({ startMin: 1035, endMin: 1215 });
+    });
+    it('moves an event that starts before dayStartHour by the delta, no jump', () => {
+        // window 06:00-18:00, event 04:00-08:00, +15 min -> 04:15-08:15
+        expect(movePreview(240, 240, 15, 360, 1080, 15)).toEqual({ startMin: 255, endMin: 495 });
+    });
+    it('keeps at least one slot of the block on the grid', () => {
+        // window 08:00-18:00, a 60-min block dragged far below: one slot stays visible
+        expect(movePreview(1000, 60, 200, 480, 1080, 15)).toEqual({ startMin: 1065, endMin: 1125 });
+        expect(movePreview(600, 60, -500, 480, 1080, 15)).toEqual({ startMin: 435, endMin: 495 });
     });
 });
 
@@ -81,8 +91,16 @@ describe('resizePreview (end edge)', () => {
     it('keeps a minimum duration (>= start + snap)', () => {
         expect(resizePreview('end', 540, 600, -120, 0, 1440, 15)).toEqual({ startMin: 540, endMin: 555 });
     });
-    it('clamps the end to the window', () => {
+    it('clamps the end to the end of the day', () => {
         expect(resizePreview('end', 540, 1400, 120, 0, 1440, 15)).toEqual({ startMin: 540, endMin: 1440 });
+    });
+    it('extends an end that is already past dayEndHour by the delta (#147)', () => {
+        // window 06:00-18:00, event 17:00-20:00, +15 min on the end -> 20:15 (was cut to 18:00)
+        expect(resizePreview('end', 1020, 1200, 15, 360, 1080, 15)).toEqual({ startMin: 1020, endMin: 1215 });
+    });
+    it('does not pull the end above the top of the grid', () => {
+        // window 08:00-18:00, event 06:00-10:00: the end stops one slot below 08:00
+        expect(resizePreview('end', 360, 600, -300, 480, 1080, 15)).toEqual({ startMin: 360, endMin: 495 });
     });
 });
 
@@ -93,14 +111,29 @@ describe('resizePreview (start edge)', () => {
     it('keeps a minimum duration (<= end - snap)', () => {
         expect(resizePreview('start', 540, 600, 120, 0, 1440, 15)).toEqual({ startMin: 585, endMin: 600 });
     });
-    it('clamps the start to the window', () => {
+    it('clamps the start to the start of the day', () => {
         expect(resizePreview('start', 60, 600, -120, 0, 1440, 15)).toEqual({ startMin: 0, endMin: 600 });
-        // custom day window 8:00-18:00
-        expect(resizePreview('start', 540, 600, -120, 480, 1080, 15)).toEqual({ startMin: 480, endMin: 600 });
+    });
+    it('moves the real start past dayStartHour by the delta', () => {
+        // window 08:00-18:00, start 09:00 dragged up 2 h -> 07:00 (drawn from 08:00)
+        expect(resizePreview('start', 540, 600, -120, 480, 1080, 15)).toEqual({ startMin: 420, endMin: 600 });
+    });
+    it('does not push the start below the bottom of the grid', () => {
+        // window 06:00-18:00, event 16:00-20:00: the start stops one slot above 18:00
+        expect(resizePreview('start', 960, 1200, 300, 360, 1080, 15)).toEqual({ startMin: 1065, endMin: 1200 });
     });
     it('a pre-snapped delta lands on grid positions (snapping matches the end edge)', () => {
         // the controller snaps deltaMin before calling; a 15-min delta stays 15-min aligned
         expect(resizePreview('start', 540, 600, -15, 0, 1440, 15)).toEqual({ startMin: 525, endMin: 600 });
+    });
+});
+
+describe('visibleSpan', () => {
+    it('clamps the drawn part of a preview to the window', () => {
+        // the 17:15-20:15 ghost of #147 draws 17:15-18:00 in a 06:00-18:00 grid
+        expect(visibleSpan(1035, 1215, 360, 1080)).toEqual({ startMin: 1035, endMin: 1080 });
+        expect(visibleSpan(255, 495, 360, 1080)).toEqual({ startMin: 360, endMin: 495 });
+        expect(visibleSpan(540, 600, 360, 1080)).toEqual({ startMin: 540, endMin: 600 });
     });
 });
 
