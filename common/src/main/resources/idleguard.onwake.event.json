@@ -4,7 +4,7 @@
   "properties": {
     "cause": {
       "type": "string",
-      "description": "'input' (touch, key, mouse), 'alarm' (an alarm at or above alarm.wakePriority), 'feed-stale' (the gateway alarm feed went quiet, so the guard failed open) or 'disabled' (config.enabled went false)."
+      "description": "'input' (touch, key, mouse), 'alarm' (an alarm at or above config.alarm.wakePriority), 'feed-stale' (the gateway alarm feed went quiet, so the guard failed open) or 'disabled' (config.enabled went false)."
     },
     "idleForMs": {
       "type": "integer",
