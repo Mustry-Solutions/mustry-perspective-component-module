@@ -214,7 +214,7 @@
           "type": "number",
           "default": 256,
           "minimum": 1,
-          "description": "Maximum size (KB) of a PASTED image embedded as a data URI; larger pastes are dropped. Images by URL are unaffected."
+          "description": "Maximum size (KB) of an image embedded as a data URI, wherever it comes from: pasted, picked, or already in data.content. Larger images are dropped. Images by URL are unaffected."
         },
         "fonts": {
           "type": "array",

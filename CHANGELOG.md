@@ -8,6 +8,76 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Changed: Data Grid number error shows the expected format
+A number cell typed in another locale's format, such as `4,5` with
+`config.locale: "en"`, was rejected with only "Must be a number" (#174).
+The operator had typed a number and could not tell what the grid expected.
+The message now carries an example in the grid's own format: `Must be a
+number, like 1,234.5` in `en`, `Muss eine Zahl sein, z. B. 1.234,5` in `de`.
+The example follows the column's `decimals` (`1,234` for `decimals: 0`).
+`config.labels.errNumber` takes the new `{example}` placeholder; an
+override without it keeps its text unchanged.
+
+### Fixed: Rich Text Editor image size cap and URL policy skipped for pasted HTML and bound content
+`config.maxImageKb` and the image URL policy only applied to the toolbar and
+to pasted image files (#137). Pasted HTML or `data.content` could carry a
+multi-MB `data:image/...` or a source outside the policy, and Save then stored
+it for every session. The editor now checks every image when it parses a
+document and again when it renders one. An image that fails is dropped. The
+toolbar's URL field and image library get the same size cap. Bound content
+that already holds such an image loads without it and is not marked dirty.
+The stored document only changes when the operator next saves.
+
+### Fixed: Rich Text Editor rejected over-limit multi-paragraph pastes
+With `config.charLimit` set, pasting several paragraphs that went over the
+limit usually inserted nothing (#168). For example, with a limit of 5, pasting
+`abcdef` and `g` into an empty editor did nothing. The trim only shortened
+the last pasted paragraph, so the paste stayed over the limit and was
+rejected. The editor now trims from the end of the paste back through earlier
+paragraphs, a whole character (emoji included) at a time, and removes a
+trailing pasted image when needed. The paste is cut to fit the limit instead
+of dropped. Text outside the paste is never trimmed.
+
+### Fixed: Calendar and Timeline treated any event id containing `::` as a recurring occurrence
+Occurrence-ness was read from the id: anything with `::` counted as
+`<seriesId>::<date>` (#143). A plain event with an id such as `WO::1234` got
+the occurrence badge, and dragging it fired `scope: "occurrence"` with
+`seriesId: "WO"` and `occurrenceDate: "1234"`, so the reference scripts added
+an override and an EXDATE to a series that does not exist. A series whose own
+id contains `::` got a wrong `seriesId` for every occurrence. Expanded
+occurrences are now marked when the series is expanded, so any id works for
+plain events and series. Occurrence ids keep the `<seriesId>::<date>` form,
+and the `onChange` and `onEventClick` payloads are unchanged.
+
+### Fixed: recurring events that start before the visible window were missing
+A recurring occurrence was only drawn when it started inside the window, so a
+daily 22:00 to 06:00 night shift showed nothing on Monday 00:00 to 06:00 in a
+week that starts on Monday, and a weekly Saturday 08:00 to Monday 08:00 event
+did not show on Monday at all (#142). Non-recurring events of the same shape
+were fine. The Calendar and the Resource Timeline now keep every occurrence
+that overlaps the window, wherever it starts.
+
+### Fixed: Date/Time Range Picker read "now" in the browser zone, not `config.timezone`
+Realtime windows and presets took the browser's clock, but the outputs read
+those times in `config.timezone` (#139). With a Brussels browser and
+`America/Chicago`, "Last 1 hour" at 13:00 UTC selected 14:00 to 15:00, and
+`endEpochMs` was 7 hours in the future. "Today", "This week" and the other
+calendar presets, the `disableDates` past/future bound and the today
+highlight had the same problem near midnight. All of them now read the
+current time in `config.timezone` (browser-local when it is blank), so the
+same example selects 07:00 to 08:00 and ends now. Rolling hour windows count
+real elapsed time across a DST change.
+
+### Fixed: Date/Time Range Picker rolling ranges overflowed month ends and drifted across DST
+A rolling month from a day the target month lacks ran into the next month
+(#140): "Last 1 month" from March 31 started on March 3, and "Next 1 month"
+from January 31 ended on March 3. It now stops on the target month's last
+day (February 28, or 29 in a leap year). Days and weeks were counted as
+24-hour blocks, so "Last 7 days" at 10:00 on October 27 in Brussels started
+at 11:00 on October 20, because the clocks went back in between. Days and
+weeks now step calendar days and keep the wall time (10:00 on October 20).
+Hours still count elapsed time.
+
 ### Fixed: Color Picker hsl and rgba values changed the picked colour
 In `hsl` format the picker wrote whole numbers, which parse back to a
 different colour for most picks: the default swatch `#12b886` became
@@ -28,6 +98,17 @@ the visible window, the timezone or the hidden categories change. On 2000
 events in `America/Chicago`, building the list went from about 90 ms to 8 ms,
 and a drag no longer rebuilds it at all. All components that take a
 `config.timezone` share the faster conversion.
+
+### Fixed: Resource Timeline snapped to a UTC grid instead of the display zone
+Drag, resize and click-to-create rounded times on a grid counted from UTC
+midnight, so the result missed the clock of `config.timezone` (#138). In
+`Asia/Kolkata` at week zoom, 10:10 snapped to 10:30. In Brussels with
+`snapMinutes: 120`, 06:10 snapped to 07:00, and with 1440 to 01:00. Snapping
+now counts whole steps from midnight in the display zone (browser-local when
+empty). On DST days the result stays on that wall-clock grid: a 2 h step on
+the 23 h or 25 h day still gives 10:00, and the repeated hour snaps within its
+own occurrence. Moving a bar with a large snap across a DST change now keeps
+its time of day (a day-snapped 06:00 shift stays 06:00, not 07:00).
 
 ### Fixed: times in the spring-forward gap emitted an hour off
 A wall time that does not exist because the clocks jump forward (02:30 on

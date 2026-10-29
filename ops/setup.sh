@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the module and bring up a fresh local Ignition 8.3.6 gateway with the
+# Build the module and bring up a fresh local Ignition 8.3.10 gateway with the
 # module installed. Safe to re-run.
 #
 # Usage: ops/setup.sh

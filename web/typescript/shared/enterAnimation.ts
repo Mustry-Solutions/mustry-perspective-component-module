@@ -2,6 +2,8 @@
 // id first appears (create / new data), not on initial load or navigation.
 // Component-agnostic: anything with an optional string id works.
 
+import { OccurrenceTag } from './recurrence';
+
 export const ENTER_MS = 380;   // create/enter animation duration (keep ≥ the CSS animation)
 
 export class EnterTracker {
@@ -62,11 +64,11 @@ export class EnterTracker {
         }, ENTER_MS));
     }
 
-    /** Enter-animation class for an item: set once for a never-seen base id
-     *  (recurring occurrences "base::date" match their base). Never while a load
-     *  is pending: that render shows loaded data, not new events. */
-    enterClass(occId: string): string {
-        const base = (occId || '').split('::')[0];
+    /** Enter-animation class for an item: set once for a never-seen id (a
+     *  recurring occurrence matches its series id). Never while a load is
+     *  pending: that render shows loaded data, not new events. */
+    enterClass(item: { id?: string } & OccurrenceTag): string {
+        const base = item.__seriesId || item.id || '';
         return this.mounted && !this.loadPending && !!base && !this.seen.has(base) ? ' mustry-cal-anim-enter' : '';
     }
 

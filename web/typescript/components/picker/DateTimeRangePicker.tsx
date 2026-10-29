@@ -24,7 +24,7 @@ import {
     secToHms,
     startOfDay,
     startOfMonth,
-    today,
+    todayInZone,
     weekStartDay
 } from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
@@ -70,7 +70,7 @@ export class DateTimeRangePicker
         super(props);
         const start = parseDate(props.props.startDate);
         this.state = {
-            viewMonth: startOfMonth(start || today()),
+            viewMonth: startOfMonth(start || this.today()),
             anchor: null,
             hover: null,
             containerWidth: 99999,   // start in full mode until measured
@@ -167,7 +167,8 @@ export class DateTimeRangePicker
             return;   // don't fight an in-progress manual pick
         }
         const p = this.props.props;
-        const sel = logic.realtimeSelection(p.rollingAmount, p.rollingUnit, new Date(), p.disableDates === 'past');
+        const ctx = this.presetCtx();
+        const sel = logic.realtimeSelection(p.rollingAmount, p.rollingUnit, ctx.now, ctx.forward, ctx.timeZone);
         const w = this.props.store.props;
         w.write('selection.startDate', sel.startDate);
         w.write('selection.startTimeSec', sel.startTimeSec);
@@ -361,12 +362,18 @@ export class DateTimeRangePicker
     }
 
     // --- bounds ----------------------------------------------------------
+    /** Today in config.timezone: the day the outputs resolve as today, so the
+     *  'past'/'future' bounds and the today highlight agree with them. */
+    private today(): Date {
+        return todayInZone(this.props.props.timezone);
+    }
+
     private effMin(): Date | null {
-        return logic.effMin(this.props.props.disableDates, this.props.props.earliestDate);
+        return logic.effMin(this.props.props.disableDates, this.props.props.earliestDate, this.today());
     }
 
     private effMax(): Date | null {
-        return logic.effMax(this.props.props.disableDates, this.props.props.latestDate);
+        return logic.effMax(this.props.props.disableDates, this.props.props.latestDate, this.today());
     }
 
     private isDisabled(day: Date): boolean {
@@ -480,11 +487,13 @@ export class DateTimeRangePicker
         this.setState({ anchor: null, hover: null });
     };
 
-    /** Context for the pure preset helpers (single `now` per call). */
+    /** Context for the pure preset and realtime helpers: the one place "now" is read.
+     *  The helpers read it in config.timezone, the zone the outputs resolve in. */
     private presetCtx(): logic.PresetContext {
         const p = this.props.props;
         return {
             now: new Date(),
+            timeZone: p.timezone,
             forward: p.disableDates === 'past',
             firstDay: weekStartDay(p.weekStart)
         };
@@ -713,7 +722,7 @@ export class DateTimeRangePicker
         if (lo && hi && day.getTime() > lo.getTime() && day.getTime() < hi.getTime()) {
             return 'inrange';
         }
-        if (sameDay(day, today())) {
+        if (sameDay(day, this.today())) {
             return 'today';
         }
         return 'default';
