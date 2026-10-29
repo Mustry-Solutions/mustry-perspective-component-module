@@ -251,35 +251,60 @@ export function input(state: IdleState, now: number, wall = now): StepResult {
 
 /** After a swallowed gesture ends, its trailing events (mouseup, click, touchend, ...) are still swallowed this long. */
 export const SWALLOW_TAIL_MS = 500;
-/** A swallowed press stops being swallowed after this long, released or not: nothing stays swallowed forever. */
+/** A swallowed press stops being swallowed this long after its press (or its last key repeat): nothing stays swallowed forever. */
 export const SWALLOW_CAP_MS = 10_000;
+/**
+ * A key counts as held this long after its keydown or its last auto-repeat. A
+ * really held key repeats; a keyup that never comes (macOS Chrome drops the
+ * keyup of a key pressed while Cmd is down) must not keep the page awake forever.
+ */
+export const KEY_HOLD_MS = 1500;
 
 interface Press {
-    /** Monotonic ms of the press. */
+    /** Monotonic ms of the press, or of its last auto-repeat while swallowed (the cap runs from here). */
     at: number;
+    /** Monotonic ms of the last keydown or repeat seen for it. */
+    seen: number;
     /** It woke the page (or came during the wake): its repeats, its release and the rest of its gesture never reach the page. */
     swallowed: boolean;
 }
 
+/** What became of a release: its press was swallowed, passed through, or never recorded. */
+export type Release = 'swallowed' | 'passed' | 'unknown';
+
 /**
  * The pointers and keys held down, and which of them belong to a waking
- * gesture. The guard feeds it every press and release (ids are 'p<pointerId>'
- * and 'k<code>'); all times are monotonic. DOM-free, so jest covers the rules:
+ * gesture. The guard feeds it every press and release, with ids 'p<pointerId>'
+ * for pointers and 'k<code>' for keys; all times are monotonic. DOM-free, so
+ * jest covers the rules:
  *
- * - anything held keeps the page awake (`held`, passed to tick);
- * - a release is swallowed only when its press was (`release` returns that), so
- *   a press that began before the cover keeps its release;
+ * - anything held keeps the page awake (`held`, passed to tick); a key only
+ *   while it keeps repeating (KEY_HOLD_MS), a pointer until its release;
+ * - a release is swallowed only when its press was (`release`), so a press that
+ *   began before the cover keeps its release;
  * - the rest of a swallowed gesture is swallowed until it is released plus
- *   SWALLOW_TAIL_MS (`swallowing`), capped at SWALLOW_CAP_MS after the press.
+ *   SWALLOW_TAIL_MS (`swallowing`), capped at SWALLOW_CAP_MS after the press or
+ *   the waking key's last auto-repeat.
  */
 export class PressTracker {
     private readonly presses = new Map<string, Press>();
     private tailUntil = -Infinity;
 
-    /** A press began. A repeat of a held press (key auto-repeat) keeps its first record. */
-    press(id: string, swallowed: boolean, now: number): void {
-        if (!this.presses.has(id)) {
-            this.presses.set(id, { at: now, swallowed });
+    /**
+     * A press began. `repeat` is a key auto-repeat: it keeps the first record (and
+     * whether it was swallowed), refreshing how long the key counts as held and,
+     * for a swallowed key, its cap. A new press of an id still recorded (its
+     * release was lost) replaces the record.
+     */
+    press(id: string, swallowed: boolean, now: number, repeat = false): void {
+        const p = this.presses.get(id);
+        if (repeat && p) {
+            p.seen = now;
+            if (p.swallowed) {
+                p.at = now;
+            }
+        } else {
+            this.presses.set(id, { at: now, seen: now, swallowed });
         }
         if (swallowed) {
             // Its trailing events may come right away (a released tap's click): start the tail now too.
@@ -287,29 +312,23 @@ export class PressTracker {
         }
     }
 
-    /** A press ended. True when it was a swallowed one (within the cap): swallow the release too. */
-    release(id: string, now: number): boolean {
+    /** A press ended: was it swallowed (within the cap), passed through, or never recorded? */
+    release(id: string, now: number): Release {
         const p = this.presses.get(id);
         if (!p) {
-            return false;
+            return 'unknown';
         }
         this.presses.delete(id);
         if (!p.swallowed || now - p.at > SWALLOW_CAP_MS) {
-            return false;
+            return 'passed';
         }
         this.tailUntil = Math.max(this.tailUntil, now + SWALLOW_TAIL_MS);
-        return true;
+        return 'swallowed';
     }
 
     /** A swallowed event with no release to wait for (wheel, touchstart): swallow the tail after it. */
     swallowedOnce(now: number): void {
         this.tailUntil = Math.max(this.tailUntil, now + SWALLOW_TAIL_MS);
-    }
-
-    /** Is this held press a swallowed one (within the cap)? For key auto-repeat. */
-    isSwallowed(id: string, now: number): boolean {
-        const p = this.presses.get(id);
-        return !!p && p.swallowed && now - p.at <= SWALLOW_CAP_MS;
     }
 
     /** Is a waking gesture still in progress, so its trailing events must be swallowed? */
@@ -325,9 +344,19 @@ export class PressTracker {
         return false;
     }
 
-    /** Anything held down: the page must not go idle. */
-    get held(): boolean {
-        return this.presses.size > 0;
+    /** Anything held down: the page must not go idle. Drops keys whose keyup evidently got lost. */
+    held(now: number): boolean {
+        let any = false;
+        for (const [id, p] of this.presses) {
+            if (id.startsWith('k') && now - p.seen > KEY_HOLD_MS) {
+                if (!(p.swallowed && now - p.at <= SWALLOW_CAP_MS)) {
+                    this.presses.delete(id);
+                }
+                continue;
+            }
+            any = true;
+        }
+        return any;
     }
 
     /** Forget one press without a release (a mouse seen moving with no button down). */

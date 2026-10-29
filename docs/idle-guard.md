@@ -111,24 +111,34 @@ Browser (Perspective client)                       Gateway
   fallback, frame loop).
 - `modes/`: the canvas modes. See [Idle modes and rendering](#idle-modes-and-rendering).
 
-**Input handling.** All listeners are on `window` in the capture phase, so
-they run before anything on the page. Passive listeners track every press
-and release for the whole session (`PressTracker` in `idleLogic.ts`, pure and
-jest-tested): anything held down keeps the page awake, and the idle timeout
-starts over from its release. The cancelling (non-passive) listeners are
-registered only while the overlay catches input or a waking gesture is still
-in progress, so the page never scrolls behind a blocking window listener.
+**Input handling.** All listeners are on `window` in the capture phase. The
+press, release, key, mouse and click listeners are registered when the guard
+activates, before any listener a component adds later (a picker's Escape, a
+dialog's Tab trap), so they run before anything on the page and can stop a
+waking key or click before it is seen. They track every press and release for
+the whole session (`PressTracker` in `idleLogic.ts`, pure and jest-tested):
+anything held down keeps the page awake, and the idle timeout starts over
+from its release. A key counts as held only while it keeps auto-repeating
+(1.5 s without a repeat ends it), because some browsers drop a keyup (macOS
+Chrome, for a key pressed while Cmd is down); a pointer is held until its
+release. `wheel` and `touchstart` are the exception: a non-passive listener on
+them makes every scroll wait for script, so they are tracked passively and
+cancelled by a second listener registered only while the overlay catches
+input or a waking gesture is in progress (it runs after earlier capture
+listeners for those two events).
 While the overlay is up, a pointer-down, touch-start, key-down or wheel wakes
 the page and is stopped (`preventDefault` + `stopImmediatePropagation`). The
 rest of that gesture (key repeats, pointer/mouse up, click, touch-end,
 key-up, ...) is swallowed until the waking pointer or key is released plus
-500 ms, at most 10 s after the press; the overlay fades out over 300 ms while
-still catching input. Without this a release-acting control under the
-overlay (a jog button, `onMouseUp` scripts) would fire from the tap that woke
-the screen. The release of a press that began before the cover is never
-swallowed. Window blur and a hidden tab forget what is held (the releases
-will not arrive). Mouse movement wakes without being stopped. Wakes that are
-not input (alarm, stale feed, disabled) drop the overlay at once.
+500 ms, at most 10 s after the press or the waking key's last auto-repeat;
+the overlay fades out over 300 ms while still catching input. Without this a
+release-acting control under the overlay (a jog button, `onMouseUp` scripts)
+would fire from the tap that woke the screen. The release of a press that
+began before the cover is never swallowed; a release with no recorded press
+is swallowed while the overlay is up. Window blur and a hidden tab forget
+what is held (the releases will not arrive). Mouse movement wakes without
+being stopped. Wakes that are not input (alarm, stale feed, disabled) drop
+the overlay at once.
 
 Two limits of listening on the page's `window`:
 

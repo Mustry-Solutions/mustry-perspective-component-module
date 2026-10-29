@@ -14,8 +14,8 @@ import { Cover } from './Cover';
 import { GuardDelegateState, GuardStoreDelegate } from './guardDelegate';
 import { GuardProps, mapGuardProps } from './guardProps';
 import {
-    AlarmPolicy, AlarmVerdict, evaluateAlarms, IdleState, initialState, input, movedEnough, Point, PressTracker, StepResult,
-    tick, timeoutMs, WakeCause, wantsReducedMotion
+    AlarmPolicy, AlarmVerdict, evaluateAlarms, IdleState, initialState, input, movedEnough, Point, PressTracker, Release,
+    StepResult, tick, timeoutMs, WakeCause, wantsReducedMotion
 } from './idleLogic';
 import { modeToShow, Shown } from './modes/modeToShow';
 
@@ -32,19 +32,23 @@ const LAST_INPUT_WRITE_MS = 5000;
 const RESUBSCRIBE_MS = 5000;
 
 /**
- * Presses and releases, tracked for the whole session by passive listeners:
- * they wake the page, keep it awake while held, and tell a waking gesture's
- * release from that of a press that began before the cover.
+ * Presses, releases and everything else a waking gesture can produce. Listened
+ * to for the whole session, in the window's capture phase from the moment the
+ * guard activates, so the guard runs before any listener a component adds later
+ * (a picker's Escape, a dialog's Tab trap) and can stop a waking key or click
+ * before they see it. None of them blocks scrolling, so they cost nothing.
  */
-const TRACK_EVENTS = ['pointerdown', 'pointerup', 'pointercancel', 'keydown', 'keyup', 'wheel', 'touchstart'] as const;
-/**
- * Everything a waking gesture can produce. Listened to, non-passively, only
- * while the overlay catches input or a waking gesture is still in progress, so
- * the page scrolls without a blocking window listener the rest of the time.
- */
-const SHIELD_EVENTS = [
-    ...TRACK_EVENTS, 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend', 'keypress'
+const INPUT_EVENTS = [
+    'pointerdown', 'pointerup', 'pointercancel', 'keydown', 'keyup', 'keypress',
+    'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend'
 ] as const;
+/**
+ * The scroll-starting events. A non-passive window listener on these makes the
+ * browser wait for script before every scroll, so they are tracked passively and
+ * listened to non-passively only while the overlay catches input or a waking
+ * gesture is still in progress.
+ */
+const SCROLL_EVENTS = ['wheel', 'touchstart'] as const;
 
 /** One guard per page covers it (the live one); the others wait, in mount order, to take over when it unmounts. */
 let pageOwned = false;
@@ -86,6 +90,15 @@ function prefersReducedMotion(): boolean {
         }
     }
     return motionQuery !== null && motionQuery.matches;
+}
+
+/**
+ * Swallow a release? Yes when its press was swallowed; also when no press was
+ * recorded for it (forgotten after a blur) while the overlay catches input.
+ * Never for a press that began before the cover and passed through.
+ */
+function released(r: Release, shielding: boolean): boolean {
+    return r === 'swallowed' || (r === 'unknown' && shielding);
 }
 
 /** A held key's id for the press tracker: the physical key, so auto-repeat and keyup match the keydown. */
@@ -156,7 +169,8 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
         this.host = document.createElement('div');
         this.host.className = 'mustry-idle-guard-host';
         document.body.appendChild(this.host);
-        TRACK_EVENTS.forEach((t) => window.addEventListener(t, this.onTrack, { capture: true, passive: true }));
+        INPUT_EVENTS.forEach((t) => window.addEventListener(t, this.onInputEvent, { capture: true, passive: false }));
+        SCROLL_EVENTS.forEach((t) => window.addEventListener(t, this.onScrollTrack, { capture: true, passive: true }));
         window.addEventListener('pointermove', this.onPointerMove, { capture: true, passive: true });
         window.addEventListener('blur', this.onBlur);
         document.addEventListener('visibilitychange', this.onVisibility);
@@ -192,7 +206,8 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             return;
         }
         this.live = false;
-        TRACK_EVENTS.forEach((t) => window.removeEventListener(t, this.onTrack, { capture: true }));
+        INPUT_EVENTS.forEach((t) => window.removeEventListener(t, this.onInputEvent, { capture: true }));
+        SCROLL_EVENTS.forEach((t) => window.removeEventListener(t, this.onScrollTrack, { capture: true }));
         this.setShieldListening(false);
         window.removeEventListener('pointermove', this.onPointerMove, { capture: true });
         window.removeEventListener('blur', this.onBlur);
@@ -234,15 +249,20 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
 
     // --- input ----------------------------------------------------------------------
 
-    /** Passive tracking, for the whole session. Stands aside while the shield listeners run. */
-    private onTrack = (e: Event): void => {
+    /** Every non-scrolling input event, for the whole session (non-passive: it may cancel). */
+    private onInputEvent = (e: Event): void => {
+        this.handleInput(e, true);
+    };
+
+    /** Wheel and touchstart, passively. Stands aside while the cancelling ones are registered. */
+    private onScrollTrack = (e: Event): void => {
         if (!this.shieldListening) {
             this.handleInput(e, false);
         }
     };
 
-    /** Non-passive, registered only while the overlay catches input or a waking gesture is in progress. */
-    private onShield = (e: Event): void => {
+    /** Wheel and touchstart, non-passively: only while the overlay catches input or a waking gesture is in progress. */
+    private onScrollShield = (e: Event): void => {
         this.handleInput(e, true);
     };
 
@@ -264,10 +284,10 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
                 this.onInput(now);
                 break;
             case 'keydown': {
-                const id = keyId(e as KeyboardEvent);
-                // Auto-repeat of a held waking key falls under swallowing() until its keyup.
+                // Auto-repeat of a held waking key falls under swallowing() until its keyup,
+                // and each repeat refreshes the key's swallow cap and its "held" time.
                 swallow = this.shielding || t.swallowing(now);
-                t.press(id, swallow, now);
+                t.press(keyId(e as KeyboardEvent), swallow, now, (e as KeyboardEvent).repeat);
                 this.onInput(now);
                 break;
             }
@@ -281,10 +301,10 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
                 break;
             case 'pointerup':
             case 'pointercancel':
-                swallow = t.release(`p${(e as PointerEvent).pointerId}`, now);
+                swallow = released(t.release(`p${(e as PointerEvent).pointerId}`, now), this.shielding);
                 break;
             case 'keyup':
-                swallow = t.release(keyId(e as KeyboardEvent), now);
+                swallow = released(t.release(keyId(e as KeyboardEvent), now), this.shielding);
                 break;
             default:
                 // mousedown, mouseup, click, touchend, ...: carry no pointer id we can match.
@@ -297,17 +317,17 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
         }
     }
 
-    /** Register or drop the cancelling listeners. Called outside event dispatch (tick, mode change, wake). */
+    /** Register or drop the cancelling wheel/touchstart listeners. Called outside event dispatch (tick, mode change, wake). */
     private setShieldListening(on: boolean): void {
         if (on === this.shieldListening) {
             return;
         }
         this.shieldListening = on;
-        SHIELD_EVENTS.forEach((type) => {
+        SCROLL_EVENTS.forEach((type) => {
             if (on) {
-                window.addEventListener(type, this.onShield, { capture: true, passive: false });
+                window.addEventListener(type, this.onScrollShield, { capture: true, passive: false });
             } else {
-                window.removeEventListener(type, this.onShield, { capture: true });
+                window.removeEventListener(type, this.onScrollShield, { capture: true });
             }
         });
     }
@@ -367,7 +387,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             enabled: p.config.enabled,
             timeoutMs: timeoutMs(p.config.timeoutSec),
             verdict,
-            held: this.presses.held
+            held: this.presses.held(now)
         }), now);
         if (this.shieldListening && !this.shielding && !this.presses.swallowing(now)) {
             this.setShieldListening(false);

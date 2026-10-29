@@ -2,7 +2,7 @@ import { EN_GUARD_LABELS, guardLabelBase } from '../../shared/labels/guard';
 import {
     AlarmFeed, AlarmPolicy, countsText, CRITICAL, dimLevel, drift, evaluateAlarms, initialState, input, inWindow, isNight,
     NightConfig, normNightMode, normReduceMotion, wantsReducedMotion,
-    movedEnough, parseClock, parseFeed, PressTracker, priorityIndex, SWALLOW_CAP_MS, SWALLOW_TAIL_MS, tick, timeoutMs,
+    movedEnough, parseClock, parseFeed, KEY_HOLD_MS, PressTracker, priorityIndex, SWALLOW_CAP_MS, SWALLOW_TAIL_MS, tick, timeoutMs,
     zeroCounts
 } from '../guard/idleLogic';
 
@@ -281,38 +281,46 @@ describe('countsText', () => {
 describe('PressTracker', () => {
     it('holds presses until their release; blur clears them', () => {
         const t = new PressTracker();
-        expect(t.held).toBe(false);
+        expect(t.held(0)).toBe(false);
         t.press('p1', false, 0);
         t.press('kKeyA', false, 0);
-        expect(t.held).toBe(true);
-        t.release('p1', 10);
-        expect(t.held).toBe(true);
+        expect(t.held(0)).toBe(true);
+        expect(t.release('p1', 10)).toBe('passed');
+        expect(t.held(10)).toBe(true);
         t.clear();
-        expect(t.held).toBe(false);
+        expect(t.held(10)).toBe(false);
+        expect(t.release('kKeyA', 20)).toBe('unknown');
         t.press('p2', false, 0);
         t.forget('p2');
-        expect(t.held).toBe(false);
+        expect(t.held(0)).toBe(false);
     });
 
     it('never swallows the release of a press that began before the cover', () => {
         const t = new PressTracker();
         t.press('p1', false, 0);
-        expect(t.swallowing(100)).toBe(false);
-        expect(t.release('p1', 20_000)).toBe(false);
-        expect(t.swallowing(20_001)).toBe(false);
+        expect(t.swallowing(50)).toBe(false);
+        expect(t.release('p1', 100)).toBe('passed');
+        expect(t.swallowing(101)).toBe(false);
     });
 
     it('swallows a waking press held long, its repeats, its release and a short tail', () => {
         const t = new PressTracker();
         t.press('kEnter', true, 0);
-        // Auto-repeat keeps the first record.
-        t.press('kEnter', false, 30);
-        expect(t.isSwallowed('kEnter', 2000)).toBe(true);
+        // Auto-repeat keeps the first record (swallowed), however it was classified.
+        t.press('kEnter', false, 30, true);
         expect(t.swallowing(2000)).toBe(true);
-        expect(t.release('kEnter', 2000)).toBe(true);
+        expect(t.release('kEnter', 2000)).toBe('swallowed');
         expect(t.swallowing(2000 + SWALLOW_TAIL_MS - 1)).toBe(true);
         expect(t.swallowing(2000 + SWALLOW_TAIL_MS)).toBe(false);
-        expect(t.isSwallowed('kEnter', 2001)).toBe(false);
+    });
+
+    it('starts the tail at the swallowed press itself, released or not', () => {
+        // The press's own tail must survive a blur that forgets the press.
+        const t = new PressTracker();
+        t.press('p3', true, 100);
+        t.clear();
+        expect(t.swallowing(100 + SWALLOW_TAIL_MS - 1)).toBe(true);
+        expect(t.swallowing(100 + SWALLOW_TAIL_MS)).toBe(false);
     });
 
     it('stops swallowing after the cap, released or not', () => {
@@ -320,8 +328,43 @@ describe('PressTracker', () => {
         t.press('p7', true, 0);
         expect(t.swallowing(SWALLOW_CAP_MS)).toBe(true);
         expect(t.swallowing(SWALLOW_CAP_MS + 1)).toBe(false);
-        expect(t.held).toBe(true);
-        expect(t.release('p7', SWALLOW_CAP_MS + 1)).toBe(false);
+        expect(t.held(SWALLOW_CAP_MS + 1)).toBe(true);
+        expect(t.release('p7', SWALLOW_CAP_MS + 1)).toBe('passed');
+    });
+
+    it('lets auto-repeats of the waking key refresh its cap', () => {
+        const t = new PressTracker();
+        t.press('kEnter', true, 0);
+        for (let now = 33; now <= 3 * SWALLOW_CAP_MS; now += 33) {
+            t.press('kEnter', true, now, true);
+        }
+        expect(t.swallowing(3 * SWALLOW_CAP_MS + 100)).toBe(true);
+        expect(t.release('kEnter', 3 * SWALLOW_CAP_MS + 100)).toBe('swallowed');
+    });
+
+    it('lets a key whose keyup got lost stop counting as held', () => {
+        // macOS Chrome drops the keyup of a key pressed while Cmd is down.
+        const t = new PressTracker();
+        t.press('kKeyC', false, 0);
+        expect(t.held(KEY_HOLD_MS)).toBe(true);
+        expect(t.held(KEY_HOLD_MS + 1)).toBe(false);
+        // A really held key repeats and stays held.
+        t.press('kKeyD', false, 0);
+        for (let now = 500; now <= 5000; now += 33) {
+            t.press('kKeyD', false, now, true);
+        }
+        expect(t.held(5000 + KEY_HOLD_MS - 100)).toBe(true);
+        // Pointers have no repeats: held until released.
+        t.press('p1', false, 0);
+        t.release('kKeyD', 6000);
+        expect(t.held(60_000)).toBe(true);
+    });
+
+    it('replaces a stale record on a new (non-repeat) press', () => {
+        const t = new PressTracker();
+        t.press('kEnter', true, 0);
+        t.press('kEnter', false, 100);
+        expect(t.release('kEnter', 200)).toBe('passed');
     });
 
     it('gives a swallowed press without a release (wheel) a tail', () => {
@@ -329,6 +372,6 @@ describe('PressTracker', () => {
         t.swallowedOnce(100);
         expect(t.swallowing(100 + SWALLOW_TAIL_MS - 1)).toBe(true);
         expect(t.swallowing(100 + SWALLOW_TAIL_MS)).toBe(false);
-        expect(t.held).toBe(false);
+        expect(t.held(100)).toBe(false);
     });
 });
