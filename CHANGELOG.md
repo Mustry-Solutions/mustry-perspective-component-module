@@ -8,6 +8,25 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: Idle Guard, a screensaver for Perspective pages
+Perspective has no inactivity detection a page can use (its built-in timeout
+only logs out or closes the session, and ignores mouse movement), and 24/7
+wall displays burn in. The Idle Guard
+(`mustrysolutions.perspective.screensaver.idleguard`), dropped once into a
+shared dock, covers the page with an idle mode after `config.timeoutSec`
+without input: a clock by default, line-driven 3D pipes, aurora, halo or
+starfield, showpieces (synthwave, lava, tunnel, flow), funny modes (bounce,
+pong, ducks), or shuffle through them. Any input wakes it, the tap that
+wakes it never reaches the page, and a held press (a hold-to-run button)
+never goes idle under the user. An alarm at or above `config.alarm.wakePriority`
+wakes it too, lower ones pin a banner, an active Critical alarm is never
+covered, and a guard that stops hearing the gateway removes itself. At night
+an idle screen shows a dimmed clock; reduced motion swaps animations for the
+clock. The gateway's alarm poll runs only while a guard is on screen, so
+projects without one pay nothing. It is a browser overlay, not an access
+control. Details in `docs/idle-guard.md`; the verify project gains `/guard`
+pages, used by the new e2e suite `guard.spec.ts`.
+
 ### Added: Pan & Zoom minimap shows the content, and can be placed and sized
 The minimap only showed POI dots and the view rectangle, so it said little
 about what was where. It now draws a live, scaled preview of the embedded

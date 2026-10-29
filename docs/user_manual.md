@@ -8,7 +8,7 @@ is always the current copy.
 
 ## 1. Overview
 
-Mustry Perspective Components adds fourteen production-grade components to
+Mustry Perspective Components adds fifteen production-grade components to
 Ignition Perspective:
 
 | Component | Palette name | What it adds |
@@ -27,6 +27,7 @@ Ignition Perspective:
 | User Manager | User Manager | Full user-source administration at runtime |
 | Holiday Manager | Holiday Manager | Edit the gateway holiday list schedules observe |
 | Branching Diagram | Branching Diagram | Decision-tree / flow-path renderer with auto layout |
+| Idle Guard | Idle Guard | Alarm-aware screensaver for Perspective pages |
 
 All components appear in the Designer palette under the **Mustry
 Solutions** category.
@@ -299,6 +300,33 @@ missing session.
 Toasts stack up to five, pause while hovered or keyboard-focused, close with their
 close button or `Escape`, and are announced to screen readers. They follow
 the Perspective theme; see the README for the `--mustry-toast-*` variables.
+
+## 18c. Idle Guard (screensaver)
+
+A screensaver for Perspective pages on unattended screens. Put **one** Idle
+Guard in a view in a **shared dock**, so it is on every page and survives
+navigation; it is invisible in sessions and shows as a chip in the Designer.
+
+- After `config.timeoutSec` without input (pointer beyond a small jitter
+  threshold, touch, key, wheel), the page shows the idle mode in
+  `config.mode`: the clock by default, or an animated mode (pipes, aurora,
+  halo and starfield follow the `data.lines[]` you bind to tags; synthwave, lava,
+  tunnel, flow, bounce, pong and ducks are for screens that just need to look
+  good; shuffle rotates through them).
+- Any touch, key or mouse movement wakes the page; the tap that wakes it never
+  presses the button underneath.
+- An alarm at or above `config.alarm.wakePriority` wakes it and keeps it awake; lower
+  ones down to `config.alarm.pinPriority` show a banner. **An active Critical alarm is
+  never covered.** If the guard loses contact with the gateway, it removes
+  itself.
+- At night (`config.burnIn.night`, 22:00–06:00) an idle screen shows a dimmed clock.
+- `output.idle`, `output.mode` and the `onIdle` / `onWake` events let the
+  project react.
+- On a public or lobby screen set `config.alarm.sources`: every session with a guard
+  receives the labels of the matching alarms, whoever is logged in.
+
+The guard is a browser overlay, **not an access control or a safety
+function**. Engineering detail: `docs/idle-guard.md`.
 
 ## 19. Support
 

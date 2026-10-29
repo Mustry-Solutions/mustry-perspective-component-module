@@ -1,0 +1,284 @@
+// Idle Guard. The component's own box is empty in a session; everything
+// visible lives in .mustry-idle-guard-host, a portal on document.body.
+
+$z-top: 2147483000;
+
+.mustry-idle-guard--client {
+    display: none !important;
+}
+
+.mustry-idle-guard--designer {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px dashed #2e6fb5;
+    border-radius: 4px;
+    background: rgba(46, 111, 181, 0.08);
+    color: #2e6fb5;
+    font: 12px/1.2 Inter, 'Segoe UI', system-ui, sans-serif;
+    white-space: nowrap;
+}
+
+.mustry-idle-guard__chip {
+    padding: 0 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mustry-idle-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: $z-top;
+    overflow: hidden;
+    background: #000;
+    color: #d7dce4;
+    font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+    cursor: none;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    animation: mustry-idle-in 600ms ease-out;
+    transition: opacity 300ms ease-in;
+
+    &--fading {
+        opacity: 0;
+    }
+}
+
+@keyframes mustry-idle-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mustry-idle-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.mustry-idle-dim {
+    position: fixed;
+    inset: 0;
+    z-index: $z-top + 1;
+    background: #000;
+    pointer-events: none;
+    transition: opacity 2s linear;
+}
+
+// Drifting text: positioned at its resting place, moved by an inline transform
+// (see drift() in idleLogic.ts) that changes once a second.
+%drifting {
+    position: absolute;
+    transition: transform 1s linear;
+    will-change: transform;
+}
+
+.mustry-idle-clock {
+    @extend %drifting;
+    top: 50%;
+    left: 50%;
+    margin: -11vh 0 0 -30vw;
+    width: 60vw;
+    text-align: center;
+
+    &__time {
+        font-size: 16vh;
+        font-weight: 200;
+        letter-spacing: 0.02em;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        color: #e9edf3;
+    }
+
+    &__date {
+        margin-top: 2vh;
+        font-size: 3.2vh;
+        color: #8b95a5;
+    }
+
+    &__title {
+        margin-top: 1.2vh;
+        font-size: 2.6vh;
+        color: #5f6b7d;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+    }
+}
+
+.mustry-idle-legend {
+    @extend %drifting;
+    left: 22vw;
+    bottom: 18vh;
+    margin: 0;
+    padding: 1.2vh 1.4vw;
+    list-style: none;
+    background: rgba(5, 7, 11, 0.55);
+    border-radius: 6px;
+    font-size: 2vh;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 0.8vw;
+        padding: 0.3vh 0;
+    }
+
+    &__dot {
+        width: 1.4vh;
+        height: 1.4vh;
+        border-radius: 50%;
+        flex: none;
+    }
+
+    &__label {
+        color: #e2e6ec;
+        min-width: 8vw;
+    }
+
+    &__state {
+        color: #8b95a5;
+        text-transform: lowercase;
+    }
+}
+
+.mustry-idle-caption {
+    @extend %drifting;
+    right: 22vw;
+    bottom: 18vh;
+    font-size: 3vh;
+    color: #9aa4b3;
+    font-variant-numeric: tabular-nums;
+}
+
+.mustry-idle-hint {
+    @extend %drifting;
+    left: 50%;
+    bottom: 16vh;
+    width: 40vw;
+    margin-left: -20vw;
+    text-align: center;
+    font-size: 1.6vh;
+    color: rgba(215, 220, 228, 0.35);
+}
+
+// Pinned alarms: shown over the idle mode, never hidden by it. Colours follow
+// the usual priority ramp; the text stays readable from across the room.
+.mustry-idle-banner {
+    @extend %drifting;
+    top: 16vh;
+    left: 50%;
+    width: 56vw;
+    margin-left: -28vw;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6vh 1.4vw;
+    padding: 1.6vh 2vw;
+    border-radius: 6px;
+    border-left: 1vh solid currentColor;
+    background: rgba(12, 14, 18, 0.9);
+    font-size: 2.6vh;
+    color: #f2b33d;
+
+    &--critical { color: #ff4d4f; }
+    &--high { color: #ff8a3d; }
+    &--medium { color: #f2c94c; }
+    &--low { color: #5ab0f0; }
+    &--diagnostic { color: #a0a8b5; }
+
+    &__count {
+        font-weight: 700;
+    }
+
+    &__detail {
+        color: #d7dce4;
+    }
+
+    &__first {
+        flex-basis: 100%;
+        color: #9aa4b3;
+        font-size: 2.2vh;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+// Halo: the clock sits inside the innermost ring; labels sit beside each ring
+// at the angle haloLayout.ts gives the shader. The wrapper drifts with the
+// shader's centre (same drift() and HALO_DRIFT), so text and rings move together.
+.mustry-idle-halo {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transition: transform 1s linear;
+
+    &__clock {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    &__time {
+        font-size: 7vmin;
+        font-weight: 200;
+        letter-spacing: 0.02em;
+        font-variant-numeric: tabular-nums;
+        color: #eef2f8;
+        line-height: 1;
+        text-shadow: 0 0 2vmin rgba(120, 170, 255, 0.35);
+    }
+
+    &__date {
+        margin-top: 1.2vmin;
+        font-size: 1.8vmin;
+        color: #8b95a5;
+    }
+
+    &__title {
+        margin-top: 0.8vmin;
+        font-size: 1.5vmin;
+        color: #5f6b7d;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+    }
+
+    &__label {
+        position: absolute;
+        transform: translate(-100%, -50%);
+        padding-right: 1.6vmin;
+        display: flex;
+        gap: 0.8vmin;
+        align-items: baseline;
+        font-size: 1.6vmin;
+        white-space: nowrap;
+    }
+
+    &__name {
+        color: #d7dce4;
+    }
+
+    &__state {
+        font-size: 1.3vmin;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+    }
+}
+
+// Shuffle swaps one canvas for the next: let the new one fade in.
+.mustry-idle-canvas {
+    animation: mustry-idle-in 1.2s ease-out;
+}
+
+// Reduced motion (config.reduceMotion, or the browser's preference under auto):
+// no fade-in, no glide. Drifting text still moves, in invisible one-second steps.
+.mustry-idle-overlay--still,
+.mustry-idle-overlay--still * {
+    animation: none !important;
+    transition: none !important;
+}

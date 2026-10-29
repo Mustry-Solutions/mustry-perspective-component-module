@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "description": "The page went idle.",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "description": "The idle mode now showing (clock, starfield, pipes, blank, or external when the project handles it)."
+    },
+    "idleSince": {
+      "type": "integer",
+      "description": "Epoch ms of the last input before the page went idle."
+    }
+  }
+}

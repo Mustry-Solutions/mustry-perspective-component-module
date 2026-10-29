@@ -1,0 +1,473 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "When the page goes idle and what wakes it. Every value can be bound, so the timeout and mode can differ per page, role or display.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Off wakes the page at once and stops idle detection."
+        },
+        "timeoutSec": {
+          "type": "number",
+          "default": 600,
+          "minimum": 5,
+          "description": "Seconds without input before the page goes idle (minimum 5)."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "pipes",
+            "aurora",
+            "halo",
+            "starfield",
+            "synthwave",
+            "lava",
+            "tunnel",
+            "flow",
+            "bounce",
+            "pong",
+            "ducks",
+            "shuffle",
+            "clock",
+            "blank",
+            "external"
+          ],
+          "default": "clock",
+          "description": "What covers the page when idle. The default, clock, uses no graphics card at all. Driven by 'data.lines': pipes, aurora, halo; starfield follows config.modes.starfield. Showpieces, not linked to the plant: synthwave, lava, tunnel, flow. Funny: bounce, pong, ducks. 'shuffle' rotates through the animated modes (see config.modes.shuffle). clock and blank are plain. 'external' draws nothing: the project reacts to output.idle or onIdle/onWake itself."
+        },
+        "wakeOnMove": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mouse movement counts as input. Touch, keys, wheel and clicks always do."
+        },
+        "moveThresholdPx": {
+          "type": "number",
+          "default": 8,
+          "minimum": 0,
+          "description": "How far the pointer must move before it counts, so a vibrating mouse on a machine frame does not keep the page awake."
+        },
+        "wakeLock": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ask the browser to keep the display awake (Screen Wake Lock API). Only works over HTTPS."
+        },
+        "quality": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "high",
+            "low"
+          ],
+          "default": "auto",
+          "description": "How hard the animated modes work the graphics card. 'auto' starts high and steps down when the screen cannot keep 20 frames a second (a Raspberry Pi kiosk, an old NUC). Browsers without WebGL2 get simpler 2D versions."
+        },
+        "reduceMotion": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "always",
+            "never"
+          ],
+          "default": "auto",
+          "description": "For viewers who are sensitive to motion: the animated modes are replaced by the clock. 'auto' follows the browser's 'reduce motion' setting (prefers-reduced-motion), 'always' forces it (a kiosk without that setting), 'never' ignores it."
+        },
+        "locale": {
+          "type": "string",
+          "default": "",
+          "description": "UI-text language (en/fr/de/es/nl/it/pt), matched on the primary subtag, and the clock's date/time locale. Empty follows the browser."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-key overrides for built-in UI text. Unset keys follow config.locale.",
+          "properties": {
+            "wakeHint": {
+              "type": "string",
+              "description": "Hint on the idle screen."
+            },
+            "activeAlarm": {
+              "type": "string",
+              "description": "Banner count for one active alarm."
+            },
+            "activeAlarms": {
+              "type": "string",
+              "description": "Banner count for several; '{n}' is the number."
+            },
+            "line": {
+              "type": "string",
+              "description": "Name of a line without a label; '{n}' is its number."
+            },
+            "diagnostic": {
+              "type": "string",
+              "description": "Priority name in the banner detail."
+            },
+            "low": {
+              "type": "string",
+              "description": "Priority name in the banner detail."
+            },
+            "medium": {
+              "type": "string",
+              "description": "Priority name in the banner detail."
+            },
+            "high": {
+              "type": "string",
+              "description": "Priority name in the banner detail."
+            },
+            "critical": {
+              "type": "string",
+              "description": "Priority name in the banner detail."
+            }
+          }
+        },
+        "alarm": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Alarm policy. The gateway pushes the active alarm counts to the guard every couple of seconds. An active Critical alarm always wakes the page, whatever is set here.",
+          "properties": {
+            "wakePriority": {
+              "type": "string",
+              "enum": [
+                "Diagnostic",
+                "Low",
+                "Medium",
+                "High",
+                "Critical"
+              ],
+              "default": "High",
+              "description": "Any active alarm at or above this priority wakes the page and keeps it awake while it is active. Critical always does."
+            },
+            "pinPriority": {
+              "type": "string",
+              "enum": [
+                "Diagnostic",
+                "Low",
+                "Medium",
+                "High",
+                "Critical"
+              ],
+              "default": "Medium",
+              "description": "Active alarms at or above this priority (but below wakePriority) show as a banner over the idle mode."
+            },
+            "includeAcked": {
+              "type": "boolean",
+              "default": true,
+              "description": "Acknowledged alarms that are still active count too. Off: only unacknowledged ones wake or pin. Active Critical alarms always count."
+            },
+            "sources": {
+              "type": "array",
+              "default": [],
+              "description": "Only alarms whose display path or source path matches one of these patterns count. '*' matches anything, e.g. 'prov:default:/tag:Line1/*' or 'Line 1*'. Empty = every alarm on the gateway. Active Critical alarms always count, matching or not (one that does not match is sent as a count only, never its label or path). The matching alarms' labels and display paths are sent to this browser for the banner, whoever is logged in (or nobody): on a public or lobby screen, limit them here.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "staleAfterSec": {
+              "type": "number",
+              "default": 8,
+              "minimum": 3,
+              "description": "If the gateway alarm feed is silent this long, the guard fails open: it removes the idle mode and does not idle again until the feed is back."
+            }
+          }
+        },
+        "burnIn": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Care for 24/7 screens.",
+          "properties": {
+            "drift": {
+              "type": "boolean",
+              "default": true,
+              "description": "Text in the idle modes (clock, legends, banners) wanders slowly so nothing stays on the same pixels."
+            },
+            "night": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "The night window: while idle inside it the screen rests, which saves power and panel life. 'clock' (the default) shows the plain clock dimmed to 'level', so the screen still reads as alive; 'dim' keeps the configured mode dimmed to 'level'; 'blank' renders nothing. Alarms behave as always: a wake alarm wakes the page, a pinned one shows its banner (and lifts the dimming).",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "from": {
+                  "type": "string",
+                  "default": "22:00",
+                  "description": "Start of the window, HH:MM in the browser's local time."
+                },
+                "to": {
+                  "type": "string",
+                  "default": "06:00",
+                  "description": "End of the window, HH:MM. May be earlier than 'from' (the window crosses midnight)."
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "blank",
+                    "clock",
+                    "dim"
+                  ],
+                  "default": "clock",
+                  "description": "What the idle screen shows inside the window."
+                },
+                "level": {
+                  "type": "number",
+                  "default": 0.4,
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Brightness at night for the 'clock' and 'dim' night modes: 1 = no dimming, 0 = black."
+                }
+              }
+            }
+          }
+        },
+        "modes": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Settings per idle mode. The line-driven modes (pipes, aurora, halo) read 'data.lines'.",
+          "properties": {
+            "legend": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show the line labels and states over the pipes and aurora modes (halo labels its rings itself)."
+            },
+            "clock": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "default": "",
+                  "description": "A line under the clock, e.g. the line or shift name."
+                },
+                "showSeconds": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "starfield": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "speed": {
+                  "type": "number",
+                  "default": 1,
+                  "minimum": 0,
+                  "description": "Warp speed. Bind it to a line rate (scaled to roughly 0-5) and the stars move with production; 0 freezes them."
+                },
+                "color": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Star colour (any CSS colour). Empty = white. Bind it to a line state."
+                },
+                "density": {
+                  "type": "number",
+                  "default": 400,
+                  "minimum": 50,
+                  "maximum": 3000,
+                  "description": "Number of stars."
+                },
+                "caption": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Optional text in a corner, e.g. the bound rate with its unit."
+                }
+              }
+            },
+            "pipes": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "resetAfterSec": {
+                  "type": "number",
+                  "default": 120,
+                  "minimum": 10,
+                  "description": "Start over with an empty scene after this long."
+                },
+                "orbit": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "The camera circles the scene slowly. Off: a fixed three-quarter view."
+                }
+              }
+            },
+            "bounce": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "What the bouncing badge says: a site or company name, a line name, anything short. Unset or empty: the config.locale pack's word for idle ('IDLE')."
+                }
+              }
+            },
+            "pong": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "left": {
+                  "type": "string",
+                  "description": "Name of the left player. Unset or empty: the config.locale pack's 'DAY SHIFT'."
+                },
+                "right": {
+                  "type": "string",
+                  "description": "Name of the right player. Unset or empty: the config.locale pack's 'NIGHT SHIFT'."
+                }
+              }
+            },
+            "shuffle": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Settings for config.mode 'shuffle'.",
+              "properties": {
+                "modes": {
+                  "type": "array",
+                  "default": [],
+                  "description": "The modes to rotate through, e.g. [\"pipes\", \"lava\", \"ducks\"]. Empty = every animated mode.",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "minutes": {
+                  "type": "number",
+                  "default": 5,
+                  "minimum": 0.5,
+                  "description": "Minutes per mode before the next one fades in."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bound content: the lines the line-driven idle modes draw.",
+      "properties": {
+        "lines": {
+          "type": "array",
+          "description": "Your lines, units or utilities: one pipe, aurora curtain or halo ring each (up to 12). Bind state and flow to tags: the colour follows the state, the motion follows the flow. Empty = a demo set.",
+          "default": [
+            {
+              "state": "running",
+              "flow": 0.8
+            },
+            {
+              "state": "running",
+              "flow": 0.5
+            },
+            {
+              "state": "idle",
+              "flow": 0.2
+            },
+            {
+              "state": "warning",
+              "flow": 0.6
+            }
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string",
+                "default": "running",
+                "description": "running, idle, warning, fault or off. Picks the colour unless 'color' is set; fault also pulses."
+              },
+              "flow": {
+                "type": "number",
+                "default": 0.5,
+                "minimum": 0,
+                "description": "0 = still; 1 = full speed (values above 1 go faster, up to 3). Drives pipe growth and flow pulses, aurora motion and halo spin."
+              },
+              "color": {
+                "type": "string",
+                "default": "",
+                "description": "Override colour (any CSS colour)."
+              }
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Written by the component. Bind to these to drive your own logic.",
+      "properties": {
+        "idle": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while the page is idle."
+        },
+        "idleSince": {
+          "type": "number",
+          "default": 0,
+          "description": "Epoch ms the page went idle (0 while active)."
+        },
+        "lastInput": {
+          "type": "number",
+          "default": 0,
+          "description": "Epoch ms of the last input. Updated at most every few seconds."
+        },
+        "mode": {
+          "type": "string",
+          "default": "",
+          "description": "The mode showing while idle; empty while active."
+        },
+        "wakeCause": {
+          "type": "string",
+          "default": "",
+          "description": "Why the page last woke: input, alarm, feed-stale or disabled."
+        },
+        "feedOk": {
+          "type": "boolean",
+          "default": false,
+          "description": "The gateway alarm feed is live. While false the guard will not idle (it fails open)."
+        },
+        "alarms": {
+          "type": "object",
+          "description": "Active alarm counts by priority, from the gateway feed, after the source filter, which never drops Critical (acknowledged ones dropped when config.alarm.includeAcked is off, except Critical).",
+          "additionalProperties": false,
+          "properties": {
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "medium": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "low": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "diagnostic": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "default": {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+            "diagnostic": 0
+          }
+        }
+      }
+    }
+  }
+}

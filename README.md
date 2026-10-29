@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/Mustry-Solutions/mustry-perspective-component-module)](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships fourteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Branching Diagram**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, and the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**.
+An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiveautomation.com/) components, written as React/TypeScript module components. It ships fifteen components: a **Date/Time Range Picker**, a **Calendar / Scheduler**, a **Resource Timeline** (scheduling board), an editable **Data Grid**, a **Pan & Zoom View**, a **Branching Diagram**, a **Rich Text Editor**, a **Code/JSON Editor**, a **Color Picker**, an **On-Screen Keyboard**, the complete admin family: **Schedule Manager**, **Roster Manager**, **User Manager** and **Holiday Manager**, and the **Idle Guard**, a screensaver for Perspective pages.
 
 - **Module ID:** `com.mustrysolutions.perspective.components`
 - **Palette category:** `Mustry Solutions`
@@ -499,6 +499,48 @@ The three admin components are deliberately separate — tabs and page routing a
 
 ---
 
+## Idle Guard (screensaver)
+
+A screensaver for Perspective pages on screens nobody is touching: control-room walls, shop-floor TVs, line-side panels. After `config.timeoutSec` without input the page shows an idle mode; any touch, key or mouse movement wakes it at once, and the tap that wakes it never presses the button underneath. An alarm wakes it too. Component id `mustrysolutions.perspective.screensaver.idleguard`.
+
+![Idle Guard, pipes mode: one glowing pipe per production line, coloured by its state tag](docs/images/guard-pipes.png)
+
+Perspective has no `system.util.getInactivitySeconds()` or lock screen like Vision, and its built-in inactivity timeout only logs out or closes the session (and ignores mouse movement). The guard closes the idle part of that gap and keeps 24/7 displays from burning in.
+
+**Not a lock.** The guard is a browser overlay, not an access control or a safety function: anyone with the browser's developer tools can remove it. For access control use Perspective's own inactivity timeout and authentication.
+
+### Features
+
+- **Idle detection in the browser** — pointer (with a jitter threshold), touch, keys, wheel and tab visibility. `output.idle`, `output.idleSince`, `output.mode`, `output.wakeCause` and the `onIdle` / `onWake` events make the state bindable and scriptable; timeout and mode are props, so they can differ per page, role or display.
+- **Alarm-aware** — the gateway pushes the active alarm counts to every guard. An alarm at or above `config.alarm.wakePriority` wakes the screen and keeps it awake; lower ones down to `config.alarm.pinPriority` pin a banner over the idle mode. **An active Critical alarm is never covered.** If the guard stops hearing the gateway it removes itself (fail open). The gateway polls the alarm status only while at least one guard is on screen, so projects that don't use the guard pay nothing for it.
+- **Idle modes** (`config.mode`):
+  - *Driven by your lines* (`data.lines[]`, state and flow bound to tags): **pipes** (glossy 3D pipes with light pulses at each line's flow, a faulted line glows red), **aurora** (one curtain per line), **halo** (neon rings around a clock), **starfield** (a warp flight at a bound line rate).
+  - *Showpieces*: **synthwave**, **lava** (a lava lamp), **tunnel**, **flow** (thirty thousand particles in a curl-noise field).
+  - *Funny*: **bounce** (your text on the bouncing badge, confetti on a corner hit), **pong** (day shift vs night shift), **ducks** (rubber ducks in hard hats).
+  - **shuffle** rotates through any of them; **clock** (the default), **blank**, and **external** (draws nothing; your project reacts to `output.idle`; with no overlay, the waking tap reaches the page).
+  - The animated modes use WebGL2 with bloom and step their quality down on weak kiosk hardware (`config.quality`); browsers without WebGL2 get 2D versions.
+- **Burn-in and power care** — text drifts slowly (`config.burnIn.drift`). At night (`config.burnIn.night`, 22:00–06:00 by default) an idle screen shows a dimmed clock instead of any animation: dark, but clearly alive. It can keep the mode dimmed, or go fully blank.
+- **Reduced motion** — when the browser asks for less motion (or `config.reduceMotion` is `always`), the animated modes give way to a still clock.
+- **Labels** in the same 7 languages (`config.locale`, `config.labels.*`); the clock's date and time follow the locale.
+
+| Synthwave | Ducks | Halo (Line 1 in fault) |
+|---|---|---|
+| ![Synthwave mode](docs/images/guard-synthwave.png) | ![Ducks mode](docs/images/guard-ducks.png) | ![Halo mode](docs/images/guard-halo.png) |
+
+### Using it
+
+1. Drop one **Idle Guard** into a view in a **shared dock**, so it is on every page and survives navigation. It is invisible in sessions; in the Designer it shows as a small chip.
+2. Set `config.timeoutSec` and `config.mode`, and bind `data.lines[]` (and `config.modes.*`) to your tags.
+3. On a public or lobby screen, set `config.alarm.sources`: every session with a guard receives the labels of the matching alarms, whoever is logged in (plus the number of active Critical alarms outside them, without labels: Critical always wakes). The gateway reads `config.alarm.sources` from the component's props, never from the browser's messages; set the property's access to Protected so the session cannot rewrite it either.
+
+Props, the alarm feed, safety rules and tests are documented in [`docs/idle-guard.md`](docs/idle-guard.md); the hardware checklist is [`docs/guard-manual-test.md`](docs/guard-manual-test.md).
+
+### Theming
+
+The idle screen is deliberately dark whatever the Perspective theme (it is a screensaver). Style it through the stable classes `.mustry-idle-overlay` (with `--<mode>` modifiers), `.mustry-idle-clock`, `.mustry-idle-banner`, `.mustry-idle-legend` and `.mustry-idle-hint` in a project stylesheet.
+
+---
+
 ## Toasts (`system.mustry.toast`)
 
 Short notifications at the top right of a Perspective page, called from any script. No component is needed: the gateway loads a small toast bundle (`MustryToasts.js`, about 6 KB) on every page.
@@ -536,7 +578,7 @@ Toasts use the Perspective theme variables (`--neutral-10` background, `--neutra
 | Path | Scope |
 |---|---|
 | `common/` | Component descriptors (one `Components.ALL` registry) + the props/event JSON schemas (`src/main/resources`). |
-| `gateway/` | Gateway hook (registers components, mounts web resources, adds `system.mustry.toast`). |
+| `gateway/` | Gateway hook (registers components, mounts web resources, adds `system.mustry.toast`) and the Idle Guard's alarm feed (`gateway/guard`). |
 | `designer/` | Designer hook (registers components in the Designer). |
 | `web/` | React/TypeScript front-end + styles, built by webpack (production bundle by default). |
 | `e2e/` | Playwright smoke suite rendering every component in a live session — run via `ops/e2e.sh`. |
