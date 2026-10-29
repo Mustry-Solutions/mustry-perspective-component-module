@@ -74,6 +74,14 @@ public final class AlarmFeed {
     private volatile boolean healthy = true;
     /** Stops the running poll; null while nobody is subscribed. Guarded by this. */
     private Runnable stopPolling;
+    /**
+     * Bumped on every poll start and stop. A tick carries the generation it was
+     * started under and publishes nothing once it changed, so a read still in
+     * flight from a stopped poll cannot deliver old alarms after a restart.
+     */
+    private volatile long generation;
+    /** Set by {@link #shutdown()}: the feed never polls again. Guarded by this. */
+    private boolean closed;
 
     public AlarmFeed(Supplier<List<ActiveAlarm>> source, LongSupplier clock, Poller poller) {
         this.source = source;
@@ -118,13 +126,18 @@ public final class AlarmFeed {
         return out;
     }
 
-    /** Stops polling and drops every subscriber (module shutdown). */
+    /** Stops polling and drops every subscriber (module shutdown). Final: a later subscribe is ignored. */
     public synchronized void shutdown() {
+        closed = true;
         stop();
         slots.clear();
     }
 
     public synchronized void subscribe(Subscriber s) {
+        if (closed) {
+            // A delegate event racing the module shutdown must not restart the poll.
+            return;
+        }
         for (Slot slot : slots) {
             if (slot.subscriber == s) {
                 return;
@@ -136,7 +149,8 @@ public final class AlarmFeed {
             // never gets alarms from before the poll stopped.
             latest = null;
             healthy = true;
-            stopPolling = poller.start(this::tickSafely);
+            long gen = ++generation;
+            stopPolling = poller.start(() -> tickSafely(gen));
             log.debug("First Idle Guard subscribed; alarm polling started.");
         }
     }
@@ -150,6 +164,7 @@ public final class AlarmFeed {
     }
 
     private void stop() {
+        generation++;
         if (stopPolling != null) {
             stopPolling.run();
             stopPolling = null;
@@ -164,7 +179,7 @@ public final class AlarmFeed {
      */
     public void pushNow(Subscriber s) {
         List<ActiveAlarm> alarms = latest;
-        if (!healthy || alarms == null) {
+        if (closed || !healthy || alarms == null) {
             return;
         }
         for (Slot slot : slots) {
@@ -183,9 +198,9 @@ public final class AlarmFeed {
         return stopPolling != null;
     }
 
-    private void tickSafely() {
+    private void tickSafely(long gen) {
         try {
-            tick();
+            tick(gen);
         } catch (Throwable t) {
             // Say nothing to the guards: their feeds go stale and they fail open,
             // which is the safe answer when we cannot read the alarms.
@@ -196,9 +211,17 @@ public final class AlarmFeed {
         }
     }
 
-    /** One poll: read the alarms, then update every subscriber. Package-private for tests. */
+    /** One poll of the current generation. Package-private for tests. */
     void tick() {
+        tick(generation);
+    }
+
+    /** One poll: read the alarms, then update every subscriber, unless the poll it belongs to has stopped. */
+    void tick(long gen) {
         List<ActiveAlarm> alarms = source.get();
+        if (gen != generation) {
+            return;
+        }
         if (!healthy) {
             log.info("Gateway alarm status readable again; Idle Guard feeds resume.");
         }
@@ -207,6 +230,9 @@ public final class AlarmFeed {
         latest = read;
         long now = clock.getAsLong();
         for (Slot slot : slots) {
+            if (gen != generation) {
+                return;
+            }
             send(slot, read, now, false);
         }
     }

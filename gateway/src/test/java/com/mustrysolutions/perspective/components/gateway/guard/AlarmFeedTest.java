@@ -162,4 +162,49 @@ class AlarmFeedTest {
         assertEquals(1, poller.stops);
         assertEquals(0, feed.subscriberCount());
     }
+
+    @Test
+    void subscribeAfterShutdownNeverRestartsThePoll() {
+        Sub a = new Sub();
+        feed.subscribe(a);
+        feed.tick();
+        feed.shutdown();
+
+        Sub late = new Sub();
+        feed.subscribe(late);
+        assertFalse(feed.polling(), "a subscribe racing the module shutdown is ignored");
+        assertEquals(1, poller.starts);
+        assertEquals(0, feed.subscriberCount());
+        feed.pushNow(late);
+        assertEquals(0, late.got.size());
+    }
+
+    @Test
+    void aTickFromAStoppedPollPublishesNothing() {
+        // A poller that hands the test the tick it was started with.
+        List<Runnable> ticks = new ArrayList<>();
+        AlarmFeed f = new AlarmFeed(() -> List.copyOf(alarms), now::get, tick -> {
+            ticks.add(tick);
+            return () -> { };
+        });
+        alarms.add(new ActiveAlarm("s", "d", "l", ActiveAlarm.HIGH, false, 1));
+        Sub a = new Sub();
+        f.subscribe(a);
+        Runnable oldTick = ticks.get(0);
+        f.unsubscribe(a);
+
+        alarms.clear();
+        Sub b = new Sub();
+        f.subscribe(b);
+        alarms.add(new ActiveAlarm("s", "d", "l", ActiveAlarm.HIGH, false, 1));
+        oldTick.run();
+        assertEquals(0, b.got.size(), "the stopped poll's tick is discarded");
+        f.pushNow(b);
+        assertEquals(0, b.got.size(), "and left nothing behind to replay");
+
+        alarms.clear();
+        ticks.get(1).run();
+        assertEquals(1, b.got.size());
+        assertEquals(0, b.got.get(0).getAsJsonObject("active").get("high").getAsInt());
+    }
 }

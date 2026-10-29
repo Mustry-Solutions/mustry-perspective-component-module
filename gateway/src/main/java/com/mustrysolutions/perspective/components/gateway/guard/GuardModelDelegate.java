@@ -35,6 +35,8 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
 
     private final AlarmFeed feed;
     private volatile SourceFilter filter = SourceFilter.ALL;
+    /** Set on shutdown: a subscribe event arriving after it must not re-subscribe a dead delegate. Guarded by this. */
+    private boolean down;
 
     public GuardModelDelegate(Component component, AlarmFeed feed) {
         super(component);
@@ -48,8 +50,11 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
 
     @Override
     protected void onShutdown() {
-        if (feed != null) {
-            feed.unsubscribe(this);
+        synchronized (this) {
+            down = true;
+            if (feed != null) {
+                feed.unsubscribe(this);
+            }
         }
         log.debugf("Idle Guard delegate down for %s", where());
     }
@@ -63,8 +68,14 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
         if (!EVT_SUBSCRIBE.equals(message.getEventName()) || feed == null) {
             return;
         }
-        this.filter = SourceFilter.of(configuredSources());
-        feed.subscribe(this);
+        SourceFilter configured = SourceFilter.of(configuredSources());
+        synchronized (this) {
+            if (down) {
+                return;
+            }
+            this.filter = configured;
+            feed.subscribe(this);
+        }
         feed.pushNow(this);
     }
 
