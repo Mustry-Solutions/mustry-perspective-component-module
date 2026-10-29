@@ -48,6 +48,8 @@ export interface AlarmFeed {
     unacked: AlarmCounts;
     top: TopAlarm[];
     seq: number;
+    /** The gateway subscription this seq belongs to; seq restarts with a new stream. */
+    stream: string;
     /**
      * Browser monotonic clock (performance.now()) when it arrived. Staleness never
      * uses the gateway's clock, nor the browser's wall clock: a backward NTP step
@@ -91,8 +93,19 @@ export function parseFeed(raw: unknown, receivedAt: number): AlarmFeed | null {
         unacked: readCounts(o.unacked),
         top,
         seq: Number(o.seq) || 0,
+        stream: typeof o.stream === 'string' ? o.stream : '',
         receivedAt
     };
+}
+
+/**
+ * Should `next` replace `prev`? The gateway can deliver two messages of one
+ * subscription out of order (an immediate push racing the poll), so within a
+ * stream only a higher seq wins; a new stream (a new subscription, whose seq
+ * restarts at 1) always does.
+ */
+export function isNewerFeed(prev: AlarmFeed | null, next: AlarmFeed): boolean {
+    return prev === null || next.stream !== prev.stream || next.seq > prev.seq;
 }
 
 export interface AlarmPolicy {

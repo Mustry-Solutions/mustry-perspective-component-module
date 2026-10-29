@@ -2,14 +2,14 @@ import { EN_GUARD_LABELS, guardLabelBase } from '../../shared/labels/guard';
 import {
     AlarmFeed, AlarmPolicy, countsText, CRITICAL, dimLevel, drift, evaluateAlarms, initialState, input, inWindow, isNight,
     NightConfig, normNightMode, normReduceMotion, wantsReducedMotion,
-    movedEnough, parseClock, parseFeed, KEY_HOLD_MS, PressTracker, priorityIndex, SWALLOW_CAP_MS, SWALLOW_TAIL_MS, tick, timeoutMs,
+    isNewerFeed, movedEnough, parseClock, parseFeed, KEY_HOLD_MS, PressTracker, priorityIndex, SWALLOW_CAP_MS, SWALLOW_TAIL_MS, tick, timeoutMs,
     zeroCounts
 } from '../guard/idleLogic';
 
 const POLICY: AlarmPolicy = { wakePriority: 3, pinPriority: 2, includeAcked: true, staleAfterMs: 8000 };
 
 function feed(active: Partial<Record<string, number>>, unacked: Partial<Record<string, number>> = active, receivedAt = 1000): AlarmFeed {
-    return { active: { ...zeroCounts(), ...active }, unacked: { ...zeroCounts(), ...unacked }, top: [], seq: 1, receivedAt };
+    return { active: { ...zeroCounts(), ...active }, unacked: { ...zeroCounts(), ...unacked }, top: [], seq: 1, stream: 's1', receivedAt };
 }
 
 describe('priorityIndex', () => {
@@ -103,6 +103,29 @@ describe('evaluateAlarms', () => {
     it('treats pinPriority above wakePriority as wakePriority', () => {
         const p = { ...POLICY, wakePriority: 2, pinPriority: 4 };
         expect(evaluateAlarms(feed({ medium: 1 }), p, 1000).wake).toBe(true);
+    });
+});
+
+describe('isNewerFeed', () => {
+    const at = (seq: number, stream = 's1'): AlarmFeed => ({ ...feed({}), seq, stream });
+
+    it('takes the first message and every higher seq of the stream', () => {
+        expect(isNewerFeed(null, at(5))).toBe(true);
+        expect(isNewerFeed(at(5), at(6))).toBe(true);
+    });
+
+    it('drops a late envelope of the same stream (a push racing the poll)', () => {
+        expect(isNewerFeed(at(6), at(5))).toBe(false);
+        expect(isNewerFeed(at(6), at(6))).toBe(false);
+    });
+
+    it('takes a new stream whatever its seq (a new subscription restarts at 1)', () => {
+        expect(isNewerFeed(at(500), at(1, 's2'))).toBe(true);
+    });
+
+    it('parses the stream name', () => {
+        expect(parseFeed({ active: {}, seq: 3, stream: 'abc' }, 0)!.stream).toBe('abc');
+        expect(parseFeed({ active: {}, seq: 3 }, 0)!.stream).toBe('');
     });
 });
 

@@ -233,6 +233,24 @@ class AlarmFeedTest {
     }
 
     @Test
+    void eachSubscriptionNamesItsStream() {
+        Sub a = new Sub();
+        Sub b = new Sub();
+        feed.subscribe(a);
+        feed.subscribe(b);
+        feed.tick();
+        feed.pushNow(a);
+        String streamA = a.got.get(0).get("stream").getAsString();
+        assertEquals(streamA, a.got.get(1).get("stream").getAsString(), "one stream per subscription");
+        assertTrue(!streamA.equals(b.got.get(0).get("stream").getAsString()), "another guard, another stream");
+        feed.unsubscribe(a);
+        feed.subscribe(a);
+        feed.pushNow(a);
+        assertEquals(1, a.got.get(2).get("seq").getAsLong(), "a new subscription restarts seq");
+        assertTrue(!streamA.equals(a.got.get(2).get("stream").getAsString()), "... in a new stream");
+    }
+
+    @Test
     void aFailingTickFromAStoppedPollLeavesTheNewPollHealthy() {
         List<Runnable> ticks = new ArrayList<>();
         boolean[] fail = {false};

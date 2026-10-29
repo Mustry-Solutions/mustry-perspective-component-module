@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -63,6 +64,12 @@ public final class AlarmFeed {
         String lastBody;
         long lastSent;
         long seq;
+        /**
+         * Names this subscription's message sequence. seq restarts with every new
+         * slot (a re-subscribed or recreated delegate), so the browser orders by seq
+         * only within one stream.
+         */
+        final String stream = Long.toHexString(ThreadLocalRandom.current().nextLong());
 
         Slot(Subscriber subscriber) {
             this.subscriber = subscriber;
@@ -293,6 +300,7 @@ public final class AlarmFeed {
             slot.lastBody = text;
             slot.lastSent = now;
             body.addProperty("seq", ++slot.seq);
+            body.addProperty("stream", slot.stream);
             body.addProperty("sentAt", now);
         }
         try {

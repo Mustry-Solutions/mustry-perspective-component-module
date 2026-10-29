@@ -2,7 +2,7 @@
 // (GuardModelDelegate.java) subscribes this guard to the shared alarm feed and
 // pushes a summary on every change and every couple of seconds as a heartbeat.
 import { AbstractUIElementStore, ComponentStoreDelegate, JsObject } from '@inductiveautomation/perspective-client';
-import { AlarmFeed, parseFeed } from './idleLogic';
+import { AlarmFeed, isNewerFeed, parseFeed } from './idleLogic';
 
 /** Event names shared with GuardModelDelegate.java. */
 export const GUARD_EVENTS = {
@@ -12,7 +12,7 @@ export const GUARD_EVENTS = {
      * component's props on its side and never trusts the browser for them.
      */
     SUBSCRIBE: 'screensaver-subscribe',
-    /** gateway -> page: { active, unacked, top, seq, sentAt } */
+    /** gateway -> page: { active, unacked, top, seq, stream, sentAt } */
     ALARMS: 'screensaver-alarms'
 } as const;
 
@@ -59,7 +59,8 @@ export class GuardStoreDelegate extends ComponentStoreDelegate {
         }
         // Stamped on the monotonic clock: staleness must survive a wall-clock step.
         const feed = parseFeed(eventObject, performance.now());
-        if (feed !== null) {
+        // An envelope older than the one applied (same stream, lower seq) arrived late: drop it.
+        if (feed !== null && isNewerFeed(this.feed, feed)) {
             this.feed = feed;
             this.notify();
         }
