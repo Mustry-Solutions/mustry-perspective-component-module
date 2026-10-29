@@ -88,6 +88,36 @@ test.describe('idle and wake', () => {
         await expect(tile(page, 'presses')).toHaveText('1');
     });
 
+    test('a waking press held past the fade never reaches the page either', async ({ page }) => {
+        await openGuarded(page, 'clock', 5);
+        const box = await page.locator('#jog').boundingBox();
+        expect(box).not.toBeNull();
+        await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+        await waitIdle(page);
+
+        // Held well past the 300 ms fade: the overlay is gone before the release.
+        await page.mouse.down();
+        await expect(page.locator(OVERLAY)).toHaveCount(0);
+        await page.waitForTimeout(1_000);
+        await page.mouse.up();
+        await page.waitForTimeout(1_000);
+        await expect(page.locator('#jog-count')).toHaveText('releases: 0');
+    });
+
+    test('a held press never idles, and its release reaches the page', async ({ page }) => {
+        await openGuarded(page, 'clock', 5);
+        const box = await page.locator('#jog').boundingBox();
+        expect(box).not.toBeNull();
+        await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+        // A hold-to-run control held past the timeout, the mouse perfectly still.
+        await page.mouse.down();
+        await expectNoIdle(page);
+        await page.mouse.up();
+        await expect(page.locator('#jog-count')).toHaveText('releases: 1');
+        // Released: the timeout starts over and the page idles.
+        await waitIdle(page);
+    });
+
     test('a waking key press wakes the page and is swallowed', async ({ page }) => {
         await openGuarded(page, 'blank', 5);
         await page.getByRole('button', { name: 'Start pump' }).focus();
