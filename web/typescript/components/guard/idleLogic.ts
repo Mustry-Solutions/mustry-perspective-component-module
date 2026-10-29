@@ -357,19 +357,21 @@ export class PressTracker {
         return false;
     }
 
-    /** Anything held down: the page must not go idle. Drops keys whose keyup evidently got lost. */
+    /**
+     * Anything held down: the page must not go idle. A key that stopped repeating
+     * no longer counts (its keyup may be lost: macOS drops it under Cmd), but its
+     * record stays, so a late keyup is still recognised as its own release
+     * ('passed', or 'swallowed' within the cap) rather than an unknown one the
+     * cover would swallow. A new press of the same key replaces the record, so
+     * this stays bounded by the number of keys.
+     */
     held(now: number): boolean {
-        let any = false;
         for (const [id, p] of this.presses) {
-            if (id.startsWith('k') && now - p.seen > KEY_HOLD_MS) {
-                if (!(p.swallowed && now - p.at <= SWALLOW_CAP_MS)) {
-                    this.presses.delete(id);
-                }
-                continue;
+            if (!(id.startsWith('k') && now - p.seen > KEY_HOLD_MS)) {
+                return true;
             }
-            any = true;
         }
-        return any;
+        return false;
     }
 
     /** Forget one press without a release (a mouse seen moving with no button down). */

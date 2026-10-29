@@ -130,11 +130,13 @@ While the overlay is up, a pointer-down, touch-start, key-down or wheel wakes
 the page and is stopped (`preventDefault` + `stopImmediatePropagation`). The
 rest of that gesture (key repeats, pointer/mouse up, click, touch-end,
 key-up, ...) is swallowed until the waking pointer or key is released plus
-500 ms, at most 10 s after the press or the waking key's last auto-repeat;
+500 ms, at most 10 s after the press or the waking key's last auto-repeat
+(so a waking key kept held keeps swallowing page input until it is let go);
 the overlay fades out over 300 ms while still catching input. Without this a
 release-acting control under the overlay (a jog button, `onMouseUp` scripts)
 would fire from the tap that woke the screen. The release of a press that
-began before the cover is never swallowed; a release with no recorded press
+began before the cover is never swallowed, even a key that stopped
+auto-repeating and so stopped keeping the page awake; a release with no recorded press
 is swallowed while the overlay is up. Window blur and a hidden tab forget
 what is held (the releases will not arrive). Mouse movement wakes without
 being stopped. Wakes that are not input (alarm, stale feed, disabled) drop

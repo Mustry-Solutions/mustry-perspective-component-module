@@ -383,6 +383,23 @@ describe('PressTracker', () => {
         expect(t.held(60_000)).toBe(true);
     });
 
+    it('passes the late keyup of a key held since before the cover', () => {
+        // OS key repeat off: the key stops counting as held, the page idles under
+        // it, and its keyup must still reach the page (a keyboard hold-to-run).
+        const t = new PressTracker();
+        t.press('kF8', false, 0);
+        expect(t.held(KEY_HOLD_MS + 1)).toBe(false);
+        expect(t.release('kF8', 30_000)).toBe('passed');
+    });
+
+    it('keeps a swallowed waking key swallowed until its keyup, within the cap', () => {
+        // No repeats (OS key repeat off): the keyup after 1.5 s is still the waking key's.
+        const t = new PressTracker();
+        t.press('kEnter', true, 0);
+        expect(t.held(2000)).toBe(false);
+        expect(t.release('kEnter', 2000)).toBe('swallowed');
+    });
+
     it('replaces a stale record on a new (non-repeat) press', () => {
         const t = new PressTracker();
         t.press('kEnter', true, 0);
