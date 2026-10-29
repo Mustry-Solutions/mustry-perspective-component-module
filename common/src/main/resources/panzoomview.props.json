@@ -12,11 +12,7 @@
         "viewParams": [],
         "contentWidth": 0,
         "contentHeight": 0,
-        "minZoom": 0.1,
-        "maxZoom": 8,
-        "zoomStep": 1.25,
-        "wheelZoom": true,
-        "doubleClickZoom": true,
+        "zoom": { "min": 0.1, "max": 8, "step": 1.25, "wheel": true, "doubleClick": true },
         "showControls": true,
         "locale": "",
         "flyToMs": 350,
@@ -51,11 +47,19 @@
           "description": "The embedded view's natural height in px. 0 (default) = auto.",
           "default": 0
         },
-        "minZoom": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
-        "maxZoom": { "type": "number", "description": "Largest zoom factor.", "default": 8 },
-        "zoomStep": { "type": "number", "description": "Zoom multiplier per wheel tick / button press (1.05–3).", "default": 1.25 },
-        "wheelZoom": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
-        "doubleClickZoom": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true },
+        "zoom": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "How far and by which gestures the viewport zooms. (The current zoom itself is state.zoom.)",
+          "default": { "min": 0.1, "max": 8, "step": 1.25, "wheel": true, "doubleClick": true },
+          "properties": {
+            "min": { "type": "number", "description": "Smallest zoom factor (1 = natural size).", "default": 0.1 },
+            "max": { "type": "number", "description": "Largest zoom factor.", "default": 8 },
+            "step": { "type": "number", "description": "Zoom multiplier per wheel tick / button press (1.05–3).", "default": 1.25 },
+            "wheel": { "type": "boolean", "description": "Zoom with the mouse wheel, toward the cursor.", "default": true },
+            "doubleClick": { "type": "boolean", "description": "Double-click zooms two steps toward the click point.", "default": true }
+          }
+        },
         "showControls": { "type": "boolean", "description": "Show the zoom / reset / fit buttons.", "default": true },
         "locale": {
           "type": "string",

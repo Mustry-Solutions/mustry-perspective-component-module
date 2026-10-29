@@ -28,17 +28,17 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
       plain CLICK (< 5 px movement) still reaches buttons/inputs inside the
       embedded view (the demo's click-counter proves it); after a real drag,
       no phantom click fires.
-- [ ] **Wheel zoom** (`config.wheelZoom`): zooms toward the cursor — the
+- [ ] **Wheel zoom** (`config.zoom.wheel`): zooms toward the cursor — the
       content under the pointer stays put; the page never scrolls while
       wheeling over the viewport.
-- [ ] **Double-click zoom** (`config.doubleClickZoom`): two zoom steps toward
+- [ ] **Double-click zoom** (`config.zoom.doubleClick`): two zoom steps toward
       the click point.
 - [ ] **Controls** (`config.showControls`): + / − step at the viewport center;
       home resets to `config.home` (zoom 0 = fit, x/y −1 = content center);
       fit always fits; tooltips follow `config.locale` (en/fr/de/es/nl/it/pt).
 - [ ] **Bounds**: you can't lose the content — panning stops with ≥ 25% of the
       viewport still covered; content smaller than the viewport stays
-      centered; zoom clamps to `config.minZoom`/`maxZoom`.
+      centered; zoom clamps to `config.zoom.min`/`max`.
 - [ ] **Two-way state**: gestures write `state.zoom`/`state.center` (debounced
       ~200 ms, flushed on gesture end); writing them from a script/binding
       moves the viewport ("Fly to Pump 3" in the demo).
@@ -91,7 +91,7 @@ embeds `SynopticDemo` (2400×1500) with fly-to buttons.
 ## Feel + robustness (M4)
 
 - [ ] **Trackpad zoom** is smooth (proportional to the pinch), while a mouse
-      wheel tick still zooms exactly one `config.zoomStep`.
+      wheel tick still zooms exactly one `config.zoom.step`.
 - [ ] **Flick to glide**: releasing a fast drag keeps the view moving with
       friction; it decelerates smoothly, stops at pan bounds, and a grab
       mid-glide (or mid-fly) freezes it in place. The rest position lands in

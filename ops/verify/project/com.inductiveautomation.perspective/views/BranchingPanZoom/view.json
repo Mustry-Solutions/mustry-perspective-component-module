@@ -43,7 +43,6 @@
       "contentWidth": 0,
       "contentHeight": 0,
       "showControls": true,
-      "wheelZoom": true,
       "home": {
        "x": -1,
        "y": -1,

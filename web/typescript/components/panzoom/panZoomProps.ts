@@ -15,6 +15,7 @@ export interface PanZoomProps {
     viewParams: Record<string, unknown>;
     contentWidth: number;
     contentHeight: number;
+    // config.zoom.* — kept flat here because `zoom` is state.zoom below
     minZoom: number;
     maxZoom: number;
     zoomStep: number;
@@ -37,8 +38,8 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         const n = tree.readNumber(path, dflt);
         return Number.isFinite(n) ? n : dflt;
     };
-    const minZoom = Math.max(0.01, num('config.minZoom', 0.1));
-    const maxZoom = Math.max(minZoom, num('config.maxZoom', 8));
+    const minZoom = Math.max(0.01, num('config.zoom.min', 0.1));
+    const maxZoom = Math.max(minZoom, num('config.zoom.max', 8));
     return {
         viewPath: tree.readString('config.viewPath', ''),
         // readObject isn't in the reader contract; params arrive as an array of
@@ -57,9 +58,9 @@ export function mapPanZoomProps(tree: PropReader): PanZoomProps {
         contentHeight: Math.max(0, num('config.contentHeight', 0)),
         minZoom,
         maxZoom,
-        zoomStep: Math.min(3, Math.max(1.05, num('config.zoomStep', 1.25))),
-        wheelZoom: tree.readBoolean('config.wheelZoom', true),
-        doubleClickZoom: tree.readBoolean('config.doubleClickZoom', true),
+        zoomStep: Math.min(3, Math.max(1.05, num('config.zoom.step', 1.25))),
+        wheelZoom: tree.readBoolean('config.zoom.wheel', true),
+        doubleClickZoom: tree.readBoolean('config.zoom.doubleClick', true),
         showControls: tree.readBoolean('config.showControls', true),
         locale: tree.readString('config.locale', ''),
         flyToMs: Math.min(5000, Math.max(0, num('config.flyToMs', 350))),

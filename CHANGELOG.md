@@ -21,10 +21,18 @@ the view rectangle now moves it from where it was grabbed instead of jumping
 its center to the pointer. POI dots show their name on hover and fly there
 on click. A double-click on the minimap no longer zooms the viewport.
 
-**Breaking:** the minimap settings are grouped under `config.minimap`, so
-`config.showMinimap` is now `config.minimap.show`. A view that set
-`showMinimap: false` shows the minimap again until it sets
-`minimap.show: false`.
+**Breaking:** the minimap and zoom settings are grouped into objects. A view
+that changed one of the old keys falls back to the default until it sets
+the new one.
+
+| Before | After |
+|---|---|
+| `config.showMinimap` | `config.minimap.show` |
+| `config.minZoom` | `config.zoom.min` |
+| `config.maxZoom` | `config.zoom.max` |
+| `config.zoomStep` | `config.zoom.step` |
+| `config.wheelZoom` | `config.zoom.wheel` |
+| `config.doubleClickZoom` | `config.zoom.doubleClick` |
 
 ### Changed: Data Grid number error shows the expected format
 A number cell typed in another locale's format, such as `4,5` with
