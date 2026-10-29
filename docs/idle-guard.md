@@ -18,11 +18,16 @@ These hold whatever the props say, and every change to the guard keeps them:
   prevents idling (fail open). No code path may show the overlay without a
   fresh feed.
 - **The input that wakes the page never reaches the page.** Wake listeners are
-  window capture-phase; the rest of the gesture is swallowed for `SWALLOW_MS`
-  while the overlay fades. If you touch this, run the e2e click and key tests
-  and check they still fail with swallowing disabled (mutation check: break
-  the two `if (this.shielding ...)` conditions in `IdleGuard.tsx`, set
-  `FADE_MS` to 0).
+  window capture-phase; the rest of the gesture (its key repeats, its release,
+  the trailing mouse, click and touch events) is swallowed until it is
+  released plus `SWALLOW_TAIL_MS`, capped at `SWALLOW_CAP_MS` (`idleLogic.ts`,
+  `PressTracker`). If you touch this, run the e2e click and key tests and
+  check they still fail with swallowing disabled (mutation check: make
+  `handleInput` in `IdleGuard.tsx` never cancel, i.e. `if (swallow &&
+  canCancel)` → `if (false)`, and set `FADE_MS` to 0).
+- **A held press never goes idle.** A pointer or key held down (a
+  hold-to-run jog button) keeps the page awake, and its release always reaches
+  the page: only a press the cover itself caught has its release swallowed.
 
 ## What is built
 
@@ -90,7 +95,8 @@ Browser (Perspective client)                       Gateway
   window and the drift path.
 - `guardProps.ts`: PropertyTree → typed props.
 - `guardDelegate.ts`: the store delegate; parses feed messages and stamps them
-  with the **browser's** clock (staleness never compares two clocks).
+  with the **browser's** monotonic clock (staleness never compares two clocks,
+  and a wall-clock step cannot keep a dead feed fresh).
 - `IdleGuard.tsx`: the component: lifecycle, input handling, the state
   machine, outputs, wake lock. It portals a `Cover` while idle.
 - `Cover.tsx`: what the cover shows, rendered from props: the mode (via
@@ -100,15 +106,28 @@ Browser (Perspective client)                       Gateway
 - `modes/`: the canvas modes. See [Idle modes and rendering](#idle-modes-and-rendering).
 
 **Input handling.** All listeners are on `window` in the capture phase, so
-they run before anything on the page. While the overlay is up, a pointer-down,
-touch-start, key-down or wheel wakes the page and is stopped
-(`preventDefault` + `stopImmediatePropagation`). The rest of that gesture
-(pointer/mouse up, click, touch-end, key-up, ...) is swallowed for 700 ms, and
-the overlay fades out over 300 ms while still catching input. Without this a
-release-acting control under the overlay (a jog button, `onMouseUp` scripts)
-would fire from the tap that woke the screen. Mouse movement wakes without
-being stopped. Wakes that are not input (alarm, stale feed, disabled) drop the
-overlay at once.
+they run before anything on the page. Passive listeners track every press
+and release for the whole session (`PressTracker` in `idleLogic.ts`, pure and
+jest-tested): anything held down keeps the page awake, and the idle timeout
+starts over from its release. The cancelling (non-passive) listeners are
+registered only while the overlay catches input or a waking gesture is still
+in progress, so the page never scrolls behind a blocking window listener.
+While the overlay is up, a pointer-down, touch-start, key-down or wheel wakes
+the page and is stopped (`preventDefault` + `stopImmediatePropagation`). The
+rest of that gesture (key repeats, pointer/mouse up, click, touch-end,
+key-up, ...) is swallowed until the waking pointer or key is released plus
+500 ms, at most 10 s after the press; the overlay fades out over 300 ms while
+still catching input. Without this a release-acting control under the
+overlay (a jog button, `onMouseUp` scripts) would fire from the tap that woke
+the screen. The release of a press that began before the cover is never
+swallowed. Window blur and a hidden tab forget what is held (the releases
+will not arrive). Mouse movement wakes without being stopped. Wakes that are
+not input (alarm, stale feed, disabled) drop the overlay at once.
+
+All idle and staleness timing runs on the monotonic clock
+(`performance.now()`); the wall clock is used only for the clock display, the
+night window and the epoch outputs, so an NTP step can neither stall the
+guard nor keep a dead feed "ok".
 
 **Alarm policy.** From the last feed message:
 

@@ -2,7 +2,8 @@ import { EN_GUARD_LABELS, guardLabelBase } from '../../shared/labels/guard';
 import {
     AlarmFeed, AlarmPolicy, countsText, CRITICAL, dimLevel, drift, evaluateAlarms, initialState, input, inWindow, isNight,
     NightConfig, normNightMode, normReduceMotion, wantsReducedMotion,
-    movedEnough, parseClock, parseFeed, priorityIndex, tick, timeoutMs, zeroCounts
+    movedEnough, parseClock, parseFeed, PressTracker, priorityIndex, SWALLOW_CAP_MS, SWALLOW_TAIL_MS, tick, timeoutMs,
+    zeroCounts
 } from '../guard/idleLogic';
 
 const POLICY: AlarmPolicy = { wakePriority: 3, pinPriority: 2, includeAcked: true, staleAfterMs: 8000 };
@@ -123,6 +124,37 @@ describe('idle state machine', () => {
         expect(r.state).toMatchObject({ phase: 'active', lastInput: 20_000, wakeCause: 'input' });
     });
 
+    it('never idles under a held press, and restarts the timeout from its release', () => {
+        let s = initialState(0);
+        // A finger rests on a hold-to-run button far past the timeout.
+        for (let now = 250; now <= 3 * T; now += 250) {
+            const r = tick(s, { now, enabled: true, timeoutMs: T, verdict: OK, held: true });
+            expect(r.transition).toBeNull();
+            s = r.state;
+        }
+        expect(s.lastInput).toBe(3 * T);
+        // Released: a full timeout from the release, not an instant idle.
+        expect(tick(s, { now: 4 * T - 1, enabled: true, timeoutMs: T, verdict: OK }).transition).toBeNull();
+        expect(tick(s, { now: 4 * T, enabled: true, timeoutMs: T, verdict: OK }).transition).toEqual({ type: 'idle' });
+    });
+
+    it('takes deltas on the monotonic clock and stamps outputs with the wall clock', () => {
+        // The wall clock steps back an hour: the monotonic delta still idles on time.
+        const s = initialState(1000, 1_700_000_000_000);
+        const r = tick(s, { now: 1000 + T, wall: 1_700_000_000_000 - 3_600_000, enabled: true, timeoutMs: T, verdict: OK });
+        expect(r.transition).toEqual({ type: 'idle' });
+        expect(r.state).toMatchObject({ idleSince: 1000 + T, idleSinceAt: 1_700_000_000_000 - 3_600_000, lastInputAt: 1_700_000_000_000 });
+        const w = input(r.state, 1000 + T + 500, 42);
+        expect(w.transition).toEqual({ type: 'wake', cause: 'input', idleForMs: 500 });
+        expect(w.state).toMatchObject({ lastInput: 1000 + T + 500, lastInputAt: 42, idleSince: 0, idleSinceAt: 0 });
+    });
+
+    it('treats a stale feed by the monotonic receive time', () => {
+        const f = feed({}, {}, 5000);
+        expect(evaluateAlarms(f, POLICY, 5000 + 8000).feedOk).toBe(true);
+        expect(evaluateAlarms(f, POLICY, 5000 + 8001).feedOk).toBe(false);
+    });
+
     it('never idles while an alarm at wake priority is active or the feed is stale', () => {
         const s = initialState(0);
         expect(tick(s, { now: 99 * T, enabled: true, timeoutMs: T, verdict: HIGH }).state.phase).toBe('active');
@@ -236,5 +268,60 @@ describe('countsText', () => {
         expect(countsText({ ...zeroCounts(), high: 2, medium: 1, low: 4 }, 2, EN_GUARD_LABELS)).toBe('2 High, 1 Medium');
         expect(countsText({ ...zeroCounts(), critical: 1 }, 0, guardLabelBase('nl-BE'))).toBe('1 Kritiek');
         expect(countsText(zeroCounts(), 0, EN_GUARD_LABELS)).toBe('');
+    });
+});
+
+describe('PressTracker', () => {
+    it('holds presses until their release; blur clears them', () => {
+        const t = new PressTracker();
+        expect(t.held).toBe(false);
+        t.press('p1', false, 0);
+        t.press('kKeyA', false, 0);
+        expect(t.held).toBe(true);
+        t.release('p1', 10);
+        expect(t.held).toBe(true);
+        t.clear();
+        expect(t.held).toBe(false);
+        t.press('p2', false, 0);
+        t.forget('p2');
+        expect(t.held).toBe(false);
+    });
+
+    it('never swallows the release of a press that began before the cover', () => {
+        const t = new PressTracker();
+        t.press('p1', false, 0);
+        expect(t.swallowing(100)).toBe(false);
+        expect(t.release('p1', 20_000)).toBe(false);
+        expect(t.swallowing(20_001)).toBe(false);
+    });
+
+    it('swallows a waking press held long, its repeats, its release and a short tail', () => {
+        const t = new PressTracker();
+        t.press('kEnter', true, 0);
+        // Auto-repeat keeps the first record.
+        t.press('kEnter', false, 30);
+        expect(t.isSwallowed('kEnter', 2000)).toBe(true);
+        expect(t.swallowing(2000)).toBe(true);
+        expect(t.release('kEnter', 2000)).toBe(true);
+        expect(t.swallowing(2000 + SWALLOW_TAIL_MS - 1)).toBe(true);
+        expect(t.swallowing(2000 + SWALLOW_TAIL_MS)).toBe(false);
+        expect(t.isSwallowed('kEnter', 2001)).toBe(false);
+    });
+
+    it('stops swallowing after the cap, released or not', () => {
+        const t = new PressTracker();
+        t.press('p7', true, 0);
+        expect(t.swallowing(SWALLOW_CAP_MS)).toBe(true);
+        expect(t.swallowing(SWALLOW_CAP_MS + 1)).toBe(false);
+        expect(t.held).toBe(true);
+        expect(t.release('p7', SWALLOW_CAP_MS + 1)).toBe(false);
+    });
+
+    it('gives a swallowed press without a release (wheel) a tail', () => {
+        const t = new PressTracker();
+        t.swallowedOnce(100);
+        expect(t.swallowing(100 + SWALLOW_TAIL_MS - 1)).toBe(true);
+        expect(t.swallowing(100 + SWALLOW_TAIL_MS)).toBe(false);
+        expect(t.held).toBe(false);
     });
 });

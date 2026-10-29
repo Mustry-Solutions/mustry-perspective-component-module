@@ -33,6 +33,9 @@ pixels above a threshold calibrated against its dark background). They do
       On a real touchscreen, tap a button under the screensaver about 20 times:
       it must only wake the page, never press the button. Include a
       release-acting control (the demo page's "Jog" control counts releases).
+- [ ] Hold the "Jog" control with a finger for longer than the timeout: the
+      page must not idle, and the release must count. Then wake the screen by
+      pressing and holding the Jog control for 2 s: the release must not count.
 
 ## Timing-dependent tests
 

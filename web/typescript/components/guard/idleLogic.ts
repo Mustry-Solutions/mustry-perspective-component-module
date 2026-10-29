@@ -48,7 +48,11 @@ export interface AlarmFeed {
     unacked: AlarmCounts;
     top: TopAlarm[];
     seq: number;
-    /** Browser clock (Date.now()) when it arrived. Staleness never uses the gateway's clock. */
+    /**
+     * Browser monotonic clock (performance.now()) when it arrived. Staleness never
+     * uses the gateway's clock, nor the browser's wall clock: a backward NTP step
+     * must not keep a dead feed "ok".
+     */
     receivedAt: number;
 }
 
@@ -146,12 +150,22 @@ export function evaluateAlarms(feed: AlarmFeed | null, policy: AlarmPolicy, now:
 export type Phase = 'active' | 'idle';
 export type WakeCause = 'input' | 'alarm' | 'feed-stale' | 'disabled';
 
+/**
+ * Times come in two clocks. `lastInput` and `idleSince` are monotonic
+ * (performance.now()): every delta is taken on them, so a wall-clock step (NTP,
+ * a user changing the time) can neither idle the page early nor keep it awake.
+ * The `...At` twins are wall-clock epoch ms (Date.now()), for the outputs only.
+ */
 export interface IdleState {
     phase: Phase;
-    /** Epoch ms of the last input (or of the last wake, which restarts the timer). */
+    /** Monotonic ms of the last input (or of the last wake, which restarts the timer). */
     lastInput: number;
-    /** Epoch ms the page went idle; 0 while active. */
+    /** Monotonic ms the page went idle; 0 while active. */
     idleSince: number;
+    /** Epoch ms of lastInput, for output.lastInput. */
+    lastInputAt: number;
+    /** Epoch ms of idleSince, for output.idleSince; 0 while active. */
+    idleSinceAt: number;
     wakeCause: WakeCause | '';
 }
 
@@ -162,20 +176,30 @@ export interface StepResult {
     transition: Transition;
 }
 
-export function initialState(now: number): IdleState {
-    return { phase: 'active', lastInput: now, idleSince: 0, wakeCause: '' };
+/** `now` is monotonic; `wall` (default: now) is the matching epoch time for the outputs. */
+export function initialState(now: number, wall = now): IdleState {
+    return { phase: 'active', lastInput: now, idleSince: 0, lastInputAt: wall, idleSinceAt: 0, wakeCause: '' };
 }
 
 export interface TickInput {
+    /** Monotonic ms (performance.now()). */
     now: number;
+    /** Epoch ms (Date.now()) at the same instant, for the outputs; defaults to now. */
+    wall?: number;
     enabled: boolean;
     timeoutMs: number;
     verdict: AlarmVerdict;
+    /**
+     * A pointer or key is held down. A held press is input in progress (a
+     * hold-to-run jog button, a finger resting on a slider): the page never goes
+     * idle underneath it, and the timeout starts over from its release.
+     */
+    held?: boolean;
 }
 
-function wake(state: IdleState, now: number, cause: WakeCause): StepResult {
+function wake(state: IdleState, now: number, wall: number, cause: WakeCause): StepResult {
     return {
-        state: { phase: 'active', lastInput: now, idleSince: 0, wakeCause: cause },
+        state: { phase: 'active', lastInput: now, idleSince: 0, lastInputAt: wall, idleSinceAt: 0, wakeCause: cause },
         transition: { type: 'wake', cause, idleForMs: Math.max(0, now - state.idleSince) }
     };
 }
@@ -183,34 +207,138 @@ function wake(state: IdleState, now: number, cause: WakeCause): StepResult {
 /** Time passes. Decides idle and every wake that is not user input. */
 export function tick(state: IdleState, input: TickInput): StepResult {
     const { now, enabled, timeoutMs, verdict } = input;
+    const wall = input.wall ?? now;
     if (!enabled) {
         if (state.phase === 'idle') {
-            return wake(state, now, 'disabled');
+            return wake(state, now, wall, 'disabled');
         }
         // Keep the timer at zero so re-enabling starts a full timeout.
-        return { state: { ...state, lastInput: now }, transition: null };
+        return { state: { ...state, lastInput: now, lastInputAt: wall }, transition: null };
     }
     if (state.phase === 'idle') {
         if (verdict.wake) {
-            return wake(state, now, 'alarm');
+            return wake(state, now, wall, 'alarm');
         }
         if (!verdict.feedOk) {
-            return wake(state, now, 'feed-stale');
+            return wake(state, now, wall, 'feed-stale');
         }
         return { state, transition: null };
     }
+    if (input.held) {
+        // Held = input still happening: keep the timer at zero until the release.
+        return now > state.lastInput
+            ? { state: { ...state, lastInput: now, lastInputAt: wall }, transition: null }
+            : { state, transition: null };
+    }
     if (now - state.lastInput >= timeoutMs && verdict.feedOk && !verdict.wake) {
-        return { state: { ...state, phase: 'idle', idleSince: now }, transition: { type: 'idle' } };
+        return { state: { ...state, phase: 'idle', idleSince: now, idleSinceAt: wall }, transition: { type: 'idle' } };
     }
     return { state, transition: null };
 }
 
-/** The user touched, typed, scrolled or moved the mouse. */
-export function input(state: IdleState, now: number): StepResult {
+/** The user touched, typed, scrolled or moved the mouse. `now` monotonic, `wall` epoch (default: now). */
+export function input(state: IdleState, now: number, wall = now): StepResult {
     if (state.phase === 'idle') {
-        return wake(state, now, 'input');
+        return wake(state, now, wall, 'input');
     }
-    return { state: { ...state, lastInput: Math.max(state.lastInput, now) }, transition: null };
+    if (now <= state.lastInput) {
+        return { state, transition: null };
+    }
+    return { state: { ...state, lastInput: now, lastInputAt: wall }, transition: null };
+}
+
+// --- presses in progress -------------------------------------------------------------
+
+/** After a swallowed gesture ends, its trailing events (mouseup, click, touchend, ...) are still swallowed this long. */
+export const SWALLOW_TAIL_MS = 500;
+/** A swallowed press stops being swallowed after this long, released or not: nothing stays swallowed forever. */
+export const SWALLOW_CAP_MS = 10_000;
+
+interface Press {
+    /** Monotonic ms of the press. */
+    at: number;
+    /** It woke the page (or came during the wake): its repeats, its release and the rest of its gesture never reach the page. */
+    swallowed: boolean;
+}
+
+/**
+ * The pointers and keys held down, and which of them belong to a waking
+ * gesture. The guard feeds it every press and release (ids are 'p<pointerId>'
+ * and 'k<code>'); all times are monotonic. DOM-free, so jest covers the rules:
+ *
+ * - anything held keeps the page awake (`held`, passed to tick);
+ * - a release is swallowed only when its press was (`release` returns that), so
+ *   a press that began before the cover keeps its release;
+ * - the rest of a swallowed gesture is swallowed until it is released plus
+ *   SWALLOW_TAIL_MS (`swallowing`), capped at SWALLOW_CAP_MS after the press.
+ */
+export class PressTracker {
+    private readonly presses = new Map<string, Press>();
+    private tailUntil = -Infinity;
+
+    /** A press began. A repeat of a held press (key auto-repeat) keeps its first record. */
+    press(id: string, swallowed: boolean, now: number): void {
+        if (!this.presses.has(id)) {
+            this.presses.set(id, { at: now, swallowed });
+        }
+        if (swallowed) {
+            // Its trailing events may come right away (a released tap's click): start the tail now too.
+            this.swallowedOnce(now);
+        }
+    }
+
+    /** A press ended. True when it was a swallowed one (within the cap): swallow the release too. */
+    release(id: string, now: number): boolean {
+        const p = this.presses.get(id);
+        if (!p) {
+            return false;
+        }
+        this.presses.delete(id);
+        if (!p.swallowed || now - p.at > SWALLOW_CAP_MS) {
+            return false;
+        }
+        this.tailUntil = Math.max(this.tailUntil, now + SWALLOW_TAIL_MS);
+        return true;
+    }
+
+    /** A swallowed event with no release to wait for (wheel, touchstart): swallow the tail after it. */
+    swallowedOnce(now: number): void {
+        this.tailUntil = Math.max(this.tailUntil, now + SWALLOW_TAIL_MS);
+    }
+
+    /** Is this held press a swallowed one (within the cap)? For key auto-repeat. */
+    isSwallowed(id: string, now: number): boolean {
+        const p = this.presses.get(id);
+        return !!p && p.swallowed && now - p.at <= SWALLOW_CAP_MS;
+    }
+
+    /** Is a waking gesture still in progress, so its trailing events must be swallowed? */
+    swallowing(now: number): boolean {
+        if (now < this.tailUntil) {
+            return true;
+        }
+        for (const p of this.presses.values()) {
+            if (p.swallowed && now - p.at <= SWALLOW_CAP_MS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Anything held down: the page must not go idle. */
+    get held(): boolean {
+        return this.presses.size > 0;
+    }
+
+    /** Forget one press without a release (a mouse seen moving with no button down). */
+    forget(id: string): void {
+        this.presses.delete(id);
+    }
+
+    /** Forget every press: the window lost focus or was hidden, so their releases will never arrive here. */
+    clear(): void {
+        this.presses.clear();
+    }
 }
 
 /** Clamp the bound timeout to at least 5 s; garbage falls back to 10 min. */

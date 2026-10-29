@@ -14,8 +14,8 @@ import { Cover } from './Cover';
 import { GuardDelegateState, GuardStoreDelegate } from './guardDelegate';
 import { GuardProps, mapGuardProps } from './guardProps';
 import {
-    AlarmPolicy, AlarmVerdict, evaluateAlarms, IdleState, initialState, input, movedEnough, Point, StepResult, tick,
-    timeoutMs, WakeCause, wantsReducedMotion
+    AlarmPolicy, AlarmVerdict, evaluateAlarms, IdleState, initialState, input, movedEnough, Point, PressTracker, StepResult,
+    tick, timeoutMs, WakeCause, wantsReducedMotion
 } from './idleLogic';
 import { modeToShow, Shown } from './modes/modeToShow';
 
@@ -24,8 +24,6 @@ export const COMPONENT_TYPE = 'mustrysolutions.perspective.screensaver.idleguard
 
 /** How often the state machine runs. Bounds how late an idle or an alarm wake can be. */
 const TICK_MS = 250;
-/** After a wake by touch, click or key, the rest of that gesture is swallowed this long. */
-const SWALLOW_MS = 700;
 /** The overlay fades out over this long after a wake (and still catches input meanwhile). */
 const FADE_MS = 300;
 /** output.lastInput is written at most this often: mouse moves must not flood the gateway. */
@@ -35,13 +33,28 @@ const RESUBSCRIBE_MS = 5000;
 /** How many alarms the gateway lists for the banner. */
 const BANNER_TOP = 3;
 
-/** Inputs that wake the page and, while the overlay is up, are kept from reaching the page. */
-const WAKE_EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
-/** The rest of a waking gesture: swallowed during the SWALLOW_MS window after a wake. */
-const SWALLOW_EVENTS = ['pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend', 'keyup', 'keypress'] as const;
+/**
+ * Presses and releases, tracked for the whole session by passive listeners:
+ * they wake the page, keep it awake while held, and tell a waking gesture's
+ * release from that of a press that began before the cover.
+ */
+const TRACK_EVENTS = ['pointerdown', 'pointerup', 'pointercancel', 'keydown', 'keyup', 'wheel', 'touchstart'] as const;
+/**
+ * Everything a waking gesture can produce. Listened to, non-passively, only
+ * while the overlay catches input or a waking gesture is still in progress, so
+ * the page scrolls without a blocking window listener the rest of the time.
+ */
+const SHIELD_EVENTS = [
+    ...TRACK_EVENTS, 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend', 'keypress'
+] as const;
 
-/** One guard per page covers it; any other instance stays inert. Holds the owner's token. */
-let owner: object | null = null;
+/** One guard per page covers it; any other instance stays inert. */
+let owner: IdleGuard | null = null;
+
+/** The monotonic clock every delta is taken on (a wall-clock step must not stall or rush the guard). */
+function mono(): number {
+    return performance.now();
+}
 
 interface GuardState {
     /** The overlay (or, in external mode, the dim layer) is mounted. */
@@ -76,6 +89,11 @@ function prefersReducedMotion(): boolean {
     return motionQuery !== null && motionQuery.matches;
 }
 
+/** A held key's id for the press tracker: the physical key, so auto-repeat and keyup match the keydown. */
+function keyId(e: KeyboardEvent): string {
+    return `k${e.code || e.key}`;
+}
+
 function policyOf(p: GuardProps): AlarmPolicy {
     return {
         wakePriority: p.alarm.wakePriority,
@@ -92,16 +110,16 @@ function policyOf(p: GuardProps): AlarmPolicy {
  */
 export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegateState>, GuardState> {
 
-    /** This guard's identity for the one-per-page claim. */
-    private readonly token = {};
-    private machine: IdleState = initialState(Date.now());
+    private machine: IdleState = initialState(mono(), Date.now());
     private host: HTMLDivElement | null = null;
     private timer: number | null = null;
     private fadeTimer: number | null = null;
     private live = false;
     /** Synchronous mirror of "the overlay is catching input" (setState is async). */
     private shielding = false;
-    private swallowUntil = 0;
+    /** The cancelling (non-passive) listeners are registered. */
+    private shieldListening = false;
+    private readonly presses = new PressTracker();
     private moveAnchor: Point | null = null;
     private written: Record<string, unknown> = {};
     private lastInputWritten = 0;
@@ -123,15 +141,20 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             // Inert: the Designer shows a chip; a second guard on the page does nothing.
             return;
         }
-        owner = this.token;
+        this.activate();
+    }
+
+    /** Become the page's guard: listen, subscribe, start the state machine. */
+    private activate(): void {
+        owner = this;
         this.live = true;
-        this.machine = initialState(Date.now());
+        this.machine = initialState(mono(), Date.now());
         this.host = document.createElement('div');
         this.host.className = 'mustry-idle-guard-host';
         document.body.appendChild(this.host);
-        WAKE_EVENTS.forEach((t) => window.addEventListener(t, this.onWakeInput, { capture: true, passive: false }));
-        SWALLOW_EVENTS.forEach((t) => window.addEventListener(t, this.onSwallow, { capture: true, passive: false }));
+        TRACK_EVENTS.forEach((t) => window.addEventListener(t, this.onTrack, { capture: true, passive: true }));
         window.addEventListener('pointermove', this.onPointerMove, { capture: true, passive: true });
+        window.addEventListener('blur', this.onBlur);
         document.addEventListener('visibilitychange', this.onVisibility);
         this.subscribe(true);
         this.timer = window.setInterval(this.onTick, TICK_MS);
@@ -151,7 +174,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             this.updateWakeLock();
         }
         if (p.config.mode !== prev.props.config.mode && this.machine.phase === 'idle') {
-            this.shielding = p.config.mode !== 'external';
+            this.setShielding(p.config.mode !== 'external');
             this.writeOutputs();
         }
     }
@@ -161,12 +184,10 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             return;
         }
         this.live = false;
-        if (owner === this.token) {
-            owner = null;
-        }
-        WAKE_EVENTS.forEach((t) => window.removeEventListener(t, this.onWakeInput, { capture: true }));
-        SWALLOW_EVENTS.forEach((t) => window.removeEventListener(t, this.onSwallow, { capture: true }));
+        TRACK_EVENTS.forEach((t) => window.removeEventListener(t, this.onTrack, { capture: true }));
+        this.setShieldListening(false);
         window.removeEventListener('pointermove', this.onPointerMove, { capture: true });
+        window.removeEventListener('blur', this.onBlur);
         document.removeEventListener('visibilitychange', this.onVisibility);
         if (this.timer !== null) {
             window.clearInterval(this.timer);
@@ -182,6 +203,9 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             this.host = null;
         }
         this.releaseWakeLock();
+        if (owner === this) {
+            owner = null;
+        }
     }
 
     // --- gateway feed -------------------------------------------------------------
@@ -192,34 +216,100 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
     }
 
     private subscribe(force: boolean): void {
-        this.lastResubscribe = Date.now();
+        this.lastResubscribe = mono();
         this.delegate()?.subscribeAlarms(this.props.props.alarm.sources, BANNER_TOP, force);
     }
 
     // --- input ----------------------------------------------------------------------
 
-    private onWakeInput = (e: Event): void => {
-        const now = Date.now();
-        if (this.shielding || now < this.swallowUntil) {
-            // The overlay is up (or a wake just happened): this input is for
-            // waking only and must never reach the page underneath.
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            if (this.shielding) {
-                this.swallowUntil = now + SWALLOW_MS;
-            }
+    /** Passive tracking, for the whole session. Stands aside while the shield listeners run. */
+    private onTrack = (e: Event): void => {
+        if (!this.shieldListening) {
+            this.handleInput(e, false);
         }
-        this.onInput(now);
     };
 
-    private onSwallow = (e: Event): void => {
-        if (Date.now() < this.swallowUntil || this.shielding) {
+    /** Non-passive, registered only while the overlay catches input or a waking gesture is in progress. */
+    private onShield = (e: Event): void => {
+        this.handleInput(e, true);
+    };
+
+    /**
+     * Every press, release and trailing event. While the overlay is up, a press
+     * wakes the page and is stopped, and so is the rest of its gesture: its key
+     * repeats, its release (only its own: a press that began before the cover
+     * keeps its release) and the trailing mouse, click and touch events, until it
+     * is released plus a short tail (PressTracker).
+     */
+    private handleInput(e: Event, canCancel: boolean): void {
+        const now = mono();
+        const t = this.presses;
+        let swallow: boolean;
+        switch (e.type) {
+            case 'pointerdown':
+                swallow = this.shielding || t.swallowing(now);
+                t.press(`p${(e as PointerEvent).pointerId}`, swallow, now);
+                this.onInput(now);
+                break;
+            case 'keydown': {
+                const id = keyId(e as KeyboardEvent);
+                // Auto-repeat of a held waking key falls under swallowing() until its keyup.
+                swallow = this.shielding || t.swallowing(now);
+                t.press(id, swallow, now);
+                this.onInput(now);
+                break;
+            }
+            case 'wheel':
+            case 'touchstart':
+                swallow = this.shielding || t.swallowing(now);
+                if (swallow) {
+                    t.swallowedOnce(now);
+                }
+                this.onInput(now);
+                break;
+            case 'pointerup':
+            case 'pointercancel':
+                swallow = t.release(`p${(e as PointerEvent).pointerId}`, now);
+                break;
+            case 'keyup':
+                swallow = t.release(keyId(e as KeyboardEvent), now);
+                break;
+            default:
+                // mousedown, mouseup, click, touchend, ...: carry no pointer id we can match.
+                swallow = this.shielding || t.swallowing(now);
+        }
+        if (swallow && canCancel) {
+            // This input is for waking only and must never reach the page underneath.
             e.preventDefault();
             e.stopImmediatePropagation();
         }
+    }
+
+    /** Register or drop the cancelling listeners. Called outside event dispatch (tick, mode change, wake). */
+    private setShieldListening(on: boolean): void {
+        if (on === this.shieldListening) {
+            return;
+        }
+        this.shieldListening = on;
+        SHIELD_EVENTS.forEach((type) => {
+            if (on) {
+                window.addEventListener(type, this.onShield, { capture: true, passive: false });
+            } else {
+                window.removeEventListener(type, this.onShield, { capture: true });
+            }
+        });
+    }
+
+    private onBlur = (): void => {
+        // Releases now go elsewhere (another window, an iframe): forget what is held.
+        this.presses.clear();
     };
 
     private onPointerMove = (e: PointerEvent): void => {
+        if (e.buttons === 0 && e.pointerType !== 'touch') {
+            // A mouse moving with no button down holds nothing (its release went to another window).
+            this.presses.forget(`p${e.pointerId}`);
+        }
         const cfg = this.props.props.config;
         if (!cfg.wakeOnMove || e.pointerType === 'touch') {
             return;
@@ -232,24 +322,27 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             return;
         }
         this.moveAnchor = { x: e.clientX, y: e.clientY };
-        this.onInput(Date.now());
+        this.onInput(mono());
     };
 
     private onVisibility = (): void => {
-        if (!document.hidden) {
-            this.onInput(Date.now());
+        if (document.hidden) {
+            this.presses.clear();
+        } else {
+            this.onInput(mono());
         }
         this.updateWakeLock();
     };
 
     private onInput(now: number): void {
-        this.apply(input(this.machine, now), now);
+        this.apply(input(this.machine, now, Date.now()), now);
     }
 
     // --- the state machine ---------------------------------------------------------
 
     private onTick = (): void => {
-        const now = Date.now();
+        const now = mono();
+        const wall = Date.now();
         const p = this.props.props;
         const feed = this.props.delegate ? this.props.delegate.feed : null;
         const verdict = evaluateAlarms(feed, policyOf(p), now);
@@ -258,14 +351,19 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
         }
         this.apply(tick(this.machine, {
             now,
+            wall,
             enabled: p.config.enabled,
             timeoutMs: timeoutMs(p.config.timeoutSec),
-            verdict
+            verdict,
+            held: this.presses.held
         }), now);
+        if (this.shieldListening && !this.shielding && !this.presses.swallowing(now)) {
+            this.setShieldListening(false);
+        }
         this.writeAlarmOutputs(verdict);
         if (this.machine.phase === 'idle') {
             // Night, shuffle and reduced motion change what is shown while idle.
-            this.write('output.mode', this.shown(now).mode);
+            this.write('output.mode', this.shown(wall).mode);
         }
         const prev = this.state.verdict;
         const verdictChanged = !prev || prev.pin !== verdict.pin || prev.highest !== verdict.highest
@@ -275,44 +373,55 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             this.bannerSeq = feed.seq;
         }
         // Re-render at most once a second for the clock and the drift, or at once on news.
-        if (verdictChanged || Math.floor(now / 1000) !== Math.floor(this.state.now / 1000)) {
-            this.setState({ verdict, now });
+        if (verdictChanged || Math.floor(wall / 1000) !== Math.floor(this.state.now / 1000)) {
+            this.setState({ verdict, now: wall });
         }
     };
 
+    /** `now` is monotonic; the wall-clock side comes from the machine's `...At` stamps. */
     private apply(result: StepResult, now: number): void {
         this.machine = result.state;
         const t = result.transition;
         if (t !== null && t.type === 'idle') {
+            const wall = this.machine.idleSinceAt;
             this.moveAnchor = null;
-            this.coverSince = now;
-            this.shielding = this.props.props.config.mode !== 'external';
+            this.coverSince = wall;
+            this.setShielding(this.props.props.config.mode !== 'external');
             if (this.fadeTimer !== null) {
                 window.clearTimeout(this.fadeTimer);
                 this.fadeTimer = null;
             }
-            this.setState({ covering: true, fading: false, now });
+            this.setState({ covering: true, fading: false, now: wall });
             this.writeOutputs();
             this.props.componentEvents.fireComponentEvent('onIdle', {
-                mode: this.shown(now).mode,
-                idleSince: this.machine.idleSince
+                mode: this.shown(wall).mode,
+                idleSince: wall
             });
         } else if (t !== null && t.type === 'wake') {
             this.endCover(t.cause);
             this.writeOutputs();
             this.props.componentEvents.fireComponentEvent('onWake', { cause: t.cause, idleForMs: t.idleForMs });
         }
-        if (now - this.lastInputWritten >= LAST_INPUT_WRITE_MS && this.written['output.lastInput'] !== this.machine.lastInput) {
+        if (now - this.lastInputWritten >= LAST_INPUT_WRITE_MS && this.written['output.lastInput'] !== this.machine.lastInputAt) {
             this.lastInputWritten = now;
-            this.write('output.lastInput', this.machine.lastInput);
+            this.write('output.lastInput', this.machine.lastInputAt);
         }
+    }
+
+    /** The overlay catches input (or stops); the cancelling listeners come up with it. */
+    private setShielding(on: boolean): void {
+        this.shielding = on;
+        if (on) {
+            this.setShieldListening(true);
+        }
+        // Dropping them waits for the tick: a waking gesture may still be in progress.
     }
 
     private endCover(cause: WakeCause): void {
         if (cause !== 'input') {
             // Nobody is touching the screen: drop the shield at once so the
             // alarm (or the page, when the feed died) is fully usable.
-            this.shielding = false;
+            this.setShielding(false);
             this.setState({ covering: false, fading: false });
             return;
         }
@@ -323,7 +432,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
         }
         this.fadeTimer = window.setTimeout(() => {
             this.fadeTimer = null;
-            this.shielding = false;
+            this.setShielding(false);
             if (this.machine.phase === 'active') {
                 this.setState({ covering: false, fading: false });
             }
@@ -344,11 +453,11 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
     private writeOutputs(): void {
         const m = this.machine;
         this.write('output.idle', m.phase === 'idle');
-        this.write('output.idleSince', m.idleSince);
+        this.write('output.idleSince', m.idleSinceAt);
         this.write('output.mode', m.phase === 'idle' ? this.shown(Date.now()).mode : '');
         this.write('output.wakeCause', m.wakeCause);
-        this.lastInputWritten = Date.now();
-        this.write('output.lastInput', m.lastInput);
+        this.lastInputWritten = mono();
+        this.write('output.lastInput', m.lastInputAt);
     }
 
     private writeAlarmOutputs(v: AlarmVerdict): void {

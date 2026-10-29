@@ -48,7 +48,8 @@ export class GuardStoreDelegate extends ComponentStoreDelegate {
         if (eventName !== GUARD_EVENTS.ALARMS) {
             return;
         }
-        const feed = parseFeed(eventObject, Date.now());
+        // Stamped on the monotonic clock: staleness must survive a wall-clock step.
+        const feed = parseFeed(eventObject, performance.now());
         if (feed !== null) {
             this.feed = feed;
             this.notify();

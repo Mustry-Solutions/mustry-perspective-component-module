@@ -115,10 +115,11 @@ bind-mounted into the gateway — Designer saves write back into the repo.
 - No feed, no cover: a stale or missing alarm feed removes the overlay and
   prevents idling (fail open). Never add a code path that shows the overlay
   without a fresh feed.
-- The input that wakes the page must never reach the page. If you touch the
-  input handling, run the e2e click and key tests AND check they still fail
-  with swallowing disabled (break the two `if (this.shielding ...)`
-  conditions, set `FADE_MS` to 0).
+- The input that wakes the page must never reach the page, and a held press
+  (a hold-to-run button) never goes idle and always gets its release. If you
+  touch the input handling, run the e2e click and key tests AND check they
+  still fail with swallowing disabled (make `handleInput` never cancel, set
+  `FADE_MS` to 0).
 - The gateway `AlarmFeed` polls only while a guard is subscribed; keep it that
   way, gateways without guards must pay nothing.
 - Never market or document the guard as an access control or a safety
