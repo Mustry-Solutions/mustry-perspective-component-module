@@ -23,7 +23,8 @@ on click. A double-click on the minimap no longer zooms the viewport.
 
 **Breaking:** the minimap and zoom settings are grouped into objects. A view
 that changed one of the old keys falls back to the default until it sets
-the new one.
+the new one. Delete the old keys from the view as well: `config` accepts no
+unknown keys, so the Designer flags any that are left as invalid.
 
 | Before | After |
 |---|---|
