@@ -1,5 +1,5 @@
 import { EN_GUARD_LABELS } from '../../shared/labels/guard';
-import { DEFAULT_LINES, mapGuardProps, normMode, PropReader } from '../guard/guardProps';
+import { DEFAULT_LINES, mapGuardProps, moveThreshold, normMode, PropReader } from '../guard/guardProps';
 
 /** A PropertyTree stand-in over a plain object, with 'a.b[0].c' paths. */
 function tree(obj: Record<string, unknown>): PropReader {
@@ -82,5 +82,21 @@ describe('mapGuardProps', () => {
     it('reads the shuffle list, keeping only canvas modes', () => {
         const p = mapGuardProps(tree({ modes: { shuffle: { modes: ['Lava', 'clock', 'nope', 'pong'], minutes: 2 } } }));
         expect(p.modes.shuffle).toEqual({ modes: ['lava', 'pong'], minutes: 2 });
+    });
+});
+
+describe('moveThreshold', () => {
+    it('keeps a sane threshold, clamps negatives and replaces NaN with the default', () => {
+        expect(moveThreshold(12)).toBe(12);
+        expect(moveThreshold(0)).toBe(0);
+        expect(moveThreshold(-5)).toBe(0);
+        expect(moveThreshold(NaN)).toBe(8);
+        expect(moveThreshold('abc')).toBe(8);
+        expect(moveThreshold(Infinity)).toBe(8);
+    });
+
+    it('is applied by mapGuardProps', () => {
+        expect(mapGuardProps(tree({ config: { moveThresholdPx: NaN } })).config.moveThresholdPx).toBe(8);
+        expect(mapGuardProps(tree({ config: { moveThresholdPx: -3 } })).config.moveThresholdPx).toBe(0);
     });
 });

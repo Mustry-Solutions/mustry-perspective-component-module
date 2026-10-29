@@ -128,6 +128,16 @@ function readLabels(tree: PropReader, locale: string): GuardLabels {
     return out;
 }
 
+/**
+ * The mouse jitter threshold in px: NaN or garbage takes the default 8 (NaN
+ * would make every distance check false, so movement would never wake),
+ * negatives clamp to 0.
+ */
+export function moveThreshold(value: unknown): number {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, n) : 8;
+}
+
 export function mapGuardProps(tree: PropReader): GuardProps {
     const wake = priorityIndex(tree.readString('alarm.wakePriority', 'High'), 3);
     const locale = tree.readString('config.locale', '');
@@ -137,7 +147,7 @@ export function mapGuardProps(tree: PropReader): GuardProps {
             timeoutSec: Number(tree.readNumber('config.timeoutSec', 600)),
             mode: normMode(tree.readString('config.mode', 'clock')),
             wakeOnMove: tree.readBoolean('config.wakeOnMove', true),
-            moveThresholdPx: Number(tree.readNumber('config.moveThresholdPx', 8)),
+            moveThresholdPx: moveThreshold(tree.readNumber('config.moveThresholdPx', 8)),
             wakeLock: tree.readBoolean('config.wakeLock', false),
             quality: normQuality(tree.readString('config.quality', 'auto')),
             reduceMotion: normReduceMotion(tree.readString('config.reduceMotion', 'auto')),
