@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import {
-    clearAlarms, expect, guardStatus, litShare, OVERLAY, openGuarded, test, tile, waitIdle, waitSettled, watchCovers, zoneWhereHourIs
+    clearAlarms, expect, guardStatus, litShare, OVERLAY, openGuarded, test, tile, waitIdle, waitSettled, watchCovers,
+    watchPageEvents, zoneWhereHourIs
 } from './guardHelpers';
 
 // The Idle Guard on the GuardDemo verify page (/guard/<mode>/<timeout>...).
@@ -134,26 +135,33 @@ test.describe('touch', () => {
     test.use({ hasTouch: true });
 
     // Chromium already drops a tap whose touch target (the overlay) went away,
-    // so this passes even without the guard's swallowing; it is here as a
-    // regression check. The mouse test above is the one that proves the
-    // swallowing (verified by mutation: it fails with swallowing disabled).
+    // so the controls under it never see the waking tap even without the
+    // guard's swallowing. Page listeners on the document do: with swallowing
+    // disabled every event of the tap, touchstart through click, reaches them,
+    // so this checks they see none. Verified by mutation (handleInput never
+    // cancels, FADE_MS 0): the document counts went from {} to 1 of each.
 
     test('a waking tap never reaches the page underneath', async ({ page }) => {
         await openGuarded(page, 'starfield', 5);
         const jog = await page.locator('#jog').boundingBox();
         const pump = await page.getByRole('button', { name: 'Start pump' }).boundingBox();
+
         await waitIdle(page);
+        let pageEvents = await watchPageEvents(page);
         await page.touchscreen.tap(jog!.x + jog!.width / 2, jog!.y + jog!.height / 2);
         await expect(page.locator(OVERLAY)).toHaveCount(0);
         await page.waitForTimeout(1000);
         await expect(page.locator('#jog-count')).toHaveText('releases: 0');
+        expect(await pageEvents()).toEqual({});
 
         // Idle again, then tap the button itself.
         await waitIdle(page);
+        pageEvents = await watchPageEvents(page);
         await page.touchscreen.tap(pump!.x + pump!.width / 2, pump!.y + pump!.height / 2);
         await expect(page.locator(OVERLAY)).toHaveCount(0);
         await page.waitForTimeout(1000);
         await expect(tile(page, 'presses')).toHaveText('0');
+        expect(await pageEvents()).toEqual({});
     });
 });
 

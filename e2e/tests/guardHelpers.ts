@@ -93,6 +93,31 @@ export async function watchCovers(page: Page): Promise<() => Promise<number>> {
     return () => page.evaluate(() => (window as unknown as { __guardCovers: number }).__guardCovers);
 }
 
+/** The input events a page's own document listeners could see from a waking gesture. */
+const PAGE_EVENTS = ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click'];
+
+/**
+ * Count the PAGE_EVENTS that reach a capture listener on the document, from
+ * now on (calling it again restarts the count). The guard listens on the
+ * window in the capture phase, before the document, so an input it swallows
+ * never shows up here. Returns a reader: event type -> count, {} when none.
+ */
+export async function watchPageEvents(page: Page): Promise<() => Promise<Record<string, number>>> {
+    await page.evaluate((types) => {
+        const w = window as unknown as { __pageEvents: Record<string, number>; __pageEventsOn?: boolean };
+        w.__pageEvents = {};
+        if (!w.__pageEventsOn) {
+            w.__pageEventsOn = true;
+            for (const type of types) {
+                document.addEventListener(type, () => {
+                    w.__pageEvents[type] = (w.__pageEvents[type] ?? 0) + 1;
+                }, true);
+            }
+        }
+    }, PAGE_EVENTS);
+    return () => page.evaluate(() => (window as unknown as { __pageEvents: Record<string, number> }).__pageEvents);
+}
+
 /** Clear every demo alarm (a button click: it is input, so call it before waiting for idle). */
 export async function clearAlarms(page: Page): Promise<void> {
     await page.getByRole('button', { name: 'Clear all alarms' }).click();
