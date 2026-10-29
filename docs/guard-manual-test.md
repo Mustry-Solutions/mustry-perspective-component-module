@@ -56,7 +56,7 @@ pixels above a threshold calibrated against its dark background). They do
       acts), a guard in a shared dock across page navigation, a session that
       reconnects (the feed resubscribes).
 - [ ] **Real alarm sources**: OPC/device tags with alarms, shelved alarms
-      (excluded, except a shelved Critical, which still wakes), `alarm.sources` patterns against real display paths.
+      (excluded, except a shelved Critical, which still wakes), `config.alarm.sources` patterns against real display paths.
 - [ ] **No guard, no load**: on a gateway whose projects use no Idle Guard,
       the `mustry-idle-guard-alarm-feed` thread does not exist (Status →
       Threads); it appears with the first guard and goes away after the last

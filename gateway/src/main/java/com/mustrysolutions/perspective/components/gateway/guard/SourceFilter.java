@@ -8,7 +8,7 @@ import com.inductiveautomation.ignition.common.gson.JsonPrimitive;
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
 
 /**
- * The guard's {@code alarm.sources}: glob patterns matched against an alarm's
+ * The guard's {@code config.alarm.sources}: glob patterns matched against an alarm's
  * display path and its source path, case-insensitively. {@code *} matches any
  * run of characters (slashes included); everything else is literal. No
  * patterns means every alarm counts.
@@ -67,7 +67,7 @@ public final class SourceFilter {
 
     /**
      * The patterns in a property value as the gateway's PropertyTree reads
-     * {@code alarm.sources}: an array node reads as a {@code QualifiedValue[]};
+     * {@code config.alarm.sources}: an array node reads as a {@code QualifiedValue[]};
      * plain arrays, collections and a single string are accepted too. Anything
      * that is not a string is skipped.
      */

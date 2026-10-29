@@ -189,7 +189,7 @@ test.describe('fail open', () => {
         await openGuarded(page, 'starfield', 5);
         await waitIdle(page);
         blockFeed = true;
-        // alarm.staleAfterSec defaults to 8.
+        // config.alarm.staleAfterSec defaults to 8.
         await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 12_000 });
         await expect(guardStatus(page)).toContainText('last wake: feed-stale');
         await page.waitForTimeout(7_000);

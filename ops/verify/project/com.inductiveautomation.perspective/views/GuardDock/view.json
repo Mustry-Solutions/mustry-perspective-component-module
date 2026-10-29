@@ -87,46 +87,48 @@
         "props": {
           "config": {
             "timeoutSec": 600,
-            "mode": "pipes"
+            "mode": "pipes",
+            "modes": {
+              "clock": {
+                "title": "Packaging hall · shift B"
+              },
+              "shuffle": {
+                "modes": [
+                  "lava",
+                  "ducks"
+                ],
+                "minutes": 0.5
+              }
+            }
           },
-          "lines": [
-            {
-              "label": "Line 1",
-              "state": "running",
-              "flow": 0.8
-            },
-            {
-              "label": "Line 2",
-              "state": "running",
-              "flow": 0.5
-            },
-            {
-              "label": "CIP",
-              "state": "idle",
-              "flow": 0.2
-            },
-            {
-              "label": "Utilities",
-              "state": "warning",
-              "flow": 0.6
-            },
-            {
-              "label": "Palletiser",
-              "state": "running",
-              "flow": 1.1
-            }
-          ],
-          "modes": {
-            "clock": {
-              "title": "Packaging hall · shift B"
-            },
-            "shuffle": {
-              "modes": [
-                "lava",
-                "ducks"
-              ],
-              "minutes": 0.5
-            }
+          "data": {
+            "lines": [
+              {
+                "label": "Line 1",
+                "state": "running",
+                "flow": 0.8
+              },
+              {
+                "label": "Line 2",
+                "state": "running",
+                "flow": 0.5
+              },
+              {
+                "label": "CIP",
+                "state": "idle",
+                "flow": 0.2
+              },
+              {
+                "label": "Utilities",
+                "state": "warning",
+                "flow": 0.6
+              },
+              {
+                "label": "Palletiser",
+                "state": "running",
+                "flow": 1.1
+              }
+            ]
           }
         },
         "propConfig": {
@@ -146,7 +148,7 @@
               }
             }
           },
-          "props.alarm.wakePriority": {
+          "props.config.alarm.wakePriority": {
             "binding": {
               "type": "expr",
               "config": {
@@ -162,7 +164,7 @@
               }
             }
           },
-          "props.modes.starfield.speed": {
+          "props.config.modes.starfield.speed": {
             "binding": {
               "type": "expr",
               "config": {
@@ -170,7 +172,7 @@
               }
             }
           },
-          "props.modes.starfield.caption": {
+          "props.config.modes.starfield.caption": {
             "binding": {
               "type": "expr",
               "config": {
@@ -178,7 +180,7 @@
               }
             }
           },
-          "props.lines[0].state": {
+          "props.data.lines[0].state": {
             "binding": {
               "type": "expr",
               "config": {
@@ -186,7 +188,7 @@
               }
             }
           },
-          "props.lines[0].flow": {
+          "props.data.lines[0].flow": {
             "binding": {
               "type": "expr",
               "config": {

@@ -14,7 +14,7 @@ These hold whatever the props say, and every change to the guard keeps them:
 
 - **An active Critical alarm is never covered.** `evaluateAlarms` clamps the
   wake priority to Critical, and the gateway counts every active Critical
-  alarm, whatever `alarm.sources` says and shelved or not; tested in jest,
+  alarm, whatever `config.alarm.sources` says and shelved or not; tested in jest,
   JUnit and e2e.
 - **No feed, no cover.** A stale or missing alarm feed removes the overlay and
   prevents idling (fail open). No code path may show the overlay without a
@@ -150,13 +150,13 @@ guard nor keep a dead feed "ok".
 
 **Alarm policy.** From the last feed message:
 
-- `feedOk`: a message arrived within `alarm.staleAfterSec`. Without it the
+- `feedOk`: a message arrived within `config.alarm.staleAfterSec`. Without it the
   guard never covers the page and removes a cover that is up (fail open). It
   also re-sends its subscription every 5 s, which recovers a session that
   reconnected and lost its gateway delegate.
-- `wake`: an active alarm at or above `alarm.wakePriority` (clamped so Critical
+- `wake`: an active alarm at or above `config.alarm.wakePriority` (clamped so Critical
   always qualifies). Wakes the page and blocks idling while active. Acked
-  alarms count unless `alarm.includeAcked` is off, except Critical, which
+  alarms count unless `config.alarm.includeAcked` is off, except Critical, which
   always counts.
 - `pin`: between `pinPriority` and `wakePriority`: a banner over the idle mode,
   and the night dimming lifts.
@@ -167,7 +167,7 @@ owner unmounts. Put it in a shared dock so it survives navigation.
 
 **Reused component stores** (see Doom's SDK notes): the guard acts only after
 `timeoutSec` (minimum 5 s), so props from a previous view are long replaced by
-then; subscriptions are re-sent whenever `alarm.sources` changes.
+then; subscriptions are re-sent whenever `config.alarm.sources` changes.
 
 ### Idle modes and rendering
 
@@ -188,7 +188,7 @@ between the two). It carries `data-renderer` (`webgl2` or `2d`).
   and flanges, a floor grid and fog, from a camera orbiting every 150 s.
   Segments grow smoothly. Bright pulses travel along each pipe at its flow
   (`dist` along the run, a per-line phase); fault pipes throb. The scene fades
-  out and restarts at 30 % fill or `modes.pipes.resetAfterSec`.
+  out and restarts at 30 % fill or `config.modes.pipes.resetAfterSec`.
 - **Aurora** (`gl/aurora.ts`): one fullscreen shader. One curtain per line (up
   to six), coloured by state, folding with its flow; ridged-noise mountains;
   the lake is the sky evaluated again, mirrored and rippled.
@@ -196,7 +196,7 @@ between the two). It carries `data-renderer` (`webgl2` or `2d`).
   its flow, dial ticks, a clock in the middle. Ring radii and label angle come
   from `haloLayout.ts`, shared with the DOM labels; both drift together.
 - **Starfield** (`gl/starfieldGL.ts`): instanced streaks, colour by
-  temperature, length by speed, over a fbm nebula; tinted by `modes.starfield.color`.
+  temperature, length by speed, over a fbm nebula; tinted by `config.modes.starfield.color`.
 
 - **Synthwave**, **Lava**, **Tunnel** (`gl/showpieces.ts`, one fragment
   shader each on `gl/shaderMode.ts`): a retro sunset over a racing neon grid;
@@ -206,17 +206,17 @@ between the two). It carries `data-renderer` (`webgl2` or `2d`).
   of gradient noise (value noise leaves seams), moved by transform feedback so
   no float textures are needed, painted into a ping-pong trail buffer that
   fades each frame.
-- **Bounce** (`fun/bounce*.ts`): the bouncing badge (`modes.bounce.text`),
+- **Bounce** (`fun/bounce*.ts`): the bouncing badge (`config.modes.bounce.text`),
   a new colour per bounce, confetti and "CORNER!" when it hits one exactly,
   and a dim scoreboard of bounces and time since the last corner.
-- **Pong** (`fun/pong*.ts`): two AIs (`modes.pong.left` / `right`, by default
+- **Pong** (`fun/pong*.ts`): two AIs (`config.modes.pong.left` / `right`, by default
   the locale's day shift vs night shift) that aim for the predicted crossing with a per-rally
   error, sometimes big enough to miss; first to 11; CRT scanlines; the field
   drifts.
 - **Ducks** (`fun/ducks*.ts`): rubber ducks in hard hats and hi-vis vests on a
   pool, one of them now and then saying something sensible.
-- **Shuffle** (`shuffle.ts`): a new mode every `modes.shuffle.minutes`
-  (minimum 0.5) from `modes.shuffle.modes` (empty = all), in an order shuffled
+- **Shuffle** (`shuffle.ts`): a new mode every `config.modes.shuffle.minutes`
+  (minimum 0.5) from `config.modes.shuffle.modes` (empty = all), in an order shuffled
   per idle session and cycled, so a mode never follows itself.
 
 The GL modes render into an HDR target (MSAA when allowed), then bloom, ACES tone
@@ -244,7 +244,7 @@ in order:
 
 1. `external` stays external: the project draws. `blank` stays blank: the
    night window never lights a dark screen up.
-2. **Night window** (`burnIn.night`, on by default, 22:00-06:00 browser local
+2. **Night window** (`config.burnIn.night`, on by default, 22:00-06:00 browser local
    time): `clock` (default, dimmed to `level`) or `blank` replaces any other
    mode; `dim` keeps the mode and dims it to `level`. Alarms behave as always: a wake alarm wakes, a
    pinned one shows its banner and lifts the dimming.
@@ -281,12 +281,12 @@ The animated modes are opt-in.
   alarms are never filtered: every active one counts. One outside the
   guard's patterns, or shelved, is a count only, never listed, so its label
   and path stay on the gateway.
-- `SourceFilter`: `alarm.sources` globs (`*` only), case-insensitive, against
+- `SourceFilter`: `config.alarm.sources` globs (`*` only), case-insensitive, against
   the display path or the source path. Matched by an iterative glob matcher,
   not a regex, so no pattern can stall the shared poll thread; at most 32
   patterns of up to 256 characters (longer ones match nothing).
 - `GuardModelDelegate`: subscribes on `screensaver-subscribe`, unsubscribes on
-  shutdown. The message is only a trigger: the delegate reads `alarm.sources`
+  shutdown. The message is only a trigger: the delegate reads `config.alarm.sources`
   from the component's props in the gateway's property tree and lists
   `DEFAULT_TOP` (3) alarms; nothing in the message is used.
 
@@ -297,21 +297,21 @@ both.
 
 Every session that has an Idle Guard receives, every couple of seconds, the
 active alarm counts and the top three alarms (label and display path) that
-match its `alarm.sources`, plus the number of active Critical alarms outside
+match its `config.alarm.sources`, plus the number of active Critical alarms outside
 them (a count only: no label, no path). There is **no permission check**: it goes to the
 session whoever is logged in, or nobody. That is what any Alarm Status Table
 in a view does too, but the guard sits in a shared dock on every page, so it
 is easy to forget.
 
-- On a lobby, canteen or other public screen, set `alarm.sources` to the
+- On a lobby, canteen or other public screen, set `config.alarm.sources` to the
   alarms that screen may show. A pattern that matches nothing hides every
   alarm below Critical from it; Critical alarms still wake it.
 - The counts and labels never leave the gateway for a session without a
   guard. The delegate takes nothing from the browser's subscribe message: it
-  reads `alarm.sources` from the component's props on the gateway, so a
+  reads `config.alarm.sources` from the component's props on the gateway, so a
   crafted message cannot widen what a screen receives.
 - Perspective lets a session write its own component props unless the
-  property is restricted. On a screen where `alarm.sources` matters, set that
+  property is restricted. On a screen where `config.alarm.sources` matters, set that
   property's access to **Protected** in the Designer's property editor, so
   the browser cannot rewrite it either.
 
@@ -320,6 +320,9 @@ is easy to forget.
 
 The full schema with descriptions is
 [`idleguard.props.json`](../common/src/main/resources/idleguard.props.json).
+The sections follow the module's convention: `config` (set-and-forget,
+including `config.alarm`, `config.burnIn` and `config.modes`), `data`
+(bound content: `data.lines`) and `output` (written by the guard).
 
 | Prop | Default | |
 |---|---|---|
@@ -332,21 +335,21 @@ The full schema with descriptions is
 | `config.labels.*` | | Per-key overrides: `wakeHint`, `activeAlarm`, `activeAlarms` (`{n}`), `line` (`{n}`), priority names |
 | `config.wakeOnMove` / `moveThresholdPx` | true / 8 | Mouse movement counts beyond the threshold |
 | `config.wakeLock` | false | Screen Wake Lock; HTTPS only |
-| `alarm.wakePriority` | High | Critical always wakes |
-| `alarm.pinPriority` | Medium | Banner between pin and wake |
-| `alarm.includeAcked` | true | |
-| `alarm.sources` | [] | Glob patterns; empty = all alarms |
-| `alarm.staleAfterSec` | 8 | Fail open after this much feed silence (min 3) |
-| `burnIn.drift` | true | Text wanders on a 7/11-minute Lissajous path |
-| `burnIn.night` | on, 22:00–06:00, clock, 0.4 | While idle inside the window: `mode` clock (dimmed to `level`), dim (the configured mode, to `level`) or blank |
-| `lines` | demo set | `[{label, state, flow, color}]`, max 12: one pipe, curtain (max 6) or ring each. state: running, idle, warning, fault, off |
-| `modes.legend` | true | Line legend over pipes and aurora |
-| `modes.clock` | | `title` (also shown in halo), `showSeconds` |
-| `modes.starfield` | | `speed` (bind a line rate), `color`, `density`, `caption` |
-| `modes.pipes` | | `resetAfterSec` (120), `orbit` (true) |
-| `modes.bounce` | | `text` (unset: the locale pack's "IDLE") |
-| `modes.pong` | | `left`, `right` (unset: the locale pack's "DAY SHIFT", "NIGHT SHIFT") |
-| `modes.shuffle` | | `modes` ([] = all animated), `minutes` (5, min 0.5) |
+| `config.alarm.wakePriority` | High | Critical always wakes |
+| `config.alarm.pinPriority` | Medium | Banner between pin and wake |
+| `config.alarm.includeAcked` | true | |
+| `config.alarm.sources` | [] | Glob patterns; empty = all alarms |
+| `config.alarm.staleAfterSec` | 8 | Fail open after this much feed silence (min 3) |
+| `config.burnIn.drift` | true | Text wanders on a 7/11-minute Lissajous path |
+| `config.burnIn.night` | on, 22:00–06:00, clock, 0.4 | While idle inside the window: `mode` clock (dimmed to `level`), dim (the configured mode, to `level`) or blank |
+| `data.lines` | demo set | `[{label, state, flow, color}]`, max 12: one pipe, curtain (max 6) or ring each. state: running, idle, warning, fault, off |
+| `config.modes.legend` | true | Line legend over pipes and aurora |
+| `config.modes.clock` | | `title` (also shown in halo), `showSeconds` |
+| `config.modes.starfield` | | `speed` (bind a line rate), `color`, `density`, `caption` |
+| `config.modes.pipes` | | `resetAfterSec` (120), `orbit` (true) |
+| `config.modes.bounce` | | `text` (unset: the locale pack's "IDLE") |
+| `config.modes.pong` | | `left`, `right` (unset: the locale pack's "DAY SHIFT", "NIGHT SHIFT") |
+| `config.modes.shuffle` | | `modes` ([] = all animated), `minutes` (5, min 0.5) |
 
 Events: `onIdle {mode, idleSince}`, `onWake {cause, idleForMs}` with cause
 `input`, `alarm`, `feed-stale` or `disabled`.

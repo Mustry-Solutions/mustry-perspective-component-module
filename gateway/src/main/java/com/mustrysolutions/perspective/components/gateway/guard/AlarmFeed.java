@@ -24,7 +24,7 @@ import com.inductiveautomation.ignition.gateway.alarming.AlarmManager;
  * the active alarms once, then gives each subscribed guard its own filtered
  * summary: at once when it changed, otherwise as a heartbeat. The heartbeat is
  * what lets the browser fail open: a guard that hears nothing for
- * {@code alarm.staleAfterSec} removes its idle mode.
+ * {@code config.alarm.staleAfterSec} removes its idle mode.
  *
  * <p>One query per tick, whatever the number of displays, is the reason this
  * polls instead of registering an {@code AlarmListener} per guard.

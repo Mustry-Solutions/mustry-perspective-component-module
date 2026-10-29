@@ -111,31 +111,36 @@ def guard_dock():
         "meta": {"name": "IdleGuard"},
         "position": {"basis": "220px", "shrink": 0},
         "props": {
-            "config": {"timeoutSec": 600, "mode": "pipes"},
-            "lines": [
-                {"label": "Line 1", "state": "running", "flow": 0.8},
-                {"label": "Line 2", "state": "running", "flow": 0.5},
-                {"label": "CIP", "state": "idle", "flow": 0.2},
-                {"label": "Utilities", "state": "warning", "flow": 0.6},
-                {"label": "Palletiser", "state": "running", "flow": 1.1},
-            ],
-            "modes": {
-                "clock": {"title": "Packaging hall · shift B"},
-                # Shuffle alternates a GL and a 2D mode at the minimum period, so the e2e suite
-                # sees both canvas swaps (GL -> 2D and back) within a minute.
-                "shuffle": {"modes": ["lava", "ducks"], "minutes": 0.5},
+            "config": {
+                "timeoutSec": 600,
+                "mode": "pipes",
+                "modes": {
+                    "clock": {"title": "Packaging hall · shift B"},
+                    # Shuffle alternates a GL and a 2D mode at the minimum period, so the e2e suite
+                    # sees both canvas swaps (GL -> 2D and back) within a minute.
+                    "shuffle": {"modes": ["lava", "ducks"], "minutes": 0.5},
+                },
+            },
+            "data": {
+                "lines": [
+                    {"label": "Line 1", "state": "running", "flow": 0.8},
+                    {"label": "Line 2", "state": "running", "flow": 0.5},
+                    {"label": "CIP", "state": "idle", "flow": 0.2},
+                    {"label": "Utilities", "state": "warning", "flow": 0.6},
+                    {"label": "Palletiser", "state": "running", "flow": 1.1},
+                ],
             },
         },
         "propConfig": {
             # Strings from the URL; toInt keeps the number a number.
             "props.config.timeoutSec": expr("toInt(try({session.custom.guard.timeout}, 600), 600)"),
             "props.config.mode": expr("try({session.custom.guard.mode}, 'pipes')"),
-            "props.alarm.wakePriority": expr("try({session.custom.guard.wake}, 'High')"),
+            "props.config.alarm.wakePriority": expr("try({session.custom.guard.wake}, 'High')"),
             "props.config.quality": expr("try({session.custom.guard.quality}, 'auto')"),
-            "props.modes.starfield.speed": expr("try(tag('[default]Screensaver/LineRate'), 40) / 40.0"),
-            "props.modes.starfield.caption": expr("'Line 1 · ' + numberFormat(try(tag('[default]Screensaver/LineRate'), 0), '0') + ' units/min'"),
-            "props.lines[0].state": expr("try(tag('[default]Screensaver/Line1State'), 'running')"),
-            "props.lines[0].flow": expr("try(tag('[default]Screensaver/LineRate'), 40) / 50.0"),
+            "props.config.modes.starfield.speed": expr("try(tag('[default]Screensaver/LineRate'), 40) / 40.0"),
+            "props.config.modes.starfield.caption": expr("'Line 1 · ' + numberFormat(try(tag('[default]Screensaver/LineRate'), 0), '0') + ' units/min'"),
+            "props.data.lines[0].state": expr("try(tag('[default]Screensaver/Line1State'), 'running')"),
+            "props.data.lines[0].flow": expr("try(tag('[default]Screensaver/LineRate'), 40) / 50.0"),
         },
         "events": {
             "component": {

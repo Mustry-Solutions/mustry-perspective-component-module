@@ -17,7 +17,7 @@ import com.inductiveautomation.perspective.gateway.property.PropertyTree;
  * {@code screensaver-alarms} to it until the component goes away.
  *
  * <p>The subscribe message is only a trigger: its content is ignored. The
- * source patterns come from the component's own {@code alarm.sources} in the
+ * source patterns come from the component's own {@code config.alarm.sources} in the
  * gateway's property tree, and the banner length is {@link #DEFAULT_TOP}, so
  * a user on a lobby screen cannot widen what that screen receives by sending
  * a crafted message.
@@ -28,7 +28,7 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
     static final String EVT_ALARMS = "screensaver-alarms";
 
     /** The props path of the source patterns. */
-    static final String SOURCES_PATH = "alarm.sources";
+    static final String SOURCES_PATH = "config.alarm.sources";
 
     /** How many alarms the banner lists. */
     static final int DEFAULT_TOP = 3;
@@ -79,7 +79,7 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
         feed.pushNow(this);
     }
 
-    /** {@code alarm.sources} as the gateway holds it; empty (every alarm) when unset or unreadable. */
+    /** {@code config.alarm.sources} as the gateway holds it; empty (every alarm) when unset or unreadable. */
     private List<String> configuredSources() {
         PropertyTree props = component.getPropertyTreeOf(PropertyType.props);
         if (props == null) {

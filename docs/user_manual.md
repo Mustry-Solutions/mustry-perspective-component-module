@@ -310,19 +310,19 @@ navigation; it is invisible in sessions and shows as a chip in the Designer.
 - After `config.timeoutSec` without input (pointer beyond a small jitter
   threshold, touch, key, wheel), the page shows the idle mode in
   `config.mode`: the clock by default, or an animated mode (pipes, aurora,
-  halo and starfield follow the `lines[]` you bind to tags; synthwave, lava,
+  halo and starfield follow the `data.lines[]` you bind to tags; synthwave, lava,
   tunnel, flow, bounce, pong and ducks are for screens that just need to look
   good; shuffle rotates through them).
 - Any touch, key or mouse movement wakes the page; the tap that wakes it never
   presses the button underneath.
-- An alarm at or above `alarm.wakePriority` wakes it and keeps it awake; lower
-  ones down to `alarm.pinPriority` show a banner. **An active Critical alarm is
+- An alarm at or above `config.alarm.wakePriority` wakes it and keeps it awake; lower
+  ones down to `config.alarm.pinPriority` show a banner. **An active Critical alarm is
   never covered.** If the guard loses contact with the gateway, it removes
   itself.
-- At night (`burnIn.night`, 22:00–06:00) an idle screen shows a dimmed clock.
+- At night (`config.burnIn.night`, 22:00–06:00) an idle screen shows a dimmed clock.
 - `output.idle`, `output.mode` and the `onIdle` / `onWake` events let the
   project react.
-- On a public or lobby screen set `alarm.sources`: every session with a guard
+- On a public or lobby screen set `config.alarm.sources`: every session with a guard
   receives the labels of the matching alarms, whoever is logged in.
 
 The guard is a browser overlay, **not an access control or a safety

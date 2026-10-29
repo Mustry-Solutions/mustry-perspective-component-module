@@ -512,14 +512,14 @@ Perspective has no `system.util.getInactivitySeconds()` or lock screen like Visi
 ### Features
 
 - **Idle detection in the browser** — pointer (with a jitter threshold), touch, keys, wheel and tab visibility. `output.idle`, `output.idleSince`, `output.mode`, `output.wakeCause` and the `onIdle` / `onWake` events make the state bindable and scriptable; timeout and mode are props, so they can differ per page, role or display.
-- **Alarm-aware** — the gateway pushes the active alarm counts to every guard. An alarm at or above `alarm.wakePriority` wakes the screen and keeps it awake; lower ones down to `alarm.pinPriority` pin a banner over the idle mode. **An active Critical alarm is never covered.** If the guard stops hearing the gateway it removes itself (fail open). The gateway polls the alarm status only while at least one guard is on screen, so projects that don't use the guard pay nothing for it.
+- **Alarm-aware** — the gateway pushes the active alarm counts to every guard. An alarm at or above `config.alarm.wakePriority` wakes the screen and keeps it awake; lower ones down to `config.alarm.pinPriority` pin a banner over the idle mode. **An active Critical alarm is never covered.** If the guard stops hearing the gateway it removes itself (fail open). The gateway polls the alarm status only while at least one guard is on screen, so projects that don't use the guard pay nothing for it.
 - **Idle modes** (`config.mode`):
-  - *Driven by your lines* (`lines[]`, state and flow bound to tags): **pipes** (glossy 3D pipes with light pulses at each line's flow, a faulted line glows red), **aurora** (one curtain per line), **halo** (neon rings around a clock), **starfield** (a warp flight at a bound line rate).
+  - *Driven by your lines* (`data.lines[]`, state and flow bound to tags): **pipes** (glossy 3D pipes with light pulses at each line's flow, a faulted line glows red), **aurora** (one curtain per line), **halo** (neon rings around a clock), **starfield** (a warp flight at a bound line rate).
   - *Showpieces*: **synthwave**, **lava** (a lava lamp), **tunnel**, **flow** (thirty thousand particles in a curl-noise field).
   - *Funny*: **bounce** (your text on the bouncing badge, confetti on a corner hit), **pong** (day shift vs night shift), **ducks** (rubber ducks in hard hats).
   - **shuffle** rotates through any of them; **clock** (the default), **blank**, and **external** (draws nothing; your project reacts to `output.idle`; with no overlay, the waking tap reaches the page).
   - The animated modes use WebGL2 with bloom and step their quality down on weak kiosk hardware (`config.quality`); browsers without WebGL2 get 2D versions.
-- **Burn-in and power care** — text drifts slowly (`burnIn.drift`). At night (`burnIn.night`, 22:00–06:00 by default) an idle screen shows a dimmed clock instead of any animation: dark, but clearly alive. It can keep the mode dimmed, or go fully blank.
+- **Burn-in and power care** — text drifts slowly (`config.burnIn.drift`). At night (`config.burnIn.night`, 22:00–06:00 by default) an idle screen shows a dimmed clock instead of any animation: dark, but clearly alive. It can keep the mode dimmed, or go fully blank.
 - **Reduced motion** — when the browser asks for less motion (or `config.reduceMotion` is `always`), the animated modes give way to a still clock.
 - **Labels** in the same 7 languages (`config.locale`, `config.labels.*`); the clock's date and time follow the locale.
 
@@ -530,8 +530,8 @@ Perspective has no `system.util.getInactivitySeconds()` or lock screen like Visi
 ### Using it
 
 1. Drop one **Idle Guard** into a view in a **shared dock**, so it is on every page and survives navigation. It is invisible in sessions; in the Designer it shows as a small chip.
-2. Set `config.timeoutSec` and `config.mode`, and bind `lines[]` (and `modes.*`) to your tags.
-3. On a public or lobby screen, set `alarm.sources`: every session with a guard receives the labels of the matching alarms, whoever is logged in (plus the number of active Critical alarms outside them, without labels: Critical always wakes). The gateway reads `alarm.sources` from the component's props, never from the browser's messages; set the property's access to Protected so the session cannot rewrite it either.
+2. Set `config.timeoutSec` and `config.mode`, and bind `data.lines[]` (and `config.modes.*`) to your tags.
+3. On a public or lobby screen, set `config.alarm.sources`: every session with a guard receives the labels of the matching alarms, whoever is logged in (plus the number of active Critical alarms outside them, without labels: Critical always wakes). The gateway reads `config.alarm.sources` from the component's props, never from the browser's messages; set the property's access to Protected so the session cannot rewrite it either.
 
 Props, the alarm feed, safety rules and tests are documented in [`docs/idle-guard.md`](docs/idle-guard.md); the hardware checklist is [`docs/guard-manual-test.md`](docs/guard-manual-test.md).
 

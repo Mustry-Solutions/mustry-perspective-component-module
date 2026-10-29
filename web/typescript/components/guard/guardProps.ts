@@ -33,7 +33,7 @@ export const CANVAS_MODES: readonly Mode[] = [
 /** Canvas modes with a WebGL2 renderer; the others are 2D only (and run everywhere). */
 export const GL_MODES: readonly Mode[] = ['pipes', 'aurora', 'halo', 'starfield', 'synthwave', 'lava', 'tunnel', 'flow'];
 
-/** Modes that draw one element per entry of `lines`. */
+/** Modes that draw one element per entry of `data.lines`. */
 export const LINE_MODES: readonly Mode[] = ['pipes', 'aurora', 'halo'];
 
 /** One production line (or utility, or unit) as the line-driven modes show it. */
@@ -96,15 +96,15 @@ export const DEFAULT_LINES: LineSpec[] = [
 /** At most this many lines are drawn; more only crowd the screen. */
 export const MAX_LINES = 12;
 
-/** `lines`, item by item. Empty means the demo set: a line mode without lines is a black screen. */
+/** `data.lines`, item by item. Empty means the demo set: a line mode without lines is a black screen. */
 function readLines(tree: PropReader): LineSpec[] {
-    const n = Math.min(tree.readLength('lines'), MAX_LINES);
+    const n = Math.min(tree.readLength('data.lines'), MAX_LINES);
     if (n === 0) {
         return DEFAULT_LINES;
     }
     const out: LineSpec[] = [];
     for (let i = 0; i < n; i++) {
-        const p = `lines[${i}]`;
+        const p = `data.lines[${i}]`;
         out.push({
             label: tree.readString(`${p}.label`, ''),
             state: tree.readString(`${p}.state`, 'running'),
@@ -145,7 +145,7 @@ function modeText(tree: PropReader, path: string, fallback: string): string {
 }
 
 export function mapGuardProps(tree: PropReader): GuardProps {
-    const wake = priorityIndex(tree.readString('alarm.wakePriority', 'High'), 3);
+    const wake = priorityIndex(tree.readString('config.alarm.wakePriority', 'High'), 3);
     const locale = tree.readString('config.locale', '');
     const labels = readLabels(tree, locale);
     return {
@@ -163,48 +163,48 @@ export function mapGuardProps(tree: PropReader): GuardProps {
         },
         alarm: {
             wakePriority: wake,
-            pinPriority: priorityIndex(tree.readString('alarm.pinPriority', 'Medium'), 2),
-            includeAcked: tree.readBoolean('alarm.includeAcked', true),
-            sources: (tree.readArray('alarm.sources', []) || []).filter((s): s is string => typeof s === 'string' && s.trim() !== ''),
-            staleAfterSec: Number(tree.readNumber('alarm.staleAfterSec', 8))
+            pinPriority: priorityIndex(tree.readString('config.alarm.pinPriority', 'Medium'), 2),
+            includeAcked: tree.readBoolean('config.alarm.includeAcked', true),
+            sources: (tree.readArray('config.alarm.sources', []) || []).filter((s): s is string => typeof s === 'string' && s.trim() !== ''),
+            staleAfterSec: Number(tree.readNumber('config.alarm.staleAfterSec', 8))
         },
         burnIn: {
-            drift: tree.readBoolean('burnIn.drift', true),
+            drift: tree.readBoolean('config.burnIn.drift', true),
             night: {
-                enabled: tree.readBoolean('burnIn.night.enabled', true),
-                from: tree.readString('burnIn.night.from', '22:00'),
-                to: tree.readString('burnIn.night.to', '06:00'),
-                mode: normNightMode(tree.readString('burnIn.night.mode', 'clock')),
-                level: Number(tree.readNumber('burnIn.night.level', 0.4))
+                enabled: tree.readBoolean('config.burnIn.night.enabled', true),
+                from: tree.readString('config.burnIn.night.from', '22:00'),
+                to: tree.readString('config.burnIn.night.to', '06:00'),
+                mode: normNightMode(tree.readString('config.burnIn.night.mode', 'clock')),
+                level: Number(tree.readNumber('config.burnIn.night.level', 0.4))
             }
         },
         lines: readLines(tree),
         modes: {
-            legend: tree.readBoolean('modes.legend', true),
+            legend: tree.readBoolean('config.modes.legend', true),
             clock: {
-                title: tree.readString('modes.clock.title', ''),
-                showSeconds: tree.readBoolean('modes.clock.showSeconds', false)
+                title: tree.readString('config.modes.clock.title', ''),
+                showSeconds: tree.readBoolean('config.modes.clock.showSeconds', false)
             },
             starfield: {
-                speed: Number(tree.readNumber('modes.starfield.speed', 1)),
-                color: tree.readString('modes.starfield.color', ''),
-                density: Number(tree.readNumber('modes.starfield.density', 400)),
-                caption: tree.readString('modes.starfield.caption', '')
+                speed: Number(tree.readNumber('config.modes.starfield.speed', 1)),
+                color: tree.readString('config.modes.starfield.color', ''),
+                density: Number(tree.readNumber('config.modes.starfield.density', 400)),
+                caption: tree.readString('config.modes.starfield.caption', '')
             },
             pipes: {
-                resetAfterSec: Number(tree.readNumber('modes.pipes.resetAfterSec', 120)),
-                orbit: tree.readBoolean('modes.pipes.orbit', true)
+                resetAfterSec: Number(tree.readNumber('config.modes.pipes.resetAfterSec', 120)),
+                orbit: tree.readBoolean('config.modes.pipes.orbit', true)
             },
-            bounce: { text: modeText(tree, 'modes.bounce.text', labels.bounce) },
+            bounce: { text: modeText(tree, 'config.modes.bounce.text', labels.bounce) },
             pong: {
-                left: modeText(tree, 'modes.pong.left', labels.pongLeft),
-                right: modeText(tree, 'modes.pong.right', labels.pongRight)
+                left: modeText(tree, 'config.modes.pong.left', labels.pongLeft),
+                right: modeText(tree, 'config.modes.pong.right', labels.pongRight)
             },
             shuffle: {
-                modes: (tree.readArray('modes.shuffle.modes', []) || [])
+                modes: (tree.readArray('config.modes.shuffle.modes', []) || [])
                     .map((m) => (typeof m === 'string' ? m.trim().toLowerCase() : ''))
                     .filter((m): m is Mode => (CANVAS_MODES as readonly string[]).includes(m)),
-                minutes: Number(tree.readNumber('modes.shuffle.minutes', 5))
+                minutes: Number(tree.readNumber('config.modes.shuffle.minutes', 5))
             }
         }
     };

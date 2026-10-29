@@ -50,9 +50,11 @@ describe('mapGuardProps', () => {
 
     it('reads bound values', () => {
         const p = mapGuardProps(tree({
-            config: { mode: 'Aurora', timeoutSec: 30, quality: 'LOW' },
-            alarm: { wakePriority: 'Critical', pinPriority: 'Low', sources: ['Line 1*', '', 3] },
-            lines: [{ label: 'Boiler', state: 'fault', flow: 1.5 }, { label: 'Feed' }]
+            config: {
+                mode: 'Aurora', timeoutSec: 30, quality: 'LOW',
+                alarm: { wakePriority: 'Critical', pinPriority: 'Low', sources: ['Line 1*', '', 3] }
+            },
+            data: { lines: [{ label: 'Boiler', state: 'fault', flow: 1.5 }, { label: 'Feed' }] }
         }));
         expect(p.config.mode).toBe('aurora');
         expect(p.config.quality).toBe('low');
@@ -66,9 +68,17 @@ describe('mapGuardProps', () => {
         ]);
     });
 
+    it('ignores the pre-restructure top-level paths', () => {
+        // alarm/burnIn/modes moved under config, lines under data.
+        const p = mapGuardProps(tree({ alarm: { wakePriority: 'Low' }, lines: [{ label: 'Old' }], modes: { bounce: { text: 'OLD' } } }));
+        expect(p.alarm.wakePriority).toBe(3);
+        expect(p.lines).toBe(DEFAULT_LINES);
+        expect(p.modes.bounce.text).toBe('IDLE');
+    });
+
     it('caps the number of lines', () => {
         const lines = Array.from({ length: 30 }, (_, i) => ({ label: `P${i}` }));
-        expect(mapGuardProps(tree({ lines })).lines).toHaveLength(12);
+        expect(mapGuardProps(tree({ data: { lines } })).lines).toHaveLength(12);
     });
 
     it('falls back to the clock for unknown modes', () => {
@@ -80,7 +90,7 @@ describe('mapGuardProps', () => {
     });
 
     it('reads the shuffle list, keeping only canvas modes', () => {
-        const p = mapGuardProps(tree({ modes: { shuffle: { modes: ['Lava', 'clock', 'nope', 'pong'], minutes: 2 } } }));
+        const p = mapGuardProps(tree({ config: { modes: { shuffle: { modes: ['Lava', 'clock', 'nope', 'pong'], minutes: 2 } } } }));
         expect(p.modes.shuffle).toEqual({ modes: ['lava', 'pong'], minutes: 2 });
     });
 });
@@ -103,15 +113,17 @@ describe('moveThreshold', () => {
 
 describe('mode texts', () => {
     it('fall back to the locale pack when unset or blank', () => {
-        const de = mapGuardProps(tree({ config: { locale: 'de-AT' }, modes: { bounce: { text: '  ' } } }));
+        const de = mapGuardProps(tree({ config: { locale: 'de-AT', modes: { bounce: { text: '  ' } } } }));
         expect(de.modes.bounce.text).toBe('STANDBY');
         expect(de.modes.pong).toEqual({ left: 'TAGSCHICHT', right: 'NACHTSCHICHT' });
     });
 
     it('take their own prop over the pack, never config.labels', () => {
         const p = mapGuardProps(tree({
-            config: { locale: 'fr', labels: { bounce: 'ignored', pongLeft: 'ignored' } },
-            modes: { bounce: { text: 'ACME' }, pong: { left: 'Line A' } }
+            config: {
+                locale: 'fr', labels: { bounce: 'ignored', pongLeft: 'ignored' },
+                modes: { bounce: { text: 'ACME' }, pong: { left: 'Line A' } }
+            }
         }));
         expect(p.modes.bounce.text).toBe('ACME');
         expect(p.modes.pong).toEqual({ left: 'Line A', right: 'ÉQUIPE DE NUIT' });

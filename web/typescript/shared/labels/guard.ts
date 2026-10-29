@@ -5,8 +5,8 @@
 //
 // The operator-facing text: the wake hint, the alarm banner and the fallback
 // line names; and the defaults of the playful mode texts (bounce badge, pong
-// names), which are overridden by their own props (modes.bounce.text,
-// modes.pong.left/right) rather than config.labels.*. The ducks' slogans stay
+// names), which are overridden by their own props (config.modes.bounce.text,
+// config.modes.pong.left/right) rather than config.labels.*. The ducks' slogans stay
 // English.
 //
 // Translations are pragmatic industrial-UI register, not native-reviewed; the
@@ -24,9 +24,9 @@ export interface GuardLabels {
     medium: string;
     high: string;
     critical: string;
-    bounce: string;        // the bouncing badge, unless modes.bounce.text is set
-    pongLeft: string;      // pong's left player, unless modes.pong.left is set
-    pongRight: string;     // pong's right player, unless modes.pong.right is set
+    bounce: string;        // the bouncing badge, unless config.modes.bounce.text is set
+    pongLeft: string;      // pong's left player, unless config.modes.pong.left is set
+    pongRight: string;     // pong's right player, unless config.modes.pong.right is set
 }
 
 /** Pack keys overridden by a mode prop of their own, not by config.labels.*. */
