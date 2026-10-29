@@ -16,8 +16,9 @@ wall displays burn in. The Idle Guard
 shared dock, covers the page with an idle mode after `config.timeoutSec`
 without input: a clock by default, line-driven 3D pipes, aurora, halo or
 starfield, showpieces (synthwave, lava, tunnel, flow), funny modes (bounce,
-pong, ducks), or shuffle through them. Any input wakes it, and the tap that
-wakes it never reaches the page. An alarm at or above `alarm.wakePriority`
+pong, ducks), or shuffle through them. Any input wakes it, the tap that
+wakes it never reaches the page, and a held press (a hold-to-run button)
+never goes idle under the user. An alarm at or above `alarm.wakePriority`
 wakes it too, lower ones pin a banner, an active Critical alarm is never
 covered, and a guard that stops hearing the gateway removes itself. At night
 an idle screen shows a dimmed clock; reduced motion swaps animations for the
