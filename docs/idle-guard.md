@@ -143,7 +143,8 @@ guard nor keep a dead feed "ok".
   and the night dimming lifts.
 
 **One guard per page.** The first guard to mount owns the page; another
-instance stays inert. Put it in a shared dock so it survives navigation.
+instance waits, inert, and the next one in mount order takes over when the
+owner unmounts. Put it in a shared dock so it survives navigation.
 
 **Reused component stores** (see Doom's SDK notes): the guard acts only after
 `timeoutSec` (minimum 5 s), so props from a previous view are long replaced by

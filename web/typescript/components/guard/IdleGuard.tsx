@@ -48,8 +48,9 @@ const SHIELD_EVENTS = [
     ...TRACK_EVENTS, 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend', 'keypress'
 ] as const;
 
-/** One guard per page covers it; any other instance stays inert. */
+/** One guard per page covers it. Holds the owner; the others wait, in mount order, to take over when it unmounts. */
 let owner: IdleGuard | null = null;
+const waiting: IdleGuard[] = [];
 
 /** The monotonic clock every delta is taken on (a wall-clock step must not stall or rush the guard). */
 function mono(): number {
@@ -137,8 +138,13 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
     }
 
     componentDidMount(): void {
-        if (isDesigner(this.props.store) || owner !== null) {
-            // Inert: the Designer shows a chip; a second guard on the page does nothing.
+        if (isDesigner(this.props.store)) {
+            // Inert: the Designer shows a chip.
+            return;
+        }
+        if (owner !== null) {
+            // A second guard on the page waits; it takes over if the owner unmounts.
+            waiting.push(this);
             return;
         }
         this.activate();
@@ -180,6 +186,10 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
     }
 
     componentWillUnmount(): void {
+        const i = waiting.indexOf(this);
+        if (i >= 0) {
+            waiting.splice(i, 1);
+        }
         if (!this.live) {
             return;
         }
@@ -205,6 +215,11 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
         this.releaseWakeLock();
         if (owner === this) {
             owner = null;
+            // Hand the page to the next guard still mounted (a shared dock that outlived a view's guard).
+            const next = waiting.shift();
+            if (next) {
+                next.activate();
+            }
         }
     }
 
