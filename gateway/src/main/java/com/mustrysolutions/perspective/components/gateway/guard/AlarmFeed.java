@@ -85,7 +85,7 @@ public final class AlarmFeed {
      */
     private volatile long generation;
     /** Set by {@link #shutdown()}: the feed never polls again. Guarded by this. */
-    private boolean closed;
+    private volatile boolean closed;
 
     public AlarmFeed(Supplier<List<ActiveAlarm>> source, LongSupplier clock, Poller poller) {
         this.source = source;
@@ -217,6 +217,10 @@ public final class AlarmFeed {
         try {
             tick(gen);
         } catch (Throwable t) {
+            if (gen != generation) {
+                // A read from a poll that has since stopped: not this poll's health.
+                return;
+            }
             // Say nothing to the guards: their feeds go stale and they fail open,
             // which is the safe answer when we cannot read the alarms.
             if (healthy) {
@@ -233,16 +237,19 @@ public final class AlarmFeed {
 
     /** One poll: read the alarms, then update every subscriber, unless the poll it belongs to has stopped. */
     void tick(long gen) {
-        List<ActiveAlarm> alarms = source.get();
-        if (gen != generation) {
-            return;
+        List<ActiveAlarm> read = List.copyOf(source.get());
+        synchronized (this) {
+            // Checked and published under the lock subscribe and stop take, so a
+            // read from a stopped poll can never become `latest` after a restart.
+            if (gen != generation) {
+                return;
+            }
+            if (!healthy) {
+                log.info("Gateway alarm status readable again; Idle Guard feeds resume.");
+            }
+            healthy = true;
+            latest = read;
         }
-        if (!healthy) {
-            log.info("Gateway alarm status readable again; Idle Guard feeds resume.");
-        }
-        healthy = true;
-        List<ActiveAlarm> read = List.copyOf(alarms);
-        latest = read;
         long now = clock.getAsLong();
         // Guards with the same patterns (every screen of a project, typically) share one summary per tick.
         Map<SummaryKey, Summary> memo = new HashMap<>();

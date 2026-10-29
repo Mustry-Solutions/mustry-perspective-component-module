@@ -231,4 +231,32 @@ class AlarmFeedTest {
         assertTrue(a.got.get(1) != b.got.get(0), "each guard gets its own copy");
         assertEquals(1, b.got.get(0).getAsJsonObject("active").get("high").getAsInt());
     }
+
+    @Test
+    void aFailingTickFromAStoppedPollLeavesTheNewPollHealthy() {
+        List<Runnable> ticks = new ArrayList<>();
+        boolean[] fail = {false};
+        AlarmFeed f = new AlarmFeed(() -> {
+            if (fail[0]) {
+                throw new IllegalStateException("old read");
+            }
+            return List.copyOf(alarms);
+        }, now::get, tick -> {
+            ticks.add(tick);
+            return () -> { };
+        });
+        Sub a = new Sub();
+        f.subscribe(a);
+        f.unsubscribe(a);
+        Sub b = new Sub();
+        f.subscribe(b);
+        ticks.get(1).run();
+        assertEquals(1, b.got.size());
+
+        fail[0] = true;
+        ticks.get(0).run();
+        fail[0] = false;
+        f.pushNow(b);
+        assertEquals(2, b.got.size(), "the stale poll's failure did not mark the feed unhealthy");
+    }
 }
