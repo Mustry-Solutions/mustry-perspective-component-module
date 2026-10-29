@@ -68,6 +68,35 @@ describe('mapGuardProps', () => {
         ]);
     });
 
+    it('reads every config.alarm, config.burnIn and config.modes value from its new path', () => {
+        const p = mapGuardProps(tree({
+            config: {
+                alarm: { wakePriority: 'Medium', pinPriority: 'Diagnostic', includeAcked: false, sources: ['A*'], staleAfterSec: 20 },
+                burnIn: { drift: false, night: { enabled: false, from: '20:30', to: '05:15', mode: 'dim', level: 0.25 } },
+                modes: {
+                    legend: false,
+                    clock: { title: 'Hall 3', showSeconds: true },
+                    starfield: { speed: 2.5, color: '#f00', density: 900, caption: 'Rate' },
+                    pipes: { resetAfterSec: 60, orbit: false },
+                    bounce: { text: 'ACME' },
+                    pong: { left: 'A', right: 'B' },
+                    shuffle: { modes: ['flow'], minutes: 1 }
+                }
+            }
+        }));
+        expect(p.alarm).toEqual({ wakePriority: 2, pinPriority: 0, includeAcked: false, sources: ['A*'], staleAfterSec: 20 });
+        expect(p.burnIn).toEqual({ drift: false, night: { enabled: false, from: '20:30', to: '05:15', mode: 'dim', level: 0.25 } });
+        expect(p.modes).toEqual({
+            legend: false,
+            clock: { title: 'Hall 3', showSeconds: true },
+            starfield: { speed: 2.5, color: '#f00', density: 900, caption: 'Rate' },
+            pipes: { resetAfterSec: 60, orbit: false },
+            bounce: { text: 'ACME' },
+            pong: { left: 'A', right: 'B' },
+            shuffle: { modes: ['flow'], minutes: 1 }
+        });
+    });
+
     it('ignores the pre-restructure top-level paths', () => {
         // alarm/burnIn/modes moved under config, lines under data.
         const p = mapGuardProps(tree({ alarm: { wakePriority: 'Low' }, lines: [{ label: 'Old' }], modes: { bounce: { text: 'OLD' } } }));
