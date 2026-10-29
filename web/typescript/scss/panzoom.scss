@@ -279,6 +279,8 @@
     transform-origin: 0 0;
     pointer-events: none;
     opacity: 0.85;
+    // a full-size copy of the content: keep its layout and paint to itself
+    contain: strict;
 }
 
 .mustry-pz-mini-snapshot {

@@ -7,6 +7,8 @@
 /** Elements that would re-run or re-load something if duplicated: replaced by
  *  an empty box of the same size. */
 const LIVE_TAGS = new Set(['IFRAME', 'VIDEO', 'AUDIO', 'OBJECT', 'EMBED', 'SCRIPT']);
+/** Form controls: their name/form would join the live elements' groups. */
+const FORM_TAGS = new Set(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON']);
 
 export class MinimapSnapshot {
     private observer: MutationObserver | null = null;
@@ -14,6 +16,7 @@ export class MinimapSnapshot {
     private lastAt = 0;
     private snapshot: HTMLElement | null = null;
     private host: HTMLElement | null = null;
+    private dirty = true;
 
     constructor(private readonly source: () => HTMLElement | null, private readonly intervalMs: number = 1000) {}
 
@@ -24,8 +27,9 @@ export class MinimapSnapshot {
             return;
         }
         this.observer = new MutationObserver((records) => {
-            // the source's own transform (every pan/zoom frame) is not a content change
-            if (records.some((r) => r.target !== src)) {
+            // the source's own style (the transform, every pan/zoom frame) is not a
+            // content change; a child swapped directly under it is
+            if (records.some((r) => !(r.type === 'attributes' && r.target === src))) {
                 this.schedule();
             }
         });
@@ -40,7 +44,12 @@ export class MinimapSnapshot {
             return;
         }
         this.host = host;
-        if (host && this.snapshot) {
+        if (!host) {
+            return;
+        }
+        if (this.dirty || !this.snapshot) {
+            this.capture();   // changes seen while hidden were never cloned
+        } else {
             host.replaceChildren(this.snapshot);
         }
     }
@@ -56,6 +65,7 @@ export class MinimapSnapshot {
         }
         this.snapshot = null;
         this.host = null;
+        this.dirty = true;
     }
 
     /** Leading + trailing throttle: at most one clone per interval. */
@@ -76,13 +86,20 @@ export class MinimapSnapshot {
         if (!src) {
             return;
         }
+        if (!this.host) {
+            // the minimap is hidden (content fits): clone when it shows again
+            this.dirty = true;
+            return;
+        }
+        this.dirty = false;
         const clone = src.cloneNode(true) as HTMLElement;
         clone.removeAttribute('style');   // drop the live pan/zoom transform
         clone.className = 'mustry-pz-mini-snapshot';
         clone.setAttribute('aria-hidden', 'true');
         clone.setAttribute('inert', '');
-        clone.style.width = src.style.width;
-        clone.style.height = src.style.height;
+        // the host carries the content size, which can change without a capture
+        clone.style.width = '100%';
+        clone.style.height = '100%';
         // canvas pixels are not part of the DOM: copy them over
         const srcCanvases = src.querySelectorAll('canvas');
         clone.querySelectorAll('canvas').forEach((c, i) => {
@@ -100,13 +117,18 @@ export class MinimapSnapshot {
                 box.style.cssText = (el as HTMLElement).style.cssText;
                 box.className = 'mustry-pz-mini-placeholder';
                 el.replaceWith(box);
-            } else if (el.id && !(el instanceof SVGElement)) {
+                return;
+            }
+            if (el.id && !(el instanceof SVGElement)) {
                 el.removeAttribute('id');   // SVG ids stay: url(#gradient) refs need them
+            }
+            if (FORM_TAGS.has(el.tagName)) {
+                // a connected checked radio unchecks the live ones sharing its name
+                el.removeAttribute('name');
+                el.removeAttribute('form');
             }
         });
         this.snapshot = clone;
-        if (this.host) {
-            this.host.replaceChildren(clone);
-        }
+        this.host.replaceChildren(clone);
     }
 }
