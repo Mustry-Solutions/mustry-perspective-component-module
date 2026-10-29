@@ -25,6 +25,10 @@ These hold whatever the props say, and every change to the guard keeps them:
   check they still fail with swallowing disabled (mutation check: make
   `handleInput` in `IdleGuard.tsx` never cancel, i.e. `if (swallow &&
   canCancel)` → `if (false)`, and set `FADE_MS` to 0).
+  This rule holds for the modes the guard draws. In `external` mode there is
+  no overlay to catch anything: the waking input passes through to the page by
+  design, so a project that uses `external` must not put release-acting
+  controls where a sleeping screen gets tapped (or must cover them itself).
 - **A held press never goes idle.** A pointer or key held down (a
   hold-to-run jog button) keeps the page awake, and its release always reaches
   the page: only a press the cover itself caught has its release swallowed.
@@ -123,6 +127,19 @@ the screen. The release of a press that began before the cover is never
 swallowed. Window blur and a hidden tab forget what is held (the releases
 will not arrive). Mouse movement wakes without being stopped. Wakes that are
 not input (alarm, stale feed, disabled) drop the overlay at once.
+
+Two limits of listening on the page's `window`:
+
+- **`external` mode passes the waking input through.** It shows no overlay
+  (the project draws its own idle view off `output.idle`), so nothing is
+  swallowed: the tap that wakes the page also reaches whatever is under it.
+  This is by design; the "waking input never reaches the page" rule applies
+  to the modes the guard draws.
+- **Input inside an iframe does not reset the idle timer.** Events in an
+  embedded frame (an Inline Frame component, an embedded web page) never
+  reach the parent window, so a user working only inside one can see the page
+  go idle. Mouse movement over the frame does not count either. Give such
+  pages a longer `timeoutSec`, or disable the guard there (`config.enabled`).
 
 All idle and staleness timing runs on the monotonic clock
 (`performance.now()`); the wall clock is used only for the clock display, the
