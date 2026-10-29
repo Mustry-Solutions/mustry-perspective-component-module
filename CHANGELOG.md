@@ -14,7 +14,8 @@ button zoomed out twice and then ran the viewport's double-click zoom, which
 zoomed back in toward the toolbar's corner (#223). Double-click zoom now only
 reacts to the content and the bare viewport, so the toolbar buttons, the
 minimap, the POI list and the edge indicators act like plain clicks. A Pan &
-Zoom nested in another one's embedded view no longer zooms the outer one too.
+Zoom nested in another one's embedded view no longer zooms the outer one too,
+and the event still reaches the author's own double-click scripts.
 
 ### Changed: Data Grid number error shows the expected format
 A number cell typed in another locale's format, such as `4,5` with
