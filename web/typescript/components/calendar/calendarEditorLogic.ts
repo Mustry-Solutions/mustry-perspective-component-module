@@ -5,6 +5,7 @@
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from './calendarLogic';
 import { emitWall, reanchorSeries } from '../../shared/dateUtils';
+import { occurrenceOf } from '../../shared/recurrence';
 import { Editor } from './calendarTypes';
 
 export { reanchorSeries };   // shared with the timeline; re-exported for callers/tests
@@ -37,15 +38,15 @@ export function editorForCreate(startIso: string, endIso: string, allDay: boolea
 }
 
 /** An editor pre-filled from an existing event, to edit it in place. For a recurring
- *  occurrence (id "base::date") it recovers the series' rule and defaults the
- *  apply-to scope to "this event". */
+ *  occurrence it recovers the series' rule and defaults the apply-to scope to
+ *  "this event". */
 export function editorForEvent(ev: CalEvent, baseEventById: BaseEventLookup): Editor {
     const allDay = !!ev.allDay;
     const cut = (v: string | undefined) => (v || '').slice(0, allDay ? 10 : 16);
     const rawId = ev.id || '';
-    const isOcc = rawId.indexOf('::') >= 0;
-    const seriesId = isOcc ? rawId.split('::')[0] : null;
-    const occurrenceDate = isOcc ? rawId.split('::')[1] : null;
+    const occ = occurrenceOf(ev);
+    const seriesId = occ ? occ.seriesId : null;
+    const occurrenceDate = occ ? occ.occurrenceDate : null;
     const rr = seriesId ? (baseEventById(seriesId) || {} as CalEvent).rrule : undefined;
     return {
         id: rawId,
@@ -68,7 +69,7 @@ export function editorForEvent(ev: CalEvent, baseEventById: BaseEventLookup): Ed
         repeatCount: rr && rr.count ? rr.count : 10,
         seriesId,
         occurrenceDate,
-        scope: isOcc ? 'occurrence' : 'series'
+        scope: occ ? 'occurrence' : 'series'
     };
 }
 
@@ -233,17 +234,16 @@ function changedEvent(ev: CalEvent, over: { start?: string; end?: string }, time
 }
 
 /** What a committed move/resize should fire. Dragging a single recurring occurrence
- *  (id "base::date") detaches it into a standalone override + an EXDATE on the series. */
+ *  detaches it into a standalone override + an EXDATE on the series. */
 export function moveResizeSpec(
     action: 'move' | 'resize',
     ev: CalEvent,
     over: { start?: string; end?: string },
     timezone: string
 ): ChangeSpec {
-    const rawId = ev.id || '';
-    if (rawId.indexOf('::') >= 0) {
-        const seriesId = rawId.split('::')[0];
-        const occurrenceDate = rawId.split('::')[1];
+    const occ = occurrenceOf(ev);
+    if (occ) {
+        const { seriesId, occurrenceDate } = occ;
         return {
             action,
             event: changedEvent({ ...ev, id: `${seriesId}-x-${occurrenceDate}` }, over, timezone),

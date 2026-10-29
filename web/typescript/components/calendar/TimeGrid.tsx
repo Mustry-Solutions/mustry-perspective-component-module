@@ -26,7 +26,7 @@ interface TimeGridProps {
     categories: Category[];
     labels: CalLabels;
     scrollRef: React.RefObject<HTMLDivElement>;
-    enterClass: (id: string) => string;
+    enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
     onStartCreate: (iso: string, e: React.PointerEvent) => void;
@@ -159,7 +159,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                 return (
                                     <button
                                         type="button"
-                                        className={cls.join(' ') + statusClass(ev) + enterClass(ev.id || '')}
+                                        className={cls.join(' ') + statusClass(ev) + enterClass(ev)}
                                         key={ev.id || i}
                                         style={{
                                             top, height,

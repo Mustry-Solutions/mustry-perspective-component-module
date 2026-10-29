@@ -6,13 +6,13 @@ import { csvCell } from '../../shared/csv';
 import {
     addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today, toEpochMs
 } from '../../shared/dateUtils';
-import { RRule } from '../../shared/recurrence';
+import { occurrenceOf, OccurrenceTag, RRule } from '../../shared/recurrence';
 import { DayCell, MonthGrid, buildMonthGrid } from '../../shared/monthGrid';
 
 export type { RRule, DayCell, MonthGrid };
 export { buildMonthGrid };
 
-export interface CalEvent {
+export interface CalEvent extends OccurrenceTag {
     id: string;
     title: string;
     start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'
@@ -65,9 +65,9 @@ export function groupEventsByDay(events: CalEvent[]): { [iso: string]: CalEvent[
     return map;
 }
 
-/** Whether an event is an expanded occurrence of a recurring series (id "base::date"). */
+/** Whether an event is an expanded occurrence of a recurring series (tagged by expandEvents). */
 export function isOccurrence(ev: CalEvent): boolean {
-    return (ev.id || '').indexOf('::') >= 0;
+    return occurrenceOf(ev) !== null;
 }
 
 /** Serialise events to CSV text (one row per event, CRLF line endings). Recurring
