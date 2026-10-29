@@ -259,6 +259,17 @@ export function contentFullyVisible(vp: PzViewport, contentW: number, contentH: 
     return contentW * vp.zoom <= viewportW + 0.5 && contentH * vp.zoom <= viewportH + 0.5;
 }
 
+/** The box the minimap may use: the configured size, but never more than half
+ *  the viewport, so a large minimap in a small component still leaves room to
+ *  pan (presses on the minimap never pan the viewport). */
+export function minimapMaxBox(width: number, height: number, viewportW: number, viewportH: number):
+    { w: number; h: number } {
+    return {
+        w: Math.max(1, Math.min(width, viewportW / 2)),
+        h: Math.max(1, Math.min(height, viewportH / 2))
+    };
+}
+
 /** Minimap geometry: the content scaled into a maxW×maxH box (aspect preserved). */
 export function minimapLayout(contentW: number, contentH: number, maxW: number, maxH: number):
     { w: number; h: number; scale: number } {
@@ -280,6 +291,39 @@ export function minimapViewRect(vp: PzViewport, viewportW: number, viewportH: nu
         w,
         h
     };
+}
+
+export type PzMinimapPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
+export const PZ_MINIMAP_POSITIONS: PzMinimapPosition[] = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+
+/** Where the minimap sits inside the viewport (CSS offsets, px). It steps aside
+ *  for the overlays that own a corner: left of the zoom-controls column
+ *  (top-right), below the Go-to dropdown (top-left). The zoom badge is the one
+ *  overlay that moves instead: `badgeRight` when the minimap takes bottom-left. */
+export function minimapAnchor(position: PzMinimapPosition, controlsShown: boolean, poiListShown: boolean):
+    { top?: number; right?: number; bottom?: number; left?: number; badgeRight: boolean } {
+    switch (position) {
+        case 'top-right':
+            return { top: 10, right: controlsShown ? 48 : 10, badgeRight: false };
+        case 'top-left':
+            return { top: poiListShown ? 44 : 10, left: 10, badgeRight: false };
+        case 'bottom-left':
+            return { bottom: 8, left: 10, badgeRight: true };
+        default:
+            return { bottom: 8, right: 10, badgeRight: false };
+    }
+}
+
+/** A minimap press, in minimap px: inside the view rectangle it grabs the
+ *  rectangle where pressed (the offset from its center is kept while dragging,
+ *  so it doesn't jump); outside, the center jumps to the press (zero offset). */
+export function minimapGrabOffset(press: PzPoint, rect: { x: number; y: number; w: number; h: number }): PzPoint {
+    const inside = press.x >= rect.x && press.x <= rect.x + rect.w
+        && press.y >= rect.y && press.y <= rect.y + rect.h;
+    return inside
+        ? { x: press.x - (rect.x + rect.w / 2), y: press.y - (rect.y + rect.h / 2) }
+        : { x: 0, y: 0 };
 }
 
 /** Where a (possibly off-screen) point's edge indicator sits: the point clamped

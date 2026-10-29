@@ -8,3 +8,10 @@ calendar.props.json:output.hiddenCategories
 resourcetimeline.props.json:config.zoom
 resourcetimeline.props.json:config.collapsedGroups
 resourcetimeline.props.json:output.hiddenCategories
+# 2026-10-28 minimap + zoom config grouped under config.minimap / config.zoom (pre-1.0; see CHANGELOG):
+panzoomview.props.json:config.showMinimap
+panzoomview.props.json:config.minZoom
+panzoomview.props.json:config.maxZoom
+panzoomview.props.json:config.zoomStep
+panzoomview.props.json:config.wheelZoom
+panzoomview.props.json:config.doubleClickZoom
