@@ -205,7 +205,9 @@ from `lineStyle.ts`, shared by all line modes.
 governor (`quality.ts`) steps down one level per 2-second window averaging
 under 20 fps: no MSAA, then 75 % resolution, then 60 % without bloom. It
 never steps back up, so it cannot oscillate. GL canvases are capped at
-DPR 1.5 and 2560 px wide. `high` and `low` pin a level. All modes run at up
+DPR 1.5 and 2560 px on the longest side (portrait walls too), and never above
+the GPU's renderbuffer/texture limit (4096 on a Raspberry Pi 4); 2D canvases at
+DPR 2 and 3840 px on the longest side. `high` and `low` pin a level. All modes run at up
 to 30 fps (a 24/7 wall does not need 60, and pays for it in power and heat).
 
 **Preview.** `cd web && npm run preview:guard`, then open

@@ -37,11 +37,31 @@ export class FrameLoop {
     }
 }
 
-/** Match the canvas backing store to its CSS size times devicePixelRatio. Returns true when it changed. */
-export function fitCanvas(canvas: HTMLCanvasElement, maxDpr = 2): boolean {
+/** Longest side of a 2D canvas's backing store: 4K at DPR 1 stays sharp, a 4K wall at DPR 2 is not 33 Mpx of fill. */
+export const MAX_2D_SIDE = 3840;
+
+/**
+ * Backing-store size for a canvas of CSS size cssW x cssH at `dpr`, the
+ * longest side capped at maxSide (aspect kept). Capping the longest side, not
+ * the width, also bounds portrait walls. Pure: node-tested.
+ */
+export function canvasSize(cssW: number, cssH: number, dpr: number, maxSide: number): [number, number] {
+    let w = Math.max(1, Math.round(cssW * dpr));
+    let h = Math.max(1, Math.round(cssH * dpr));
+    const longest = Math.max(w, h);
+    const cap = Math.max(1, Math.floor(maxSide));
+    if (longest > cap) {
+        const k = cap / longest;
+        w = Math.min(cap, Math.max(1, Math.round(w * k)));
+        h = Math.min(cap, Math.max(1, Math.round(h * k)));
+    }
+    return [w, h];
+}
+
+/** Match the canvas backing store to its CSS size times devicePixelRatio (capped). Returns true when it changed. */
+export function fitCanvas(canvas: HTMLCanvasElement, maxDpr = 2, maxSide = MAX_2D_SIDE): boolean {
     const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
-    const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    const [w, h] = canvasSize(canvas.clientWidth, canvas.clientHeight, dpr, maxSide);
     if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;

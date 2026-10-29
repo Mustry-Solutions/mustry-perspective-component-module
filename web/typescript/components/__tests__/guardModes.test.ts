@@ -1,3 +1,4 @@
+import { canvasSize, MAX_2D_SIDE } from '../guard/modes/frameLoop';
 import { HALO_INNER, HALO_MAX_STEP, HALO_OUTER, haloRadii } from '../guard/modes/haloLayout';
 import { hexToRgb, lineLook, normState } from '../guard/modes/lineStyle';
 import { PipesSim, seededRandom, STATE_COLORS } from '../guard/modes/pipesSim';
@@ -112,5 +113,27 @@ describe('pipe distance', () => {
             // Either the next cell of the same run, or a fresh run (joint at dist 0).
             expect(run[i].dist === run[i - 1].dist + 1 || (run[i].dist === 0 && run[i].joint)).toBe(true);
         }
+    });
+});
+
+describe('canvas size caps', () => {
+    it('scales by the device pixel ratio below the cap', () => {
+        expect(canvasSize(800, 600, 2, MAX_2D_SIDE)).toEqual([1600, 1200]);
+        expect(canvasSize(0, 0, 1, 2560)).toEqual([1, 1]);
+    });
+
+    it('caps the longest side, landscape or portrait, keeping the aspect', () => {
+        expect(canvasSize(3840, 2160, 1.5, 2560)).toEqual([2560, 1440]);
+        // A portrait wall: the height is what overflows (4096 is a Raspberry Pi 4's renderbuffer limit).
+        const [w, h] = canvasSize(2160, 3840, 1.5, 4096);
+        expect(h).toBe(4096);
+        expect(w).toBe(2304);
+        expect(Math.max(...canvasSize(4000, 9000, 2, 2560))).toBe(2560);
+    });
+
+    it('bounds a 4K wall at DPR 2 on the 2D path', () => {
+        const [w, h] = canvasSize(3840, 2160, 2, MAX_2D_SIDE);
+        expect(w).toBe(MAX_2D_SIDE);
+        expect(w * h).toBeLessThanOrEqual(3840 * 2160);
     });
 });
