@@ -46,8 +46,8 @@ const SHIELD_EVENTS = [
     ...TRACK_EVENTS, 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'touchend', 'keypress'
 ] as const;
 
-/** One guard per page covers it. Holds the owner; the others wait, in mount order, to take over when it unmounts. */
-let owner: IdleGuard | null = null;
+/** One guard per page covers it (the live one); the others wait, in mount order, to take over when it unmounts. */
+let pageOwned = false;
 const waiting: IdleGuard[] = [];
 
 /** The monotonic clock every delta is taken on (a wall-clock step must not stall or rush the guard). */
@@ -140,7 +140,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             // Inert: the Designer shows a chip.
             return;
         }
-        if (owner !== null) {
+        if (pageOwned) {
             // A second guard on the page waits; it takes over if the owner unmounts.
             waiting.push(this);
             return;
@@ -150,7 +150,7 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
 
     /** Become the page's guard: listen, subscribe, start the state machine. */
     private activate(): void {
-        owner = this;
+        pageOwned = true;
         this.live = true;
         this.machine = initialState(mono(), Date.now());
         this.host = document.createElement('div');
@@ -211,13 +211,12 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             this.host = null;
         }
         this.releaseWakeLock();
-        if (owner === this) {
-            owner = null;
-            // Hand the page to the next guard still mounted (a shared dock that outlived a view's guard).
-            const next = waiting.shift();
-            if (next) {
-                next.activate();
-            }
+        // Only the live guard gets here: hand the page to the next one still
+        // mounted (a shared dock that outlived a view's guard).
+        pageOwned = false;
+        const next = waiting.shift();
+        if (next) {
+            next.activate();
         }
     }
 
