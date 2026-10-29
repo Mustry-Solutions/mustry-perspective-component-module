@@ -41,15 +41,16 @@ export class GuardStoreDelegate extends ComponentStoreDelegate {
     /**
      * Ask the gateway to (re)subscribe; a no-op when `sources` did not change
      * unless forced. The patterns only decide when to ask: the gateway reads
-     * its own copy of config.alarm.sources.
+     * its own copy of config.alarm.sources. Returns whether a message went out.
      */
-    subscribeAlarms(sources: string[], force = false): void {
+    subscribeAlarms(sources: string[], force = false): boolean {
         const key = JSON.stringify(sources);
         if (!force && key === this.subscribed) {
-            return;
+            return false;
         }
         this.subscribed = key;
         this.fireEvent(GUARD_EVENTS.SUBSCRIBE, {});
+        return true;
     }
 
     handleEvent(eventName: string, eventObject: JsObject): void {

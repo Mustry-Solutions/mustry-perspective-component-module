@@ -185,7 +185,8 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
             return;
         }
         const p = this.props.props;
-        if (p.alarm.sources !== prev.props.alarm.sources) {
+        // By value: the props reducer builds a new array on every prop change (bound lines update often).
+        if (JSON.stringify(p.alarm.sources) !== JSON.stringify(prev.props.alarm.sources)) {
             this.subscribe(false);
         }
         if (p.config.wakeLock !== prev.props.config.wakeLock) {
@@ -243,8 +244,12 @@ export class IdleGuard extends Component<ComponentProps<GuardProps, GuardDelegat
     }
 
     private subscribe(force: boolean): void {
-        this.lastResubscribe = mono();
-        this.delegate()?.subscribeAlarms(this.props.props.alarm.sources, force);
+        const d = this.delegate();
+        // Only a message actually sent restarts the resubscribe clock: a no-op must
+        // not postpone the forced resubscribe a stale feed needs.
+        if (d !== null && d.subscribeAlarms(this.props.props.alarm.sources, force)) {
+            this.lastResubscribe = mono();
+        }
     }
 
     // --- input ----------------------------------------------------------------------
