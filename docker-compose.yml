@@ -1,6 +1,6 @@
 # Local development gateway for testing the Mustry Perspective Components module.
 #
-# Runs a disposable Ignition 8.3.6 gateway in Docker. DEVELOPMENT ONLY: it accepts
+# Runs a disposable Ignition 8.3.10 gateway in Docker. DEVELOPMENT ONLY: it accepts
 # the EULA automatically and uses a fixed weak admin password. Do NOT use in production.
 #
 # The module is self-signed with a local dev certificate (see ops/lib.sh). On a fresh
