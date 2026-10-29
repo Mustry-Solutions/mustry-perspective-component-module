@@ -155,9 +155,12 @@ then; subscriptions are re-sent whenever `alarm.sources` changes.
 The canvas modes draw through one interface (`modes/renderer.ts`:
 `configure(props)`, `frame(dt, now)`, `dispose()`). `modes/index.ts` builds
 them: the GL modes try WebGL2 first; when the browser has none or a shader
-fails, `IdleGuard.tsx` mounts a fresh canvas with the 2D version (pipes has its
-own; the other GL modes fall back to the 2D starfield). A lost GPU context
-does the same. The funny modes are 2D by design. The canvas is keyed by mode,
+fails, `CanvasMode.tsx` mounts a fresh canvas with the 2D version (pipes has its
+own; the other GL modes fall back to the 2D starfield). A lost GPU context, or
+a frame that throws (a framebuffer the driver will not complete), does the
+same. The fallback holds for the failing mode only: the next shuffle slot
+tries WebGL2 again. A GL context left behind by a renderer that failed while
+being built is lost at once, not left for the garbage collector. The funny modes are 2D by design. The canvas is keyed by mode,
 because a canvas that held a GL context cannot give a 2D one (shuffle swaps
 between the two). It carries `data-renderer` (`webgl2` or `2d`).
 

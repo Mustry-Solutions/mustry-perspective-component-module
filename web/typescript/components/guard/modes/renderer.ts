@@ -2,7 +2,7 @@
 // base class of the WebGL2 modes (scene target, post-processing, quality).
 import { GuardProps } from '../guardProps';
 import { canvasSize } from './frameLoop';
-import { createGL } from './gl/gl';
+import { createGL, releaseGL } from './gl/gl';
 import { PostFx } from './gl/post';
 import { Governor, QualitySetting } from './quality';
 
@@ -93,14 +93,14 @@ export abstract class GLMode implements ModeRenderer {
 
     dispose(): void {
         this.canvas.removeEventListener('webglcontextlost', this.onLost);
-        if (!this.contextLost) {
-            this.disposeScene();
-            this.post.dispose();
-        }
-        // Hand the GPU memory back now rather than at the next GC.
-        const ext = this.gl.getExtension('WEBGL_lose_context');
-        if (ext) {
-            ext.loseContext();
+        try {
+            if (!this.contextLost) {
+                this.disposeScene();
+                this.post.dispose();
+            }
+        } finally {
+            // Hand the GPU memory back now rather than at the next GC, even when a failed scene would not dispose.
+            releaseGL(this.canvas);
         }
     }
 

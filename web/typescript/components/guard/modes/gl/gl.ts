@@ -4,10 +4,13 @@
 
 export type Vec3 = [number, number, number];
 
+/** The context made for each canvas, so one whose renderer failed half-way can still be handed back. */
+const contexts = new WeakMap<HTMLCanvasElement, WebGL2RenderingContext>();
+
 /** A WebGL2 context for an idle-mode canvas, or null when the browser has none. */
 export function createGL(canvas: HTMLCanvasElement): WebGL2RenderingContext | null {
     try {
-        return canvas.getContext('webgl2', {
+        const gl = canvas.getContext('webgl2', {
             alpha: false,
             antialias: false, // MSAA happens in our own scene target (see post.ts)
             depth: false,
@@ -16,8 +19,32 @@ export function createGL(canvas: HTMLCanvasElement): WebGL2RenderingContext | nu
             preserveDrawingBuffer: false,
             powerPreference: 'default'
         });
+        if (gl) {
+            contexts.set(canvas, gl);
+        }
+        return gl;
     } catch (e) {
         return null;
+    }
+}
+
+/**
+ * Lose the canvas's context now, giving its GPU memory back instead of at the
+ * next GC (browsers cap live contexts at about 16). Safe on a canvas without one.
+ */
+export function releaseGL(canvas: HTMLCanvasElement): void {
+    const gl = contexts.get(canvas);
+    if (!gl) {
+        return;
+    }
+    contexts.delete(canvas);
+    try {
+        const ext = gl.getExtension('WEBGL_lose_context');
+        if (ext) {
+            ext.loseContext();
+        }
+    } catch (e) {
+        // Already lost: nothing to hand back.
     }
 }
 

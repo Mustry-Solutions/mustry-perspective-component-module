@@ -11,6 +11,7 @@ import { FlowGL } from './gl/flow';
 import { HaloGL } from './gl/halo';
 import { PipesGL } from './gl/pipesGL';
 import { LavaGL, SynthwaveGL, TunnelGL } from './gl/showpieces';
+import { releaseGL } from './gl/gl';
 import { StarfieldGL } from './gl/starfieldGL';
 import { PipesRenderer } from './pipes';
 import { QualitySetting } from './quality';
@@ -42,6 +43,9 @@ export function createGLRenderer(mode: Mode, canvas: HTMLCanvasElement, quality:
                 return null;
         }
     } catch (e) {
+        // A constructor that threw after the context existed (a shader the driver
+        // rejects) leaves a live context nobody owns: lose it now.
+        releaseGL(canvas);
         if (!warned) {
             warned = true;
             // A warning, not an error: the fallback works, and kiosk consoles get read for errors.
