@@ -148,8 +148,9 @@ public final class SourceFilter {
         if (raw.isEmpty()) {
             return true;
         }
-        String display = alarm.displayPath().toLowerCase(Locale.ROOT);
-        String source = alarm.source().toLowerCase(Locale.ROOT);
+        // Lower-cased once per alarm (ActiveAlarm), not once per guard.
+        String display = alarm.displayKey();
+        String source = alarm.sourceKey();
         for (String g : globs) {
             if (globMatches(g, display) || globMatches(g, source)) {
                 return true;

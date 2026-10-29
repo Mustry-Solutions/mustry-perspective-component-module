@@ -1,7 +1,9 @@
 package com.mustrysolutions.perspective.components.gateway.guard;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -11,6 +13,8 @@ import java.util.function.Supplier;
 
 import com.inductiveautomation.ignition.common.alarming.AlarmEvent;
 import com.inductiveautomation.ignition.common.alarming.AlarmFilter;
+import com.inductiveautomation.ignition.common.alarming.AlarmState;
+import com.inductiveautomation.ignition.common.alarming.query.conditions.EnumCondition;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.alarming.AlarmManager;
@@ -106,7 +110,11 @@ public final class AlarmFeed {
 
     static List<ActiveAlarm> fromGateway(AlarmManager alarms) {
         List<ActiveAlarm> out = new ArrayList<>();
-        for (AlarmEvent e : alarms.queryStatus(new AlarmFilter())) {
+        // Only active alarms: cleared-unacked ones can be many and are never shown.
+        // A new filter per query (the query engine marks fields on it).
+        AlarmFilter activeOnly = new AlarmFilter();
+        activeOnly.and(AlarmFilter.STATE, new EnumCondition<>(AlarmState.ActiveUnacked, AlarmState.ActiveAcked));
+        for (AlarmEvent e : alarms.queryStatus(activeOnly)) {
             if (e.getState() == null || !e.getState().isActive() || e.isShelved()) {
                 continue;
             }
@@ -184,7 +192,7 @@ public final class AlarmFeed {
         }
         for (Slot slot : slots) {
             if (slot.subscriber == s) {
-                send(slot, alarms, clock.getAsLong(), true);
+                send(slot, alarms, clock.getAsLong(), true, new HashMap<>());
             }
         }
     }
@@ -229,24 +237,40 @@ public final class AlarmFeed {
         List<ActiveAlarm> read = List.copyOf(alarms);
         latest = read;
         long now = clock.getAsLong();
+        // Guards with the same patterns (every screen of a project, typically) share one summary per tick.
+        Map<SummaryKey, Summary> memo = new HashMap<>();
         for (Slot slot : slots) {
             if (gen != generation) {
                 return;
             }
-            send(slot, read, now, false);
+            send(slot, read, now, false, memo);
         }
     }
 
-    private void send(Slot slot, List<ActiveAlarm> alarms, long now, boolean force) {
+    private record SummaryKey(SourceFilter filter, int top) {
+    }
+
+    private record Summary(JsonObject body, String text) {
+    }
+
+    private void send(Slot slot, List<ActiveAlarm> alarms, long now, boolean force, Map<SummaryKey, Summary> memo) {
         Subscriber s = slot.subscriber;
-        JsonObject body;
+        Summary summary;
         try {
-            body = AlarmSummary.of(alarms, s.filter(), s.top());
+            SummaryKey key = new SummaryKey(s.filter(), s.top());
+            summary = memo.get(key);
+            if (summary == null) {
+                JsonObject body = AlarmSummary.of(alarms, key.filter(), key.top());
+                summary = new Summary(body, body.toString());
+                memo.put(key, summary);
+            }
         } catch (RuntimeException e) {
             log.warn("Could not summarise alarms for an Idle Guard", e);
             return;
         }
-        String text = body.toString();
+        String text = summary.text();
+        // Each guard gets its own copy: the envelope (seq, sentAt) is per guard.
+        JsonObject body = summary.body().deepCopy();
         synchronized (slot) {
             boolean changed = !text.equals(slot.lastBody);
             if (!force && !changed && now - slot.lastSent < HEARTBEAT_MS) {

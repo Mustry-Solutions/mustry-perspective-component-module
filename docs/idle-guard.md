@@ -269,7 +269,9 @@ The animated modes are opt-in.
   guard is subscribed: the first guard's subscription starts the poll, the
   last guard's departure stops it, so a gateway whose projects use no guard
   pays nothing. A restarted poll never replays alarms read before it stopped.
-  Reads active, unshelved alarms each second, builds each subscriber's summary with its own `SourceFilter`,
+  Reads active, unshelved alarms each second (the query asks only for the
+  active states), builds each subscriber's summary with its own `SourceFilter`
+  (guards with the same patterns share one summary per tick), and
   sends it when it changed or every 2 s as a heartbeat. If the query throws it
   sends nothing, so every guard fails open.
 - `AlarmSummary`: counts by priority (active, and unacknowledged), plus the

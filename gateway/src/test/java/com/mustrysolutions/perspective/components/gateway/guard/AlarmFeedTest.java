@@ -207,4 +207,24 @@ class AlarmFeedTest {
         assertEquals(1, b.got.size());
         assertEquals(0, b.got.get(0).getAsJsonObject("active").get("high").getAsInt());
     }
+
+    @Test
+    void guardsWithTheSamePatternsShareASummaryButNotTheEnvelope() {
+        Sub a = new Sub();
+        Sub b = new Sub();
+        a.filter = SourceFilter.of(List.of("Line 1*"));
+        b.filter = SourceFilter.of(List.of("Line 1*"));
+        alarms.add(new ActiveAlarm("s", "Line 1/x", "l", ActiveAlarm.HIGH, false, 1));
+        feed.subscribe(a);
+        feed.tick();
+        feed.subscribe(b);
+        now.addAndGet(AlarmFeed.HEARTBEAT_MS);
+        feed.tick();
+        assertEquals(2, a.got.size());
+        assertEquals(1, b.got.size());
+        assertEquals(2, a.got.get(1).get("seq").getAsLong());
+        assertEquals(1, b.got.get(0).get("seq").getAsLong(), "each guard numbers its own messages");
+        assertTrue(a.got.get(1) != b.got.get(0), "each guard gets its own copy");
+        assertEquals(1, b.got.get(0).getAsJsonObject("active").get("high").getAsInt());
+    }
 }
