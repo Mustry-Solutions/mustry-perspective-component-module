@@ -1,7 +1,7 @@
 // Reads the Perspective PropertyTree into the typed props the Idle Guard uses.
 import { NightConfig, normNightMode, normReduceMotion, priorityIndex, ReduceMotionSetting } from './idleLogic';
 import { normQuality, QualitySetting } from './modes/quality';
-import { GuardLabels, guardLabelBase } from '../../shared/labels/guard';
+import { GUARD_MODE_TEXT_KEYS, GuardLabels, guardLabelBase } from '../../shared/labels/guard';
 
 /** The PropertyTree readers we use, kept structural so the mapper is node-testable. */
 export interface PropReader {
@@ -115,11 +115,11 @@ function readLines(tree: PropReader): LineSpec[] {
     return out;
 }
 
-/** The locale's pack, with every non-empty config.labels.* key on top. */
+/** The locale's pack, with every non-empty config.labels.* key on top (the mode texts have props of their own). */
 function readLabels(tree: PropReader, locale: string): GuardLabels {
     const base = guardLabelBase(locale);
     const out = { ...base };
-    (Object.keys(base) as (keyof GuardLabels)[]).forEach((k) => {
+    (Object.keys(base) as (keyof GuardLabels)[]).filter((k) => !GUARD_MODE_TEXT_KEYS.includes(k)).forEach((k) => {
         const v = tree.readString(`config.labels.${k}`, '');
         if (v !== '') {
             out[k] = v;
@@ -138,9 +138,16 @@ export function moveThreshold(value: unknown): number {
     return Number.isFinite(n) ? Math.max(0, n) : 8;
 }
 
+/** A mode text prop: its own value when set, else the locale pack's (labels-style override, no schema default). */
+function modeText(tree: PropReader, path: string, fallback: string): string {
+    const v = tree.readString(path, '').trim();
+    return v !== '' ? v : fallback;
+}
+
 export function mapGuardProps(tree: PropReader): GuardProps {
     const wake = priorityIndex(tree.readString('alarm.wakePriority', 'High'), 3);
     const locale = tree.readString('config.locale', '');
+    const labels = readLabels(tree, locale);
     return {
         config: {
             enabled: tree.readBoolean('config.enabled', true),
@@ -152,7 +159,7 @@ export function mapGuardProps(tree: PropReader): GuardProps {
             quality: normQuality(tree.readString('config.quality', 'auto')),
             reduceMotion: normReduceMotion(tree.readString('config.reduceMotion', 'auto')),
             locale,
-            labels: readLabels(tree, locale)
+            labels
         },
         alarm: {
             wakePriority: wake,
@@ -188,10 +195,10 @@ export function mapGuardProps(tree: PropReader): GuardProps {
                 resetAfterSec: Number(tree.readNumber('modes.pipes.resetAfterSec', 120)),
                 orbit: tree.readBoolean('modes.pipes.orbit', true)
             },
-            bounce: { text: tree.readString('modes.bounce.text', 'IDLE') },
+            bounce: { text: modeText(tree, 'modes.bounce.text', labels.bounce) },
             pong: {
-                left: tree.readString('modes.pong.left', 'DAY SHIFT'),
-                right: tree.readString('modes.pong.right', 'NIGHT SHIFT')
+                left: modeText(tree, 'modes.pong.left', labels.pongLeft),
+                right: modeText(tree, 'modes.pong.right', labels.pongRight)
             },
             shuffle: {
                 modes: (tree.readArray('modes.shuffle.modes', []) || [])

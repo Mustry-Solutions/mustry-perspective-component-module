@@ -100,3 +100,21 @@ describe('moveThreshold', () => {
         expect(mapGuardProps(tree({ config: { moveThresholdPx: -3 } })).config.moveThresholdPx).toBe(0);
     });
 });
+
+describe('mode texts', () => {
+    it('fall back to the locale pack when unset or blank', () => {
+        const de = mapGuardProps(tree({ config: { locale: 'de-AT' }, modes: { bounce: { text: '  ' } } }));
+        expect(de.modes.bounce.text).toBe('STANDBY');
+        expect(de.modes.pong).toEqual({ left: 'TAGSCHICHT', right: 'NACHTSCHICHT' });
+    });
+
+    it('take their own prop over the pack, never config.labels', () => {
+        const p = mapGuardProps(tree({
+            config: { locale: 'fr', labels: { bounce: 'ignored', pongLeft: 'ignored' } },
+            modes: { bounce: { text: 'ACME' }, pong: { left: 'Line A' } }
+        }));
+        expect(p.modes.bounce.text).toBe('ACME');
+        expect(p.modes.pong).toEqual({ left: 'Line A', right: 'ÉQUIPE DE NUIT' });
+        expect(p.config.labels.bounce).toBe('EN VEILLE');
+    });
+});

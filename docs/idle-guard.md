@@ -207,8 +207,8 @@ between the two). It carries `data-renderer` (`webgl2` or `2d`).
 - **Bounce** (`fun/bounce*.ts`): the bouncing badge (`modes.bounce.text`),
   a new colour per bounce, confetti and "CORNER!" when it hits one exactly,
   and a dim scoreboard of bounces and time since the last corner.
-- **Pong** (`fun/pong*.ts`): two AIs (`modes.pong.left` / `right`, default day
-  shift vs night shift) that aim for the predicted crossing with a per-rally
+- **Pong** (`fun/pong*.ts`): two AIs (`modes.pong.left` / `right`, by default
+  the locale's day shift vs night shift) that aim for the predicted crossing with a per-rally
   error, sometimes big enough to miss; first to 11; CRT scanlines; the field
   drifts.
 - **Ducks** (`fun/ducks*.ts`): rubber ducks in hard hats and hi-vis vests on a
@@ -338,8 +338,8 @@ The full schema with descriptions is
 | `modes.clock` | | `title` (also shown in halo), `showSeconds` |
 | `modes.starfield` | | `speed` (bind a line rate), `color`, `density`, `caption` |
 | `modes.pipes` | | `resetAfterSec` (120), `orbit` (true) |
-| `modes.bounce` | | `text` ("IDLE") |
-| `modes.pong` | | `left` ("DAY SHIFT"), `right` ("NIGHT SHIFT") |
+| `modes.bounce` | | `text` (unset: the locale pack's "IDLE") |
+| `modes.pong` | | `left`, `right` (unset: the locale pack's "DAY SHIFT", "NIGHT SHIFT") |
 | `modes.shuffle` | | `modes` ([] = all animated), `minutes` (5, min 0.5) |
 
 Events: `onIdle {mode, idleSince}`, `onWake {cause, idleForMs}` with cause

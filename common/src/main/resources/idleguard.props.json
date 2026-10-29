@@ -351,8 +351,7 @@
           "properties": {
             "text": {
               "type": "string",
-              "default": "IDLE",
-              "description": "What the bouncing badge says: a site or company name, a line name, anything short."
+              "description": "What the bouncing badge says: a site or company name, a line name, anything short. Unset or empty: the config.locale pack's word for idle ('IDLE')."
             }
           }
         },
@@ -362,13 +361,11 @@
           "properties": {
             "left": {
               "type": "string",
-              "default": "DAY SHIFT",
-              "description": "Name of the left player."
+              "description": "Name of the left player. Unset or empty: the config.locale pack's 'DAY SHIFT'."
             },
             "right": {
               "type": "string",
-              "default": "NIGHT SHIFT",
-              "description": "Name of the right player."
+              "description": "Name of the right player. Unset or empty: the config.locale pack's 'NIGHT SHIFT'."
             }
           }
         },
