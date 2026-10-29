@@ -7,7 +7,7 @@
 // LABELS are zone-aware via Intl.
 import { csvCell } from '../../shared/csv';
 import { resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
-import { RRule } from '../../shared/recurrence';
+import { OccurrenceTag, RRule } from '../../shared/recurrence';
 import { ShiftDef, shiftStartMinutes } from '../../shared/shifts';
 
 // Shift parsing lives in shared/shifts.ts (also used by the calendar); re-exported
@@ -16,7 +16,7 @@ export { shiftStartMinutes };
 export type { ShiftDef };
 
 /** One timeline event/bar (controlled data — the component never mutates these). */
-export interface TimelineEvent {
+export interface TimelineEvent extends OccurrenceTag {
     id: string;
     resourceId: string;
     title: string;

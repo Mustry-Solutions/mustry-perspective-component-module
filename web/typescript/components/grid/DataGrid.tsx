@@ -12,7 +12,7 @@ import { CSV_BOM, csvCell } from '../../shared/csv';
 import { DocDismiss } from '../../shared/dismiss';
 import {
     CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
-    aggregateValue, batchPayload, cellText, columnLayout, editDraft, effectiveColumns,
+    aggregateValue, batchPayload, cellText, columnLayout, editDraft, editErrorText, effectiveColumns,
     formatCell, gridIsEmpty, gridToCsv, locateCell, matchStyle, nextCell, nextSelection, nextSort,
     parsePasteMatrix, pastePlan, pendingKey, quickFilterRows, reorderFields, rowWithPending,
     settlePending, sortRows, unusableIdWarning, unusableRowIds, validateCell, visibleRowRange
@@ -431,19 +431,6 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         this.fireCellEdit(row, col.field, cur, !(cur === true || cur === 'true'));
     }
 
-    private errorText(error: EditError, col: GridColumn): string {
-        const L = this.props.props.labels;
-        switch (error) {
-            case 'required': return L.errRequired;
-            case 'number': return L.errNumber;
-            case 'min': return L.errMin.replace('{min}', String(col.min));
-            case 'max': return L.errMax.replace('{max}', String(col.max));
-            case 'pattern': return L.errPattern;
-            case 'option': return L.errOption;
-            default: return '';
-        }
-    }
-
     // --- keyboard model -----------------------------------------------------------
     private moveFocus(key: string, shift: boolean, from?: CellPos): void {
         const cols = this.effCols();
@@ -642,7 +629,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             ref: this.editorRef as any,
             className: `mustry-dg-editor${invalid ? ' mustry-dg-editor--invalid' : ''}`,
             value: ed.draft,
-            title: invalid ? this.errorText(ed.error, col) : undefined,
+            title: invalid ? editErrorText(ed.error, col, this.props.props.labels, this.props.props.locale) : undefined,
             onKeyDown: this.onEditorKeyDown,
             onBlur: () => {
                 // blur commits when valid; an invalid draft reverts (never trap focus)
