@@ -154,13 +154,16 @@ export class PanZoomGestureController {
     /** React handler for the viewport element's onDoubleClick. Only the content
      *  and the bare viewport zoom: the overlays (controls, minimap, POI list,
      *  edge indicators) also sit in the viewport, and a fast double-click on the
-     *  zoom-out button would otherwise undo its own two clicks. */
+     *  zoom-out button would otherwise undo its own two clicks. The event stops
+     *  here either way, so a Pan & Zoom nested in this one's embedded view does
+     *  not zoom the outer one too. */
     doubleClick = (e: React.MouseEvent): void => {
         const env = this.host.env();
         const el = this.el;
         if (!env.doubleClickZoom || !el) {
             return;
         }
+        e.stopPropagation();
         const target = e.target as Element;
         if (target !== el && !target.closest('.mustry-pz-content')) {
             return;

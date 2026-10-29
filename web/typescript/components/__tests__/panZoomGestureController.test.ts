@@ -44,8 +44,9 @@ function setup(): { gestures: PanZoomGestureController; applied: PzViewport[]; v
     return { gestures, applied, viewport };
 }
 
-function dblclick(target: FakeEl): React.MouseEvent {
-    return { target, clientX: 760, clientY: 40 } as unknown as React.MouseEvent;
+function dblclick(target: FakeEl): React.MouseEvent & { stopped: boolean } {
+    const e = { target, clientX: 760, clientY: 40, stopped: false, stopPropagation: () => { e.stopped = true; } };
+    return e as unknown as React.MouseEvent & { stopped: boolean };
 }
 
 beforeAll(() => {
@@ -78,10 +79,20 @@ describe('PanZoomGestureController.doubleClick', () => {
         expect(applied).toHaveLength(0);
     });
 
+    it('keeps the double-click from reaching an outer Pan & Zoom', () => {
+        const { gestures, viewport } = setup();
+        const onContent = dblclick(new FakeEl('mustry-pz-content', viewport));
+        const onControls = dblclick(new FakeEl('mustry-pz-controls', viewport));
+        gestures.doubleClick(onContent);
+        gestures.doubleClick(onControls);
+        expect(onContent.stopped).toBe(true);
+        expect(onControls.stopped).toBe(true);
+    });
+
     it('ignores a double-click on the minimap, the POI list and an edge indicator', () => {
         const { gestures, applied, viewport } = setup();
-        const minimap = new FakeEl('mustry-pz-minimap', viewport);
-        gestures.doubleClick(dblclick(new FakeEl('mustry-pz-mini-view', minimap)));
+        // The view rectangle is pointer-events: none, so the minimap itself is the target.
+        gestures.doubleClick(dblclick(new FakeEl('mustry-pz-minimap', viewport)));
         gestures.doubleClick(dblclick(new FakeEl('mustry-pz-poi-select', viewport)));
         gestures.doubleClick(dblclick(new FakeEl('mustry-pz-indicator', viewport)));
         expect(applied).toHaveLength(0);
