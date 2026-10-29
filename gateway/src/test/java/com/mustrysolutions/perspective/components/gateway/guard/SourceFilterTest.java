@@ -1,9 +1,13 @@
 package com.mustrysolutions.perspective.components.gateway.guard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,5 +62,49 @@ class SourceFilterTest {
         SourceFilter f = SourceFilter.of(List.of("nothing*", "*Line2*"));
         assertTrue(f.matches(LINE2));
         assertFalse(f.matches(LINE1));
+    }
+
+    @Test
+    void globSemantics() {
+        assertTrue(SourceFilter.globMatches("a*b*c", "axxbyyc"));
+        assertTrue(SourceFilter.globMatches("a*b*c", "abc"));
+        assertFalse(SourceFilter.globMatches("a*b*c", "axxbyy"));
+        assertTrue(SourceFilter.globMatches("*", ""));
+        assertTrue(SourceFilter.globMatches("", ""));
+        assertFalse(SourceFilter.globMatches("", "a"));
+        assertTrue(SourceFilter.globMatches("*ab", "aab"));
+        assertFalse(SourceFilter.globMatches("?", "a"));
+        assertEquals("a*b*", SourceFilter.normalise("A***B**"));
+    }
+
+    @Test
+    void pathologicalPatternsMatchInLinearTime() {
+        // As a regex, ten stars took forever on a single gateway-wide thread.
+        String path = "a".repeat(200);
+        ActiveAlarm alarm = alarm(path, path);
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            for (int i = 0; i < 1000; i++) {
+                assertFalse(SourceFilter.of(List.of("**********zz")).matches(alarm));
+                assertFalse(SourceFilter.of(List.of("*a*a*a*a*a*a*a*a*a*a*a*a*b")).matches(alarm));
+            }
+            assertTrue(SourceFilter.of(List.of("**********a")).matches(alarm));
+        });
+    }
+
+    @Test
+    void capsPatternCountAndLength() {
+        List<String> many = new ArrayList<>();
+        for (int i = 0; i < SourceFilter.MAX_PATTERNS; i++) {
+            many.add("nothing" + i);
+        }
+        many.add("*Line2*");
+        SourceFilter capped = SourceFilter.of(many);
+        assertEquals(SourceFilter.MAX_PATTERNS, capped.patterns().size());
+        assertFalse(capped.matches(LINE2));
+
+        // An over-long pattern is ignored; if it was the only one, nothing matches (never everything).
+        String tooLong = "*" + "x".repeat(SourceFilter.MAX_PATTERN_LENGTH);
+        assertFalse(SourceFilter.of(List.of(tooLong)).matches(LINE1));
+        assertTrue(SourceFilter.of(List.of(tooLong, "*Line2*")).matches(LINE2));
     }
 }

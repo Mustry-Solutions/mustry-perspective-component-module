@@ -275,7 +275,9 @@ The animated modes are opt-in.
 - `AlarmSummary`: counts by priority (active, and unacknowledged), plus the
   top N alarms (unacknowledged first, then priority, then newest).
 - `SourceFilter`: `alarm.sources` globs (`*` only), case-insensitive, against
-  the display path or the source path.
+  the display path or the source path. Matched by an iterative glob matcher,
+  not a regex, so no pattern can stall the shared poll thread; at most 32
+  patterns of up to 256 characters (longer ones match nothing).
 - `GuardModelDelegate`: subscribes on `screensaver-subscribe`, unsubscribes on
   shutdown.
 
