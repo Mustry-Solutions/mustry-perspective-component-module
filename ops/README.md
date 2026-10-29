@@ -1,6 +1,6 @@
 # ops/ — local development gateway
 
-Helper scripts for running a disposable **Ignition 8.3.6** gateway in Docker so you
+Helper scripts for running a disposable **Ignition 8.3.10** gateway in Docker so you
 can build, install, and test this module locally. The gateway is defined in
 [`../docker-compose.yml`](../docker-compose.yml).
 
@@ -69,7 +69,7 @@ ops/teardown.sh     # stop when done (keeps state)
 
 ## How it works
 
-- The gateway is `inductiveautomation/ignition:8.3.6`, edition `standard` (includes Perspective).
+- The gateway is `inductiveautomation/ignition:8.3.10`, edition `standard` (includes Perspective).
 - `ops/lib.sh` generates a self-signed dev keystore under `ops/signing/` (once), then
   builds **and signs** the module by passing `-Pignition.signing.*` to Gradle. A plain
   `./gradlew build` with no signing properties still works and produces an *unsigned* build.
