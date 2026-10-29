@@ -28,6 +28,7 @@ public final class ActiveAlarm {
     private final int priority;
     private final boolean acked;
     private final long activeSince;
+    private final boolean shelved;
     private final String sourceKey;
     private final String displayKey;
 
@@ -40,12 +41,22 @@ public final class ActiveAlarm {
      * @param activeSince epoch ms the alarm went active
      */
     public ActiveAlarm(String source, String displayPath, String label, int priority, boolean acked, long activeSince) {
+        this(source, displayPath, label, priority, acked, activeSince, false);
+    }
+
+    /**
+     * @param shelved shelved by an operator: only a Critical one is ever read
+     *                (it still counts, never listed); see {@link AlarmSummary}
+     */
+    public ActiveAlarm(String source, String displayPath, String label, int priority, boolean acked, long activeSince,
+                       boolean shelved) {
         this.source = source == null ? "" : source;
         this.displayPath = displayPath == null || displayPath.isEmpty() ? this.source : displayPath;
         this.label = label == null ? "" : label;
         this.priority = Math.max(DIAGNOSTIC, Math.min(CRITICAL, priority));
         this.acked = acked;
         this.activeSince = activeSince;
+        this.shelved = shelved;
         this.sourceKey = this.source.toLowerCase(Locale.ROOT);
         this.displayKey = this.displayPath.toLowerCase(Locale.ROOT);
     }
@@ -74,6 +85,10 @@ public final class ActiveAlarm {
         return activeSince;
     }
 
+    public boolean shelved() {
+        return shelved;
+    }
+
     /** The source path, lower-cased (what {@link SourceFilter} matches). */
     String sourceKey() {
         return sourceKey;
@@ -87,16 +102,16 @@ public final class ActiveAlarm {
     @Override
     public boolean equals(Object o) {
         return o instanceof ActiveAlarm a && a.priority == priority && a.acked == acked && a.activeSince == activeSince
-            && a.source.equals(source) && a.displayPath.equals(displayPath) && a.label.equals(label);
+            && a.shelved == shelved && a.source.equals(source) && a.displayPath.equals(displayPath) && a.label.equals(label);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(source, displayPath, label, priority, acked, activeSince);
+        return Objects.hash(source, displayPath, label, priority, acked, activeSince, shelved);
     }
 
     @Override
     public String toString() {
-        return "ActiveAlarm[" + displayPath + ", " + PRIORITY_KEYS[priority] + (acked ? ", acked" : "") + "]";
+        return "ActiveAlarm[" + displayPath + ", " + PRIORITY_KEYS[priority] + (acked ? ", acked" : "") + (shelved ? ", shelved" : "") + "]";
     }
 }

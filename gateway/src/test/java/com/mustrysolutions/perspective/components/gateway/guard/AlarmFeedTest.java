@@ -80,14 +80,18 @@ class AlarmFeedTest {
         Sub all = new Sub();
         Sub line2 = new Sub();
         line2.filter = SourceFilter.of(List.of("Line 2*"));
-        alarms.add(new ActiveAlarm("s", "Line 1/x", "l", ActiveAlarm.CRITICAL, false, 1));
+        alarms.add(new ActiveAlarm("s", "Line 1/x", "l", ActiveAlarm.HIGH, false, 1));
+        alarms.add(new ActiveAlarm("s", "Line 1/y", "c", ActiveAlarm.CRITICAL, false, 1));
         feed.subscribe(all);
         feed.subscribe(line2);
         feed.subscribe(all); // idempotent
         assertEquals(2, feed.subscriberCount());
         feed.tick();
-        assertEquals(1, all.got.get(0).getAsJsonObject("active").get("critical").getAsInt());
-        assertEquals(0, line2.got.get(0).getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(1, all.got.get(0).getAsJsonObject("active").get("high").getAsInt());
+        assertEquals(0, line2.got.get(0).getAsJsonObject("active").get("high").getAsInt());
+        // Critical is never filtered: line2 counts it too, without its label.
+        assertEquals(1, line2.got.get(0).getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(0, line2.got.get(0).getAsJsonArray("top").size());
     }
 
     @Test

@@ -531,7 +531,7 @@ Perspective has no `system.util.getInactivitySeconds()` or lock screen like Visi
 
 1. Drop one **Idle Guard** into a view in a **shared dock**, so it is on every page and survives navigation. It is invisible in sessions; in the Designer it shows as a small chip.
 2. Set `config.timeoutSec` and `config.mode`, and bind `lines[]` (and `modes.*`) to your tags.
-3. On a public or lobby screen, set `alarm.sources`: every session with a guard receives the labels of the matching alarms, whoever is logged in. The gateway reads `alarm.sources` from the component's props, never from the browser's messages; set the property's access to Protected so the session cannot rewrite it either.
+3. On a public or lobby screen, set `alarm.sources`: every session with a guard receives the labels of the matching alarms, whoever is logged in (plus the number of active Critical alarms outside them, without labels: Critical always wakes). The gateway reads `alarm.sources` from the component's props, never from the browser's messages; set the property's access to Protected so the session cannot rewrite it either.
 
 Props, the alarm feed, safety rules and tests are documented in [`docs/idle-guard.md`](docs/idle-guard.md); the hardware checklist is [`docs/guard-manual-test.md`](docs/guard-manual-test.md).
 

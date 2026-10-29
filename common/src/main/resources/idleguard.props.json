@@ -164,7 +164,7 @@
         "sources": {
           "type": "array",
           "default": [],
-          "description": "Only alarms whose display path or source path matches one of these patterns count. '*' matches anything, e.g. 'prov:default:/tag:Line1/*' or 'Line 1*'. Empty = every alarm on the gateway. The matching alarms' labels and display paths are sent to this browser for the banner, whoever is logged in (or nobody): on a public or lobby screen, limit them here.",
+          "description": "Only alarms whose display path or source path matches one of these patterns count. '*' matches anything, e.g. 'prov:default:/tag:Line1/*' or 'Line 1*'. Empty = every alarm on the gateway. Active Critical alarms always count, matching or not (one that does not match is sent as a count only, never its label or path). The matching alarms' labels and display paths are sent to this browser for the banner, whoever is logged in (or nobody): on a public or lobby screen, limit them here.",
           "items": {
             "type": "string"
           }
@@ -428,7 +428,7 @@
         },
         "alarms": {
           "type": "object",
-          "description": "Active alarm counts by priority, from the gateway feed, after the source filter (acknowledged ones dropped when alarm.includeAcked is off, except Critical).",
+          "description": "Active alarm counts by priority, from the gateway feed, after the source filter, which never drops Critical (acknowledged ones dropped when alarm.includeAcked is off, except Critical).",
           "additionalProperties": false,
           "properties": {
             "critical": {

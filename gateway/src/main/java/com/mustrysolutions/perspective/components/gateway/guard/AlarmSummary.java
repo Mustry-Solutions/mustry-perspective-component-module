@@ -11,7 +11,14 @@ import com.inductiveautomation.ignition.common.gson.JsonObject;
  * What one guard is told about the alarms it watches: active counts by
  * priority (all, and unacknowledged only) and the top few alarms,
  * unacknowledged first, then highest priority, then newest. The browser's
- * alarm policy (alarmPolicy.ts) decides from this whether to wake or pin.
+ * alarm policy (idleLogic.ts) decides from this whether to wake or pin.
+ *
+ * <p><b>Critical alarms are never filtered.</b> Every active Critical alarm
+ * counts, whatever the guard's source patterns and shelved or not, so an
+ * active Critical alarm is never covered. One outside the patterns (or
+ * shelved) reaches the browser as a count only: it is never listed, so no
+ * label or path leaves its scope. Every other priority counts and lists only
+ * within the patterns, unshelved.
  */
 public final class AlarmSummary {
 
@@ -36,10 +43,13 @@ public final class AlarmSummary {
         int[] unacked = new int[ActiveAlarm.PRIORITY_KEYS.length];
         List<ActiveAlarm> kept = new ArrayList<>();
         for (ActiveAlarm a : alarms) {
-            if (!filter.matches(a)) {
+            boolean inScope = !a.shelved() && filter.matches(a);
+            if (!inScope && a.priority() != ActiveAlarm.CRITICAL) {
                 continue;
             }
-            kept.add(a);
+            if (inScope) {
+                kept.add(a);
+            }
             active[a.priority()]++;
             if (!a.acked()) {
                 unacked[a.priority()]++;

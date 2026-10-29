@@ -1,6 +1,7 @@
 package com.mustrysolutions.perspective.components.gateway.guard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.List;
 
@@ -52,9 +53,40 @@ class AlarmSummaryTest {
     }
 
     @Test
-    void filterAppliesToCountsAndTop() {
+    void filterAppliesToCountsAndTopBelowCritical() {
         JsonObject s = AlarmSummary.of(ALARMS, SourceFilter.of(List.of("Line 1/*")), 10);
-        assertEquals(0, s.getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(1, s.getAsJsonObject("active").get("high").getAsInt());
         assertEquals(4, s.getAsJsonArray("top").size());
+        JsonObject line2 = AlarmSummary.of(ALARMS, SourceFilter.of(List.of("Line 2/*")), 10);
+        assertEquals(0, line2.getAsJsonObject("active").get("medium").getAsInt());
+        assertEquals(0, line2.getAsJsonObject("active").get("high").getAsInt());
+    }
+
+    @Test
+    void criticalAlwaysCountsButIsListedOnlyInScope() {
+        // Line 2/C is Critical: outside "Line 1/*", it still counts, as a count only.
+        JsonObject s = AlarmSummary.of(ALARMS, SourceFilter.of(List.of("Line 1/*")), 10);
+        assertEquals(1, s.getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(1, s.getAsJsonObject("unacked").get("critical").getAsInt());
+        for (int i = 0; i < s.getAsJsonArray("top").size(); i++) {
+            assertNotEquals("Critical", s.getAsJsonArray("top").get(i).getAsJsonObject().get("label").getAsString(),
+                "an out-of-scope alarm's label never leaves the gateway");
+        }
+        // Even a pattern that matches nothing.
+        JsonObject none = AlarmSummary.of(ALARMS, SourceFilter.of(List.of("nothing")), 10);
+        assertEquals(1, none.getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(0, none.getAsJsonArray("top").size());
+    }
+
+    @Test
+    void shelvedCriticalCountsUnlistedShelvedOthersNever() {
+        List<ActiveAlarm> shelved = List.of(
+            new ActiveAlarm("s/x", "Line 1/X", "Shelved critical", ActiveAlarm.CRITICAL, true, 1, true),
+            new ActiveAlarm("s/y", "Line 1/Y", "Shelved high", ActiveAlarm.HIGH, false, 1, true));
+        JsonObject s = AlarmSummary.of(shelved, SourceFilter.ALL, 10);
+        assertEquals(1, s.getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(0, s.getAsJsonObject("unacked").get("critical").getAsInt());
+        assertEquals(0, s.getAsJsonObject("active").get("high").getAsInt());
+        assertEquals(0, s.getAsJsonArray("top").size());
     }
 }

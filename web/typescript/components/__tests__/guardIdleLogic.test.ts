@@ -93,6 +93,13 @@ describe('evaluateAlarms', () => {
         expect(evaluateAlarms(f, POLICY, 1000)).toMatchObject({ wake: true });
     });
 
+    it('wakes on a Critical count with no listed alarm (outside alarm.sources, or shelved), acked and includeAcked off', () => {
+        const f: AlarmFeed = { ...feed({ critical: 1 }, {}), top: [] };
+        const v = evaluateAlarms(f, { ...POLICY, wakePriority: CRITICAL, includeAcked: false }, 1000);
+        expect(v.wake).toBe(true);
+        expect(v.counted.critical).toBe(1);
+    });
+
     it('treats pinPriority above wakePriority as wakePriority', () => {
         const p = { ...POLICY, wakePriority: 2, pinPriority: 4 };
         expect(evaluateAlarms(feed({ medium: 1 }), p, 1000).wake).toBe(true);

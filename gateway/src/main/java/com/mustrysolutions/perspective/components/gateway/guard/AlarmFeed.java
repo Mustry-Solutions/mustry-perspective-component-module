@@ -111,11 +111,17 @@ public final class AlarmFeed {
     static List<ActiveAlarm> fromGateway(AlarmManager alarms) {
         List<ActiveAlarm> out = new ArrayList<>();
         // Only active alarms: cleared-unacked ones can be many and are never shown.
-        // A new filter per query (the query engine marks fields on it).
+        // Shelved ones too, for the Critical rule: an active Critical alarm always
+        // counts, shelved or not. A new filter per query (the query engine marks fields on it).
         AlarmFilter activeOnly = new AlarmFilter();
         activeOnly.and(AlarmFilter.STATE, new EnumCondition<>(AlarmState.ActiveUnacked, AlarmState.ActiveAcked));
+        activeOnly.getFlags().setRawValue(activeOnly.getFlags().getRawValue() | AlarmFilter.FLAG_INCLUDE_SHELVED);
         for (AlarmEvent e : alarms.queryStatus(activeOnly)) {
-            if (e.getState() == null || !e.getState().isActive() || e.isShelved()) {
+            if (e.getState() == null || !e.getState().isActive()) {
+                continue;
+            }
+            int priority = e.getPriority() == null ? ActiveAlarm.LOW : e.getPriority().getIntValue();
+            if (e.isShelved() && priority != ActiveAlarm.CRITICAL) {
                 continue;
             }
             String label = e.getLabel();
@@ -127,9 +133,10 @@ public final class AlarmFeed {
                 e.getSource() == null ? "" : e.getSource().toString(),
                 e.getDisplayPathOrSource(),
                 label,
-                e.getPriority() == null ? ActiveAlarm.LOW : e.getPriority().getIntValue(),
+                priority,
                 e.getState().isAcked(),
-                since));
+                since,
+                e.isShelved()));
         }
         return out;
     }

@@ -13,7 +13,9 @@ sell it as either.
 These hold whatever the props say, and every change to the guard keeps them:
 
 - **An active Critical alarm is never covered.** `evaluateAlarms` clamps the
-  wake priority to Critical; tested in jest and e2e.
+  wake priority to Critical, and the gateway counts every active Critical
+  alarm, whatever `alarm.sources` says and shelved or not; tested in jest,
+  JUnit and e2e.
 - **No feed, no cover.** A stale or missing alarm feed removes the overlay and
   prevents idling (fail open). No code path may show the overlay without a
   fresh feed.
@@ -269,13 +271,16 @@ The animated modes are opt-in.
   guard is subscribed: the first guard's subscription starts the poll, the
   last guard's departure stops it, so a gateway whose projects use no guard
   pays nothing. A restarted poll never replays alarms read before it stopped.
-  Reads active, unshelved alarms each second (the query asks only for the
-  active states), builds each subscriber's summary with its own `SourceFilter`
+  Reads the active alarms each second (the query asks only for the active
+  states; shelved ones are dropped, except Critical), builds each subscriber's summary with its own `SourceFilter`
   (guards with the same patterns share one summary per tick), and
   sends it when it changed or every 2 s as a heartbeat. If the query throws it
   sends nothing, so every guard fails open.
 - `AlarmSummary`: counts by priority (active, and unacknowledged), plus the
-  top N alarms (unacknowledged first, then priority, then newest).
+  top N alarms (unacknowledged first, then priority, then newest). Critical
+  alarms are never filtered: every active one counts. One outside the
+  guard's patterns, or shelved, is a count only, never listed, so its label
+  and path stay on the gateway.
 - `SourceFilter`: `alarm.sources` globs (`*` only), case-insensitive, against
   the display path or the source path. Matched by an iterative glob matcher,
   not a regex, so no pattern can stall the shared poll thread; at most 32
@@ -292,14 +297,15 @@ both.
 
 Every session that has an Idle Guard receives, every couple of seconds, the
 active alarm counts and the top three alarms (label and display path) that
-match its `alarm.sources`. There is **no permission check**: it goes to the
+match its `alarm.sources`, plus the number of active Critical alarms outside
+them (a count only: no label, no path). There is **no permission check**: it goes to the
 session whoever is logged in, or nobody. That is what any Alarm Status Table
 in a view does too, but the guard sits in a shared dock on every page, so it
 is easy to forget.
 
 - On a lobby, canteen or other public screen, set `alarm.sources` to the
   alarms that screen may show. A pattern that matches nothing hides every
-  alarm from it, but then no alarm wakes that screen either.
+  alarm below Critical from it; Critical alarms still wake it.
 - The counts and labels never leave the gateway for a session without a
   guard. The delegate takes nothing from the browser's subscribe message: it
   reads `alarm.sources` from the component's props on the gateway, so a
