@@ -1,4 +1,7 @@
-import { clearAlarms, expect, guardStatus, litShare, OVERLAY, openGuarded, test, tile, waitIdle, zoneWhereHourIs } from './guardHelpers';
+import { Page } from '@playwright/test';
+import {
+    clearAlarms, expect, guardStatus, litShare, OVERLAY, openGuarded, test, tile, waitIdle, waitSettled, watchCovers, zoneWhereHourIs
+} from './guardHelpers';
 
 // The Idle Guard on the GuardDemo verify page (/guard/<mode>/<timeout>...).
 // Every test runs in a fresh browser context (a fresh Perspective session).
@@ -24,6 +27,14 @@ test.describe.configure({ timeout: 90_000 });
  * that wrongly idles does so by then.
  */
 const NO_IDLE_PROOF_MS = 5_000 + 1_500;
+
+/** No cover goes up for NO_IDLE_PROOF_MS (counted across the window, not only at its end). */
+async function expectNoIdle(page: Page): Promise<void> {
+    const covers = await watchCovers(page);
+    await page.waitForTimeout(NO_IDLE_PROOF_MS);
+    expect(await covers()).toBe(0);
+    await expect(page.locator(OVERLAY)).toHaveCount(0);
+}
 
 test.describe('idle and wake', () => {
     test('idles after the timeout and wakes on mouse movement with the page intact', async ({ page }) => {
@@ -138,8 +149,7 @@ test.describe('alarms', () => {
         expect(wokeAfter).toBeLessThan(8_000 + 3_000);
         await expect(guardStatus(page)).toContainText('last wake: alarm');
         // While it is active, the page does not idle again.
-        await page.waitForTimeout(NO_IDLE_PROOF_MS);
-        await expect(page.locator(OVERLAY)).toHaveCount(0);
+        await expectNoIdle(page);
     });
 
     test('a Medium alarm pins a banner over the idle mode without waking', async ({ page }) => {
@@ -173,9 +183,8 @@ test.describe('alarms', () => {
         // 8 s until it is raised: the page idles meanwhile, then wakes.
         await waitIdle(page);
         await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 15_000 });
-        // Past the timeout with nobody touching it: still uncovered.
-        await page.waitForTimeout(NO_IDLE_PROOF_MS);
-        await expect(page.locator(OVERLAY)).toHaveCount(0);
+        // Past the timeout with nobody touching it: never covered, not even for a moment.
+        await expectNoIdle(page);
     });
 });
 
@@ -199,8 +208,7 @@ test.describe('fail open', () => {
         // config.alarm.staleAfterSec defaults to 8.
         await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 12_000 });
         await expect(guardStatus(page)).toContainText('last wake: feed-stale');
-        await page.waitForTimeout(NO_IDLE_PROOF_MS);
-        await expect(page.locator(OVERLAY)).toHaveCount(0);
+        await expectNoIdle(page);
         // Feed back: it idles again.
         blockFeed = false;
         await waitIdle(page, 15_000);
@@ -234,6 +242,7 @@ test.describe('modes', () => {
             const overlay = await waitIdle(page);
             await expect(overlay).toHaveAttribute('data-mode', mode);
             await expect(page.locator('.mustry-idle-canvas')).toHaveAttribute('data-renderer', renderer);
+            await waitSettled(overlay);
             // Until the scene has built up (it took up to ~4 s on SwiftShader when calibrated).
             await expect.poll(() => litShare(page, brightness), { timeout: 12_000 }).toBeGreaterThan(minLit);
         });
@@ -256,6 +265,7 @@ test.describe('modes', () => {
             const canvas = page.locator('.mustry-idle-canvas');
             await expect(canvas).toHaveCount(1);
             await expect(canvas).toHaveAttribute('data-renderer', renderer(next));
+            await waitSettled(overlay);
             await expect.poll(() => litShare(page), { timeout: 10_000 }).toBeGreaterThan(next === 'lava' ? 0.04 : 0.2);
         }
     });
@@ -318,6 +328,7 @@ test.describe('without WebGL2', () => {
             const overlay = await waitIdle(page);
             await expect(overlay).toHaveAttribute('data-mode', mode);
             await expect(page.locator('.mustry-idle-canvas')).toHaveAttribute('data-renderer', '2d');
+            await waitSettled(overlay);
             // The 2D starfield is sparse (~0.25 %); 2D pipes is denser.
             await expect.poll(() => litShare(page), { timeout: 12_000 }).toBeGreaterThan(0.0008);
             expect(warnings.some((w) => w.includes('WebGL2 unavailable'))).toBe(true);

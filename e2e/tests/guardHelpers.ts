@@ -52,6 +52,47 @@ export async function waitIdle(page: Page, timeoutMs = 15_000): Promise<Locator>
     return overlay;
 }
 
+/**
+ * Wait until the overlay's finite animations and transitions are over (its
+ * 600 ms fade-in, the canvas's 1.2 s one). Visible is true at opacity 0, and
+ * the page behind (light text, blue buttons) would pass a pixel check.
+ */
+export async function waitSettled(overlay: Locator): Promise<void> {
+    await overlay.evaluate((el) => Promise.all(el.getAnimations({ subtree: true })
+        .filter((a) => {
+            const t = a.effect ? a.effect.getComputedTiming() : null;
+            return t !== null && Number.isFinite(t.endTime as number);
+        })
+        .map((a) => a.finished.catch(() => undefined))));
+}
+
+/**
+ * Count the covers that go up from now on (each idle mounts a fresh overlay).
+ * Returns a reader. A "does not idle again" check reads it after its window:
+ * a guard that idled and woke again within the window shows up as 1, where
+ * looking only at the end would see no overlay.
+ */
+export async function watchCovers(page: Page): Promise<() => Promise<number>> {
+    await page.evaluate((selector) => {
+        const w = window as unknown as { __guardCovers: number; __guardCoverObs?: MutationObserver };
+        if (w.__guardCoverObs) {
+            w.__guardCoverObs.disconnect();
+        }
+        w.__guardCovers = 0;
+        w.__guardCoverObs = new MutationObserver((records) => {
+            for (const r of records) {
+                r.addedNodes.forEach((n) => {
+                    if (n instanceof Element && (n.matches(selector) || n.querySelector(selector))) {
+                        w.__guardCovers++;
+                    }
+                });
+            }
+        });
+        w.__guardCoverObs.observe(document.body, { childList: true, subtree: true });
+    }, OVERLAY);
+    return () => page.evaluate(() => (window as unknown as { __guardCovers: number }).__guardCovers);
+}
+
 /** Clear every demo alarm (a button click: it is input, so call it before waiting for idle). */
 export async function clearAlarms(page: Page): Promise<void> {
     await page.getByRole('button', { name: 'Clear all alarms' }).click();
@@ -63,7 +104,8 @@ export async function clearAlarms(page: Page): Promise<void> {
  */
 export async function litShare(page: Page, threshold = 300): Promise<number> {
     const style = await page.addStyleTag({ content: '.mustry-idle-overlay > :not(canvas) { visibility: hidden !important; }' });
-    const shot = await page.screenshot();
+    // Animations finished, not mid-fade: a half-transparent overlay shows the page behind.
+    const shot = await page.screenshot({ animations: 'disabled' });
     await style.evaluate((el) => el.remove());
     const png = PNG.sync.read(shot);
     let lit = 0;
