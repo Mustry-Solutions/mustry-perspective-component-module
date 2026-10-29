@@ -1,7 +1,5 @@
 package com.mustrysolutions.perspective.components.gateway.guard;
 
-import java.util.List;
-
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
 import com.inductiveautomation.perspective.common.api.PropertyType;
@@ -68,7 +66,7 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
         if (!EVT_SUBSCRIBE.equals(message.getEventName()) || feed == null) {
             return;
         }
-        SourceFilter configured = SourceFilter.of(configuredSources());
+        SourceFilter configured = configuredFilter();
         synchronized (this) {
             if (down) {
                 return;
@@ -79,16 +77,20 @@ public class GuardModelDelegate extends ComponentModelDelegate implements AlarmF
         feed.pushNow(this);
     }
 
-    /** {@code config.alarm.sources} as the gateway holds it; empty (every alarm) when unset or unreadable. */
-    private List<String> configuredSources() {
+    /**
+     * The filter for {@code config.alarm.sources} as the gateway holds it: every
+     * alarm when unset; no alarm below Critical (and a warning) when it is set to
+     * something without a usable pattern.
+     */
+    private SourceFilter configuredFilter() {
         PropertyTree props = component.getPropertyTreeOf(PropertyType.props);
-        if (props == null) {
-            return List.of();
+        Object value = props == null ? null : props.read(SOURCES_PATH).map(QualifiedValue::getValue).orElse(null);
+        SourceFilter f = SourceFilter.fromProperty(value);
+        if (f == SourceFilter.NONE) {
+            log.warnf("Idle Guard %s: %s holds no usable pattern (a %s); it shows no alarm below Critical until fixed.",
+                where(), SOURCES_PATH, value == null ? "null" : value.getClass().getSimpleName());
         }
-        return props.read(SOURCES_PATH)
-            .map(QualifiedValue::getValue)
-            .map(SourceFilter::patternsOf)
-            .orElse(List.of());
+        return f;
     }
 
     @Override

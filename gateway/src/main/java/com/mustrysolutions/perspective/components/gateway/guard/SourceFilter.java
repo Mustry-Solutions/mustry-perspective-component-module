@@ -1,9 +1,11 @@
 package com.mustrysolutions.perspective.components.gateway.guard;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonPrimitive;
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
 
@@ -27,13 +29,24 @@ public final class SourceFilter {
     /** A longer pattern is ignored (it matches nothing). */
     public static final int MAX_PATTERN_LENGTH = 256;
 
-    public static final SourceFilter ALL = new SourceFilter(List.of());
+    public static final SourceFilter ALL = new SourceFilter(List.of(), false);
+    /**
+     * Matches no alarm: what a set but unusable {@code config.alarm.sources}
+     * means. Critical alarms still count (AlarmSummary never filters them).
+     */
+    public static final SourceFilter NONE = new SourceFilter(List.of(), true);
 
     private final List<String> raw;
     /** Lower-cased, runs of stars collapsed; over-long patterns left out. */
     private final List<String> globs;
+    private final boolean none;
 
     private SourceFilter(List<String> raw) {
+        this(raw, false);
+    }
+
+    private SourceFilter(List<String> raw, boolean none) {
+        this.none = none;
         this.raw = List.copyOf(raw);
         List<String> kept = new ArrayList<>();
         for (String p : this.raw) {
@@ -66,39 +79,44 @@ public final class SourceFilter {
     }
 
     /**
-     * The patterns in a property value as the gateway's PropertyTree reads
-     * {@code config.alarm.sources}: an array node reads as a {@code QualifiedValue[]};
-     * plain arrays, collections and a single string are accepted too. Anything
-     * that is not a string is skipped.
+     * The filter for a {@code config.alarm.sources} value as the gateway's
+     * PropertyTree reads it: an array node reads as a {@code QualifiedValue[]};
+     * plain arrays, collections and a single string are accepted too. Unset, an
+     * empty list or only blank strings is {@link #ALL}. A value that is set but
+     * yields no usable pattern (an object, a dataset, numbers) is {@link #NONE}:
+     * a broken scope must hide alarms, never show every alarm on the gateway.
      */
-    public static List<String> patternsOf(Object value) {
-        List<String> out = new ArrayList<>();
+    public static SourceFilter fromProperty(Object value) {
         Object v = unwrap(value);
-        if (v instanceof Object[] array) {
-            for (Object el : array) {
-                addString(out, el);
-            }
-        } else if (v instanceof Iterable<?> items) {
-            for (Object el : items) {
-                addString(out, el);
-            }
-        } else {
-            addString(out, v);
+        if (v == null || v instanceof JsonElement j && j.isJsonNull()) {
+            return ALL;
         }
-        return out;
+        List<Object> items = new ArrayList<>();
+        if (v instanceof Object[] array) {
+            items.addAll(Arrays.asList(array));
+        } else if (v instanceof Iterable<?> iterable) {
+            iterable.forEach(items::add);
+        } else {
+            items.add(v);
+        }
+        List<String> patterns = new ArrayList<>();
+        boolean unusable = false;
+        for (Object el : items) {
+            Object u = unwrap(el);
+            if (u instanceof JsonPrimitive p && p.isString()) {
+                patterns.add(p.getAsString());
+            } else if (u instanceof String str) {
+                patterns.add(str);
+            } else if (u != null && !(u instanceof JsonElement j && j.isJsonNull())) {
+                unusable = true;
+            }
+        }
+        SourceFilter f = of(patterns);
+        return f == ALL && unusable ? NONE : f;
     }
 
     private static Object unwrap(Object value) {
         return value instanceof QualifiedValue qv ? qv.getValue() : value;
-    }
-
-    private static void addString(List<String> out, Object el) {
-        Object v = unwrap(el);
-        if (v instanceof JsonPrimitive p && p.isString()) {
-            out.add(p.getAsString());
-        } else if (v instanceof String s) {
-            out.add(s);
-        }
     }
 
     /** Lower-case, and collapse runs of stars (they mean the same as one). */
@@ -145,6 +163,9 @@ public final class SourceFilter {
     }
 
     public boolean matches(ActiveAlarm alarm) {
+        if (none) {
+            return false;
+        }
         if (raw.isEmpty()) {
             return true;
         }
@@ -165,11 +186,11 @@ public final class SourceFilter {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof SourceFilter f && f.raw.equals(raw);
+        return o instanceof SourceFilter f && f.none == none && f.raw.equals(raw);
     }
 
     @Override
     public int hashCode() {
-        return raw.hashCode();
+        return raw.hashCode() * 31 + (none ? 1 : 0);
     }
 }

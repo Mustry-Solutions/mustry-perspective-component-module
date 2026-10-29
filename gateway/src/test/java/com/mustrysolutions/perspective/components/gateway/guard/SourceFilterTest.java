@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.model.values.BasicQualifiedValue;
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
 
@@ -113,15 +114,36 @@ class SourceFilterTest {
 
     @Test
     void readsPatternsFromAPropertyTreeValue() {
-        // An array node reads as QualifiedValue[]; non-strings are skipped.
-        QualifiedValue[] array = {
-            new BasicQualifiedValue("Line 1/*"), new BasicQualifiedValue(42), new BasicQualifiedValue("*Line2*")
-        };
-        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.patternsOf(array));
-        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.patternsOf(new BasicQualifiedValue(array)));
-        assertEquals(List.of("a", "b"), SourceFilter.patternsOf(List.of("a", "b")));
-        assertEquals(List.of("solo"), SourceFilter.patternsOf("solo"));
-        assertEquals(List.of(), SourceFilter.patternsOf(null));
-        assertEquals(List.of(), SourceFilter.patternsOf(7));
+        // An array node reads as QualifiedValue[].
+        QualifiedValue[] array = {new BasicQualifiedValue("Line 1/*"), new BasicQualifiedValue("*Line2*")};
+        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.fromProperty(array).patterns());
+        assertEquals(List.of("Line 1/*", "*Line2*"), SourceFilter.fromProperty(new BasicQualifiedValue(array)).patterns());
+        assertEquals(List.of("a", "b"), SourceFilter.fromProperty(List.of("a", "b")).patterns());
+        assertEquals(List.of("solo"), SourceFilter.fromProperty("solo").patterns());
+        // A usable pattern next to garbage: the garbage is skipped.
+        assertEquals(List.of("a"), SourceFilter.fromProperty(new Object[] {"a", 42}).patterns());
+    }
+
+    @Test
+    void unsetOrEmptySourcesMeanEveryAlarm() {
+        assertSame(SourceFilter.ALL, SourceFilter.fromProperty(null));
+        assertSame(SourceFilter.ALL, SourceFilter.fromProperty(new QualifiedValue[0]));
+        assertSame(SourceFilter.ALL, SourceFilter.fromProperty(new Object[] {" ", null}));
+        assertSame(SourceFilter.ALL, SourceFilter.fromProperty(new BasicQualifiedValue(null)));
+    }
+
+    @Test
+    void setButUnusableSourcesMatchNothing() {
+        // An object, a number, an array of non-strings: a broken scope hides alarms, never shows them all.
+        assertSame(SourceFilter.NONE, SourceFilter.fromProperty(7));
+        assertSame(SourceFilter.NONE, SourceFilter.fromProperty(new JsonObject()));
+        assertSame(SourceFilter.NONE, SourceFilter.fromProperty(new Object[] {1, 2}));
+        assertSame(SourceFilter.NONE, SourceFilter.fromProperty(new BasicQualifiedValue(new QualifiedValue[] {new BasicQualifiedValue(3)})));
+        assertFalse(SourceFilter.NONE.matches(LINE1));
+        assertFalse(SourceFilter.NONE.equals(SourceFilter.ALL));
+        // Critical still counts: AlarmSummary never filters it.
+        ActiveAlarm critical = new ActiveAlarm("s", "Line 1/x", "c", ActiveAlarm.CRITICAL, false, 1);
+        assertEquals(1, AlarmSummary.of(List.of(critical), SourceFilter.NONE, 3).getAsJsonObject("active").get("critical").getAsInt());
+        assertEquals(0, AlarmSummary.of(List.of(critical), SourceFilter.NONE, 3).getAsJsonArray("top").size());
     }
 }
