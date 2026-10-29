@@ -18,6 +18,13 @@ test.use({
 // Idling takes seconds per test; the canvas checks wait for the scene to build.
 test.describe.configure({ timeout: 90_000 });
 
+/**
+ * The tests run the guard at its minimum timeout (5 s). To prove the page does NOT idle
+ * again, wait one timeout past the last reset plus a margin of six 250 ms ticks: a guard
+ * that wrongly idles does so by then.
+ */
+const NO_IDLE_PROOF_MS = 5_000 + 1_500;
+
 test.describe('idle and wake', () => {
     test('idles after the timeout and wakes on mouse movement with the page intact', async ({ page }) => {
         await openGuarded(page, 'clock', 5);
@@ -131,7 +138,7 @@ test.describe('alarms', () => {
         expect(wokeAfter).toBeLessThan(8_000 + 3_000);
         await expect(guardStatus(page)).toContainText('last wake: alarm');
         // While it is active, the page does not idle again.
-        await page.waitForTimeout(7_000);
+        await page.waitForTimeout(NO_IDLE_PROOF_MS);
         await expect(page.locator(OVERLAY)).toHaveCount(0);
     });
 
@@ -166,8 +173,8 @@ test.describe('alarms', () => {
         // 8 s until it is raised: the page idles meanwhile, then wakes.
         await waitIdle(page);
         await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 15_000 });
-        // Twice the timeout with nobody touching it: still uncovered.
-        await page.waitForTimeout(11_000);
+        // Past the timeout with nobody touching it: still uncovered.
+        await page.waitForTimeout(NO_IDLE_PROOF_MS);
         await expect(page.locator(OVERLAY)).toHaveCount(0);
     });
 });
@@ -192,7 +199,7 @@ test.describe('fail open', () => {
         // config.alarm.staleAfterSec defaults to 8.
         await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 12_000 });
         await expect(guardStatus(page)).toContainText('last wake: feed-stale');
-        await page.waitForTimeout(7_000);
+        await page.waitForTimeout(NO_IDLE_PROOF_MS);
         await expect(page.locator(OVERLAY)).toHaveCount(0);
         // Feed back: it idles again.
         blockFeed = false;
@@ -227,8 +234,8 @@ test.describe('modes', () => {
             const overlay = await waitIdle(page);
             await expect(overlay).toHaveAttribute('data-mode', mode);
             await expect(page.locator('.mustry-idle-canvas')).toHaveAttribute('data-renderer', renderer);
-            await page.waitForTimeout(4_000);
-            expect(await litShare(page, brightness)).toBeGreaterThan(minLit);
+            // Until the scene has built up (it took up to ~4 s on SwiftShader when calibrated).
+            await expect.poll(() => litShare(page, brightness), { timeout: 12_000 }).toBeGreaterThan(minLit);
         });
     }
 
@@ -249,8 +256,7 @@ test.describe('modes', () => {
             const canvas = page.locator('.mustry-idle-canvas');
             await expect(canvas).toHaveCount(1);
             await expect(canvas).toHaveAttribute('data-renderer', renderer(next));
-            await page.waitForTimeout(3_000);
-            expect(await litShare(page)).toBeGreaterThan(next === 'lava' ? 0.04 : 0.2);
+            await expect.poll(() => litShare(page), { timeout: 10_000 }).toBeGreaterThan(next === 'lava' ? 0.04 : 0.2);
         }
     });
 
@@ -267,9 +273,8 @@ test.describe('modes', () => {
         const overlay = await waitIdle(page);
         await expect(overlay).toHaveAttribute('data-mode', 'blank');
         await expect(page.locator('.mustry-idle-hint')).toHaveCount(0);
-        // Past the 600 ms fade-in: from then on, nothing but black.
-        await page.waitForTimeout(1_500);
-        expect(await litShare(page, 30)).toBeLessThan(0.001);
+        // Once the 600 ms fade-in is over: nothing but black.
+        await expect.poll(() => litShare(page, 30), { timeout: 5_000 }).toBeLessThan(0.001);
     });
 
     test('halo labels each line around the clock', async ({ page }) => {
@@ -283,9 +288,8 @@ test.describe('modes', () => {
 
     test('external mode draws nothing but still reports idle', async ({ page }) => {
         await openGuarded(page, 'external', 5);
-        await page.waitForTimeout(7_000);
+        await expect(tile(page, 'screen')).toHaveText('idle', { timeout: 15_000 });
         await expect(page.locator(OVERLAY)).toHaveCount(0);
-        await expect(tile(page, 'screen')).toHaveText('idle');
         await page.mouse.move(100, 100);
         await page.mouse.move(400, 400, { steps: 3 });
         await expect(tile(page, 'screen')).toHaveText('awake');
@@ -314,9 +318,8 @@ test.describe('without WebGL2', () => {
             const overlay = await waitIdle(page);
             await expect(overlay).toHaveAttribute('data-mode', mode);
             await expect(page.locator('.mustry-idle-canvas')).toHaveAttribute('data-renderer', '2d');
-            await page.waitForTimeout(4_000);
             // The 2D starfield is sparse (~0.25 %); 2D pipes is denser.
-            expect(await litShare(page)).toBeGreaterThan(0.0008);
+            await expect.poll(() => litShare(page), { timeout: 12_000 }).toBeGreaterThan(0.0008);
             expect(warnings.some((w) => w.includes('WebGL2 unavailable'))).toBe(true);
         });
     }
