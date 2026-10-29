@@ -23,7 +23,7 @@ These hold whatever the props say, and every change to the guard keeps them:
   window capture-phase; the rest of the gesture (its key repeats, its release,
   the trailing mouse, click and touch events) is swallowed until it is
   released plus `SWALLOW_TAIL_MS`, capped at `SWALLOW_CAP_MS` (`idleLogic.ts`,
-  `PressTracker`). If you touch this, run the e2e click and key tests and
+  `PressTracker`). If you touch this, run the e2e click, key and tap tests and
   check they still fail with swallowing disabled (mutation check: make
   `handleInput` in `IdleGuard.tsx` never cancel, i.e. `if (swallow &&
   canCancel)` → `if (false)`, and set `FADE_MS` to 0).
@@ -393,9 +393,10 @@ Ignition 8.3.10; the module supports 8.3.6 and newer):
 
 - idle after the timeout, wake on movement beyond the jitter threshold, page
   state intact;
-- a waking mouse press/release and a waking key press never reach the page
-  (the mouse and key tests fail when the swallowing is disabled; the touch test
-  cannot, because Chromium already drops a tap whose target vanished);
+- a waking mouse press/release, key press and tap never reach the page (the
+  mouse, key and touch tests all fail when the swallowing is disabled; the
+  touch test checks page listeners on the document, because Chromium already
+  drops a tap whose target vanished before it reaches the controls under it);
 - a High alarm wakes the page within the poll budget and keeps it awake;
 - a Medium alarm pins a banner without waking;
 - Critical wakes even with `wakePriority` Critical, and is never covered;
