@@ -8,6 +8,8 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-04
+
 ### Added: Idle Guard, a screensaver for Perspective pages
 Perspective has no inactivity detection a page can use (its built-in timeout
 only logs out or closes the session, and ignores mouse movement), and 24/7
