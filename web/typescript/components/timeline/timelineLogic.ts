@@ -171,15 +171,36 @@ export function containingAnchorMs(ms: number, zoom: TimelineZoom, timeZone: str
 }
 
 /**
- * Where the window goes when the zoom changes: if "now" was in view it stays in
- * view (drilling into the live cycle keeps following it); otherwise the new
- * window is the one containing the old window's start, so zooming in and back
- * out returns to the same place.
+ * The moment a zoom change must keep in view, measured on the OLD window and
+ * scroll position: "now" if the now-line was actually on screen (inside the
+ * window isn't enough, the window is wider than the viewport), else the moment at
+ * the centre of what was visible. The time viewport starts `labelPx` in, behind
+ * the sticky label column. With no layout to measure (a hidden view) now counts
+ * as visible when it's in the window, else the window's start stands in.
  */
-export function rezoomAnchorMs(anchorMs: number, fromZoom: TimelineZoom, toZoom: TimelineZoom, nowMs: number, timeZone: string): number {
-    const old = windowFor(anchorMs, fromZoom, timeZone);
-    const target = nowMs >= old.startMs && nowMs < old.endMs ? nowMs : anchorMs;
-    return containingAnchorMs(target, toZoom, timeZone);
+export function rezoomFocusMs(scale: TimeScale, scrollLeft: number, clientWidth: number, labelPx: number, nowMs: number): number {
+    const nowInWindow = nowMs >= scale.startMs && nowMs < scale.endMs;
+    const viewportPx = clientWidth - labelPx;
+    if (viewportPx <= 0) {
+        return nowInWindow ? nowMs : scale.startMs;
+    }
+    const width = scaleWidth(scale);
+    const leftPx = Math.max(0, Math.min(scrollLeft, width));
+    const rightPx = Math.min(leftPx + viewportPx, width);   // a wide viewport outruns the window
+    const nowPx = msToPx(scale, nowMs);
+    if (nowInWindow && nowPx >= leftPx && nowPx <= rightPx) {
+        return nowMs;
+    }
+    return Math.round(pxToMs(scale, (leftPx + rightPx) / 2));
+}
+
+/** The scrollLeft that centres `focusMs` in the time viewport, held to what the
+ *  window can scroll to: a moment near (or past) an edge rests against that edge. */
+export function focusScrollLeft(scale: TimeScale, focusMs: number, clientWidth: number, labelPx: number): number {
+    const width = scaleWidth(scale);
+    const viewportPx = Math.max(0, clientWidth - labelPx);
+    const focusPx = Math.max(0, Math.min(msToPx(scale, focusMs), width));
+    return Math.max(0, Math.min(focusPx - viewportPx / 2, width - viewportPx));
 }
 
 // --- custom window (state.windowStart / state.windowEnd) ----------------------

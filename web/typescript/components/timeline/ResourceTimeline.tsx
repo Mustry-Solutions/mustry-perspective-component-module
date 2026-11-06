@@ -20,9 +20,9 @@ import { addMonths, startOfMonth, weekStartDay } from '../../shared/dateUtils';
 import {
     BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
     buildRows, buildTicks, containingAnchorMs, containingCustomWindow, customScale, customTickStepMs, customWindow,
-    customWindowOnDate, customZoom, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
+    customWindowOnDate, customZoom, focusScrollLeft, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
     barMinPx, isConfiguredEmpty, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs,
-    pageCustomWindow, resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs,
+    pageCustomWindow, resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs,
     zoneMidnightMs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
@@ -134,7 +134,22 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         this.scrollNowIntoView();
     }
 
-    componentDidUpdate(prevProps: ComponentProps<TimelineProps>): void {
+    /** A zoom change's focus moment, or null when this update isn't one. Measured
+     *  here because by componentDidUpdate the new width has replaced the scroll
+     *  position it depends on. Follow-now has no focus to keep: it re-anchors on now. */
+    getSnapshotBeforeUpdate(prevProps: ComponentProps<TimelineProps>, prevState: ResourceTimelineState): number | null {
+        const prev = prevProps.props;
+        const p = this.props.props;
+        const prevCustom = customOf(prev);
+        const scroller = this.scrollRef.current;
+        if (!scroller || p.followNow || customOf(p) || (!prevCustom && prev.zoom === p.zoom)) {
+            return null;
+        }
+        const scale = prevCustom ? customScale(prevCustom) : windowFor(prevState.anchorMs, prev.zoom, prev.timezone);
+        return rezoomFocusMs(scale, scroller.scrollLeft, scroller.clientWidth, LABEL_COL_PX, Date.now());
+    }
+
+    componentDidUpdate(prevProps: ComponentProps<TimelineProps>, _prevState: ResourceTimelineState, focusMs?: number | null): void {
         this.syncOutput();
         // Skipped mid-drag so a gesture's re-renders can't start animating anything;
         // fresh ids are picked up on the post-commit update instead.
@@ -152,24 +167,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 || (this.props.props.followNow && basisChanged)) {
             this.setupFollowTimer();   // the interval is zoom-dependent (followTickMs)
         } else if (this.props.props.followNow
-                && (prevProps.props.zoom !== this.props.props.zoom
+                && ((prevCustom && !custom)
+                    || prevProps.props.zoom !== this.props.props.zoom
                     || prevProps.props.timezone !== this.props.props.timezone)) {
             // A zoom/timezone change moves the follow anchor (the sub-day presets
             // page within the day) — re-anchor immediately instead of waiting out
             // the next tick.
             this.tickFollow();
-        } else if (prevCustom && !custom) {
-            // Leaving a custom window (a zoom button or a cleared binding): open the
-            // preset window on "now" if it was in view, else on the custom start.
-            const now = Date.now();
-            const target = now >= prevCustom.startMs && now < prevCustom.endMs ? now : prevCustom.startMs;
-            this.setState({ anchorMs: containingAnchorMs(target, this.props.props.zoom, this.props.props.timezone) });
-        } else if (!custom && prevProps.props.zoom !== this.props.props.zoom) {
-            // Not following: keep the user where they were — on "now" if it was in
-            // view, else on the window containing the old window's start.
-            this.setState({
-                anchorMs: rezoomAnchorMs(this.state.anchorMs, prevProps.props.zoom, this.props.props.zoom, Date.now(), this.props.props.timezone)
-            });
+        }
+        if (typeof focusMs === 'number') {
+            this.rezoomTo(focusMs);
         }
         if (this.scrollNowOnUpdate && custom
                 && (!prevCustom || prevCustom.startMs !== custom.startMs || prevCustom.endMs !== custom.endMs)) {
@@ -343,6 +350,19 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (target !== null) {
             scroller.scrollLeft = target;
         }
+    }
+
+    /** After a zoom change (or leaving a custom window): open the window holding
+     *  the focus moment and put that moment back in the middle of the viewport.
+     *  This update flushes before paint, so the stale scroll is never seen. */
+    private rezoomTo(focusMs: number): void {
+        const p = this.props.props;
+        this.setState({ anchorMs: containingAnchorMs(focusMs, p.zoom, p.timezone) }, () => {
+            const scroller = this.scrollRef.current;
+            if (scroller) {
+                scroller.scrollLeft = focusScrollLeft(this.scale(), focusMs, scroller.clientWidth, LABEL_COL_PX);
+            }
+        });
     }
 
     /** Manual navigation takes over from follow-now: write the two-way prop off.

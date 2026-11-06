@@ -159,3 +159,130 @@ test('timeline: a windowed binding\'s next page does not fade in', async ({ page
     await page.waitForTimeout(500);
     expect(await enterSeen(page)).toBe(0);
 });
+
+// --- zoom changes keep the moment in view (issue #214) -------------------------
+//
+// Whether a stale scrollLeft lands on something useful depends on the time of
+// day, so these pin the browser clock (timers keep running). At 17:30 the
+// now-line is on screen at day zoom yet off screen at the old scroll position
+// after Day -> Week and Day -> Hour, the numbers from the report. At 20:30 it can
+// be scrolled away at day zoom with the centre still far from any window edge.
+test.describe('timeline: zoom changes keep the moment in view (issue #214)', () => {
+    test.use({ timezoneId: 'UTC' });
+
+    const scrollerOf = (page: Page) => page.locator('.mustry-tml-scroll');
+
+    async function openPinned(page: Page, route: string, hh: number, mm: number) {
+        const now = new Date();
+        await page.clock.setFixedTime(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hh, mm));
+        await openRoute(page, route, '.mustry-timeline');
+    }
+
+    async function zoomTo(page: Page, name: string) {
+        await page.locator('.mustry-tml-zoom-btn', { hasText: new RegExp(`^${name}$`) }).click();
+        await expect(page.locator('.mustry-tml-zoom-btn--active')).toHaveText(name);
+    }
+
+    async function setScrollLeft(page: Page, left: number) {
+        await scrollerOf(page).evaluate((el, x) => { el.scrollLeft = x; }, left);
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    }
+
+    /** Where the now-line sits across the time viewport (the scroller minus the
+     *  sticky label column): 0 = left edge, 1 = right edge, outside = off screen.
+     *  toBeVisible() can't tell, it passes for a line scrolled out of the box. */
+    function nowFraction(page: Page) {
+        return page.evaluate(() => {
+            const scroller = document.querySelector('.mustry-tml-scroll') as HTMLElement;
+            const label = document.querySelector('.mustry-tml-corner') as HTMLElement;
+            const line = document.querySelector('.mustry-tml-now') as HTMLElement | null;
+            if (!line) {
+                return NaN;
+            }
+            const left = scroller.getBoundingClientRect().left + label.offsetWidth;
+            return (line.getBoundingClientRect().left - left) / (scroller.clientWidth - label.offsetWidth);
+        });
+    }
+
+    async function expectNowOnScreen(page: Page) {
+        await expect.poll(() => nowFraction(page)).toBeGreaterThanOrEqual(0);
+        await expect.poll(() => nowFraction(page)).toBeLessThanOrEqual(1);
+    }
+
+    /** The clock time at the centre of the time viewport, in minutes since
+     *  midnight, read off the rendered axis ticks: what the user actually sees. */
+    function centreMinutes(page: Page) {
+        return page.evaluate(() => {
+            const scroller = document.querySelector('.mustry-tml-scroll') as HTMLElement;
+            const label = document.querySelector('.mustry-tml-corner') as HTMLElement;
+            const box = scroller.getBoundingClientRect();
+            const centre = box.left + label.offsetWidth + (scroller.clientWidth - label.offsetWidth) / 2;
+            const ticks = Array.from(document.querySelectorAll('.mustry-tml-axis-lower .mustry-tml-tick')).map((t) => {
+                const m = /(\d\d):(\d\d)/.exec(t.textContent || '');
+                return { x: t.getBoundingClientRect().left, min: m ? +m[1] * 60 + +m[2] : NaN };
+            });
+            const i = ticks.findIndex((t) => t.x > centre);
+            const a = ticks[i - 1];
+            const b = ticks[i];
+            const span = b.min > a.min ? b.min - a.min : b.min + 1440 - a.min;
+            return a.min + (span * (centre - a.x)) / (b.x - a.x);
+        });
+    }
+
+    test('Day -> Week with now on screen keeps now on screen', async ({ page }) => {
+        await openPinned(page, '/timeline', 17, 30);
+        await expectNowOnScreen(page);
+        await zoomTo(page, 'Week');
+        await expectNowOnScreen(page);
+    });
+
+    test('Day -> Hour with now on screen keeps now on screen, and back', async ({ page }) => {
+        await openPinned(page, '/timeline', 17, 30);
+        await expectNowOnScreen(page);
+        await zoomTo(page, 'Hour');
+        await expectNowOnScreen(page);
+        await zoomTo(page, 'Day');
+        await expectNowOnScreen(page);
+    });
+
+    test('with now scrolled away, the moment at the centre stays at the centre', async ({ page }) => {
+        await openPinned(page, '/timeline', 20, 30);
+        await setScrollLeft(page, 300);
+        const off = await nowFraction(page);
+        expect(off > 1 || off < 0, `now must start off screen (at ${off})`).toBe(true);
+        const before = await centreMinutes(page);
+
+        await zoomTo(page, 'Hour');
+        await expect.poll(async () => Math.abs((await centreMinutes(page)) - before)).toBeLessThan(10);
+        // Now is in this window's neighbour, not dragged back on screen.
+        await expect(page.locator('.mustry-tml-now')).toHaveCount(0);
+
+        await zoomTo(page, 'Day');
+        await expect.poll(async () => Math.abs((await centreMinutes(page)) - before)).toBeLessThan(10);
+    });
+
+    test('with now scrolled away, a moment too near the window start clamps to that edge', async ({ page }) => {
+        await openPinned(page, '/timeline', 20, 30);
+        await setScrollLeft(page, 300);
+        // Week opens on the moment's own midnight, so 12:29 is 150px in: closer to
+        // the start than half a viewport, so the board rests against the left edge.
+        await zoomTo(page, 'Week');
+        await expect.poll(() => scrollerOf(page).evaluate((el) => el.scrollLeft)).toBe(0);
+    });
+
+    test('follow-now keeps now on screen through zoom changes', async ({ page }) => {
+        await openPinned(page, '/timeline', 17, 30);
+        await page.getByRole('button', { name: 'Live', exact: true }).click();
+        await zoomTo(page, 'Hour');
+        await expectNowOnScreen(page);
+        await zoomTo(page, 'Week');
+        await expectNowOnScreen(page);
+    });
+
+    test('leaving a custom window keeps the moment at the centre', async ({ page }) => {
+        await openPinned(page, '/timeline-window', 17, 30);
+        const before = await centreMinutes(page);
+        await zoomTo(page, 'Day');
+        await expect.poll(async () => Math.abs((await centreMinutes(page)) - before)).toBeLessThan(10);
+    });
+});

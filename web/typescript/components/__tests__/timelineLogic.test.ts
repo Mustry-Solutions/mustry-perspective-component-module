@@ -2,9 +2,9 @@ import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_BAR_PX_READONLY, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent,
     CUSTOM_WINDOW_PX, MAX_CUSTOM_SPAN_MS, containingCustomWindow, customScale, customTickStepMs, customWindow,
     customWindowOnDate, customZoom, pageCustomWindow,
-    ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followTickMs,
+    ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, focusScrollLeft, followAnchorMs, followDisarms, followTickMs,
     isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
-    resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
+    resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
 } from '../timeline/timelineLogic';
 import { DEFAULT_TIMELINE_ZOOMS, mapTimelineProps, resolveZooms } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
@@ -294,18 +294,74 @@ describe('sub-hour zoom presets', () => {
         expect(followAnchorMs(T, 'second', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
     });
 
-    it('rezoomAnchorMs: keeps now in view when it was visible, else the old start', () => {
-        const dayAnchor = Date.UTC(2026, 5, 17);
-        // Now is inside today's day window -> drilling in lands on the current stride.
-        expect(rezoomAnchorMs(dayAnchor, 'day', 'minute', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 30));
-        expect(rezoomAnchorMs(dayAnchor, 'day', 'second', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
-        // Looking at yesterday: now is not in view -> the window containing the old start.
-        const yesterday = Date.UTC(2026, 5, 16);
-        expect(rezoomAnchorMs(yesterday, 'day', 'minute', T, 'UTC')).toBe(yesterday);
-        expect(rezoomAnchorMs(yesterday, 'day', 'hour', T, 'UTC')).toBe(yesterday);
-        // Zooming back out from a mid-day slice returns to that day.
-        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'day', T, 'UTC')).toBe(yesterday);
-        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'hour', T, 'UTC')).toBe(Date.UTC(2026, 5, 16, 8));
+    describe('zoom changes (issue #214)', () => {
+        const LABEL = 160;
+        const WIDTH = 1060;       // a 900px time viewport
+        const day = windowFor(Date.UTC(2026, 5, 17), 'day', 'UTC');   // 60px/h, 1440px wide
+        const at = (h: number, m = 0) => Date.UTC(2026, 5, 17, h, m);
+        const focus = (s: TimeScale, left: number, now: number, width = WIDTH) => rezoomFocusMs(s, left, width, LABEL, now);
+
+        it('rezoomFocusMs: now wins only when the line is actually on screen', () => {
+            // 14:30 = 870px. Viewport 300..1200 holds it.
+            expect(focus(day, 300, at(14, 30))).toBe(at(14, 30));
+            // The viewport's edges count; a pixel past either does not.
+            expect(focus(day, 870, at(14, 30))).toBe(at(14, 30));
+            expect(focus(day, 871, at(14, 30))).not.toBe(at(14, 30));
+            expect(focus(day, 0, at(15))).toBe(at(15));
+            expect(focus(day, 0, at(15, 1))).not.toBe(at(15, 1));
+        });
+
+        it('rezoomFocusMs: else the moment at the centre of what was visible', () => {
+            // In the window but scrolled away: viewport 0..900, centre 450px = 07:30.
+            expect(focus(day, 0, at(20))).toBe(at(7, 30));
+            // Now outside the window altogether.
+            expect(focus(day, 300, Date.UTC(2026, 5, 20))).toBe(at(12, 30));
+            expect(focus(day, 300, Date.UTC(2026, 5, 10))).toBe(at(12, 30));
+        });
+
+        it('rezoomFocusMs: a viewport wider than the window centres on the window', () => {
+            const past = Date.UTC(2026, 5, 20);
+            expect(focus(day, 0, past, 2000)).toBe(at(12));
+            // The window's end is exclusive: now there is not in it.
+            expect(focus(day, 0, day.endMs, 2000)).toBe(at(12));
+        });
+
+        it('rezoomFocusMs: with no layout, now if in the window, else the window start', () => {
+            expect(focus(day, 0, at(20), 0)).toBe(at(20));
+            expect(focus(day, 0, Date.UTC(2026, 5, 20), 0)).toBe(day.startMs);
+        });
+
+        it('rezoomFocusMs + containingAnchorMs: lands on the window holding the moment', () => {
+            // Day to the sub-day presets, as in the report: 17:30 opens 16:00-24:00.
+            expect(containingAnchorMs(focus(day, 500, at(17, 30)), 'hour', 'UTC')).toBe(at(16));
+            // Scrolled-away centre 12:30 opens 08:00-16:00, not today's now stride.
+            expect(containingAnchorMs(focus(day, 300, at(21, 30)), 'hour', 'UTC')).toBe(at(8));
+            // Back out from a slice of an earlier day returns to that day.
+            const yesterday = Date.UTC(2026, 5, 16);
+            const slice = windowFor(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'UTC');
+            expect(containingAnchorMs(focus(slice, 0, T), 'day', 'UTC')).toBe(yesterday);
+            // A week scrolled to a later day opens that day.
+            const week = windowFor(at(0), 'week', 'UTC');         // 12px/h, 2016px wide
+            expect(focus(week, 1000, T)).toBe(Date.UTC(2026, 5, 22, 0, 50));
+            expect(containingAnchorMs(focus(week, 1000, T), 'day', 'UTC')).toBe(Date.UTC(2026, 5, 22));
+        });
+
+        it('focusScrollLeft: centres the moment in the time viewport', () => {
+            // 12:00 = 720px; half the 900px viewport left of it.
+            expect(focusScrollLeft(day, at(12), WIDTH, LABEL)).toBe(270);
+            // Same moment read back from that scroll position.
+            expect(focus(day, 270, Date.UTC(2026, 5, 20))).toBe(at(12));
+        });
+
+        it('focusScrollLeft: clamps to what the window can scroll to', () => {
+            expect(focusScrollLeft(day, at(1), WIDTH, LABEL)).toBe(0);
+            expect(focusScrollLeft(day, at(23), WIDTH, LABEL)).toBe(540);    // 1440 - 900
+            // Moments outside the window rest against the nearer edge.
+            expect(focusScrollLeft(day, Date.UTC(2026, 5, 10), WIDTH, LABEL)).toBe(0);
+            expect(focusScrollLeft(day, Date.UTC(2026, 5, 20), WIDTH, LABEL)).toBe(540);
+            // Nothing to scroll: a viewport wider than the window.
+            expect(focusScrollLeft(day, at(12), 2000, LABEL)).toBe(0);
+        });
     });
 
     it('buildTicks: minute zoom = one tick per minute from the window start, day label with time', () => {
