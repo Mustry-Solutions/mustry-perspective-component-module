@@ -926,6 +926,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             <MiniMonthNav
                 mini={m}
                 locale={this.props.props.locale}
+                timezone={this.props.props.timezone}
                 firstDay={this.firstDay()}
                 range={this.visibleRange()}
                 cursorIso={fmtDate(this.state.cursor)}

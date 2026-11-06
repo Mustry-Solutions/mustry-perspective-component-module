@@ -7,6 +7,7 @@
 // multiple ranges comma-separated ("8:00-12:00, 12:30-17:00"); "24:00" (or a
 // bare "24") is a valid end-of-day. A day that is enabled with a BLANK time
 // counts as available all day, matching the gateway UI's behaviour.
+import { WallClock, zoneWallClock } from '../../shared/dateUtils';
 
 export const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 export type DayKey = typeof DAY_KEYS[number];
@@ -152,6 +153,21 @@ export function dayRanges(item: ScheduleItem, day: DayKey): TimeRange[] {
 export function isActiveAt(item: ScheduleItem, dayIndex: number, minute: number): boolean {
     const day = DAY_KEYS[((dayIndex % 7) + 7) % 7];
     return dayRanges(item, day).some((r) => minute >= r.start && minute < r.end);
+}
+
+/** The moment `instant` as the week grid reads it, in `timeZone` (browser-local if
+ *  empty or unknown): day 0 = Monday, minutes from midnight. Taken straight from
+ *  the zone's wall clock, never through a local `Date`, which would move a time
+ *  that falls in the browser's own DST gap. */
+export function weekMomentInZone(timeZone: string, instant: Date = new Date()): { dayIndex: number; minute: number } {
+    let w: WallClock;
+    try {
+        w = zoneWallClock(instant, timeZone);
+    } catch (e) {
+        w = zoneWallClock(instant, '');
+    }
+    const sundayBased = new Date(Date.UTC(w.y, w.mo - 1, w.d)).getUTCDay();
+    return { dayIndex: (sundayBased + 6) % 7, minute: w.h * 60 + w.mi };
 }
 
 /** Display order of the seven days for the configured week start. */

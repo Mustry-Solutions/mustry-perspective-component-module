@@ -987,6 +987,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                     <MiniMonthNav
                         mini={this.state.mini}
                         locale={p.locale}
+                        timezone={p.timezone}
                         firstDay={weekStartDay(p.weekStart)}
                         range={{ start: this.windowDates().start, end: this.windowDates().end }}
                         cursorIso={this.windowDates().cursor}

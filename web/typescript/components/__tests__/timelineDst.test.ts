@@ -56,9 +56,35 @@ describe('pageAnchorMs', () => {
         }
         expect(a).toBe(t('2026-11-30T00:00:00'));     // 40 calendar weeks later
     });
-    it('hour zoom pages by pure epoch time', () => {
-        const a = t('2026-03-07T22:00:00');
+    it('hour zoom keeps its 8-hour stride on a plain day', () => {
+        const a = t('2026-07-03T08:00:00');
         expect(pageAnchorMs(a, 1, 'hour', CHI)).toBe(a + 8 * MS_PER_HOUR);
+        expect(pageAnchorMs(a, -1, 'hour', CHI)).toBe(a - 8 * MS_PER_HOUR);
+    });
+    it('hour zoom is back on 00/08/16 the day after a fall-back day (the #148 report)', () => {
+        const walk = [
+            t('2026-11-01T00:00:00'), t('2026-11-01T07:00:00'), t('2026-11-01T15:00:00'), t('2026-11-01T23:00:00'),
+            t('2026-11-02T00:00:00'), t('2026-11-02T08:00:00'), t('2026-11-02T16:00:00'), t('2026-11-03T00:00:00')
+        ];
+        for (let i = 1; i < walk.length; i++) {
+            expect(pageAnchorMs(walk[i - 1], 1, 'hour', CHI)).toBe(walk[i]);
+            expect(pageAnchorMs(walk[i], -1, 'hour', CHI)).toBe(walk[i - 1]);
+        }
+    });
+    it('hour zoom is back on 00/08/16 the day after a spring-forward day', () => {
+        const walk = [
+            t('2026-03-08T00:00:00'), t('2026-03-08T09:00:00'), t('2026-03-08T17:00:00'),
+            t('2026-03-09T00:00:00'), t('2026-03-09T08:00:00'), t('2026-03-09T16:00:00')
+        ];
+        for (let i = 1; i < walk.length; i++) {
+            expect(pageAnchorMs(walk[i - 1], 1, 'hour', CHI)).toBe(walk[i]);
+            expect(pageAnchorMs(walk[i], -1, 'hour', CHI)).toBe(walk[i - 1]);
+        }
+    });
+    it('an anchor off the grid (the zone changed under it) joins it without skipping time', () => {
+        const off = t('2026-07-03T22:00:00');
+        expect(pageAnchorMs(off, 1, 'hour', CHI)).toBe(t('2026-07-04T00:00:00'));
+        expect(pageAnchorMs(off, -1, 'hour', CHI)).toBe(t('2026-07-03T16:00:00'));
     });
 });
 

@@ -65,7 +65,8 @@ export const ZOOM_PRESETS: { [z in TimelineZoom]: ZoomPreset } = {
 };
 
 /** Whether a preset's window is a plain epoch span (narrower than a day) rather
- *  than whole wall-calendar days: those windows/pages by pure epoch time. */
+ *  than whole wall-calendar days: those windows keep their width on a DST day and
+ *  page along the strides counted from each zone-local midnight. */
 export function isSubDayZoom(zoom: TimelineZoom): boolean {
     return ZOOM_PRESETS[zoom].spanHours < 24;
 }
@@ -143,15 +144,39 @@ export function windowOutputs(scale: TimeScale): {
 /**
  * The anchor after paging by one window. Day/week page by wall-calendar days and
  * re-anchor on the zone-local midnight (paging across a 23/25h DST day must not
- * leave every later window anchored at 23:00/01:00); the sub-day presets page
- * by plain epoch.
+ * leave every later window anchored at 23:00/01:00); the sub-day presets step
+ * along the grid containingAnchorMs uses, one stride per page (see nextStrideMs).
  */
 export function pageAnchorMs(anchorMs: number, dir: number, zoom: TimelineZoom, timeZone: string): number {
     const preset = ZOOM_PRESETS[zoom];
     if (isSubDayZoom(zoom)) {
-        return anchorMs + dir * zoomSpanMs(zoom);
+        let anchor = anchorMs;
+        for (let i = 0; i < Math.abs(dir); i++) {
+            anchor = dir > 0 ? nextStrideMs(anchor, zoom, timeZone) : prevStrideMs(anchor, zoom, timeZone);
+        }
+        return anchor;
     }
     return zoneMidnightMs(anchorMs, timeZone, dir * Math.round(preset.spanHours / 24));
+}
+
+/**
+ * The next window on a sub-day grid. Every day's strides restart at its zone-local
+ * midnight, so the last window of a 23/25-hour day overlaps the next day instead
+ * of carrying its offset along: after 23:00 on a fall-back day comes 00:00, not
+ * 07:00. The step is never wider than the window, so no time is skipped.
+ * An anchor off this grid (config.timezone changed under it) joins it here.
+ */
+function nextStrideMs(anchorMs: number, zoom: TimelineZoom, timeZone: string): number {
+    const stride = zoomSpanMs(zoom);
+    const next = containingAnchorMs(containingAnchorMs(anchorMs, zoom, timeZone) + stride, zoom, timeZone);
+    return next > anchorMs ? next : anchorMs + stride;
+}
+
+/** The previous window on a sub-day grid: the exact inverse of nextStrideMs for an
+ *  anchor on the grid. One off it first moves back to the start of its own stride. */
+function prevStrideMs(anchorMs: number, zoom: TimelineZoom, timeZone: string): number {
+    const prev = containingAnchorMs(anchorMs - 1, zoom, timeZone);
+    return prev < anchorMs ? prev : anchorMs - zoomSpanMs(zoom);
 }
 
 /**

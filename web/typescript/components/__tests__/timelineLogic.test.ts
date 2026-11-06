@@ -275,8 +275,10 @@ describe('sub-hour zoom presets', () => {
         expect(m.pxPerHour).toBe(ZOOM_PRESETS.minute.pxPerHour);
         const sec = windowFor(T, 'second', 'America/Chicago');
         expect(sec.endMs - sec.startMs).toBe(2 * 60000);
-        expect(pageAnchorMs(T, 1, 'minute', 'UTC')).toBe(T + 30 * 60000);
-        expect(pageAnchorMs(T, -1, 'second', 'UTC')).toBe(T - 2 * 60000);
+        const onMinute = containingAnchorMs(T, 'minute', 'UTC');
+        const onSecond = containingAnchorMs(T, 'second', 'UTC');
+        expect(pageAnchorMs(onMinute, 1, 'minute', 'UTC')).toBe(onMinute + 30 * 60000);
+        expect(pageAnchorMs(onSecond, -1, 'second', 'UTC')).toBe(onSecond - 2 * 60000);
     });
 
     it('containingAnchorMs: the stride of the day that covers the instant', () => {

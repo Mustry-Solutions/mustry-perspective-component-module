@@ -96,6 +96,14 @@
    "viewPath": "HolidayDemo",
    "viewParams": {}
   },
+  "/timezone-managers": {
+   "viewPath": "TimezoneManagers",
+   "viewParams": {}
+  },
+  "/timezone-nav": {
+   "viewPath": "TimezoneNav",
+   "viewParams": {}
+  },
   "/branching": {
    "viewPath": "BranchingDemo",
    "viewParams": {}
