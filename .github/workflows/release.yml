@@ -23,7 +23,7 @@ on:
       - 'v*'
   # Manual trigger, ALWAYS a dry run: validates signing (and the whole
   # build+sign path), uploads the signed .modl as a workflow artifact and never
-  # creates a GitHub Release. Only a pushed vX.Y.Z tag publishes. There used to
+  # creates a GitHub Release. Only a pushed tag publishes. There used to
   # be a dry_run checkbox; unticked on a branch it tagged the branch name
   # (e.g. `main`) and published a release from it (#118).
   workflow_dispatch:
@@ -47,6 +47,9 @@ jobs:
   prepare:
     name: Version & user manual
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read   # the beta gate reads the 2027 job's result on this commit
     outputs:
       version: ${{ steps.ver.outputs.version }}
       publish: ${{ steps.ver.outputs.publish }}
@@ -108,12 +111,22 @@ jobs:
             echo "publish=$publish"
           } >> "$GITHUB_OUTPUT"
 
+      # Only the beta path: the required checks already guard a normal release.
+      - name: Check this commit tested this Ignition beta
+        if: ${{ steps.ver.outputs.prerelease == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SDK: ${{ steps.ver.outputs.sdk }}
+          PUBLISH: ${{ steps.ver.outputs.publish }}
+        run: ops/check-beta-release.sh "$SDK" "$GITHUB_SHA" "$PUBLISH"
+
       - name: Build the user-manual PDF
         # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
         # scripts/build_manual_pdf.sh. Runs on dry runs too so the pipeline
         # itself stays release-gating. Attached to the release by the next job.
         env:
           MANUAL_VERSION: ${{ steps.ver.outputs.version }}
+          MANUAL_IGNITION: ${{ steps.ver.outputs.sdk }}
         run: scripts/build_manual_pdf.sh
 
       - name: Upload the user-manual PDF

@@ -12,6 +12,7 @@
 # Optional environment variables (shown on the cover page):
 #   MANUAL_DATE     override the date (default: today, e.g. "1 July 2026")
 #   MANUAL_VERSION  module version string, e.g. "1.0.42" (hidden if unset)
+#   MANUAL_IGNITION Ignition version this build targets (default: "8.3+")
 #
 # Branding comes from docs/assets/ (Mustry logos + Visby/Baton web fonts), so
 # the build is self-contained and produces the same result locally and in CI.
@@ -57,6 +58,7 @@ text = open(src, encoding="utf-8").read()
 
 date_str = os.environ.get("MANUAL_DATE") or datetime.date.today().strftime("%-d %B %Y")
 version = os.environ.get("MANUAL_VERSION", "").strip()
+ignition = os.environ.get("MANUAL_IGNITION", "").strip() or "8.3+"
 
 # --- swap missing local images for placeholders (keeps list indentation) ---
 img_re = re.compile(r'^([ \t]*)!\[([^\]]*)\]\(([^)]+)\)[ \t]*$', re.M)
@@ -98,7 +100,7 @@ version_html = ('<div class="cover-version">Version %s</div>' % version) if vers
 cover = '''<div class="cover">
   <div class="cover-inner">
     <img class="cover-logo" src="assets/mustry-logo-light.png" alt="Mustry Solutions" />
-    <div class="cover-eyebrow">Ignition&nbsp;8.3+ Module</div>
+    <div class="cover-eyebrow">Ignition&nbsp;%s Module</div>
     <h1 class="cover-title">Perspective Components</h1>
     <div class="cover-subtitle">User Manual</div>
   </div>
@@ -109,7 +111,7 @@ cover = '''<div class="cover">
   </div>
 </div>
 
-''' % (date_str, version_html)
+''' % (ignition, date_str, version_html)
 
 # --- md-to-pdf front matter (page options + brand CSS) ---
 front = r'''---
