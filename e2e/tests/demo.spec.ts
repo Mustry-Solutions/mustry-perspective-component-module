@@ -128,3 +128,35 @@ test('demo admin: all four managers plus the Line config tab', async ({ page }) 
     await expect(page.locator('.mustry-code').first()).toBeVisible();
     await expect(page.getByText('✓ Valid JSON')).toBeVisible();
 });
+
+test('demo admin: the reference scripts still write for the login-free demo', async ({ page }) => {
+    // The demo has no login, so this relies on DEMO_ANONYMOUS_VIEWS in its adminAuth library.
+    const root = await openDemo(page, '/admin', '.mustry-schedmgr');
+    const days: Record<string, unknown> = {};
+    for (const day of ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']) {
+        days[day] = true;
+        days[`${day}Time`] = '0:00-24:00';
+    }
+    const name = 'authz-demo-schedule';
+    const fire = (eventName: string, payload: unknown) => root.evaluate((el: any, [event, body]: any) => {
+        const key = Object.keys(el).find((k) => k.startsWith('__reactInternalInstance') || k.startsWith('__reactFiber'))!;
+        let fiber = el[key];
+        while (fiber && !fiber.memoizedProps?.componentEvents) {
+            fiber = fiber.return;
+        }
+        fiber.memoizedProps.componentEvents.fireComponentEvent(event, body);
+    }, [eventName, payload] as const);
+    await fire('onScheduleSave', {
+        schedule: { name, description: '', observeHolidays: false, allDays: true, ...days }, isNew: true,
+    });
+    await expect(root.locator('.mustry-sched-item').filter({ hasText: name })).toHaveCount(1, { timeout: 15_000 });
+    await fire('onScheduleDelete', { name });
+    await expect(root.locator('.mustry-sched-item').filter({ hasText: name })).toHaveCount(0, { timeout: 15_000 });
+});
+
+test('demo admin: config.locale still binds under a PROTECTED props.config', async ({ page }) => {
+    const root = await openDemo(page, '/admin', '.mustry-schedmgr');
+    await page.locator('.ia_dropdown').first().click();
+    await page.getByText('FR', { exact: true }).click();
+    await expect(root).toContainText('Nouvel horaire');
+});
