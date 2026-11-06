@@ -137,7 +137,7 @@ test('demo admin: the reference scripts still write for the login-free demo', as
         days[day] = true;
         days[`${day}Time`] = '0:00-24:00';
     }
-    const name = 'authz-demo-schedule';
+    const name = 'zauthz-demo-schedule';
     const fire = (eventName: string, payload: unknown) => root.evaluate((el: any, [event, body]: any) => {
         const key = Object.keys(el).find((k) => k.startsWith('__reactInternalInstance') || k.startsWith('__reactFiber'))!;
         let fiber = el[key];

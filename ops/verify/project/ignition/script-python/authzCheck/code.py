@@ -1,17 +1,17 @@
 # Test helper for e2e/tests/authz.spec.ts, not part of the reference pattern: reads the
 # gateway's admin data back so the spec can prove a refused write changed nothing.
-# Only names starting with "authz" are reported, so specs running in parallel don't interfere.
+# Only names starting with "zauthz" are reported, so specs running in parallel don't interfere.
 import sys
 
-USERS = ['authz-user', 'authz-new-user', 'authz-admin', 'authz-super', 'authz-op']  # the only accounts the spec creates or attacks
+USERS = ['zauthz-user', 'zauthz-new-user', 'zauthz-admin', 'zauthz-super', 'zauthz-op']  # the only accounts the spec creates or attacks
 
 
 def _mine(names):
-	return sorted([str(n) for n in names if str(n).lower().startswith('authz')])
+	return sorted([str(n) for n in names if str(n).lower().startswith('zauthz')])
 
 
 def snapshot():
-	"""The authz* users, roles, schedules, rosters and holidays as JSON. Polled by the Authz views."""
+	"""The zauthz* users, roles, schedules, rosters and holidays as JSON. Polled by the Authz views."""
 	try:
 		users = {}
 		for name in USERS:

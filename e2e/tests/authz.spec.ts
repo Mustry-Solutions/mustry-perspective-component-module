@@ -14,6 +14,8 @@ import { test, expect, openRoute } from './helpers';
 // by the gateway) is there for those tests: nothing forces a login, so the other specs
 // stay anonymous.
 
+// The test data is named zauthz-* to sort last: these are real gateway rows that show up in
+// the rails of specs running in parallel, and must not push the rows those specs click.
 const REPO = path.join(__dirname, '..', '..');
 const VIEW_DIRS = ['ops/verify/project', 'ops/demo/project'].map((p) =>
     path.join(REPO, p, 'com.inductiveautomation.perspective/views'));
@@ -52,7 +54,7 @@ async function fireAndExpect(page: Page, attack: Attack, verdict: RegExp) {
     await expect(label, `${attack[1]} ${JSON.stringify(attack[2])}`).toHaveText(verdict, { timeout: 10_000 });
 }
 
-/** The authz* data as the gateway has it now: waits one poll, so a write would have shown. */
+/** The zauthz* data as the gateway has it now: waits one poll, so a write would have shown. */
 async function snapshot(page: Page) {
     await page.waitForTimeout(1200);
     const text = (await page.locator('#authz-snapshot').textContent()) ?? '';
@@ -62,7 +64,7 @@ async function snapshot(page: Page) {
 
 function user(username: string, fields: object = {}) {
     return {
-        username, firstName: 'Authz', lastName: 'User', schedule: 'Always', language: 'en', notes: 'original',
+        username, firstName: 'Zauthz', lastName: 'User', schedule: 'Always', language: 'en', notes: 'original',
         roles: [] as string[], contactInfo: [], scheduleAdjustments: [], ...fields,
     };
 }
@@ -79,35 +81,35 @@ function schedule(name: string, description = 'original') {
 type Attack = [selector: string, eventName: string, payload: unknown];
 
 // Each of these would change gateway data if the script let it through.
-const PROMOTE: Attack = [USER, 'onUserSave', { user: user('authz-user', { notes: 'HACKED', roles: ['Administrator'] }), isNew: false }];
-const SET_PASSWORD: Attack = [USER, 'onUserSave', { user: user('authz-user', { notes: 'HACKED' }), isNew: false, password: 'Hacked-1234!' }];
-const EDIT_USER: Attack = [USER, 'onUserSave', { user: user('authz-user', { notes: 'HACKED' }), isNew: false }];
-const CREATE_USER: Attack = [USER, 'onUserSave', { user: user('authz-new-user'), isNew: true, password: 'Hacked-1234!' }];
-const DELETE_USER: Attack = [USER, 'onUserDelete', { username: 'authz-user' }];
-const ADD_ROLE: Attack = [USER, 'onRoleSave', { name: 'authz-new-role' }];
-const RENAME_ROLE: Attack = [USER, 'onRoleSave', { name: 'authz-renamed-role', oldName: 'authz-role' }];
-const DELETE_ROLE: Attack = [USER, 'onRoleDelete', { name: 'authz-role' }];
-const EDIT_SCHEDULE: Attack = [SCHEDULE, 'onScheduleSave', { schedule: schedule('authz-schedule', 'HACKED'), isNew: false }];
+const PROMOTE: Attack = [USER, 'onUserSave', { user: user('zauthz-user', { notes: 'HACKED', roles: ['Administrator'] }), isNew: false }];
+const SET_PASSWORD: Attack = [USER, 'onUserSave', { user: user('zauthz-user', { notes: 'HACKED' }), isNew: false, password: 'Hacked-1234!' }];
+const EDIT_USER: Attack = [USER, 'onUserSave', { user: user('zauthz-user', { notes: 'HACKED' }), isNew: false }];
+const CREATE_USER: Attack = [USER, 'onUserSave', { user: user('zauthz-new-user'), isNew: true, password: 'Hacked-1234!' }];
+const DELETE_USER: Attack = [USER, 'onUserDelete', { username: 'zauthz-user' }];
+const ADD_ROLE: Attack = [USER, 'onRoleSave', { name: 'zauthz-new-role' }];
+const RENAME_ROLE: Attack = [USER, 'onRoleSave', { name: 'zauthz-renamed-role', oldName: 'zauthz-role' }];
+const DELETE_ROLE: Attack = [USER, 'onRoleDelete', { name: 'zauthz-role' }];
+const EDIT_SCHEDULE: Attack = [SCHEDULE, 'onScheduleSave', { schedule: schedule('zauthz-schedule', 'HACKED'), isNew: false }];
 // isNew: false is a lie here: the scripts must see that this creates.
-const CREATE_SCHEDULE: Attack = [SCHEDULE, 'onScheduleSave', { schedule: schedule('authz-new-schedule'), isNew: false }];
-const DELETE_SCHEDULE: Attack = [SCHEDULE, 'onScheduleDelete', { name: 'authz-schedule' }];
-const EDIT_ROSTER: Attack = [ROSTER, 'onRosterSave', { name: 'authz-roster', users: [], isNew: false }];
-const CREATE_ROSTER: Attack = [ROSTER, 'onRosterSave', { name: 'authz-new-roster', users: [], isNew: false }];
-const DELETE_ROSTER: Attack = [ROSTER, 'onRosterDelete', { name: 'authz-roster' }];
-const EDIT_HOLIDAY: Attack = [HOLIDAY, 'onHolidaySave', { holiday: { name: 'authz-holiday', date: '2031-02-02', repeatAnnually: false }, isNew: false }];
-const CREATE_HOLIDAY: Attack = [HOLIDAY, 'onHolidaySave', { holiday: { name: 'authz-new-holiday', date: '2031-02-02', repeatAnnually: false }, isNew: true }];
-const DELETE_HOLIDAY: Attack = [HOLIDAY, 'onHolidayDelete', { name: 'authz-holiday' }];
+const CREATE_SCHEDULE: Attack = [SCHEDULE, 'onScheduleSave', { schedule: schedule('zauthz-new-schedule'), isNew: false }];
+const DELETE_SCHEDULE: Attack = [SCHEDULE, 'onScheduleDelete', { name: 'zauthz-schedule' }];
+const EDIT_ROSTER: Attack = [ROSTER, 'onRosterSave', { name: 'zauthz-roster', users: [], isNew: false }];
+const CREATE_ROSTER: Attack = [ROSTER, 'onRosterSave', { name: 'zauthz-new-roster', users: [], isNew: false }];
+const DELETE_ROSTER: Attack = [ROSTER, 'onRosterDelete', { name: 'zauthz-roster' }];
+const EDIT_HOLIDAY: Attack = [HOLIDAY, 'onHolidaySave', { holiday: { name: 'zauthz-holiday', date: '2031-02-02', repeatAnnually: false }, isNew: false }];
+const CREATE_HOLIDAY: Attack = [HOLIDAY, 'onHolidaySave', { holiday: { name: 'zauthz-new-holiday', date: '2031-02-02', repeatAnnually: false }, isNew: true }];
+const DELETE_HOLIDAY: Attack = [HOLIDAY, 'onHolidayDelete', { name: 'zauthz-holiday' }];
 
 /** Create what the attacks aim at, through the same scripts on the open view: the control. */
 async function ensureFixtures(page: Page) {
     await openRoute(page, '/authz-open', USER);
     const now = await snapshot(page);
     const steps: Array<[boolean, Attack, RegExp]> = [
-        [now.roles.includes('authz-role'), [USER, 'onRoleSave', { name: 'authz-role' }], /^onRoleSave added/],
-        [!!now.users['authz-user'], [USER, 'onUserSave', { user: user('authz-user'), isNew: true, password: 'Authz-1234!' }], /^onUserSave persisted/],
-        [now.schedules.includes('authz-schedule'), [SCHEDULE, 'onScheduleSave', { schedule: schedule('authz-schedule'), isNew: true }], /^onScheduleSave created/],
-        [!!now.rosters['authz-roster'], [ROSTER, 'onRosterSave', { name: 'authz-roster', users: ['authz-user'], isNew: true }], /^onRosterSave persisted/],
-        [now.holidays.includes('authz-holiday'), [HOLIDAY, 'onHolidaySave', { holiday: { name: 'authz-holiday', date: '2030-01-01', repeatAnnually: false }, isNew: true }], /^onHolidaySave created/],
+        [now.roles.includes('zauthz-role'), [USER, 'onRoleSave', { name: 'zauthz-role' }], /^onRoleSave added/],
+        [!!now.users['zauthz-user'], [USER, 'onUserSave', { user: user('zauthz-user'), isNew: true, password: 'Authz-1234!' }], /^onUserSave persisted/],
+        [now.schedules.includes('zauthz-schedule'), [SCHEDULE, 'onScheduleSave', { schedule: schedule('zauthz-schedule'), isNew: true }], /^onScheduleSave created/],
+        [!!now.rosters['zauthz-roster'], [ROSTER, 'onRosterSave', { name: 'zauthz-roster', users: ['zauthz-user'], isNew: true }], /^onRosterSave persisted/],
+        [now.holidays.includes('zauthz-holiday'), [HOLIDAY, 'onHolidaySave', { holiday: { name: 'zauthz-holiday', date: '2030-01-01', repeatAnnually: false }, isNew: true }], /^onHolidaySave created/],
     ];
     for (const [present, attack, verdict] of steps) {
         if (!present) {
@@ -115,15 +117,15 @@ async function ensureFixtures(page: Page) {
         }
     }
     const after = await snapshot(page);
-    expect(after.users['authz-user']).toMatchObject({ notes: 'original', roles: [] });
-    expect(after.roles).toContain('authz-role');
-    expect(after.schedules).toContain('authz-schedule');
-    expect(after.rosters['authz-roster']).toEqual(['authz-user']);
-    expect(after.holidays).toContain('authz-holiday');
+    expect(after.users['zauthz-user']).toMatchObject({ notes: 'original', roles: [] });
+    expect(after.roles).toContain('zauthz-role');
+    expect(after.schedules).toContain('zauthz-schedule');
+    expect(after.rosters['zauthz-roster']).toEqual(['zauthz-user']);
+    expect(after.holidays).toContain('zauthz-holiday');
     return after;
 }
 
-const ACCOUNTS: Array<[string, string[]]> = [['authz-admin', ['Administrator']], ['authz-super', ['Supervisor']], ['authz-op', []]];
+const ACCOUNTS: Array<[string, string[]]> = [['zauthz-admin', ['Administrator']], ['zauthz-super', ['Supervisor']], ['zauthz-op', []]];
 const PASSWORD = 'Authz-1234!';
 const STRICT = /REFUSED: requires one of the roles Administrator$/;
 
@@ -157,11 +159,11 @@ test.describe('Admin family: the event scripts authorize the write', () => {
     test('control: with the flags on and the demo exemption, crafted events do write', async ({ page }) => {
         // Without this, every refusal below could just mean the crafted event never arrived.
         const before = await ensureFixtures(page);
-        await fireAndExpect(page, EDIT_USER, /^onUserSave persisted "authz-user"/);
+        await fireAndExpect(page, EDIT_USER, /^onUserSave persisted "zauthz-user"/);
         const after = await snapshot(page);
-        expect(after.users['authz-user'].notes).toBe('HACKED');
-        expect(before.users['authz-user'].notes).toBe('original');
-        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false }], /^onUserSave persisted/);
+        expect(after.users['zauthz-user'].notes).toBe('HACKED');
+        expect(before.users['zauthz-user'].notes).toBe('original');
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: false }], /^onUserSave persisted/);
     });
 
     test('a session without the role is refused every write, and nothing changes', async ({ page }) => {
@@ -265,7 +267,7 @@ test.describe('Admin family: the event scripts authorize the write', () => {
 
     test('logged in without a role: refused, and the demo exemption does not apply', async ({ page, consoleErrors }) => {
         await ensureAccounts(page);
-        await login(page, consoleErrors, 'authz-op', PASSWORD);
+        await login(page, consoleErrors, 'zauthz-op', PASSWORD);
         // AuthzOpen is on the demo exemption list and an anonymous session writes there:
         // this refusal also shows the session really is logged in.
         await openRoute(page, '/authz-open', USER);
@@ -279,7 +281,7 @@ test.describe('Admin family: the event scripts authorize the write', () => {
 
     test('a Supervisor can edit, but not passwords, roles or accounts', async ({ page, consoleErrors }) => {
         await ensureAccounts(page);
-        await login(page, consoleErrors, 'authz-super', PASSWORD);
+        await login(page, consoleErrors, 'zauthz-super', PASSWORD);
         await openRoute(page, '/authz-no-role', USER);
         const before = await snapshot(page);
         for (const attack of [PROMOTE, SET_PASSWORD, CREATE_USER, DELETE_USER, ADD_ROLE, RENAME_ROLE, DELETE_ROLE]) {
@@ -287,30 +289,30 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         }
         expect(await snapshot(page)).toEqual(before);
 
-        await fireAndExpect(page, EDIT_USER, /^onUserSave persisted "authz-user"/);
+        await fireAndExpect(page, EDIT_USER, /^onUserSave persisted "zauthz-user"/);
         await fireAndExpect(page, EDIT_SCHEDULE, /^onScheduleSave persisted/);
-        expect((await snapshot(page)).users['authz-user']).toMatchObject({ notes: 'HACKED', roles: [] });
-        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false }], /^onUserSave persisted/);
+        expect((await snapshot(page)).users['zauthz-user']).toMatchObject({ notes: 'HACKED', roles: [] });
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: false }], /^onUserSave persisted/);
     });
 
     test('a refused password change leaves the old password working', async ({ page, consoleErrors }) => {
         // SET_PASSWORD was refused above for an anonymous session and a Supervisor.
         await ensureAccounts(page);
-        await login(page, consoleErrors, 'authz-user', 'Authz-1234!');
+        await login(page, consoleErrors, 'zauthz-user', 'Authz-1234!');
         await openRoute(page, '/authz-no-role', USER);
     });
 
     test('an Administrator can do the strict writes', async ({ page, consoleErrors }) => {
         await ensureAccounts(page);
-        await login(page, consoleErrors, 'authz-admin', PASSWORD);
+        await login(page, consoleErrors, 'zauthz-admin', PASSWORD);
         await openRoute(page, '/authz-no-role', USER);
-        await fireAndExpect(page, PROMOTE, /^onUserSave persisted "authz-user"/);
-        expect((await snapshot(page)).users['authz-user'].roles).toEqual(['Administrator']);
-        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false }], /^onUserSave persisted/);
+        await fireAndExpect(page, PROMOTE, /^onUserSave persisted "zauthz-user"/);
+        expect((await snapshot(page)).users['zauthz-user'].roles).toEqual(['Administrator']);
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: false }], /^onUserSave persisted/);
         const newPassword = 'Authz-5678!';
-        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false, password: newPassword }], /password set/);
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: false, password: newPassword }], /password set/);
         // The control for the password test above: this login only works if the write landed.
-        await login(page, consoleErrors, 'authz-user', newPassword);
+        await login(page, consoleErrors, 'zauthz-user', newPassword);
         await openRoute(page, '/authz-no-role', USER);
     });
 
