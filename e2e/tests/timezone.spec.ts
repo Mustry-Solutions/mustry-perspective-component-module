@@ -13,10 +13,16 @@ async function openManagersAt(page: any, iso: string) {
 }
 
 /** The empty-zone cases need to know which zone that means. docker-compose's
- *  default is UTC (CI too); ops/demo.sh sets the host's zone instead. */
+ *  default is UTC (CI too); ops/demo.sh sets the host's zone instead. Locally they
+ *  skip on another zone; in CI that fails, or the only real proof of the empty-zone
+ *  read could vanish while the job stays green. */
 async function needsUtcGateway(page: any) {
     const text = await page.locator('#tz-active-default').innerText();
-    test.skip(!text.includes('gateway=UTC'), `needs a UTC gateway: ${text}`);
+    const utc = text.includes('gateway=UTC');
+    if (process.env.CI) {
+        expect(utc, `CI must run these on a UTC gateway: ${text}`).toBe(true);
+    }
+    test.skip(!utc, `needs a UTC gateway: ${text}`);
 }
 
 test.describe('Schedule Manager zone', () => {
@@ -74,6 +80,8 @@ test.describe('Holiday Manager zone', () => {
         await openManagersAt(page, '2026-06-18T02:00:00Z');
         await expect(plantDay(page, '#tz-hol-chicago')).toHaveCount(1);
         await expect(plantDay(page, '#tz-hol-chicago')).not.toHaveClass(/mustry-holiday-item--past/);
+        await expect(page.locator('#tz-active-default')).toContainText('isActiveNow=');
+        await needsUtcGateway(page);
         await expect(plantDay(page, '#tz-hol-default')).toHaveClass(/mustry-holiday-item--past/);
     });
 });

@@ -27,7 +27,7 @@
         "timezone": {
           "type": "string",
           "default": "",
-          "description": "IANA zone (e.g. 'America/Chicago') \"now\" is read in: output.isActiveNow, the active dots, the now-line and the preview strip. Empty = the gateway's zone (session.props.gateway.timezone.id), where Ignition itself evaluates schedules. Unlike the calendar and timeline, whose empty value means browser-local; browser-local only if the session can't report one."
+          "description": "IANA zone (e.g. 'America/Chicago') \"now\" is read in: output.isActiveNow, the active dots, the now-line and the preview strip. Empty = the gateway's zone (session.props.gateway.timezone.id), where Ignition itself evaluates schedules. Unlike the calendar and timeline, whose empty value means browser-local; browser-local only if the session can't report a zone or the value isn't a zone the browser recognizes."
         },
         "firstDayOfWeek": {
           "enum": [
