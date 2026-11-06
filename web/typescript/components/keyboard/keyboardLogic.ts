@@ -123,14 +123,22 @@ export function liveValue(draft: string, range: RangeOpts): number | null {
 }
 
 /**
+ * Whether a number is acceptable: always without enforceRange, otherwise in
+ * [min, max]. Pass the number BEFORE clamping: a clamped one is always in range.
+ */
+export function isNumberValid(value: number, range: RangeOpts): boolean {
+    return !range.enforceRange || inRange(value, range.min, range.max);
+}
+
+/**
  * Enter on the numpad: the value to write (clamped with enforceRange) and
  * whether the typed number was in range BEFORE clamping, for onCommit.isValid.
  */
 export function commitNumber(parsed: number, range: RangeOpts): { value: number; isValid: boolean } {
-    if (!range.enforceRange) {
-        return { value: parsed, isValid: true };
-    }
-    return { value: clampValue(parsed, range.min, range.max), isValid: inRange(parsed, range.min, range.max) };
+    return {
+        value: range.enforceRange ? clampValue(parsed, range.min, range.max) : parsed,
+        isValid: isNumberValid(parsed, range)
+    };
 }
 
 /**

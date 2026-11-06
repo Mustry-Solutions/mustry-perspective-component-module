@@ -1,6 +1,6 @@
 import {
-    applyKey, clampValue, commitNumber, formatValue, inRange, isLiveEcho, KeypadOpts, liveValue, parseDraft,
-    RangeOpts, valueToDraft
+    applyKey, clampValue, commitNumber, formatValue, inRange, isLiveEcho, isNumberValid, KeypadOpts, liveValue,
+    parseDraft, RangeOpts, valueToDraft
 } from '../keyboard/keyboardLogic';
 
 const opts = (o: Partial<KeypadOpts> = {}): KeypadOpts => ({ decimals: 2, allowNegative: true, ...o });
@@ -164,6 +164,22 @@ describe('isLiveEcho', () => {
         expect(isLiveEcho(12, 12)).toBe(true);
         expect(isLiveEcho(13, 12)).toBe(false);
         expect(isLiveEcho(12, null)).toBe(false);
+    });
+});
+
+describe('isNumberValid (#224)', () => {
+    const zeroToHundred: RangeOpts = { enforceRange: true, min: 0, max: 100 };
+    it('rejects a number outside the range on either side', () => {
+        expect(isNumberValid(150, zeroToHundred)).toBe(false);
+        expect(isNumberValid(-1, zeroToHundred)).toBe(false);
+    });
+    it('accepts a number inside the range, bounds included', () => {
+        expect(isNumberValid(42, zeroToHundred)).toBe(true);
+        expect(isNumberValid(0, zeroToHundred)).toBe(true);
+        expect(isNumberValid(100, zeroToHundred)).toBe(true);
+    });
+    it('accepts anything without enforceRange', () => {
+        expect(isNumberValid(150, free)).toBe(true);
     });
 });
 
