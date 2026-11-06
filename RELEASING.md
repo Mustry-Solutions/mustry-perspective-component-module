@@ -26,8 +26,9 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
    ```
 3. The **Release** workflow (`.github/workflows/release.yml`) then:
    - derives the module version from the tag (`v0.2.0` → `0.2.0`) —
-     **plain `x.y.z` tags only**: prerelease suffixes are rejected because
-     Ignition's `module.xml` version parser is numeric-only,
+     **plain `x.y.z` tags only** (apart from the beta builds below): other
+     prerelease suffixes are rejected because Ignition's `module.xml` version
+     parser is numeric-only,
    - builds and **signs** the `.modl` (which carries `license.html`, the
      install-time EULA) and verifies the signature landed,
    - builds the branded **user-manual PDF** (`scripts/build_manual_pdf.sh`
@@ -51,6 +52,43 @@ release build signs the artifact rather than re-running the e2e gateway).
 Versioning is semver; pre-1.0 the prop schemas may still change (the CI schema
 guard flags removed/renamed keys — see `CHANGELOG.md`).
 
+## Beta builds for a future Ignition version
+
+While an Ignition line is in beta (now: 2027), its builds ship as GitHub
+**prereleases**, separate from normal releases. Ignition gates modules on the
+year version, so the same `.modl` can't load on both 8.3 and 2027.
+
+To publish one:
+
+1. Check that **E2E Ignition 2027 beta (advisory)** is green on the commit. It
+   isn't a required check, so `main` can be red on it.
+2. Tag that commit `vX.Y.Z-ignition<sdk>`, with `X.Y.Z` taken from the fallback
+   version in `build.gradle.kts`, and push the tag:
+   ```bash
+   git tag -a v0.9.1-ignition2027.2.0-beta1 -m "0.9.1 for Ignition 2027.2.0-beta1"
+   git push origin v0.9.1-ignition2027.2.0-beta1
+   ```
+
+The Release workflow reads the SDK from the tag, builds and signs on Java 25, and:
+
+- checks that the beta label reached the file and module names,
+- publishes a prerelease that never becomes "latest", with the notes from
+  `ops/beta-release-notes.md` (no CHANGELOG section or changelog PR needed),
+- names the file `Mustry-Perspective-Components-ignition-<sdk>.modl` and the
+  module `Mustry Perspective Components (BETA for Ignition <sdk>)`,
+- stamps the numeric module version `X.Y.Z.<beta number>`.
+
+The fallback SNAPSHOT version isn't bumped afterwards. To rebuild for the same
+Ignition beta, use a higher patch number, because a tag can't be reused.
+
+When Inductive Automation ships a new beta, change the image and SDK in
+`ops/ignition-2027.env`, let the advisory job run, and publish a new build. A beta
+build may not survive a later Ignition beta.
+
+**When 2027 is released:** build on the final SDK, make the 2027 job a required
+check, and have the normal `vX.Y.Z` release publish both `.modl` files. That last
+step isn't implemented yet because the final SDK doesn't exist.
+
 ## Signing secrets
 
 Signing runs only in the Release workflow, from repository secrets
@@ -65,8 +103,8 @@ Signing runs only in the Release workflow, from repository secrets
 | `SIGNING_CERT_PASSWORD` | Key password (often the same as the keystore password) |
 
 To check the secrets without releasing, run the **Release** workflow by hand
-(**Actions → Release → Run workflow**) with a plain `x.y.z` version. A manual
-run is always a dry run: it builds and signs, and uploads the signed `.modl`
+(**Actions → Release → Run workflow**) with a plain `x.y.z` version, or a
+`x.y.z-ignition<sdk>` one to check a beta build. A manual run is always a dry run: it builds and signs, and uploads the signed `.modl`
 as a workflow artifact. Only a pushed tag publishes a release.
 
 If any are missing, the release fails fast with a message naming them. The

@@ -4,6 +4,11 @@ name: Release
 # then publishes a GitHub Release with the signed .modl attached and the
 # matching CHANGELOG section as the notes. The tag drives the module version.
 #
+# A tag `vX.Y.Z-ignition<sdk>`, such as v0.9.1-ignition2027.2.0-beta1, instead
+# publishes a build for that Ignition beta as a GitHub PRERELEASE: built on that
+# SDK and Java 25, labelled BETA in its file and module names, and never marked
+# as the latest release. See RELEASING.md.
+#
 # Required repo secrets (Settings → Secrets and variables → Actions):
 #   SIGNING_KEYSTORE_B64       base64 of the signing keystore (.p12/.jks)
 #   SIGNING_CERT_B64           base64 of the certificate chain (.pem)
@@ -24,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to stamp, plain x.y.z (dry run; no tag involved)'
+        description: 'Version to stamp: x.y.z, or x.y.z-ignition<beta sdk> (dry run; no tag involved)'
         default: '0.0.0'
         type: string
 
@@ -45,6 +50,10 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
       publish: ${{ steps.ver.outputs.publish }}
+      release_version: ${{ steps.ver.outputs.release_version }}
+      sdk: ${{ steps.ver.outputs.sdk }}
+      java: ${{ steps.ver.outputs.java }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -65,21 +74,39 @@ jobs:
             version="$INPUT_VERSION"
             publish=false
           fi
-          # Policy: plain x.y.z only, for tags and typed versions alike.
+          # Policy: plain x.y.z for a normal release, or x.y.z-ignition<sdk> for
+          # a build against an Ignition beta SDK. Any other suffix is rejected.
           # Ignition's module.xml version parser is numeric-only: a prerelease
-          # suffix (v0.4.0-beta.1) produces a .modl the gateway rejects at
-          # install (a class of failure the observability module shipped
-          # once). Bump the patch number instead.
+          # suffix (v0.4.0-beta.1) reaching it produces a .modl the gateway
+          # rejects at install (a class of failure the observability module
+          # shipped once), so a beta build maps to the numeric x.y.z.<beta>
+          # through -PreleaseVersion=x.y.z-beta.<beta> (build.gradle.kts).
           # A bash match covers the whole string, so a typed value with a
           # newline cannot slip an extra line into $GITHUB_OUTPUT (a line-based
           # grep would pass it as long as one line looked valid).
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            release_version="$version"
+            sdk=""
+            java="17"
+            prerelease=false
+          elif [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-ignition([0-9]{4}\.[0-9]+\.[0-9]+-beta([0-9]+))$ ]]; then
+            release_version="${BASH_REMATCH[1]}-beta.${BASH_REMATCH[3]}"
+            sdk="${BASH_REMATCH[2]}"
+            java="25"
+            prerelease=true
+          else
             shown="$(printf '%s' "$version" | tr -c '[:alnum:]._-' '?')"
-            echo "::error::Version '$shown' is not plain x.y.z. Prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
+            echo "::error::Version '$shown' is neither plain x.y.z nor x.y.z-ignition<year>.<x>.<y>-beta<n>. Other prerelease suffixes break Ignition's numeric module version parser. Bump the patch number instead."
             exit 1
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_version=$release_version"
+            echo "sdk=$sdk"
+            echo "java=$java"
+            echo "prerelease=$prerelease"
+            echo "version=$version"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build the user-manual PDF
         # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
@@ -105,11 +132,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up JDK 17
+      - name: Set up the JDK
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: ${{ needs.prepare.outputs.java }}
 
       # Same Gradle and Node caching as ci.yml (see the comments there). The
       # open-source `basic` provider on purpose: this job holds the signing key.
@@ -158,13 +185,19 @@ jobs:
       - name: Build & sign the module
         env:
           ORG_GRADLE_PROJECT_org.gradle.java.installations.auto-download: "false"
-          VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+          SDK: ${{ needs.prepare.outputs.sdk }}
+          JAVA_VERSION: ${{ needs.prepare.outputs.java }}
           KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
           CERT_ALIAS: ${{ secrets.SIGNING_CERT_ALIAS }}
           CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: |
-          ./gradlew clean build --no-daemon --stacktrace \
-            -PreleaseVersion="$VERSION" \
+          target=()
+          if [ -n "$SDK" ]; then
+            target=(-PignitionSdkVersion="$SDK" -PignitionJavaVersion="$JAVA_VERSION")
+          fi
+          ./gradlew clean build --no-daemon --stacktrace "${target[@]}" \
+            -PreleaseVersion="$RELEASE_VERSION" \
             -Pignition.signing.keystoreFile="$RUNNER_TEMP/keystore.p12" \
             -Pignition.signing.keystorePassword="$KEYSTORE_PASSWORD" \
             -Pignition.signing.certFile="$RUNNER_TEMP/cert.pem" \
@@ -193,6 +226,22 @@ jobs:
             exit 1
           fi
 
+      # A beta build must never reach a gateway looking like a normal release.
+      - name: Verify the beta labelling
+        if: ${{ needs.prepare.outputs.prerelease == 'true' }}
+        env:
+          MODL_PATH: ${{ steps.modl.outputs.path }}
+          SDK: ${{ needs.prepare.outputs.sdk }}
+        run: |
+          case "$MODL_PATH" in
+            *"-ignition-$SDK.modl") ;;
+            *) echo "::error::$MODL_PATH does not carry the beta SDK in its file name"; exit 1 ;;
+          esac
+          if ! unzip -p "$MODL_PATH" module.xml | grep -q "(BETA for Ignition $SDK)"; then
+            echo "::error::module.xml does not name the module as a beta build"
+            exit 1
+          fi
+
       # Dry run (workflow_dispatch): keep the signed .modl as an artifact instead
       # of publishing — the way to confirm the signing secrets work.
       - name: Upload signed .modl (dry run)
@@ -211,11 +260,19 @@ jobs:
           name: user-manual
           path: build
 
+      # A beta build has fixed notes instead of a CHANGELOG section: it ships
+      # what main holds, for an Ignition version that isn't released yet.
       - name: Extract release notes
         if: ${{ needs.prepare.outputs.publish == 'true' }}
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: python3 ops/changelog-notes.py "$VERSION" > "$RUNNER_TEMP/notes.md"
+          SDK: ${{ needs.prepare.outputs.sdk }}
+        run: |
+          if [ -n "$SDK" ]; then
+            sed "s/@SDK@/$SDK/g" ops/beta-release-notes.md > "$RUNNER_TEMP/notes.md"
+          else
+            python3 ops/changelog-notes.py "$VERSION" > "$RUNNER_TEMP/notes.md"
+          fi
 
       # The tag check repeats the publish flag on purpose: `gh release create`
       # takes $GITHUB_REF_NAME as the tag, so this step must never run on a
@@ -226,13 +283,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.prepare.outputs.version }}
           MODL_PATH: ${{ steps.modl.outputs.path }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          SDK: ${{ needs.prepare.outputs.sdk }}
         run: |
+          title="v$VERSION"
+          kind=()
+          if [ "$PRERELEASE" = "true" ]; then
+            title="BETA for Ignition $SDK: ${VERSION%%-*}"
+            kind=(--prerelease --latest=false)
+          fi
           # Draft first, publish only once every asset attached — a failed
           # upload must never leave a half-public release.
           gh release create "$GITHUB_REF_NAME" \
-            --title "v$VERSION" \
+            --title "$title" \
             --notes-file "$RUNNER_TEMP/notes.md" \
-            --draft \
+            --draft "${kind[@]}" \
             "$MODL_PATH" \
             build/user_manual.pdf
           gh release edit "$GITHUB_REF_NAME" --draft=false
