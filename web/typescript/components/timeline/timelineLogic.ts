@@ -196,15 +196,54 @@ export function containingAnchorMs(ms: number, zoom: TimelineZoom, timeZone: str
 }
 
 /**
- * Where the window goes when the zoom changes: if "now" was in view it stays in
- * view (drilling into the live cycle keeps following it); otherwise the new
- * window is the one containing the old window's start, so zooming in and back
- * out returns to the same place.
+ * The moment a zoom change must keep in view, measured on the OLD window and
+ * scroll position: "now" if the now-line was actually on screen (inside the
+ * window isn't enough, the window is wider than the viewport), else the moment at
+ * the centre of what was visible. The time viewport starts `labelPx` in, behind
+ * the sticky label column. With no layout to measure (a hidden view) now counts
+ * as visible when it's in the window, else the window's start stands in.
  */
-export function rezoomAnchorMs(anchorMs: number, fromZoom: TimelineZoom, toZoom: TimelineZoom, nowMs: number, timeZone: string): number {
-    const old = windowFor(anchorMs, fromZoom, timeZone);
-    const target = nowMs >= old.startMs && nowMs < old.endMs ? nowMs : anchorMs;
-    return containingAnchorMs(target, toZoom, timeZone);
+export function rezoomFocusMs(scale: TimeScale, scrollLeft: number, clientWidth: number, labelPx: number, nowMs: number): number {
+    const nowInWindow = nowMs >= scale.startMs && nowMs < scale.endMs;
+    const viewportPx = clientWidth - labelPx;
+    if (viewportPx <= 0) {
+        return nowInWindow ? nowMs : scale.startMs;
+    }
+    const width = scaleWidth(scale);
+    const leftPx = Math.max(0, Math.min(scrollLeft, width));
+    const rightPx = Math.min(leftPx + viewportPx, width);   // a wide viewport outruns the window
+    const nowPx = msToPx(scale, nowMs);
+    if (nowInWindow && nowPx >= leftPx && nowPx <= rightPx) {
+        return nowMs;
+    }
+    return Math.round(pxToMs(scale, (leftPx + rightPx) / 2));
+}
+
+/** The scrollLeft that centres `focusMs` in the time viewport, held to what the
+ *  window can scroll to: a moment near (or past) an edge rests against that edge. */
+export function focusScrollLeft(scale: TimeScale, focusMs: number, clientWidth: number, labelPx: number): number {
+    const width = scaleWidth(scale);
+    const viewportPx = Math.max(0, clientWidth - labelPx);
+    const focusPx = Math.max(0, Math.min(msToPx(scale, focusMs), width));
+    return Math.max(0, Math.min(focusPx - viewportPx / 2, width - viewportPx));
+}
+
+/** Where a zoom change left the view, kept so the next one can start from the
+ *  same moment: once it has clamped against a window edge, the view's centre is no
+ *  longer that moment. `scrollLeft` is as the browser read it back. */
+export interface KeptFocus {
+    focusMs: number;
+    scrollLeft: number;
+    anchorMs: number;
+}
+
+/** The moment to reuse for this zoom change, or null to measure afresh. Valid only
+ *  while the view is where the last zoom change left it, so the user hasn't moved
+ *  it; then it wins over the now check too, because a wider zoom showing the
+ *  now-line says nothing about what the user was looking at. A browser can read
+ *  scrollLeft back at a sub-pixel, hence less than a pixel rather than equality. */
+export function keptFocusMs(kept: KeptFocus | null, scrollLeft: number, anchorMs: number): number | null {
+    return kept && kept.anchorMs === anchorMs && Math.abs(kept.scrollLeft - scrollLeft) < 1 ? kept.focusMs : null;
 }
 
 // --- custom window (state.windowStart / state.windowEnd) ----------------------
