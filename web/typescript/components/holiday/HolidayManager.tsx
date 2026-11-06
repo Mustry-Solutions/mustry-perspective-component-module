@@ -9,6 +9,8 @@ import {
 import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
 import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { AdminFooter } from '../../shared/AdminFooter';
+import { fmtDate, todayInZone } from '../../shared/dateUtils';
+import { managerTimeZone } from '../../shared/gatewayZone';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
     holidayDraftToFlat, nextOccurrence, parseIsoDate, sortHolidays
@@ -91,10 +93,7 @@ export class HolidayManager
     }
 
     private todayIso(): string {
-        const d = new Date();
-        const mm = d.getMonth() + 1;
-        const dd = d.getDate();
-        return `${d.getFullYear()}-${mm < 10 ? '0' : ''}${mm}-${dd < 10 ? '0' : ''}${dd}`;
+        return fmtDate(todayInZone(managerTimeZone(this.props.props.timezone, this.props.store)));
     }
 
     private sorted(): HolidayItem[] {

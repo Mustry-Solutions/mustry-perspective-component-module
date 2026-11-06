@@ -1,0 +1,192 @@
+{
+ "custom": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1290,
+   "height": 520
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     },
+     "text": "Timezone fixture (#148). The mini month navigator's today follows config.timezone (Pacific/Kiritimati, UTC+14), and the Chicago timeline pages sub-day zooms across DST on its wall clock. See e2e/tests/timezone.spec.ts."
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 1260,
+     "height": 40
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.calendar",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "Pacific/Kiritimati",
+      "locale": "en-US",
+      "weekStart": "monday"
+     },
+     "data": {},
+     "state": {
+      "view": "month"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "calendar",
+     "domId": "tz-calendar"
+    },
+    "position": {
+     "x": 16,
+     "y": 56,
+     "width": 620,
+     "height": 420
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.resourcetimeline",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "Pacific/Kiritimati",
+      "locale": "en-US",
+      "resources": [
+       {
+        "id": "a",
+        "label": "Line A"
+       }
+      ]
+     },
+     "data": {
+      "events": []
+     },
+     "state": {
+      "zoom": "day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "timelineFar",
+     "domId": "tz-timeline-far"
+    },
+    "position": {
+     "x": 650,
+     "y": 56,
+     "width": 620,
+     "height": 200
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readFar",
+     "domId": "tz-far-visible"
+    },
+    "position": {
+     "x": 650,
+     "y": 258,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'visibleStart=' + {../timelineFar.props.output.visibleStart}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.resourcetimeline",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/Chicago",
+      "locale": "en-US",
+      "resources": [
+       {
+        "id": "a",
+        "label": "Line A"
+       }
+      ]
+     },
+     "data": {
+      "events": []
+     },
+     "state": {
+      "zoom": "hour"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "timelineChicago",
+     "domId": "tz-timeline-chicago"
+    },
+    "position": {
+     "x": 650,
+     "y": 290,
+     "width": 620,
+     "height": 200
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readChicago",
+     "domId": "tz-chicago-visible"
+    },
+    "position": {
+     "x": 650,
+     "y": 492,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'visibleStart=' + {../timelineChicago.props.output.visibleStart}"
+       }
+      }
+     }
+    }
+   }
+  ]
+ }
+}

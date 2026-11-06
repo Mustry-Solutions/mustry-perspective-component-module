@@ -9,6 +9,7 @@
       "description": "Schedule Manager behaviour and appearance.",
       "default": {
         "locale": "",
+        "timezone": "",
         "firstDayOfWeek": "monday",
         "dayStartHour": 0,
         "dayEndHour": 24,
@@ -22,6 +23,11 @@
           "type": "string",
           "default": "",
           "description": "BCP-47 locale for weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default. Also selects the built-in UI-text language (see config.labels)."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA zone (e.g. 'America/Chicago') \"now\" is read in: output.isActiveNow, the active dots, the now-line and the preview strip. Empty = the gateway's zone (session.props.gateway.timezone.id), where Ignition itself evaluates schedules. Unlike the calendar and timeline, whose empty value means browser-local; browser-local only if the session can't report one."
         },
         "firstDayOfWeek": {
           "enum": [
@@ -299,7 +305,7 @@
         "isActiveNow": {
           "type": "boolean",
           "default": false,
-          "description": "Whether the SELECTED schedule is active at the current time (re-evaluated every 30s). Alternating schedules evaluate against week A."
+          "description": "Whether the SELECTED schedule is active at the current time in config.timezone (re-evaluated every 30s). Alternating schedules evaluate against week A."
         },
         "validationErrors": {
           "type": "array",
