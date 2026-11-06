@@ -11,7 +11,16 @@ plugins {
     id("io.ia.sdk.modl") version("0.5.0")
 }
 
-val sdk_version by extra("8.3.6")
+// Default target: Ignition 8.3 on Java 17. Override both to build for another
+// Ignition line (ops/ignition-2027.env); Ignition gates modules on the year
+// version, so a single .modl cannot load on both 8.3 and 2027.
+val sdk_version by extra((findProperty("ignitionSdkVersion") as String?) ?: "8.3.6")
+val java_version by extra(((findProperty("ignitionJavaVersion") as String?) ?: "17").toInt())
+
+// A build against a prerelease Ignition SDK says so wherever an installer looks:
+// the file name, the gateway's module list and the module description.
+val prerelease_sdk = sdk_version.contains("-")
+val default_line = sdk_version.startsWith("8.")
 
 allprojects {
     // The release workflow passes -PreleaseVersion=<tag> (the git tag drives the
@@ -27,12 +36,12 @@ ignitionModule {
     /*
      * Human readable name of the module, as will be displayed on the gateway status page
      */
-    name.set("Mustry Perspective Components")
+    name.set("Mustry Perspective Components" + if (prerelease_sdk) " (BETA for Ignition $sdk_version)" else "")
 
     /*
      * Name of the '.modl' file to be created, without file extension.
      */
-    fileName.set("Mustry-Perspective-Components")
+    fileName.set("Mustry-Perspective-Components" + if (default_line) "" else "-ignition-$sdk_version")
     /*
      * Unique identifier for the module.  Reverse domain convention is recommended (e.g.: com.mycompany.charting-module)
      */
@@ -55,14 +64,15 @@ ignitionModule {
         if (v.contains("-") && preNumber != null) "$base.$preNumber" else base
     })
 
-    moduleDescription.set("Custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, on-screen keyboard, and the admin family (schedule, roster, user and holiday management), the Idle Guard screensaver, plus toasts from scripts (system.mustry.toast).")
+    moduleDescription.set((if (prerelease_sdk) "BETA build for Ignition $sdk_version, not for production. " else "") + "Custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, on-screen keyboard, and the admin family (schedule, roster, user and holiday management), the Idle Guard screensaver, plus toasts from scripts (system.mustry.toast).")
 
     /*
      * Minimum version of Ignition required for the module to function correctly.  This typically won't change over
      * the course of a major Ignition (7.9, 8.0, etc) version, except for when the Ignition Platform adds/changes APIs
      * used by the module.
      */
-    requiredIgnitionVersion.set(sdk_version)
+    // Numeric only: the modl plugin parses this and fails on a "-beta1" suffix.
+    requiredIgnitionVersion.set(sdk_version.substringBefore("-"))
     /*
      *  This is a map of String: String, where the 'key' represents the fully qualified path to the project
      *  (using gradle path syntax), and the value is the shorthand Scope string.
