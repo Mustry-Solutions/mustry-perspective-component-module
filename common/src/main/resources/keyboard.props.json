@@ -139,7 +139,7 @@
         "isValid": {
           "type": "boolean",
           "default": true,
-          "description": "numpad: within [min,max] (true when enforceRange is false). text: within maxLength."
+          "description": "numpad: the bound value.value, before clamping, is within [min,max] (true when enforceRange is false). Describes the bound value, not a draft being typed. text: within maxLength."
         },
         "length": {
           "type": "number",

@@ -38,6 +38,42 @@ test('numpad: over-max shows the out-of-range badge, Enter clamps', async ({ pag
     await expect(page.getByText('value: 100')).toBeVisible();
 });
 
+test('numpad: a bound value above max leaves output.* clamped and output.isValid false (#224)', async ({ page }) => {
+    await openRoute(page, '/keyboard', '.mustry-keyboard');
+    await expect(page.getByText('keypad output.isValid=True')).toBeVisible();
+
+    // An outside write, as a tag would do: the view's setpoint drives value.value.
+    await page.getByRole('button', { name: 'Write 150 to setpoint' }).click();
+    await expect(page.getByText('keypad output.isValid=False')).toBeVisible();
+    await expect(page.getByText(/value: 100(\.0)?\s+text: 100\.0 psi/)).toBeVisible();
+    // The inline display shows the real bound value and flags it.
+    await expect(numValue(page)).toHaveText('150.0 psi');
+    await expect(page.getByText('Out of range')).toBeVisible();
+
+    // Committing an in-range number recovers.
+    for (const k of ['4', '2']) {
+        await numKey(page, k).click();
+    }
+    await numKey(page, 'Enter').click();
+    await expect(page.getByText('keypad output.isValid=True')).toBeVisible();
+    await expect(page.getByText('Out of range')).toHaveCount(0);
+});
+
+test('numpad: output.isValid describes the bound value while a draft is typed (#224)', async ({ page }) => {
+    await openRoute(page, '/keyboard', '.mustry-keyboard');
+    for (const k of ['1', '5', '0']) {
+        await numKey(page, k).click();
+    }
+    // The badge follows the draft; the bound value is still 0, so the output stays true.
+    await expect(page.getByText('Out of range')).toBeVisible();
+    await expect(page.getByText('keypad output.isValid=True')).toBeVisible();
+
+    // Enter clamps: onCommit reports the typed number, the output the bound 100.
+    await numKey(page, 'Enter').click();
+    await expect(page.getByText(/numpad onCommit value=100(\.0)?.*isValid=False/)).toBeVisible();
+    await expect(page.getByText('keypad output.isValid=True')).toBeVisible();
+});
+
 test('numpad: decimal places are capped at config.decimals', async ({ page }) => {
     await openRoute(page, '/keyboard', '.mustry-keyboard');
     for (const k of ['1', '.', '2', '3']) {

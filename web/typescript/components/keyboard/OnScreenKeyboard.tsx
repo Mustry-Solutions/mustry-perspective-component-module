@@ -9,7 +9,8 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    applyKey, clampValue, commitNumber, formatValue, inRange, isLiveEcho, KeypadKey, liveValue, parseDraft, valueToDraft
+    applyKey, clampValue, commitNumber, formatValue, isLiveEcho, isNumberValid, KeypadKey, liveValue, parseDraft,
+    valueToDraft
 } from './keyboardLogic';
 import { appendChar, backspaceText, getRows, KeyDef, KeyLayer, TextLayout } from './keyboardLayouts';
 import { KeypadKeys } from './KeypadKeys';
@@ -113,7 +114,9 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
         if (this.isNumeric()) {
             const value = this.committedNumber();
             w.write('output.text', formatValue(value, p.decimals, p.units));
-            w.write('output.isValid', this.numberValid(value));
+            // The bound value before clamping: the clamped one is always in range.
+            // Like the other outputs this ignores the draft (that is output.draft).
+            w.write('output.isValid', isNumberValid(p.value, p));
             w.write('output.length', String(value).length);
             w.write('output.draft', draft || '');
             w.write('output.value', value);
@@ -133,11 +136,6 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
     private committedNumber(): number {
         const p = this.props.props;
         return p.enforceRange ? clampValue(p.value, p.min, p.max) : p.value;
-    }
-
-    private numberValid(value: number): boolean {
-        const p = this.props.props;
-        return p.enforceRange ? inRange(value, p.min, p.max) : true;
     }
 
     private rawNumber(): number {
@@ -369,7 +367,7 @@ export class OnScreenKeyboard extends Component<ComponentProps<KeyboardProps>, K
     private renderBody(): React.ReactNode {
         const p = this.props.props;
         const numeric = this.isNumeric();
-        const outOfRange = numeric && p.enforceRange && !this.numberValid(this.rawNumber());
+        const outOfRange = numeric && !isNumberValid(this.rawNumber(), p);
         const display = numeric ? this.numericDisplay() : this.textDisplay();
         return (
             <React.Fragment>
