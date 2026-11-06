@@ -34,7 +34,8 @@ Solutions** category.
 
 ## 2. Requirements & installation
 
-- Ignition **8.3.6 or newer**.
+- Ignition **8.3.6 or newer**. Ignition 2027 needs a separate 2027 build of the
+  module; while 2027 is in beta, those are beta builds, not for production.
 - Perspective module installed.
 - Maker Edition gateways work too: the module declares itself Maker Edition
   compatible, which a Maker Edition gateway requires before it loads a module.

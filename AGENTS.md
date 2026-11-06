@@ -36,7 +36,8 @@ Cutting a release is: bump `CHANGELOG.md` (`[Unreleased]` → `[X.Y.Z] - date`) 
 a normal PR, merge, then tag the merge commit `vX.Y.Z` and push the tag. The
 **Release** workflow (`.github/workflows/release.yml`) derives the version from
 the tag, builds + **signs** the `.modl` (from Actions secrets), and publishes a
-GitHub Release. Full detail + the five signing-secret names in `RELEASING.md`.
+GitHub Release. A `vX.Y.Z-ignition<sdk>` tag publishes a labelled beta build as a
+prerelease instead. Full detail + the five signing-secret names in `RELEASING.md`.
 Never commit keystores/certs (`signing/`, `*.p12`, `*.jks` are git-ignored).
 
 ## Build & test
@@ -59,6 +60,11 @@ ops/e2e.sh --no-deploy tests/grid.spec.ts   # quick re-run against what's deploy
 ops/demo.sh [--fresh]   # sales demo ("Mustry Bottling Co.", ops/demo/) — every
                         # component in one story-driven app; see ops/demo/README.md
 ```
+
+**Ignition 2027 beta** (needs JDK 25): `source ops/ignition-2027.env`, then use
+the same scripts. Gateway on :9288 beside the 8.3 one on :9088, with its own
+container, volume and `.modl` folder, built from the 2027 SDK. An 8.3 `.modl` and a
+2027 `.modl` are not interchangeable. CI runs it as an advisory (not required) job.
 
 The demo project's views are committed JSON generated data-free: they seed
 `session.custom.demo` relative to "today" on session start. **Project-file

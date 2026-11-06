@@ -8,6 +8,14 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: build and test against the Ignition 2027 beta
+8.3 builds don't load on Ignition 2027, which gates modules on the year version
+and moves to Java 25. `ops/ignition-2027.env` now runs a 2027 gateway beside the
+8.3 one and builds the module from the 2027 SDK; CI runs the browser suite on it
+as an advisory job. A `vX.Y.Z-ignition<sdk>` tag publishes a signed build as a
+GitHub prerelease, labelled BETA in its file and module names (`RELEASING.md`).
+8.3 builds are unchanged.
+
 ## [0.9.0] - 2026-11-04
 
 ### Added: Idle Guard, a screensaver for Perspective pages
