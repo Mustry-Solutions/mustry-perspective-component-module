@@ -327,16 +327,25 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         // the check on the add's result keeps the old schedule here.
         await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('ZAUTHZ-SCHEDULE-B', 'HACKED'), oldName: 'zauthz-schedule', isNew: false }],
             /^onScheduleSave ERRORS: .*conflict/);
-        // Holidays have no such check, so the snapshot is what shows the old name survived.
+        // Holidays have no such check: the gateway's conflict is what keeps both.
         await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: 'ZAUTHZ-HOLIDAY-B', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
-            /^onHolidaySave /);
+            /^onHolidaySave ERRORS: .*conflict/);
         expect(await snapshot(page)).toEqual(before);
 
         await openRoute(page, '/authz-open', USER);
         await fireAndExpect(page, [USER, 'onRoleSave', { name: 'zauthz-role-b', oldName: 'zauthz-role' }], /^onRoleSave ERRORS: .*exists/);
         expect(await snapshot(page)).toEqual(before);
-        await fireAndExpect(page, [USER, 'onRoleSave', { name: 'ZAUTHZ-ROLE-B', oldName: 'zauthz-role' }], /^onRoleSave /);
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: 'ZAUTHZ-ROLE-B', oldName: 'zauthz-role' }], /^onRoleSave ERRORS: .*exists/);
         expect(await snapshot(page)).toEqual(before);
+    });
+
+    test('a schedule rename onto an unused name removes the old name with only editable', async ({ page }) => {
+        // Deliberate and documented: this pins the behaviour the README warns about.
+        await ensureFixtures(page);
+        await openRoute(page, '/authz-flags-off', USER); // allowCreate and allowDelete are off
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('zauthz-schedule-c'), oldName: 'zauthz-schedule', isNew: false }],
+            /^onScheduleSave renamed "zauthz-schedule" -> "zauthz-schedule-c"/);
+        expect((await snapshot(page)).schedules).toEqual(['zauthz-schedule-b', 'zauthz-schedule-c']);
     });
 
     test('isNew on an existing name reports the conflict instead of overwriting', async ({ page }) => {
@@ -352,15 +361,20 @@ test.describe('Admin family: the event scripts authorize the write', () => {
 
     test('a schedule delete the gateway rejects says so', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
-        await fireAndExpect(page, [SCHEDULE, 'onScheduleDelete', { name: 'zauthz-no-such-schedule' }], /^onScheduleDelete ERRORS: /);
+        // A system schedule: the gateway refuses to delete it, in the returned UIResponse.
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleDelete', { name: 'Always' }], /^onScheduleDelete ERRORS: .*Always/);
     });
 
     test('a roster name that differs only by case never changes the existing roster', async ({ page }) => {
         await ensureFixtures(page);
         await openRoute(page, '/authz-open', USER);
         const before = await snapshot(page);
-        await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: 'ZAUTHZ-ROSTER', users: [], isNew: true }], /^onRosterSave /);
-        expect((await snapshot(page)).rosters['zauthz-roster']).toEqual(before.rosters['zauthz-roster']);
+        // The script's lookup doesn't see this as the same roster, and system.roster reports
+        // nothing back, so the verdict can claim a save that didn't happen. What matters is the data.
+        for (const isNew of [true, false]) {
+            await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: 'ZAUTHZ-ROSTER', users: ['admin'], isNew }], /^onRosterSave /);
+            expect((await snapshot(page)).rosters['zauthz-roster']).toEqual(before.rosters['zauthz-roster']);
+        }
     });
 
     test('the admin account and role are kept, whatever the spelling and whether renamed or deleted', async ({ page }) => {
@@ -369,7 +383,8 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         for (const username of ['admin', 'ADMIN', 'Admin']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: the demo keeps the admin account/);
         }
-        // Spellings a lowercase comparison of the event text can't recognise (a dotless i).
+        // Spellings a lowercase comparison of the event text can't recognise (a dotless i). The
+        // gateway doesn't match these to admin either, so the old check held; this records that.
         for (const username of [' admin', 'admin ', 'adm\u0131n']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: no user named/);
         }
