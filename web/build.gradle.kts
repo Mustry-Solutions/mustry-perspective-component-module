@@ -38,7 +38,7 @@ val jestTest by tasks.registering(NpmTask::class) {
     args.set(listOf("test"))
     dependsOn(tasks.named("npmInstall"))
     inputs.dir("typescript")
-    inputs.files("package.json", "package-lock.json", "jest.config.js", "tsconfig.json", "tsconfig.test.json")
+    inputs.files("package.json", "package-lock.json", "jest.config.js", "jest-tz-environment.js", "tsconfig.json", "tsconfig.test.json")
 }
 
 // Hook the JS tests into `gradlew check` (and therefore `build`).
