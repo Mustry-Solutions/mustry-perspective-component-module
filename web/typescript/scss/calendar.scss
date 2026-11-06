@@ -372,7 +372,7 @@
 
     // Don't dim a focus ring along with the out-of-month cell. Only that button's: a
     // clicked date number keeps focus, and that shouldn't undim its cell. A sibling can't
-    // undo a parent's opacity, so this needs :has (the stylesheets' color-mix needs newer).
+    // undo a parent's opacity, so this needs :has; without it the cell just stays dimmed.
     .mustry-cal-day--other:has(.mustry-cal-daycreate:focus) {
         opacity: 1;
     }
