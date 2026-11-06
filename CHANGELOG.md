@@ -25,6 +25,7 @@ views keep working for anonymous sessions through a clearly named demo-only sett
 real project deletes, and **anyone who can reach those views can take over the gateway's
 users, so don't expose them**. Their read bindings also still seed demo data, including users
 with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
+
 ### Changed
 - The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
   read "now" and "today" in the gateway's zone when it's empty, instead of the

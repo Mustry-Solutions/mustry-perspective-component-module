@@ -535,8 +535,13 @@ test.describe('Admin family: the reference views stay guarded', () => {
             for (const file of viewFiles(dir)) {
                 const name = path.basename(path.dirname(file));
                 for (const manager of managers(JSON.parse(fs.readFileSync(file, 'utf8')))) {
-                    expect(manager.propConfig?.['props.config']?.access, `${name} ${manager.meta.name}`).toBe('PROTECTED');
                     const events = manager.events?.component ?? {};
+                    // No handlers, nothing to write with: a display-only test view (TimezoneManagers).
+                    // The per-view counts below catch handlers dropped from a reference view.
+                    if (Object.keys(events).length === 0) {
+                        continue;
+                    }
+                    expect(manager.propConfig?.['props.config']?.access, `${name} ${manager.meta.name}`).toBe('PROTECTED');
                     expect(Object.keys(events).sort(), `${name} ${manager.meta.name}`).toEqual([...EVENTS[manager.type.split('.').pop()]].sort());
                     for (const [event, handler] of Object.entries<any>(events)) {
                         for (const action of [handler].flat()) {
