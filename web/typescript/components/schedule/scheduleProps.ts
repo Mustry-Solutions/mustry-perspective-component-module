@@ -19,6 +19,8 @@ export interface ScheduleManagerProps {
     /** Paint/resize snapping in minutes (default 30). */
     snapMinutes: number;
     locale: string;
+    /** IANA zone "now" is read in; empty = the gateway's zone (see gatewayZone.ts). */
+    timezone: string;
     labels: ScheduleManagerLabels;
     schedules: ScheduleItem[];
     /** state.selectedSchedule (two-way) — the selected schedule's name. */
@@ -48,6 +50,7 @@ export function mapScheduleProps(tree: PropReader): ScheduleManagerProps {
         allowDelete: tree.readBoolean('config.allowDelete', true),
         snapMinutes: Math.max(5, Math.min(240, tree.readNumber('config.snapMinutes', 30))),
         locale,
+        timezone: tree.readString('config.timezone', ''),
         labels: labels as unknown as ScheduleManagerLabels,
         schedules: (tree.readArray('data.schedules', []) || []).map(normalizeSchedule),
         selectedSchedule: tree.readString('state.selectedSchedule', '')

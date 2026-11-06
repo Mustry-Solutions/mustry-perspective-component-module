@@ -25,8 +25,22 @@ views keep working for anonymous sessions through a clearly named demo-only sett
 real project deletes, and **anyone who can reach those views can take over the gateway's
 users, so don't expose them**. Their read bindings also still seed demo data, including users
 with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
+### Changed
+- The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
+  read "now" and "today" in the gateway's zone when it's empty, instead of the
+  browser's. Ignition evaluates schedules and holidays in the gateway's zone, so
+  `output.isActiveNow`, the active dots, the now-line, the preview strip and the
+  *past* badge were wrong for an operator in another zone. Set `config.timezone`
+  to read them in a different zone.
 
 ### Fixed
+- The timeline's sub-day zooms stay on their grid across a daylight-saving change:
+  from the midnight after it, `hour` pages start at 00:00/08:00/16:00 again without
+  pressing Today, instead of 07:00/15:00/23:00. On the change day itself the windows
+  still count 8 real hours from midnight, so no time is skipped. Prev and next undo
+  each other across the change.
+- The mini month navigator's Today button and today highlight follow the calendar's
+  or timeline's `config.timezone`, not the browser's zone.
 - Resource Timeline: changing zoom no longer lands on an unrelated part of the
   window. If the now-line was on screen it stays on screen; otherwise the moment
   at the centre of the view stays at the centre, or against the window's edge
@@ -49,6 +63,11 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   day is really 03:30 to 03:00. The event editor now blocks Save with its
   invalid-range message, and a move, resize or drag-select that would do this fires
   nothing, so the event stays where it was.
+- **Calendar:** clicking an empty day in month view (`onDateClick`, or the built-in
+  editor) now has a keyboard path. The grid gets one new Tab stop: arrow keys move it
+  between days and Enter or Space activates it. A screen reader hears the full date,
+  or, when the button opens the built-in editor, the new label
+  `config.labels.newEventOn` (translated in every bundled locale) (#90).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

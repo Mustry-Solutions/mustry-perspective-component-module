@@ -9,6 +9,7 @@
       "description": "Holiday Manager behaviour and appearance.",
       "default": {
         "locale": "",
+        "timezone": "",
         "editable": true,
         "allowCreate": true,
         "allowDelete": true
@@ -18,6 +19,11 @@
           "type": "string",
           "default": "",
           "description": "BCP-47 locale selecting the built-in UI-text language (see config.labels). Empty = browser/session default."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA zone (e.g. 'America/Chicago') \"today\" is read in: the next-occurrence sort and the past badge. Empty = the gateway's zone (session.props.gateway.timezone.id), where Ignition itself evaluates holidays. Unlike the calendar and timeline, whose empty value means browser-local; browser-local only if the session can't report a zone or the value isn't a zone the browser recognizes."
         },
         "editable": {
           "type": "boolean",

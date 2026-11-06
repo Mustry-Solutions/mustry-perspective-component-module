@@ -78,6 +78,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private scrollRef = React.createRef<HTMLDivElement>();
     private rootRef = React.createRef<HTMLDivElement>();
     private weeksRef = React.createRef<HTMLDivElement>();
+    private editorOpener: HTMLElement | null = null;   // create button to refocus when the editor closes
     private resizeObs: ResizeObserver | null = null;
 
     private hoverTimer = 0;
@@ -120,7 +121,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         super(props);
         this.state = {
             cursor: todayInZone(props.props.timezone), preview: null, hover: null, editor: null,
-            mini: null, dayPop: null, monthCap: 3
+            mini: null, dayPop: null, monthCap: 3, dayStopIso: ''
         };
     }
 
@@ -140,8 +141,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         this.setupFollowTimer();
     }
 
-    componentDidUpdate(prevProps: ComponentProps<CalendarProps>): void {
+    componentDidUpdate(prevProps: ComponentProps<CalendarProps>, prevState: CalendarState): void {
         this.syncOutput();
+        if (prevState.editor && !this.state.editor && this.editorOpener) {
+            this.editorOpener.focus();   // a keyboard user continues from the day they started on
+            this.editorOpener = null;
+        }
         if (prevProps.props.view !== this.props.props.view) {
             this.scrollTimeGrid();   // re-scroll the time grid after switching to week/day
         }
@@ -713,7 +718,12 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     private onDayClick = (iso: string): void => {
+        // A pointer press has already closed the popovers (DocDismiss); a key press hasn't.
+        this.closeDayPop();
+        this.closeMini();
         if (this.useEditor()) {
+            const focused = document.activeElement as HTMLElement | null;
+            this.editorOpener = focused && focused.classList.contains('mustry-cal-daycreate') ? focused : null;
             this.openEditor(iso, iso, true);   // month: an all-day event on that day
         } else {
             this.fireEvent('onDateClick', { date: iso });
@@ -811,11 +821,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 labels={this.props.props.labels}
                 weeksRef={this.weeksRef}
                 editable={this.props.props.editable}
+                opensEditor={this.useEditor()}
                 dragEventId={monthDrag ? monthDrag.eventId || '' : ''}
                 dropDayIso={monthDrag ? monthDrag.dayIso : ''}
+                dayStopIso={this.state.dayStopIso}
                 enterClass={(ev) => this.enterClass(ev)}
                 hoverProps={(ev) => this.hoverProps(ev)}
                 onDayClick={(iso) => this.onDayClick(iso)}
+                onDayStop={(iso) => this.setState({ dayStopIso: iso })}
                 openDayPop={(iso, e) => this.openDayPop(iso, e)}
                 onEventClick={(ev, e) => this.onEventClick(ev, e)}
                 onStartMove={(ev, e) => this.gestures.startMonthMove(ev, e)}
@@ -926,6 +939,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             <MiniMonthNav
                 mini={m}
                 locale={this.props.props.locale}
+                timezone={this.props.props.timezone}
                 firstDay={this.firstDay()}
                 range={this.visibleRange()}
                 cursorIso={fmtDate(this.state.cursor)}

@@ -16,6 +16,10 @@
    "viewPath": "CalendarEmpty",
    "viewParams": {}
   },
+  "/calendar-day-keys": {
+   "viewPath": "CalendarDayKeys",
+   "viewParams": {}
+  },
   "/grid": {
    "viewPath": "GridDemo",
    "viewParams": {}
@@ -110,6 +114,14 @@
   },
   "/holidays": {
    "viewPath": "HolidayDemo",
+   "viewParams": {}
+  },
+  "/timezone-managers": {
+   "viewPath": "TimezoneManagers",
+   "viewParams": {}
+  },
+  "/timezone-nav": {
+   "viewPath": "TimezoneNav",
    "viewParams": {}
   },
   "/branching": {

@@ -136,4 +136,5 @@ export interface CalendarState {
     mini: MiniNav | null;      // mini-month navigator popover (null = closed)
     dayPop: DayPop | null;     // month-view "all events for a day" popover
     monthCap: number;          // how many chips fit a month cell (auto-fit; measured at runtime)
+    dayStopIso: string;        // day of the last-focused month create button ('' = none yet)
 }

@@ -252,6 +252,10 @@
               "type": "string",
               "description": "Tooltip on the month-view date number (opens the day popover)."
             },
+            "newEventOn": {
+              "type": "string",
+              "description": "Accessible name of the month-view keyboard button when it opens the built-in editor (builtInEditor and selectable); {date} = the full date. Without the editor the button fires onDateClick and its name is the full date alone."
+            },
             "previousMonth": {
               "type": "string",
               "description": "Accessible label of the mini-nav back arrow."

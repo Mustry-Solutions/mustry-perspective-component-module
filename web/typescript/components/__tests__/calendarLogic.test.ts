@@ -4,7 +4,7 @@ import {
     snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv, isOccurrence,
     backgroundBandsForDay, followTickMs, followDisarms, followCursorStale,
     toggleHiddenCategory, filterHiddenCategories,
-    visibleRangeMs, CalEvent
+    visibleRangeMs, monthTabStop, monthArrowTarget, CalEvent
 } from '../calendar/calendarLogic';
 import { expandEvents } from '../../shared/recurrence';
 
@@ -679,5 +679,60 @@ describe('followScrollStale (armed + scrollToNow keeps the indicator in view)', 
         expect(followScrollStale(0, 600, 590)).toBe(true);   // near the bottom edge
         expect(followScrollStale(400, 600, 410)).toBe(true); // near the top edge
         expect(followScrollStale(400, 600, 300)).toBe(true); // scrolled past it
+    });
+});
+
+describe('month keyboard tab stop', () => {
+    const june = buildMonthGrid(new Date(2026, 5, 10), 1, true, td);   // today (Jun 17) is in the month
+
+    it('defaults to today when today is in the visible month', () => {
+        expect(monthTabStop(june, '')).toBe('2026-06-17');
+    });
+
+    it('falls back to the 1st, ignoring a today shown only as an out-of-month cell', () => {
+        // July's grid starts Jun 29; today Jun 30 is on screen, but not in the month.
+        const july = buildMonthGrid(new Date(2026, 6, 10), 1, true, new Date(2026, 5, 30));
+        expect(july.weeks[0][1].isToday).toBe(true);
+        expect(monthTabStop(july, '')).toBe('2026-07-01');
+    });
+
+    it('keeps the last-focused day while it is on screen, and forgets it after paging away', () => {
+        expect(monthTabStop(june, '2026-06-03')).toBe('2026-06-03');
+        expect(monthTabStop(june, '2026-01-15')).toBe('2026-06-17');
+    });
+});
+
+describe('monthArrowTarget', () => {
+    const june = buildMonthGrid(new Date(2026, 5, 10), 1, true, td);
+    const lastCell = june.weeks[june.weeks.length - 1][6].iso;
+
+    it('moves one day sideways and one week vertically', () => {
+        expect(monthArrowTarget(june, '2026-06-17', 'ArrowRight')).toBe('2026-06-18');
+        expect(monthArrowTarget(june, '2026-06-17', 'ArrowLeft')).toBe('2026-06-16');
+        expect(monthArrowTarget(june, '2026-06-17', 'ArrowDown')).toBe('2026-06-24');
+        expect(monthArrowTarget(june, '2026-06-17', 'ArrowUp')).toBe('2026-06-10');
+    });
+
+    it('wraps sideways between week rows', () => {
+        expect(monthArrowTarget(june, '2026-06-07', 'ArrowRight')).toBe('2026-06-08');
+        expect(monthArrowTarget(june, '2026-06-08', 'ArrowLeft')).toBe('2026-06-07');
+    });
+
+    it('stays put at the edges of the grid', () => {
+        expect(monthArrowTarget(june, '2026-06-01', 'ArrowLeft')).toBe('2026-06-01');
+        expect(monthArrowTarget(june, '2026-06-03', 'ArrowUp')).toBe('2026-06-03');
+        expect(monthArrowTarget(june, lastCell, 'ArrowRight')).toBe(lastCell);
+        expect(monthArrowTarget(june, lastCell, 'ArrowDown')).toBe(lastCell);
+    });
+
+    it('moves a week vertically with weekends hidden (five columns)', () => {
+        const noWeekends = buildMonthGrid(new Date(2026, 5, 10), 1, false, td);
+        expect(monthArrowTarget(noWeekends, '2026-06-17', 'ArrowDown')).toBe('2026-06-24');
+    });
+
+    it('ignores every other key, including the ones that activate the button', () => {
+        expect(monthArrowTarget(june, '2026-06-17', 'Enter')).toBeNull();
+        expect(monthArrowTarget(june, '2026-06-17', ' ')).toBeNull();
+        expect(monthArrowTarget(june, '2026-06-17', 'Tab')).toBeNull();
     });
 });
