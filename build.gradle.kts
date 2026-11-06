@@ -55,7 +55,8 @@ ignitionModule {
      * semver prerelease like 0.4.0-beta.1 makes module.xml unparseable and
      * the gateway rejects the .modl. Keep full semver for the GitHub release;
      * map it to numbers here: 0.4.0-beta.1 -> 0.4.0.1, 0.4.0-SNAPSHOT -> 0.4.0.
-     * (The release workflow additionally rejects prerelease TAGS outright.)
+     * (The release workflow rejects prerelease tags other than its beta-build
+     * form, vX.Y.Z-ignition<sdk>, which it passes here as X.Y.Z-beta.<n>.)
      */
     moduleVersion.set(project.provider {
         val v = project.version.toString()

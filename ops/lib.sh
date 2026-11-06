@@ -48,6 +48,9 @@ if [[ -f "${PROJECT_ROOT}/.env" ]]; then
 fi
 CONTAINER_NAME="${GATEWAY_CONTAINER:-mspc-ignition}"
 MODULES_DIR="${PROJECT_ROOT}/${GATEWAY_MODULES_DIR:-ops/modules}"
+# Exists before anything can bring the gateway up: Docker would create a missing
+# bind-mount source as root, and later builds couldn't stage a module into it.
+mkdir -p "${MODULES_DIR}"
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-9088}"
 GATEWAY_URL="http://localhost:${GATEWAY_HTTP_PORT}"
 ADMIN_USER="admin"

@@ -118,12 +118,19 @@ ops/e2e.sh --fresh      # http://localhost:9288, or any other ops/ script
 
 It selects the 2027 image and SDK, plus its own container, data volume, ports and
 `ops/modules-2027/` folder, so the two gateways never touch each other's module.
-Only one build runs at a time, since both use `build/`. The verify and demo
-projects are the same bind-mounted folders on both, so a Designer save on 2027
-writes into the repo in whatever format 2027 uses: review the diff before
-committing it.
+The rest is shared, so don't assume full isolation:
+
+- **`build/`:** run one build at a time.
+- **`e2e/test-results`:** run one Playwright suite at a time, or one run can clear
+  the other's results.
+- **Verify and demo projects:** both gateways bind-mount the same folders. A
+  Designer save on 2027 writes into the repo in whatever format 2027 uses, and a
+  running 8.3 gateway shares those files too: review the diff before committing,
+  and don't keep a Designer open on both.
 
 JDK 25 must be installed: 2027's SDK is Java 25 bytecode. Gradle can launch on
 Java 17 and discover JDK 25 as the toolchain.
 
-To move to a new beta, change the tag and SDK version in `ops/ignition-2027.env`.
+To move to a new beta, change the tag and SDK version in `ops/ignition-2027.env`,
+then run `ops/e2e.sh --fresh`. `deploy.sh` and plain `e2e.sh` keep the old image, and
+the gateway's accepted-module entry names the old file.

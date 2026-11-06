@@ -60,8 +60,9 @@ year version, so the same `.modl` can't load on both 8.3 and 2027.
 
 To publish one:
 
-1. Check that **E2E Ignition 2027 beta (advisory)** is green on the commit. It
-   isn't a required check, so `main` can be red on it.
+1. Pick a commit where **E2E Ignition 2027 beta (advisory)** passed. It isn't a
+   required check, so `main` can be red on it. The workflow stops if it didn't
+   pass, or if the tag's SDK isn't the one in `ops/ignition-2027.env`.
 2. Tag that commit `vX.Y.Z-ignition<sdk>`, with `X.Y.Z` taken from the fallback
    version in `build.gradle.kts`, and push the tag:
    ```bash
@@ -78,11 +79,15 @@ The Release workflow reads the SDK from the tag, builds and signs on Java 25, an
   module `Mustry Perspective Components (BETA for Ignition <sdk>)`,
 - stamps the numeric module version `X.Y.Z.<beta number>`.
 
-The fallback SNAPSHOT version isn't bumped afterwards. To rebuild for the same
-Ignition beta, use a higher patch number, because a tag can't be reused.
+The fallback SNAPSHOT version isn't bumped afterwards. Each new build needs a
+higher `X.Y.Z.<beta number>` than the last one, so raise the patch number when
+that wouldn't be true: to rebuild for the same Ignition beta (a tag can't be
+reused either), or when a new SDK restarts the beta number (`2027.2.0-beta3` gives
+`.3`, then `2027.3.0-beta1` gives `.1`).
 
 When Inductive Automation ships a new beta, change the image and SDK in
-`ops/ignition-2027.env`, let the advisory job run, and publish a new build. A beta
+`ops/ignition-2027.env` in a PR, let the advisory job run, and publish a new build
+from a commit where it passed. A beta
 build may not survive a later Ignition beta.
 
 **When 2027 is released:** build on the final SDK, make the 2027 job a required
