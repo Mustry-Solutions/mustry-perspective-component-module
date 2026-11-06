@@ -4,7 +4,7 @@
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from './calendarLogic';
-import { emitWall, reanchorSeries } from '../../shared/dateUtils';
+import { emitWall, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
 import { occurrenceOf } from '../../shared/recurrence';
 import { Editor } from './calendarTypes';
 
@@ -73,10 +73,20 @@ export function editorForEvent(ev: CalEvent, baseEventById: BaseEventLookup): Ed
     };
 }
 
+/** Whether `end` is a later instant than `start` once both are resolved in the
+ *  zone. Wall strings can't answer this: a DST gap moves a time forward, so
+ *  New York 02:30 to 03:00 on spring-forward day is really 03:30 to 03:00. */
+export function resolvesForward(start: string, end: string, timezone: string): boolean {
+    const s = toEpochMs(start, timezone);
+    const e = toEpochMs(end, timezone);
+    return s !== null && e !== null && e > s;
+}
+
 /** Why the editor can't save, or null when it can: 'parse' = a time field is
- *  empty/incomplete; 'range' = the end is not after the start (all-day events
- *  may end on their start date — the end is inclusive in the editor). */
-export function editorProblem(ed: Editor): 'parse' | 'range' | null {
+ *  empty/incomplete; 'range' = the end is not after the start, compared as the
+ *  instants that would be written (all-day events may end on their start date —
+ *  the end is inclusive in the editor). */
+export function editorProblem(ed: Editor, timezone: string): 'parse' | 'range' | null {
     if (ed.allDay) {
         if (ed.start.length < 10 || ed.end.length < 10) {
             return 'parse';
@@ -86,8 +96,10 @@ export function editorProblem(ed: Editor): 'parse' | 'range' | null {
     if (ed.start.length < 16 || ed.end.length < 16) {
         return 'parse';
     }
-    // Same 'YYYY-MM-DDTHH:mm' format on both sides -> lexical compare is chronological.
-    return ed.end > ed.start ? null : 'range';
+    if (toEpochMs(ed.start, timezone) === null || toEpochMs(ed.end, timezone) === null) {
+        return 'parse';
+    }
+    return resolvesForward(ed.start, ed.end, timezone) ? null : 'range';
 }
 
 /** The editor patch for flipping the all-day toggle: trim to dates, or restore
@@ -231,6 +243,23 @@ function changedEvent(ev: CalEvent, over: { start?: string; end?: string }, time
         ...(ev.status ? { status: ev.status } : {}),
         ...(ev.display ? { display: ev.display } : {})
     };
+}
+
+/** Whether a committed move/resize may fire: false when a DST gap would turn the
+ *  dragged range into one that ends at or before its start. The drag only refuses
+ *  what the gap collapses: a range whose wall times already don't run forward
+ *  (bound data can carry that, and the grid draws it with a fallback end) can
+ *  still be moved. All-day and open-ended ranges have no times to collapse. Times
+ *  are naive wall strings here, so comparing them directly is safe. */
+export function gestureKeepsOrder(
+    ev: CalEvent, over: { start?: string; end?: string }, timezone: string
+): boolean {
+    const end = over.end ?? ev.end;
+    if (ev.allDay || !end) {
+        return true;
+    }
+    const start = over.start ?? ev.start;
+    return !(start < end) || resolvesForward(start, end, timezone);
 }
 
 /** What a committed move/resize should fire. Dragging a single recurring occurrence

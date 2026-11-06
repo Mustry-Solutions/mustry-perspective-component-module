@@ -1,6 +1,6 @@
 import {
     buildRRule, editorDefaults, editorForCreate, editorForEvent, editorProblem,
-    editorDeleteSpec, editorSaveSpec, moveResizeSpec, reanchorSeries, toggleAllDayPatch
+    editorDeleteSpec, editorSaveSpec, gestureKeepsOrder, moveResizeSpec, reanchorSeries, toggleAllDayPatch
 } from '../calendar/calendarEditorLogic';
 import { Editor } from '../calendar/calendarTypes';
 import { CalEvent } from '../calendar/calendarLogic';
@@ -196,16 +196,81 @@ describe('editorSaveSpec', () => {
 
 describe('editorProblem', () => {
     it('timed: end must be strictly after start', () => {
-        expect(editorProblem(ed())).toBeNull();
-        expect(editorProblem(ed({ end: '2026-06-15T09:00' }))).toBe('range');
-        expect(editorProblem(ed({ end: '2026-06-15T08:00' }))).toBe('range');
-        expect(editorProblem(ed({ end: '' }))).toBe('parse');
+        expect(editorProblem(ed(), TZ)).toBeNull();
+        expect(editorProblem(ed({ end: '2026-06-15T09:00' }), TZ)).toBe('range');
+        expect(editorProblem(ed({ end: '2026-06-15T08:00' }), TZ)).toBe('range');
+        expect(editorProblem(ed({ end: '' }), TZ)).toBe('parse');
     });
     it('all-day: the end date is inclusive, so same-day is valid', () => {
         const ad = (o: Partial<Editor> = {}) => ed({ allDay: true, start: '2026-06-15', end: '2026-06-15', ...o });
-        expect(editorProblem(ad())).toBeNull();
-        expect(editorProblem(ad({ end: '2026-06-14' }))).toBe('range');
-        expect(editorProblem(ad({ end: '' }))).toBe('parse');
+        expect(editorProblem(ad(), TZ)).toBeNull();
+        expect(editorProblem(ad({ end: '2026-06-14' }), TZ)).toBe('range');
+        expect(editorProblem(ad({ end: '' }), TZ)).toBe('parse');
+    });
+});
+
+describe('a range that a DST gap collapses', () => {
+    const NY = 'America/New_York';
+    const BX = 'Europe/Brussels';
+    const timed = (start: string, end?: string): CalEvent => ({ id: 'a', title: 'A', start, end });
+
+    it('editor: blocks what would otherwise be written with the end before the start', () => {
+        const reversed = ed({ start: '2026-03-08T02:30', end: '2026-03-08T03:00' });
+        const saved = editorSaveSpec(reversed, NY, none).event as { start: string; end: string };
+        expect(saved.start).toBe('2026-03-08T03:30:00-04:00');
+        expect(saved.end).toBe('2026-03-08T03:00:00-04:00');
+        expect(editorProblem(reversed, NY)).toBe('range');
+    });
+    it('editor: blocks what would otherwise be written with zero length', () => {
+        const empty = ed({ start: '2026-03-08T02:00', end: '2026-03-08T03:00' });
+        const saved = editorSaveSpec(empty, NY, none).event as { start: string; end: string };
+        expect(saved.start).toBe(saved.end);
+        expect(editorProblem(empty, NY)).toBe('range');
+    });
+    it('editor: the same check east of UTC', () => {
+        expect(editorProblem(ed({ start: '2026-03-29T02:30', end: '2026-03-29T03:00' }), BX)).toBe('range');
+        expect(editorProblem(ed({ start: '2026-03-29T02:00', end: '2026-03-29T03:00' }), BX)).toBe('range');
+    });
+    it('editor: a wall-reversed range that resolves forward saves, as in the timeline', () => {
+        // 02:30 is 03:30 EDT, after the 03:00 start: what is written is a real 30 minutes.
+        const r = ed({ start: '2026-03-08T03:00', end: '2026-03-08T02:30' });
+        expect(editorProblem(r, NY)).toBeNull();
+        const saved = editorSaveSpec(r, NY, none).event as { start: string; end: string };
+        expect(saved.start).toBe('2026-03-08T03:00:00-04:00');
+        expect(saved.end).toBe('2026-03-08T03:30:00-04:00');
+    });
+    it('editor: an unparseable time is a parse problem, not a range one', () => {
+        expect(editorProblem(ed({ start: 'not-a-date-value' }), NY)).toBe('parse');
+    });
+
+    it('drag: a move or resize that collapses is refused', () => {
+        const ev = timed('2026-03-07T02:30:00', '2026-03-07T03:00:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-03-08T02:30:00', end: '2026-03-08T03:00:00' }, NY)).toBe(false);
+        const long = timed('2026-03-08T01:00:00', '2026-03-08T03:00:00');
+        expect(gestureKeepsOrder(long, { start: '2026-03-08T02:30:00' }, NY)).toBe(false);
+        const open = timed('2026-03-08T01:00:00');
+        expect(gestureKeepsOrder(open, { start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00' }, NY)).toBe(false);
+    });
+    it('drag: an occurrence the gap already collapsed cannot be dragged into a new collapsed range', () => {
+        const ev = timed('2026-03-08T02:30:00', '2026-03-08T03:00:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-03-08T02:45:00', end: '2026-03-08T03:15:00' }, NY)).toBe(false);
+        expect(gestureKeepsOrder(ev, { start: '2026-03-09T02:30:00', end: '2026-03-09T03:00:00' }, NY)).toBe(true);
+    });
+    it('drag: bound data that already runs backwards can still be moved', () => {
+        const ev = timed('2026-06-15T10:00:00', '2026-06-15T09:00:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-06-16T10:00:00', end: '2026-06-16T09:00:00' }, NY)).toBe(true);
+    });
+    it('drag: anything that stays forward still fires', () => {
+        const ev = timed('2026-03-07T01:30:00', '2026-03-07T02:30:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-03-08T01:30:00', end: '2026-03-08T02:30:00' }, NY)).toBe(true);
+        expect(gestureKeepsOrder(ev, { start: '2026-06-15T02:30:00', end: '2026-06-15T03:00:00' }, NY)).toBe(true);
+    });
+    it('drag: open-ended, all-day and already-empty events are not its business', () => {
+        expect(gestureKeepsOrder(timed('2026-03-08T01:00:00'), { start: '2026-03-08T02:30:00' }, NY)).toBe(true);
+        const allDay = { ...timed('2026-03-07', '2026-03-07'), allDay: true };
+        expect(gestureKeepsOrder(allDay, { start: '2026-03-08', end: '2026-03-08' }, NY)).toBe(true);
+        const empty = timed('2026-06-15T09:00:00', '2026-06-15T09:00:00');
+        expect(gestureKeepsOrder(empty, { start: '2026-03-08T02:30:00', end: '2026-03-08T02:30:00' }, NY)).toBe(true);
     });
 });
 

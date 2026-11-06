@@ -111,7 +111,7 @@ export interface TimeScale {
  *  happens on the wall calendar, then resolves back to an instant). */
 export function zoneMidnightMs(ms: number, timeZone: string, addDaysBy = 0): number {
     const w = zoneWallClock(new Date(ms), timeZone);
-    return resolveZoned(new Date(w.y, w.mo - 1, w.d + addDaysBy), timeZone).epochMs;
+    return resolveZoned({ y: w.y, mo: w.mo, d: w.d + addDaysBy }, timeZone).epochMs;
 }
 
 /**
@@ -255,8 +255,11 @@ function wallMs(ms: number, timeZone: string): number {
 /** The instant showing a naive-epoch wall clock in the zone (inverse of wallMs). */
 function fromWallMs(wall: number, timeZone: string): number {
     const d = new Date(wall);
-    const local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
-    return resolveZoned(local, timeZone).epochMs + d.getUTCMilliseconds();
+    const fields = {
+        y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(),
+        h: d.getUTCHours(), mi: d.getUTCMinutes(), s: d.getUTCSeconds()
+    };
+    return resolveZoned(fields, timeZone).epochMs + d.getUTCMilliseconds();
 }
 
 /** Wall-clock length of a window when it is a whole number of hours (a shift,
@@ -473,7 +476,7 @@ export function buildTicks(scale: TimeScale, zoom: TimelineZoom, timezone: strin
             // that starts at 06:00 starts at 06:00 on a DST day too).
             const w = zoneWallClock(new Date(dayStarts[i]), timezone);
             for (const s of shiftMinutes) {
-                const ms = resolveZoned(new Date(w.y, w.mo - 1, w.d, Math.floor(s.min / 60), s.min % 60), timezone).epochMs;
+                const ms = resolveZoned({ y: w.y, mo: w.mo, d: w.d, h: Math.floor(s.min / 60), mi: s.min % 60 }, timezone).epochMs;
                 if (ms >= scale.startMs && ms >= dayStarts[i] && ms < dayEnd) {
                     lower.push({ ms, px: msToPx(scale, ms), label: `${lowerFmt.format(new Date(ms))} ${s.label}`.trim() });
                 }

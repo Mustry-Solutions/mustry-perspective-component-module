@@ -56,7 +56,7 @@ import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
-    editorSaveSpec, editorDeleteSpec, moveResizeSpec
+    editorSaveSpec, editorDeleteSpec, gestureKeepsOrder, moveResizeSpec, resolvesForward
 } from './calendarEditorLogic';
 import { Legend } from './Legend';
 import { HoverPopover } from './HoverPopover';
@@ -512,6 +512,15 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         };
     }
 
+    /** Fire a committed move/resize, unless a DST gap would leave the event ending
+     *  at or before its start. Nothing fires then, so the event stays where it was. */
+    private commitDrag(action: 'move' | 'resize', ev: CalEvent, over: { start?: string; end?: string }): void {
+        const tz = this.props.props.timezone;
+        if (gestureKeepsOrder(ev, over, tz)) {
+            this.fireSpec(moveResizeSpec(action, ev, over, tz));
+        }
+    }
+
     /** Apply a released gesture — the controller's commitDecision outcome — to the component. */
     private commitGesture(kind: CommitKind, g: Gesture, preview: Preview | null): void {
         const tz = this.props.props.timezone;
@@ -533,10 +542,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                         this.commitGesture(this.useEditorForEdit() ? 'editEvent' : 'eventClick', g, preview);
                         break;
                     }
-                    this.fireSpec(moveResizeSpec('move', g.ev!, {
+                    this.commitDrag('move', g.ev!, {
                         start: shiftWallDays(g.ev!.start, delta),
                         end: g.ev!.end ? shiftWallDays(g.ev!.end, delta) : undefined
-                    }, tz));
+                    });
                     break;
                 }
                 if (preview!.dayIso === g.origDayIso && preview!.startMin === g.origStartMin) {
@@ -544,20 +553,20 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                     this.commitGesture(this.useEditorForEdit() ? 'editEvent' : 'eventClick', g, preview);
                     break;
                 }
-                this.fireSpec(moveResizeSpec('move', g.ev!, {
+                this.commitDrag('move', g.ev!, {
                     start: isoDateTime(preview!.dayIso, preview!.startMin),
                     end: isoDateTime(preview!.dayIso, preview!.endMin)
-                }, tz));
+                });
                 break;
             }
             case 'resize':
                 if (isNoopResize(g.origStartMin, g.origEndMin, preview!.startMin, preview!.endMin)) {
                     break;   // snapping pulled the edge back to the original times: not a change
                 }
-                this.fireSpec(moveResizeSpec('resize', g.ev!, g.edge === 'start'
+                this.commitDrag('resize', g.ev!, g.edge === 'start'
                     // Start-edge resize moves the start only (the end — possibly on a later day — stays put).
                     ? { start: isoDateTime(preview!.dayIso, preview!.startMin) }
-                    : { end: isoDateTime(preview!.dayIso, preview!.endMin) }, tz));
+                    : { end: isoDateTime(preview!.dayIso, preview!.endMin) });
                 break;
             case 'selectEditor':
                 this.openEditor(isoDateTime(preview!.dayIso, preview!.startMin), isoDateTime(preview!.dayIso, preview!.endMin), false);
@@ -565,7 +574,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             case 'select': {
                 const start = isoDateTime(preview!.dayIso, preview!.startMin);
                 const end = isoDateTime(preview!.dayIso, preview!.endMin);
-                this.fireEvent('onSelect', { start: emitWall(start, false, tz), end: emitWall(end, false, tz), allDay: false });
+                // A range a DST gap collapses is no selection: the editor path refuses it too.
+                if (resolvesForward(start, end, tz)) {
+                    this.fireEvent('onSelect', { start: emitWall(start, false, tz), end: emitWall(end, false, tz), allDay: false });
+                }
                 break;
             }
             case 'createEditor':

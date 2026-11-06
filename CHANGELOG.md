@@ -8,6 +8,24 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed
+- A time that falls in a daylight-saving gap now resolves forward by the length
+  of the gap in every `config.timezone`, as the browser-local path always has:
+  02:30 on New York's spring-forward day is 03:30 EDT. Zones west of UTC used to
+  go back an hour instead (01:30 EST), and in zones whose gap covers midnight,
+  such as Havana, that put the start of the day on the evening before. Affects
+  the picker outputs, calendar write-backs, and timeline windows and shift ticks.
+- The browser's own daylight-saving gap no longer moves a picked time or a
+  write-back resolved in another `config.timezone`: picking 02:30 on 2026-03-29 in
+  a Brussels browser with `America/New_York` now gives 02:30 New York time, not
+  03:30. Known limit: picker presets and the realtime window can still shift
+  inside the browser's gap (#247).
+- The calendar no longer writes an event that a daylight-saving gap leaves ending
+  at or before its start, in any zone: 02:30 to 03:00 on New York's spring-forward
+  day is really 03:30 to 03:00. The event editor now blocks Save with its
+  invalid-range message, and a move, resize or drag-select that would do this fires
+  nothing, so the event stays where it was.
+
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a
 tag writing 150 to a 0-100 keyboard left it `true`, and a binding on it could
