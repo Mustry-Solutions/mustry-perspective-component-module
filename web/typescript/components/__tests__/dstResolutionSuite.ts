@@ -2,6 +2,7 @@
 // dstResolution.<zone>.test.ts files: the process zone plays the browser's zone,
 // and must never change what a wall time resolves to in `config.timezone`.
 import { emitWall, parseDate, resolveZoned, toEpochMs, wallOfDay, WallFields } from '../../shared/dateUtils';
+import { editorDefaults, editorProblem, gestureKeepsOrder, resolvesForward } from '../calendar/calendarEditorLogic';
 import { computeOutputs } from '../picker/pickerLogic';
 import {
     buildTicks, customWindowOnDate, MS_PER_HOUR, pageAnchorMs, pageCustomWindow, windowFor, zoneMidnightMs
@@ -245,6 +246,49 @@ export function dstResolutionSuite(processZone: string): void {
                 const next = pageCustomWindow(w, 1, zone);
                 expect(next.startMs).toBe(w.endMs);
                 expect(next.endMs).toBe(Date.parse('2026-03-08T03:30:00-04:00'));
+            });
+        });
+
+        describe('calendar ranges compare as instants', () => {
+            // [zone, start, end]: forward on the wall, but the gap moves the start
+            // to or past the end. Both sides of UTC, whatever the browser's zone.
+            const COLLAPSED: Array<[string, string, string]> = [
+                ['America/New_York', '2026-03-08T02:30', '2026-03-08T03:00'],
+                ['America/New_York', '2026-03-08T02:00', '2026-03-08T03:00'],
+                ['America/Chicago', '2026-03-08T02:30', '2026-03-08T03:00'],
+                ['America/Havana', '2026-03-08T00:30', '2026-03-08T01:00'],
+                ['Europe/Brussels', '2026-03-29T02:30', '2026-03-29T03:00'],
+                ['Europe/Brussels', '2026-03-29T02:00', '2026-03-29T03:00'],
+                ['Australia/Sydney', '2026-10-04T02:30', '2026-10-04T03:00'],
+                ['Australia/Lord_Howe', '2026-10-04T02:15', '2026-10-04T02:30']
+            ];
+            const editor = (start: string, end: string) => ({
+                id: null, title: 'Job', start, end, allDay: false, category: '', description: '', ...editorDefaults()
+            });
+            const local = COLLAPSED.filter((c) => c[0] === processZone);
+
+            it.each(COLLAPSED)('%s %s to %s is refused', (zone, start, end) => {
+                expect(editorProblem(editor(start, end), zone)).toBe('range');
+                expect(resolvesForward(start, end, zone)).toBe(false);
+                expect(gestureKeepsOrder({ id: 'a', title: 'A', start: '2026-06-15T09:00:00', end: '2026-06-15T10:00:00' }, { start, end }, zone)).toBe(false);
+            });
+            it('the browser-local path refuses the same ranges in its own gap', () => {
+                for (const [, start, end] of local) {
+                    expect(editorProblem(editor(start, end), '')).toBe('range');
+                }
+            });
+            it('the same times in a zone without that gap stay valid', () => {
+                for (const [, start, end] of COLLAPSED) {
+                    expect(editorProblem(editor(start, end), 'Asia/Kolkata')).toBeNull();
+                }
+            });
+            it('a range that survives the gap stays valid east and west', () => {
+                expect(editorProblem(editor('2026-03-08T02:00', '2026-03-08T02:30'), 'America/New_York')).toBeNull();
+                expect(editorProblem(editor('2026-03-08T01:30', '2026-03-08T02:30'), 'America/New_York')).toBeNull();
+                expect(editorProblem(editor('2026-03-08T02:30', '2026-03-08T03:30'), 'America/Chicago')).toBe('range');
+                expect(editorProblem(editor('2026-03-08T02:30', '2026-03-08T03:31'), 'America/Chicago')).toBeNull();
+                expect(editorProblem(editor('2026-03-29T02:00', '2026-03-29T02:30'), 'Europe/Brussels')).toBeNull();
+                expect(editorProblem(editor('2026-03-29T01:30', '2026-03-29T02:30'), 'Europe/Brussels')).toBeNull();
             });
         });
 

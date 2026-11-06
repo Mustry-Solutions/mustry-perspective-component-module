@@ -15,9 +15,16 @@ deliberate decision, never an accident.
   go back an hour instead (01:30 EST), and in zones whose gap covers midnight,
   such as Havana, that put the start of the day on the evening before. Affects
   the picker outputs, calendar write-backs, and timeline windows and shift ticks.
-- The browser's own daylight-saving gap no longer moves a time resolved in another
-  `config.timezone`: picking 02:30 on 2026-03-29 in a Brussels browser with
-  `America/New_York` now gives 02:30 New York time, not 03:30.
+- The browser's own daylight-saving gap no longer moves a picked time or a
+  write-back resolved in another `config.timezone`: picking 02:30 on 2026-03-29 in
+  a Brussels browser with `America/New_York` now gives 02:30 New York time, not
+  03:30. Known limit: picker presets and the realtime window can still shift
+  inside the browser's gap (#247).
+- The calendar no longer writes an event that a daylight-saving gap leaves ending
+  at or before its start, in any zone: 02:30 to 03:00 on New York's spring-forward
+  day is really 03:30 to 03:00. The event editor now blocks Save with its
+  invalid-range message, and a move, resize or drag-select that would do this fires
+  nothing, so the event stays where it was.
 
 ## [0.9.0] - 2026-11-04
 
