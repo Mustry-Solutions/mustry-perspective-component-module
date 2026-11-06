@@ -9,6 +9,12 @@ deliberate decision, never an accident.
 ## [Unreleased]
 
 ### Fixed
+- Resource Timeline: changing zoom no longer lands on an unrelated part of the
+  window. If the now-line was on screen it stays on screen; otherwise the moment
+  at the centre of the view stays at the centre, or against the window's edge
+  when it's too near one. Zooming out and back returns to the same moment, as
+  long as the view wasn't moved in between, even if the wider zoom showed the
+  now-line; Today goes back to now. Leaving a custom window does the same (#214).
 - A time that falls in a daylight-saving gap now resolves forward by the length
   of the gap in every `config.timezone`, as the browser-local path always has:
   02:30 on New York's spring-forward day is 03:30 EDT. Zones west of UTC used to

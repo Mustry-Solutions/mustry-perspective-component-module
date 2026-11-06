@@ -2,9 +2,9 @@ import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_BAR_PX_READONLY, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent,
     CUSTOM_WINDOW_PX, MAX_CUSTOM_SPAN_MS, containingCustomWindow, customScale, customTickStepMs, customWindow,
     customWindowOnDate, customZoom, pageCustomWindow,
-    ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, followAnchorMs, followDisarms, followTickMs,
-    isConfiguredEmpty, isSubDayZoom, isSubHourZoom, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
-    resolveSnapMinutes, rezoomAnchorMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
+    ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, focusScrollLeft, followAnchorMs, followDisarms, followTickMs,
+    isConfiguredEmpty, isSubDayZoom, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
+    resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
 } from '../timeline/timelineLogic';
 import { DEFAULT_TIMELINE_ZOOMS, mapTimelineProps, resolveZooms } from '../timeline/timelineProps';
 import { toEpochMs } from '../../shared/dateUtils';
@@ -294,18 +294,206 @@ describe('sub-hour zoom presets', () => {
         expect(followAnchorMs(T, 'second', 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
     });
 
-    it('rezoomAnchorMs: keeps now in view when it was visible, else the old start', () => {
-        const dayAnchor = Date.UTC(2026, 5, 17);
-        // Now is inside today's day window -> drilling in lands on the current stride.
-        expect(rezoomAnchorMs(dayAnchor, 'day', 'minute', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 30));
-        expect(rezoomAnchorMs(dayAnchor, 'day', 'second', T, 'UTC')).toBe(Date.UTC(2026, 5, 17, 14, 36));
-        // Looking at yesterday: now is not in view -> the window containing the old start.
-        const yesterday = Date.UTC(2026, 5, 16);
-        expect(rezoomAnchorMs(yesterday, 'day', 'minute', T, 'UTC')).toBe(yesterday);
-        expect(rezoomAnchorMs(yesterday, 'day', 'hour', T, 'UTC')).toBe(yesterday);
-        // Zooming back out from a mid-day slice returns to that day.
-        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'day', T, 'UTC')).toBe(yesterday);
-        expect(rezoomAnchorMs(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'hour', T, 'UTC')).toBe(Date.UTC(2026, 5, 16, 8));
+    describe('zoom changes (issue #214)', () => {
+        const LABEL = 160;
+        const WIDTH = 1060;       // a 900px time viewport
+        const day = windowFor(Date.UTC(2026, 5, 17), 'day', 'UTC');   // 60px/h, 1440px wide
+        const at = (h: number, m = 0) => Date.UTC(2026, 5, 17, h, m);
+        const focus = (s: TimeScale, left: number, now: number, width = WIDTH) => rezoomFocusMs(s, left, width, LABEL, now);
+
+        it('rezoomFocusMs: now wins only when the line is actually on screen', () => {
+            // 14:30 = 870px. Viewport 300..1200 holds it.
+            expect(focus(day, 300, at(14, 30))).toBe(at(14, 30));
+            // The viewport's edges count; a pixel past either does not.
+            expect(focus(day, 870, at(14, 30))).toBe(at(14, 30));
+            expect(focus(day, 871, at(14, 30))).not.toBe(at(14, 30));
+            expect(focus(day, 0, at(15))).toBe(at(15));
+            expect(focus(day, 0, at(15, 1))).not.toBe(at(15, 1));
+        });
+
+        it('rezoomFocusMs: else the moment at the centre of what was visible', () => {
+            // In the window but scrolled away: viewport 0..900, centre 450px = 07:30.
+            expect(focus(day, 0, at(20))).toBe(at(7, 30));
+            // Now outside the window altogether.
+            expect(focus(day, 300, Date.UTC(2026, 5, 20))).toBe(at(12, 30));
+            expect(focus(day, 300, Date.UTC(2026, 5, 10))).toBe(at(12, 30));
+        });
+
+        it('rezoomFocusMs: a viewport wider than the window centres on the window', () => {
+            const past = Date.UTC(2026, 5, 20);
+            expect(focus(day, 0, past, 2000)).toBe(at(12));
+            // The window's end is exclusive: now there is not in it.
+            expect(focus(day, 0, day.endMs, 2000)).toBe(at(12));
+        });
+
+        it('rezoomFocusMs: with no layout, now if in the window, else the window start', () => {
+            expect(focus(day, 0, at(20), 0)).toBe(at(20));
+            expect(focus(day, 0, Date.UTC(2026, 5, 20), 0)).toBe(day.startMs);
+        });
+
+        it('rezoomFocusMs + containingAnchorMs: lands on the window holding the moment', () => {
+            // Day to the sub-day presets, as in the report: 17:30 opens 16:00-24:00.
+            expect(containingAnchorMs(focus(day, 500, at(17, 30)), 'hour', 'UTC')).toBe(at(16));
+            // Scrolled-away centre 12:30 opens 08:00-16:00, not today's now stride.
+            expect(containingAnchorMs(focus(day, 300, at(21, 30)), 'hour', 'UTC')).toBe(at(8));
+            // Back out from a slice of an earlier day returns to that day.
+            const yesterday = Date.UTC(2026, 5, 16);
+            const slice = windowFor(Date.UTC(2026, 5, 16, 14, 30), 'minute', 'UTC');
+            expect(containingAnchorMs(focus(slice, 0, T), 'day', 'UTC')).toBe(yesterday);
+            // A week scrolled to a later day opens that day.
+            const week = windowFor(at(0), 'week', 'UTC');         // 12px/h, 2016px wide
+            expect(focus(week, 1000, T)).toBe(Date.UTC(2026, 5, 22, 0, 50));
+            expect(containingAnchorMs(focus(week, 1000, T), 'day', 'UTC')).toBe(Date.UTC(2026, 5, 22));
+        });
+
+        it('focusScrollLeft: centres the moment in the time viewport', () => {
+            // 12:00 = 720px; half the 900px viewport left of it.
+            expect(focusScrollLeft(day, at(12), WIDTH, LABEL)).toBe(270);
+            // Same moment read back from that scroll position.
+            expect(focus(day, 270, Date.UTC(2026, 5, 20))).toBe(at(12));
+        });
+
+        it('focusScrollLeft: clamps to what the window can scroll to', () => {
+            expect(focusScrollLeft(day, at(1), WIDTH, LABEL)).toBe(0);
+            expect(focusScrollLeft(day, at(23), WIDTH, LABEL)).toBe(540);    // 1440 - 900
+            // Moments outside the window rest against the nearer edge.
+            expect(focusScrollLeft(day, Date.UTC(2026, 5, 10), WIDTH, LABEL)).toBe(0);
+            expect(focusScrollLeft(day, Date.UTC(2026, 5, 20), WIDTH, LABEL)).toBe(540);
+            // Nothing to scroll: a viewport wider than the window.
+            expect(focusScrollLeft(day, at(12), 2000, LABEL)).toBe(0);
+        });
+
+        describe('on DST days the window really is 23 or 25 hours wide', () => {
+            const TZ = 'Europe/Brussels';
+            const short = windowFor(Date.UTC(2026, 2, 28, 23), 'day', TZ);   // 29 Mar, 1380px
+            const long = windowFor(Date.UTC(2026, 9, 24, 22), 'day', TZ);    // 25 Oct, 1500px
+            const NOW = Date.UTC(2026, 0, 1);                                // on neither day
+
+            it('the windows are the expected widths', () => {
+                expect(scaleWidth(short)).toBe(23 * 60);
+                expect(scaleWidth(long)).toBe(25 * 60);
+            });
+
+            it('rezoomFocusMs: reads the centre in epoch time', () => {
+                // 300 + 450 = 750px: 12h30 of elapsed time, not of wall clock.
+                expect(focus(short, 300, NOW)).toBe(short.startMs + 12.5 * MS_PER_HOUR);
+                expect(focus(long, 300, NOW)).toBe(long.startMs + 12.5 * MS_PER_HOUR);
+                // A viewport wider than the window centres on the window, 11h30 / 12h30 in.
+                expect(focus(short, 0, NOW, 2000)).toBe(short.startMs + 11.5 * MS_PER_HOUR);
+                expect(focus(long, 0, NOW, 2000)).toBe(long.startMs + 12.5 * MS_PER_HOUR);
+            });
+
+            it('focusScrollLeft: clamps to the width that day really has', () => {
+                expect(focusScrollLeft(short, short.endMs - 1, WIDTH, LABEL)).toBe(1380 - 900);
+                expect(focusScrollLeft(long, long.endMs - 1, WIDTH, LABEL)).toBe(1500 - 900);
+                // And a moment read off the scroll position goes back to it.
+                expect(focusScrollLeft(short, focus(short, 300, NOW), WIDTH, LABEL)).toBe(300);
+                expect(focusScrollLeft(long, focus(long, 450, NOW), WIDTH, LABEL)).toBe(450);
+            });
+
+            it('the repeated hour of a 25-hour day stays on its own day', () => {
+                // 02:30 happens twice on 25 Oct: the second one is 3h30 after midnight.
+                const second230 = long.startMs + 3.5 * MS_PER_HOUR;
+                expect(containingAnchorMs(second230, 'week', TZ)).toBe(long.startMs);
+                expect(containingAnchorMs(second230, 'day', TZ)).toBe(long.startMs);
+            });
+        });
+
+        it('keptFocusMs: only while the view is where the last zoom change left it', () => {
+            const kept = { focusMs: at(12), scrollLeft: 270, anchorMs: day.startMs };
+            expect(keptFocusMs(kept, 270, day.startMs)).toBe(at(12));
+            // A browser's sub-pixel read-back isn't a move.
+            expect(keptFocusMs(kept, 270.5, day.startMs)).toBe(at(12));
+            // A scroll or a different window is.
+            expect(keptFocusMs(kept, 271, day.startMs)).toBeNull();
+            expect(keptFocusMs(kept, 269, day.startMs)).toBeNull();
+            expect(keptFocusMs(kept, 270, day.startMs + MS_PER_HOUR)).toBeNull();
+            // Nothing kept.
+            expect(keptFocusMs(null, 270, day.startMs)).toBeNull();
+        });
+
+        describe('round trips (what the component does on each zoom change)', () => {
+            type View = { zoom: 'day' | 'week' | 'hour'; anchorMs: number; scrollLeft: number; kept: { focusMs: number; scrollLeft: number; anchorMs: number } | null };
+
+            /** One zoom change, the component's steps in order. `useKept: false`
+             *  re-measures every time, the behaviour this memo exists to replace. */
+            function rezoom(v: View, zoom: View['zoom'], nowMs: number, useKept = true): View {
+                const reused = useKept ? keptFocusMs(v.kept, v.scrollLeft, v.anchorMs) : null;
+                const measured = rezoomFocusMs(windowFor(v.anchorMs, v.zoom, 'UTC'), v.scrollLeft, WIDTH, LABEL, nowMs);
+                const focusMs = reused ?? measured;
+                const anchorMs = containingAnchorMs(focusMs, zoom, 'UTC');
+                const scrollLeft = focusScrollLeft(windowFor(anchorMs, zoom, 'UTC'), focusMs, WIDTH, LABEL);
+                return { zoom, anchorMs, scrollLeft, kept: focusMs === nowMs ? null : { focusMs, scrollLeft, anchorMs } };
+            }
+
+            const JUNE_16 = Date.UTC(2026, 5, 16);
+            const noon16 = Date.UTC(2026, 5, 16, 12);
+            const startOn16: View = { zoom: 'day', anchorMs: JUNE_16, scrollLeft: 270, kept: null };   // centred on 12:00
+            const NOW_FAR = Date.UTC(2026, 6, 20);             // on none of these views
+
+            it('Day -> Week -> Day repeated stays on the same day and moment', () => {
+                let v = startOn16;
+                for (let trip = 0; trip < 3; trip++) {
+                    v = rezoom(v, 'week', NOW_FAR);
+                    expect(v.anchorMs).toBe(JUNE_16);
+                    expect(v.scrollLeft).toBe(0);    // clamped: the view's centre isn't noon
+                    v = rezoom(v, 'day', NOW_FAR);
+                    expect(v.anchorMs).toBe(JUNE_16);
+                    expect(v.scrollLeft).toBe(270);
+                    expect(v.kept!.focusMs).toBe(noon16);
+                }
+            });
+
+            it('re-measuring on every change is what walks forward a day per trip', () => {
+                let v = rezoom(startOn16, 'week', NOW_FAR, false);
+                v = rezoom(v, 'day', NOW_FAR, false);
+                expect(v.anchorMs).toBe(Date.UTC(2026, 5, 17));
+                v = rezoom(v, 'week', NOW_FAR, false);
+                v = rezoom(v, 'day', NOW_FAR, false);
+                expect(v.anchorMs).toBe(Date.UTC(2026, 5, 18));
+            });
+
+            it('a kept moment beats a now-line the wider zoom happens to show', () => {
+                // 20:30 today, Day scrolled away to a 12:30 centre; Week shows both.
+                const now = at(20, 30);
+                const start: View = { zoom: 'day', anchorMs: day.startMs, scrollLeft: 300, kept: null };
+                const week = rezoom(start, 'week', now);
+                expect(rezoomFocusMs(windowFor(week.anchorMs, 'week', 'UTC'), week.scrollLeft, WIDTH, LABEL, now)).toBe(now);
+                expect(rezoom(week, 'day', now).kept!.focusMs).toBe(at(12, 30));
+            });
+
+            it('the now-line is not kept: it moves on, and is measured again', () => {
+                const seen = at(14, 30);
+                const week = rezoom({ zoom: 'day', anchorMs: day.startMs, scrollLeft: 300, kept: null }, 'week', seen);
+                expect(week.kept).toBeNull();
+                // An hour later it is still the line that comes back.
+                const later = at(15, 30);
+                expect(rezoom(week, 'day', later).scrollLeft).toBe(focusScrollLeft(day, later, WIDTH, LABEL));
+            });
+
+            it('Week -> Day -> Week moves the week onto the moment\'s day once, then holds', () => {
+                const moment = Date.UTC(2026, 5, 22, 0, 50);      // scrollLeft 1000 + half of 900
+                const start: View = { zoom: 'week', anchorMs: at(0), scrollLeft: 1000, kept: null };
+                expect(rezoomFocusMs(windowFor(start.anchorMs, 'week', 'UTC'), 1000, WIDTH, LABEL, NOW_FAR)).toBe(moment);
+                let v = start;
+                for (let trip = 0; trip < 3; trip++) {
+                    v = rezoom(v, 'day', NOW_FAR);
+                    expect(v.anchorMs).toBe(Date.UTC(2026, 5, 22));
+                    v = rezoom(v, 'week', NOW_FAR);
+                    expect(v.anchorMs).toBe(Date.UTC(2026, 5, 22));
+                    expect(v.kept!.focusMs).toBe(moment);
+                }
+            });
+
+            it('Day -> Hour -> Day keeps the moment too', () => {
+                const start: View = { zoom: 'day', anchorMs: JUNE_16, scrollLeft: 270, kept: null };
+                const hour = rezoom(start, 'hour', NOW_FAR);
+                expect(hour.anchorMs).toBe(Date.UTC(2026, 5, 16, 8));
+                const back = rezoom(hour, 'day', NOW_FAR);
+                expect(back.anchorMs).toBe(JUNE_16);
+                expect(back.scrollLeft).toBe(270);
+            });
+        });
     });
 
     it('buildTicks: minute zoom = one tick per minute from the window start, day label with time', () => {
