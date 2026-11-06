@@ -105,3 +105,25 @@ ops/teardown.sh     # stop when done (keeps state)
   `../.env`, then re-run.
 - **Gateway slow to start:** first launch initializes the database; give it a minute
   and watch `ops/logs.sh`.
+
+## Ignition 2027 beta
+
+To run a 2027 gateway beside the 8.3 one, source the env file first. The scripts
+work as usual, in that shell:
+
+```bash
+source ops/ignition-2027.env
+ops/e2e.sh --fresh      # http://localhost:9288, or any other ops/ script
+```
+
+It selects the 2027 image and SDK, plus its own container, data volume, ports and
+`ops/modules-2027/` folder, so the two gateways never touch each other's module.
+Only one build runs at a time, since both use `build/`. The verify and demo
+projects are the same bind-mounted folders on both, so a Designer save on 2027
+writes into the repo in whatever format 2027 uses: review the diff before
+committing it.
+
+JDK 25 must be installed: 2027's SDK is Java 25 bytecode. Gradle can launch on
+Java 17 and discover JDK 25 as the toolchain.
+
+To move to a new beta, change the tag and SDK version in `ops/ignition-2027.env`.
