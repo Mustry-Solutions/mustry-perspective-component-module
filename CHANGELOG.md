@@ -19,8 +19,8 @@ library, and the reference views set `props.config` to `PROTECTED` so a client
 can't rewrite those flags. Nothing changes in the module itself, so **projects
 that copied the old scripts stay open until they adopt the check**; the README
 and the event and prop descriptions now say that the flags aren't a security
-boundary. The verify and demo projects have no login, so their sample views keep
-working for anonymous sessions through a clearly named demo-only setting that a
+boundary. The verify and demo projects don't ask anyone to log in, so their sample
+views keep working for anonymous sessions through a clearly named demo-only setting that a
 real project deletes.
 
 ## [0.9.0] - 2026-11-04

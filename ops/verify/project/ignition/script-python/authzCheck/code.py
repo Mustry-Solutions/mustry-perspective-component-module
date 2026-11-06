@@ -3,7 +3,7 @@
 # Only names starting with "authz" are reported, so specs running in parallel don't interfere.
 import sys
 
-USERS = ['authz-user', 'authz-new-user']  # the only accounts the spec creates or attacks
+USERS = ['authz-user', 'authz-new-user', 'authz-admin', 'authz-super', 'authz-op']  # the only accounts the spec creates or attacks
 
 
 def _mine(names):

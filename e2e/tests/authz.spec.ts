@@ -9,8 +9,10 @@ import { test, expect, openRoute } from './helpers';
 // /authz-* views carry the real reference scripts (ops/verify/tools/build_authz_views.py),
 // and a poll on the gateway (project library authzCheck) reads the data back.
 //
-// What this does NOT test: a logged-in user. The verify project has no identity provider,
-// so every session here is anonymous.
+// Sessions are anonymous unless a test logs in. The verify project's identity provider
+// (ignition/global-props/data.bin, GlobalProps.newInstance() + setIdp('default'), serialized
+// by the gateway) is there for those tests: nothing forces a login, so the other specs
+// stay anonymous.
 
 const REPO = path.join(__dirname, '..', '..');
 const VIEW_DIRS = ['ops/verify/project', 'ops/demo/project'].map((p) =>
@@ -119,6 +121,34 @@ async function ensureFixtures(page: Page) {
     expect(after.rosters['authz-roster']).toEqual(['authz-user']);
     expect(after.holidays).toContain('authz-holiday');
     return after;
+}
+
+const ACCOUNTS: Array<[string, string[]]> = [['authz-admin', ['Administrator']], ['authz-super', ['Supervisor']], ['authz-op', []]];
+const PASSWORD = 'Authz-1234!';
+const STRICT = /REFUSED: requires one of the roles Administrator$/;
+
+/** The accounts the login tests use, created on the open view by an anonymous session. */
+async function ensureAccounts(page: Page) {
+    await ensureFixtures(page);
+    const now = await snapshot(page);
+    await fireAndExpect(page, [USER, 'onRoleSave', { name: 'Supervisor' }], /^onRoleSave (added|ERRORS)/);
+    for (const [username, roles] of ACCOUNTS) {
+        if (!now.users[username]) {
+            await fireAndExpect(page, [USER, 'onUserSave', { user: user(username, { roles }), isNew: true, password: PASSWORD }], /^onUserSave persisted/);
+        }
+    }
+}
+
+/** Log in through the identity provider's real form. Starts from a clean session. */
+async function login(page: Page, consoleErrors: string[], username: string, password: string) {
+    await page.context().clearCookies();
+    await page.goto('/data/perspective/login/verify');
+    await page.locator('input[name=username]').fill(username);
+    await page.keyboard.press('Enter');
+    await page.locator('input[name=password]').fill(password);
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/\/data\/perspective\/client\/verify/, { timeout: 15_000 });
+    consoleErrors.length = 0; // the login page isn't a component session
 }
 
 test.describe('Admin family: the event scripts authorize the write', () => {
@@ -233,15 +263,68 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         expect(await snapshot(page)).toEqual(before);
     });
 
+    test('logged in without a role: refused, and the demo exemption does not apply', async ({ page, consoleErrors }) => {
+        await ensureAccounts(page);
+        await login(page, consoleErrors, 'authz-op', PASSWORD);
+        // AuthzOpen is on the demo exemption list and an anonymous session writes there:
+        // this refusal also shows the session really is logged in.
+        await openRoute(page, '/authz-open', USER);
+        const before = await snapshot(page);
+        const refused = /REFUSED: requires one of the roles /;
+        for (const attack of [PROMOTE, EDIT_USER, EDIT_SCHEDULE, EDIT_ROSTER, EDIT_HOLIDAY, DELETE_HOLIDAY]) {
+            await fireAndExpect(page, attack, refused);
+        }
+        expect(await snapshot(page)).toEqual(before);
+    });
+
+    test('a Supervisor can edit, but not passwords, roles or accounts', async ({ page, consoleErrors }) => {
+        await ensureAccounts(page);
+        await login(page, consoleErrors, 'authz-super', PASSWORD);
+        await openRoute(page, '/authz-no-role', USER);
+        const before = await snapshot(page);
+        for (const attack of [PROMOTE, SET_PASSWORD, CREATE_USER, DELETE_USER, ADD_ROLE, RENAME_ROLE, DELETE_ROLE]) {
+            await fireAndExpect(page, attack, STRICT);
+        }
+        expect(await snapshot(page)).toEqual(before);
+
+        await fireAndExpect(page, EDIT_USER, /^onUserSave persisted "authz-user"/);
+        await fireAndExpect(page, EDIT_SCHEDULE, /^onScheduleSave persisted/);
+        expect((await snapshot(page)).users['authz-user']).toMatchObject({ notes: 'HACKED', roles: [] });
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false }], /^onUserSave persisted/);
+    });
+
+    test('a refused password change leaves the old password working', async ({ page, consoleErrors }) => {
+        // SET_PASSWORD was refused above for an anonymous session and a Supervisor.
+        await ensureAccounts(page);
+        await login(page, consoleErrors, 'authz-user', 'Authz-1234!');
+        await openRoute(page, '/authz-no-role', USER);
+    });
+
+    test('an Administrator can do the strict writes', async ({ page, consoleErrors }) => {
+        await ensureAccounts(page);
+        await login(page, consoleErrors, 'authz-admin', PASSWORD);
+        await openRoute(page, '/authz-no-role', USER);
+        await fireAndExpect(page, PROMOTE, /^onUserSave persisted "authz-user"/);
+        expect((await snapshot(page)).users['authz-user'].roles).toEqual(['Administrator']);
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false }], /^onUserSave persisted/);
+        const newPassword = 'Authz-5678!';
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('authz-user'), isNew: false, password: newPassword }], /password set/);
+        // The control for the password test above: this login only works if the write landed.
+        await login(page, consoleErrors, 'authz-user', newPassword);
+        await openRoute(page, '/authz-no-role', USER);
+    });
+
     test('cleanup: the control removes what the attacks aimed at', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
         for (const [attack, verdict] of [
+            ...ACCOUNTS.map(([username]) => [[USER, 'onUserDelete', { username }], /^onUserDelete removed/]),
+            [[USER, 'onRoleDelete', { name: 'Supervisor' }], /^onRoleDelete removed/],
             [DELETE_HOLIDAY, /^onHolidayDelete removed/],
             [DELETE_ROSTER, /^onRosterDelete removed/],
             [DELETE_SCHEDULE, /^onScheduleDelete removed/],
             [DELETE_USER, /^onUserDelete removed/],
             [DELETE_ROLE, /^onRoleDelete removed/],
-        ] as Array<[Attack, RegExp]>) {
+        ] as unknown as Array<[Attack, RegExp]>) {
             await fireAndExpect(page, attack, verdict);
         }
         expect(await snapshot(page)).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });

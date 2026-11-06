@@ -512,7 +512,7 @@ if refused:
 - **Check the session user's roles and re-read the flags before every write, and refuse if anything is unexpected.** Passwords, role assignments, creating or deleting users and the role catalog take the strictest roles.
 - **Set the access of each manager's `props.config` to `PROTECTED`.** By default a client can write component props, including the flag your script re-reads; the gateway ignores such a write to a `PROTECTED` prop.
 - **Treat the whole event as untrusted**, `isNew` included. The Schedule and Roster scripts work out whether a save creates something from the gateway's data.
-- **Delete `DEMO_ANONYMOUS_VIEWS` in a real project.** The verify and demo projects have no login, so that setting lets anonymous sessions write from the named sample views. Everywhere else an anonymous session holds no role and is refused.
+- **Delete `DEMO_ANONYMOUS_VIEWS` in a real project.** The verify and demo projects don't ask anyone to log in, so that setting lets anonymous sessions write from the named sample views. Everywhere else an anonymous session holds no role and is refused.
 
 `e2e/tests/authz.spec.ts` fires crafted events at these scripts and checks that the data does not change.
 

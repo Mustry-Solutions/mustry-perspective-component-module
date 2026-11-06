@@ -17,9 +17,9 @@
 WRITE_ROLES = ['Administrator', 'Supervisor']  # schedules, rosters, holidays, user profiles
 SECURITY_ROLES = ['Administrator']  # creating or deleting users, passwords, role assignment, the role catalog
 
-# DEMO ONLY: delete this and its use below in a real project. These sample projects have
-# no login, so an anonymous session can write from exactly these views, to keep their
-# screens working out of the box. A logged-in user never gets this exemption, and neither
+# DEMO ONLY: delete this and its use below in a real project. These sample projects don't
+# ask anyone to log in, so an anonymous session can write from exactly these views, to keep
+# their screens working out of the box. A logged-in user never gets this exemption, and neither
 # does any other view or project: a copy in your project refuses anonymous writes even if
 # you forget to delete it (unless your project and view have these same names).
 DEMO_ANONYMOUS_VIEWS = {
@@ -40,7 +40,7 @@ def refusal(component, flags, roles=WRITE_ROLES):
 				return _refuse('config.%s is off' % flag)
 		auth = component.session.props.auth
 		if auth.authenticated == True:
-			if set([str(r) for r in auth.user.roles]) & set(roles):
+			if set([str(r) for r in auth.user.roles or []]) & set(roles):
 				return None
 		elif str(component.view.id).split('@')[0] in DEMO_ANONYMOUS_VIEWS.get(system.project.getProjectName(), []):
 			return None
