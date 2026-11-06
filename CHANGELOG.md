@@ -23,6 +23,38 @@ boundary. The verify and demo projects don't ask anyone to log in, so their samp
 views keep working for anonymous sessions through a clearly named demo-only setting that a
 real project deletes.
 
+### Fixed
+- Resource Timeline: changing zoom no longer lands on an unrelated part of the
+  window. If the now-line was on screen it stays on screen; otherwise the moment
+  at the centre of the view stays at the centre, or against the window's edge
+  when it's too near one. Zooming out and back returns to the same moment, as
+  long as the view wasn't moved in between, even if the wider zoom showed the
+  now-line; Today goes back to now. Leaving a custom window does the same (#214).
+- A time that falls in a daylight-saving gap now resolves forward by the length
+  of the gap in every `config.timezone`, as the browser-local path always has:
+  02:30 on New York's spring-forward day is 03:30 EDT. Zones west of UTC used to
+  go back an hour instead (01:30 EST), and in zones whose gap covers midnight,
+  such as Havana, that put the start of the day on the evening before. Affects
+  the picker outputs, calendar write-backs, and timeline windows and shift ticks.
+- The browser's own daylight-saving gap no longer moves a picked time or a
+  write-back resolved in another `config.timezone`: picking 02:30 on 2026-03-29 in
+  a Brussels browser with `America/New_York` now gives 02:30 New York time, not
+  03:30. Known limit: picker presets and the realtime window can still shift
+  inside the browser's gap (#247).
+- The calendar no longer writes an event that a daylight-saving gap leaves ending
+  at or before its start, in any zone: 02:30 to 03:00 on New York's spring-forward
+  day is really 03:30 to 03:00. The event editor now blocks Save with its
+  invalid-range message, and a move, resize or drag-select that would do this fires
+  nothing, so the event stays where it was.
+
+### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
+`output.isValid` checked the value after clamping, so it could never fail: a
+tag writing 150 to a 0-100 keyboard left it `true`, and a binding on it could
+not flag the bad value. It now checks the bound `value.value` before clamping.
+`output.value` and `output.text` stay clamped. While a number is being typed,
+`output.isValid` keeps describing the bound value, not the draft; `onChange`
+carries the typed number and `onCommit.isValid` says whether it was in range.
+
 ## [0.9.0] - 2026-11-04
 
 ### Added: Idle Guard, a screensaver for Perspective pages

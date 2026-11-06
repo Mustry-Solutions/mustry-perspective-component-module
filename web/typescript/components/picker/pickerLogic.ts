@@ -7,7 +7,7 @@
 import {
     addDays, clampSec, combine, daysBetween, daysInMonth, fmtDate, maxDate, minDate,
     parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek,
-    wallClockInZone
+    wallClockInZone, wallOfDay
 } from '../../shared/dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
@@ -375,8 +375,8 @@ export function computeOutputs(i: OutputsInput): Outputs {
     }
     // Resolve the picked wall-clock times into absolute instants in the configured
     // timezone (blank = browser-local): offset-bearing ISO + epoch milliseconds.
-    const sZ = resolveZoned(combine(start, effStartSec(i.startTimeSec, i.granularity)), i.timezone);
-    const eZ = resolveZoned(combine(end, effEndSec(i.endTimeSec, i.granularity)), i.timezone);
+    const sZ = resolveZoned(wallOfDay(start, effStartSec(i.startTimeSec, i.granularity)), i.timezone);
+    const eZ = resolveZoned(wallOfDay(end, effEndSec(i.endTimeSec, i.granularity)), i.timezone);
     const durationDays = daysBetween(start, end);
     let valid = eZ.epochMs > sZ.epochMs;
     if (i.minSpanDays > 0 && durationDays < i.minSpanDays) {

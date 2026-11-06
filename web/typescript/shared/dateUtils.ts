@@ -169,6 +169,34 @@ export function weekdayHeaders(firstDay: number, locale: string): string[] {
 
 // --- timezone resolution (DST-correct, no external libraries) -------------
 
+/** Wall-clock fields, in no zone yet. `mo` is 1-12; time fields left out are 0. */
+export interface WallFields {
+    y: number;
+    mo: number;
+    d: number;
+    h?: number;
+    mi?: number;
+    s?: number;
+}
+
+/** Wall-clock fields with the time of day filled in. */
+export interface WallClock extends WallFields {
+    h: number;
+    mi: number;
+    s: number;
+}
+
+/** The wall clock at seconds-since-midnight on a date-only value's calendar day.
+ *  Only the day is read from `dateOnly`, so a browser whose midnight falls in a
+ *  DST gap (Havana) cannot move the time. */
+export function wallOfDay(dateOnly: Date, sec: number): WallClock {
+    const t = clampSec(sec);
+    return {
+        y: dateOnly.getFullYear(), mo: dateOnly.getMonth() + 1, d: dateOnly.getDate(),
+        h: Math.floor(t / 3600), mi: Math.floor((t % 3600) / 60), s: t % 60
+    };
+}
+
 export interface ZonedResult {
     epochMs: number;   // absolute instant (UTC) of the wall-clock in the target zone
     iso: string;       // ISO 8601 with offset, e.g. "2026-06-25T09:00:00+02:00"
@@ -205,16 +233,34 @@ function tzOffsetMinutes(date: Date, timeZone: string): number {
     return Math.round((asUTC - date.getTime()) / 60000);
 }
 
-/** Epoch ms for wall-clock fields interpreted in `timeZone` (handles DST). */
+/**
+ * Epoch ms for wall-clock fields interpreted in `timeZone`. Out-of-range fields
+ * roll over, as with `Date` (day 32, hour 24).
+ *
+ * - A time in a spring-forward gap does not exist. It resolves FORWARD in every
+ *   zone, by the length of the gap, as `Date` does: read with the offset from
+ *   before the change, New York 02:30 is 03:30 EDT and Lord Howe 02:15 is 02:45.
+ * - A time in a fall-back overlap exists twice, and which one you get follows
+ *   the zone's offset, not one rule: zones behind UTC get the first occurrence
+ *   (New York 01:30 is 01:30 EDT), zones at or ahead of UTC the second (Brussels
+ *   02:30 is 02:30 CET). `Date`, and so the browser-local path, always gets the
+ *   first. dstResolutionSuite pins these results.
+ */
 function zonedWallClockToEpoch(y: number, mo: number, d: number, h: number, mi: number, s: number, timeZone: string): number {
-    let ts = Date.UTC(y, mo - 1, d, h, mi, s);
-    const off1 = tzOffsetMinutes(new Date(ts), timeZone);
-    ts -= off1 * 60000;
-    const off2 = tzOffsetMinutes(new Date(ts), timeZone);
-    if (off2 !== off1) {
-        ts -= (off2 - off1) * 60000;
+    const wall = Date.UTC(y, mo - 1, d, h, mi, s);
+    const off1 = tzOffsetMinutes(new Date(wall), timeZone);
+    const first = wall - off1 * 60000;
+    const off2 = tzOffsetMinutes(new Date(first), timeZone);
+    if (off2 === off1) {
+        return first;
     }
-    return ts;
+    const second = wall - off2 * 60000;
+    if (tzOffsetMinutes(new Date(second), timeZone) === off2) {
+        return second;
+    }
+    // Neither offset shows this wall time: it is in a gap. Clocks go forward in a
+    // gap, so the smaller offset is the one from before the change.
+    return wall - Math.min(off1, off2) * 60000;
 }
 
 function offsetToStr(offMin: number): string {
@@ -224,27 +270,24 @@ function offsetToStr(offMin: number): string {
 }
 
 /**
- * Resolve a wall-clock Date (its LOCAL fields are the picked values) into an
- * absolute instant + offset-bearing ISO, interpreting the wall clock in
- * `timeZone`. Empty `timeZone` = the browser/session-local zone.
+ * Resolve wall-clock fields into an absolute instant + offset-bearing ISO,
+ * interpreting them in `timeZone`. Empty `timeZone` = the browser/session-local
+ * zone. Takes fields, not a local `Date`: a `Date` moves a time that falls in the
+ * browser's own DST gap, even when `timeZone` has no gap at that moment.
  */
-export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
-    const y = wall.getFullYear();
-    const mo = wall.getMonth() + 1;
-    const d = wall.getDate();
-    const h = wall.getHours();
-    const mi = wall.getMinutes();
-    const s = wall.getSeconds();
+export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
+    const { y, mo, d, h = 0, mi = 0, s = 0 } = wall;
+    const browserLocal = (): number => new Date(y, mo - 1, d, h, mi, s).getTime();
 
     let epochMs: number;
     let zone = timeZone;
     if (!timeZone) {
-        epochMs = wall.getTime();
+        epochMs = browserLocal();
     } else {
         try {
             epochMs = zonedWallClockToEpoch(y, mo, d, h, mi, s, timeZone);
         } catch (e) {
-            epochMs = wall.getTime();
+            epochMs = browserLocal();
             zone = '';
         }
     }
@@ -255,7 +298,7 @@ export function resolveZoned(wall: Date, timeZone: string): ZonedResult {
 }
 
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
-export function zoneWallClock(instant: Date, timeZone: string): { y: number; mo: number; d: number; h: number; mi: number; s: number } {
+export function zoneWallClock(instant: Date, timeZone: string): WallClock {
     if (!timeZone) {
         return {
             y: instant.getFullYear(), mo: instant.getMonth() + 1, d: instant.getDate(),
@@ -330,8 +373,7 @@ export function emitWall(wall: string, allDay: boolean, timeZone: string): strin
     if (!m) {
         return wall;
     }
-    const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
-    return resolveZoned(d, timeZone).iso;
+    return resolveZoned({ y: +m[1], mo: +m[2], d: +m[3], h: +m[4], mi: +m[5], s: +(m[6] || 0) }, timeZone).iso;
 }
 
 /**
@@ -356,7 +398,7 @@ export function toEpochMs(raw: string, timeZone: string): number | null {
     if (!m) {
         return null;
     }
-    const wall = new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+    const wall = { y: +m[1], mo: +m[2], d: +m[3], h: +(m[4] || 0), mi: +(m[5] || 0), s: +(m[6] || 0) };
     // Fractional seconds ('…:ss.SSS', sub-second cycle phases) ride on top of the
     // whole-second resolution: zone resolution is second-granular.
     const fracMs = m[7] ? Math.round(+`0.${m[7]}` * 1000) : 0;
@@ -367,7 +409,7 @@ export function toEpochMs(raw: string, timeZone: string): number | null {
  *  ("2026-07-03T09:00:00-05:00") — the emitted form for timeline write-backs.
  *  Computes the offset AT the instant (not via a wall-clock round trip), so an
  *  instant in the repeated fall-back hour keeps its identity instead of being
- *  re-resolved to the first occurrence. */
+ *  re-resolved to whichever occurrence `zonedWallClockToEpoch` gives. */
 export function msToZonedIso(ms: number, timeZone: string): string {
     const d = new Date(ms);
     const w = zoneWallClock(d, timeZone);
