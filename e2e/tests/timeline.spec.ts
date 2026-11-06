@@ -405,6 +405,10 @@ test.describe('timeline: zoom changes keep the moment in view (issue #214)', () 
     test('Today between zoom changes drops the kept moment, even when nothing moved', async ({ page }) => {
         await openPinned(page, '/timeline', 20, 30);
         await setScrollLeft(page, 300);
+        // Fail loudly if a layout change stops this start being off screen: the
+        // on-screen check below would then pass with the bug present.
+        const off = await nowFraction(page);
+        expect(off > 1 || off < 0, `now must start off screen (at ${off})`).toBe(true);
         await zoomTo(page, 'Week');
         const week = await view(page);
         // The anchor is already today and now is on screen, so Today moves nothing.
@@ -412,6 +416,8 @@ test.describe('timeline: zoom changes keep the moment in view (issue #214)', () 
         expect(await view(page)).toEqual(week);
         await zoomTo(page, 'Day');
         await expectNowOnScreen(page);
+        // On the kept moment this would be back at 300.
+        expect(await scrollerOf(page).evaluate((el) => el.scrollLeft)).toBeGreaterThan(300);
     });
 
     test('a zoom change arriving with a refreshSeconds change still keeps now on screen', async ({ page }) => {

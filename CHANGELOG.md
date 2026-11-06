@@ -13,8 +13,8 @@ deliberate decision, never an accident.
   window. If the now-line was on screen it stays on screen; otherwise the moment
   at the centre of the view stays at the centre, or against the window's edge
   when it's too near one. Zooming out and back returns to the same moment, as
-  long as the view wasn't moved in between. Leaving a custom window does the same
-  (#214).
+  long as the view wasn't moved in between, even if the wider zoom showed the
+  now-line; Today goes back to now. Leaving a custom window does the same (#214).
 
 ## [0.9.0] - 2026-11-04
 
