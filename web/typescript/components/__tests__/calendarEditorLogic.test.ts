@@ -251,6 +251,15 @@ describe('a range that a DST gap collapses', () => {
         const open = timed('2026-03-08T01:00:00');
         expect(gestureKeepsOrder(open, { start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00' }, NY)).toBe(false);
     });
+    it('drag: an occurrence the gap already collapsed cannot be dragged into a new collapsed range', () => {
+        const ev = timed('2026-03-08T02:30:00', '2026-03-08T03:00:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-03-08T02:45:00', end: '2026-03-08T03:15:00' }, NY)).toBe(false);
+        expect(gestureKeepsOrder(ev, { start: '2026-03-09T02:30:00', end: '2026-03-09T03:00:00' }, NY)).toBe(true);
+    });
+    it('drag: bound data that already runs backwards can still be moved', () => {
+        const ev = timed('2026-06-15T10:00:00', '2026-06-15T09:00:00');
+        expect(gestureKeepsOrder(ev, { start: '2026-06-16T10:00:00', end: '2026-06-16T09:00:00' }, NY)).toBe(true);
+    });
     it('drag: anything that stays forward still fires', () => {
         const ev = timed('2026-03-07T01:30:00', '2026-03-07T02:30:00');
         expect(gestureKeepsOrder(ev, { start: '2026-03-08T01:30:00', end: '2026-03-08T02:30:00' }, NY)).toBe(true);

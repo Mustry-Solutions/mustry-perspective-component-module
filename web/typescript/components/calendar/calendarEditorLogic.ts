@@ -247,9 +247,10 @@ function changedEvent(ev: CalEvent, over: { start?: string; end?: string }, time
 
 /** Whether a committed move/resize may fire: false when a DST gap would turn the
  *  dragged range into one that ends at or before its start. The drag only refuses
- *  what it would break: an event whose own end is already not after its start
+ *  what the gap collapses: a range whose wall times already don't run forward
  *  (bound data can carry that, and the grid draws it with a fallback end) can
- *  still be moved. All-day and open-ended ranges have no times to collapse. */
+ *  still be moved. All-day and open-ended ranges have no times to collapse. Times
+ *  are naive wall strings here, so comparing them directly is safe. */
 export function gestureKeepsOrder(
     ev: CalEvent, over: { start?: string; end?: string }, timezone: string
 ): boolean {
@@ -257,10 +258,8 @@ export function gestureKeepsOrder(
     if (ev.allDay || !end) {
         return true;
     }
-    if (ev.end && !resolvesForward(ev.start, ev.end, timezone)) {
-        return true;
-    }
-    return resolvesForward(over.start ?? ev.start, end, timezone);
+    const start = over.start ?? ev.start;
+    return !(start < end) || resolvesForward(start, end, timezone);
 }
 
 /** What a committed move/resize should fire. Dragging a single recurring occurrence

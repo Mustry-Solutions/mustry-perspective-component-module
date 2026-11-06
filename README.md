@@ -140,7 +140,7 @@ There are two kinds of events. **Intent** events (`onEventClick`, `onDateClick`,
 | **Edit / delete in-place** | Set `config.editable = true` **and** `config.builtInEditor = true`; clicking an event opens the editor pre-filled (Save / Delete → `onChange`). |
 | **Use your own editor** | Leave `builtInEditor` off; handle `onSelect` (create) and `onEventClick` (open your form). Moves/resizes still fire `onChange`. |
 
-So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onChange` (or `onSelect`); the event appears only once your handler writes it back into `config.data.events`.
+So if you drag on the calendar and "nothing happens", that's expected — the gesture fired `onChange` (or `onSelect`); the event appears only once your handler writes it back into `config.data.events`. The exception: a drag that a daylight-saving gap would leave ending at or before its start fires nothing, and the event stays where it was.
 
 **The one-handler recipe** (`onChange`) — upsert-or-delete by id, covering every mutation. (This is the minimal version for non-recurring data; if you use `rrule`, use the scope-aware version in [`docs/calendar-manual-test.md`](docs/calendar-manual-test.md#write-back-recipes-paste-into-the-components-event-config-in-the-designer), which also honours `scope`/`seriesId`/`occurrenceDate`.)
 
