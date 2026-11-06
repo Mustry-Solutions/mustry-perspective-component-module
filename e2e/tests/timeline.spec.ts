@@ -285,4 +285,156 @@ test.describe('timeline: zoom changes keep the moment in view (issue #214)', () 
         await zoomTo(page, 'Day');
         await expect.poll(async () => Math.abs((await centreMinutes(page)) - before)).toBeLessThan(10);
     });
+
+    // --- round trips: the moment survives zooming out and back ------------------
+    //
+    // Week opens on the moment's own midnight, so it usually clamps to scrollLeft 0
+    // and the Week view's centre is not the moment that was kept. These need the
+    // date as well as the clock, so they read the window off the component
+    // (Perspective has no client API for it; same fiber walk as grid.spec.ts).
+    const TIMELINE = `(() => {
+        const el = document.querySelector('.mustry-timeline');
+        let f = el[Object.keys(el).find((k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'))];
+        while (f && !(f.stateNode && typeof f.stateNode.scale === 'function')) f = f.return;
+        return f.stateNode;
+    })()`;
+
+    /** The window start plus, in epoch ms, what the time viewport shows. */
+    function view(page: Page): Promise<{ startMs: number; leftMs: number; centreMs: number; rightMs: number }> {
+        return page.evaluate(`(() => {
+            const scale = ${TIMELINE}.scale();
+            const scroller = document.querySelector('.mustry-tml-scroll');
+            const label = document.querySelector('.mustry-tml-corner');
+            const at = (px) => scale.startMs + (px / scale.pxPerHour) * 3600000;
+            const viewport = scroller.clientWidth - label.offsetWidth;
+            return {
+                startMs: scale.startMs,
+                leftMs: at(scroller.scrollLeft),
+                centreMs: at(scroller.scrollLeft + viewport / 2),
+                rightMs: at(scroller.scrollLeft + viewport)
+            };
+        })()`);
+    }
+
+    const pagePrevious = (page: Page) => page.getByRole('button', { name: 'Previous', exact: true });
+    const title = (page: Page) => page.locator('.mustry-tml-title');
+    const HOUR = 3600000;
+
+    /** A pixel of Day zoom is a minute; a scroll position rounds to whole pixels. */
+    async function expectCentreOn(page: Page, ms: number) {
+        await expect.poll(async () => Math.abs((await view(page)).centreMs - ms)).toBeLessThanOrEqual(120000);
+    }
+
+    async function expectInView(page: Page, ms: number) {
+        await expect.poll(async () => {
+            const v = await view(page);
+            return ms >= v.leftMs && ms <= v.rightMs;
+        }).toBe(true);
+    }
+
+    test('Day -> Week -> Day on a paged day returns to the moment, however often', async ({ page }) => {
+        await openPinned(page, '/timeline', 12, 0);
+        // Far enough back that Week can't show now, which would hide the walk: from
+        // Week's clamped view, measuring the centre lands on the next day each trip.
+        for (let i = 0; i < 8; i++) {
+            await pagePrevious(page).click();
+        }
+        await setScrollLeft(page, 300);
+        const start = await view(page);
+        const dayTitle = await title(page).textContent();
+
+        for (let trip = 0; trip < 3; trip++) {
+            await zoomTo(page, 'Week');
+            await expectInView(page, start.centreMs);
+            expect((await view(page)).startMs, `Week opens on the same day (trip ${trip})`).toBe(start.startMs);
+
+            await zoomTo(page, 'Day');
+            await expectCentreOn(page, start.centreMs);
+            await expect(title(page)).toHaveText(dayTitle as string);
+            expect((await view(page)).startMs, `Day opens on the same day (trip ${trip})`).toBe(start.startMs);
+        }
+    });
+
+    test('Week -> Day -> Week keeps the moment in view, on a week that opens on its day', async ({ page }) => {
+        await openPinned(page, '/timeline', 12, 0);
+        await zoomTo(page, 'Week');
+        await page.getByRole('button', { name: 'Next', exact: true }).click();
+        await setScrollLeft(page, 1000);
+        const week = await view(page);
+        const midnight = week.centreMs - (week.centreMs % (24 * HOUR));
+        expect(midnight, 'the moment must be on a later day than the week opens on').toBeGreaterThan(week.startMs);
+
+        // The first trip moves the week to start on the moment's day: every zoom
+        // change opens the window holding the moment, it doesn't restore the old one.
+        for (let trip = 0; trip < 3; trip++) {
+            await zoomTo(page, 'Day');
+            await expectInView(page, week.centreMs);
+            expect((await view(page)).startMs, `Day opens on the moment's day (trip ${trip})`).toBe(midnight);
+
+            await zoomTo(page, 'Week');
+            await expectInView(page, week.centreMs);
+            expect((await view(page)).startMs, `Week opens on the moment's day (trip ${trip})`).toBe(midnight);
+        }
+    });
+
+    test('Day -> Week -> Day on today returns to the moment, not to the now-line Week showed', async ({ page }) => {
+        await openPinned(page, '/timeline', 20, 30);
+        await setScrollLeft(page, 300);
+        const start = await view(page);
+
+        await zoomTo(page, 'Week');
+        await expectNowOnScreen(page);     // Week opens on today and fits both
+        await zoomTo(page, 'Day');
+        await expectCentreOn(page, start.centreMs);
+    });
+
+    test('scrolling between zoom changes starts from what is now in view', async ({ page }) => {
+        await openPinned(page, '/timeline', 12, 0);
+        await pagePrevious(page).click();
+        await setScrollLeft(page, 300);
+        const start = await view(page);
+
+        await zoomTo(page, 'Week');
+        await setScrollLeft(page, 600);
+        const scrolled = await view(page);
+        expect(scrolled.centreMs).toBeGreaterThan(start.centreMs + 24 * HOUR);
+        await zoomTo(page, 'Day');
+        await expectInView(page, scrolled.centreMs);
+    });
+
+    test('Today between zoom changes drops the kept moment, even when nothing moved', async ({ page }) => {
+        await openPinned(page, '/timeline', 20, 30);
+        await setScrollLeft(page, 300);
+        await zoomTo(page, 'Week');
+        const week = await view(page);
+        // The anchor is already today and now is on screen, so Today moves nothing.
+        await page.getByRole('button', { name: 'Today', exact: true }).click();
+        expect(await view(page)).toEqual(week);
+        await zoomTo(page, 'Day');
+        await expectNowOnScreen(page);
+    });
+
+    test('a zoom change arriving with a refreshSeconds change still keeps now on screen', async ({ page }) => {
+        await openPinned(page, '/timeline', 17, 30);
+        await expectNowOnScreen(page);
+        // Both land in one update, the way a binding or script writing both does.
+        // (A bound state.zoom reaches the component the same way the buttons do.)
+        // Recorded, because this proves nothing if they ever arrive separately.
+        await page.evaluate(`(() => {
+            const timeline = ${TIMELINE};
+            const didUpdate = timeline.componentDidUpdate;
+            timeline.componentDidUpdate = function (prev, ...rest) {
+                if (prev.props.zoom !== this.props.props.zoom && prev.props.refreshSeconds !== this.props.props.refreshSeconds) {
+                    window.__zoomWithRefresh = true;
+                }
+                return didUpdate.call(this, prev, ...rest);
+            };
+            const store = timeline.props.store.props;
+            store.write('config.refreshSeconds', 47);
+            store.write('state.zoom', 'hour');
+        })()`);
+        await expect(page.locator('.mustry-tml-zoom-btn--active')).toHaveText('Hour');
+        expect(await page.evaluate('window.__zoomWithRefresh'), 'both changes landed in one update').toBe(true);
+        await expectNowOnScreen(page);
+    });
 });

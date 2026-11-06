@@ -12,7 +12,9 @@ deliberate decision, never an accident.
 - Resource Timeline: changing zoom no longer lands on an unrelated part of the
   window. If the now-line was on screen it stays on screen; otherwise the moment
   at the centre of the view stays at the centre, or against the window's edge
-  when it's too near one. Leaving a custom window does the same (#214).
+  when it's too near one. Zooming out and back returns to the same moment, as
+  long as the view wasn't moved in between. Leaving a custom window does the same
+  (#214).
 
 ## [0.9.0] - 2026-11-04
 

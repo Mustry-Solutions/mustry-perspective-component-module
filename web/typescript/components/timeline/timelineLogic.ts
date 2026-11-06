@@ -203,6 +203,24 @@ export function focusScrollLeft(scale: TimeScale, focusMs: number, clientWidth: 
     return Math.max(0, Math.min(focusPx - viewportPx / 2, width - viewportPx));
 }
 
+/** Where a zoom change left the view, kept so the next one can start from the
+ *  same moment: once it has clamped against a window edge, the view's centre is no
+ *  longer that moment. `scrollLeft` is as the browser read it back. */
+export interface KeptFocus {
+    focusMs: number;
+    scrollLeft: number;
+    anchorMs: number;
+}
+
+/** The moment to reuse for this zoom change, or null to measure afresh. Valid only
+ *  while the view is where the last zoom change left it, so the user hasn't moved
+ *  it; then it wins over the now check too, because a wider zoom showing the
+ *  now-line says nothing about what the user was looking at. A browser can read
+ *  scrollLeft back at a sub-pixel, hence less than a pixel rather than equality. */
+export function keptFocusMs(kept: KeptFocus | null, scrollLeft: number, anchorMs: number): number | null {
+    return kept && kept.anchorMs === anchorMs && Math.abs(kept.scrollLeft - scrollLeft) < 1 ? kept.focusMs : null;
+}
+
 // --- custom window (state.windowStart / state.windowEnd) ----------------------
 
 /** A custom window renders at the presets' common width (see ZOOM_PRESETS). */
