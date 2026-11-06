@@ -127,6 +127,7 @@ async function sweep(page: Page, keep: string[] = []) {
     for (const attack of attacks) {
         await fireAndExpect(page, attack, /^on\w+ removed/);
     }
+    return now;
 }
 
 /**
@@ -136,18 +137,18 @@ async function sweep(page: Page, keep: string[] = []) {
  */
 async function ensureFixtures(page: Page) {
     await openRoute(page, '/authz-open', USER);
-    await sweep(page, [...USERS, ...ROLES, ...SCHEDULES, ...HOLIDAYS, 'zauthz-roster']);
+    const now = await sweep(page, [...USERS, ...ROLES, ...SCHEDULES, ...HOLIDAYS, 'zauthz-roster']);
     for (const name of ROLES) {
         await fireAndExpect(page, [USER, 'onRoleSave', { name }], /^onRoleSave added/); // a no-op if it exists
     }
     const saved = /^on\w+Save (created|persisted)/;
-    await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: false, password: PASSWORD }], saved);
+    await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user'), isNew: !now.users['zauthz-user'], password: PASSWORD }], saved);
     for (const name of SCHEDULES) {
         await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule(name), isNew: false }], saved);
     }
     await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: 'zauthz-roster', users: ['zauthz-user'], isNew: false }], saved);
     for (const name of HOLIDAYS) {
-        await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name, date: '2030-01-01', repeatAnnually: false }, isNew: false }], saved);
+        await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name, date: '2030-01-01', repeatAnnually: false }, isNew: !now.holidays.includes(name) }], saved);
     }
     const after = await snapshot(page);
     expect(after.users['zauthz-user']).toMatchObject({ notes: 'original', roles: [] });
@@ -161,9 +162,10 @@ async function ensureFixtures(page: Page) {
 /** The accounts the login tests use, reset on the open view by an anonymous session. */
 async function ensureAccounts(page: Page) {
     await ensureFixtures(page);
+    const now = await snapshot(page);
     await fireAndExpect(page, [USER, 'onRoleSave', { name: 'Supervisor' }], /^onRoleSave added/);
     for (const [username, roles] of ACCOUNTS) {
-        await fireAndExpect(page, [USER, 'onUserSave', { user: user(username, { roles }), isNew: false, password: PASSWORD }], /^onUserSave persisted/);
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user(username, { roles }), isNew: !now.users[username], password: PASSWORD }], /^onUserSave persisted/);
     }
 }
 
