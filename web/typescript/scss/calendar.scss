@@ -316,6 +316,7 @@
     }
 
     .mustry-cal-day {
+        position: relative;   // anchors .mustry-cal-daycreate
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -332,6 +333,31 @@
         }
     }
 
+    // Keyboard path to the cell's click action. Invisible and pointer-transparent until
+    // focused, so the cell still takes every pointer event (click, hit-testing).
+    .mustry-cal-daycreate {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-start;
+        padding: 2px 6px;
+        border: none;
+        background: none;
+        color: var(--cal-accent);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+        opacity: 0;
+        pointer-events: none;
+
+        &:focus {
+            opacity: 1;
+            outline: 2px solid var(--cal-accent);
+            outline-offset: -2px;
+        }
+    }
+
     .mustry-cal-day--weekend {
         background: var(--cal-weekend-bg);
     }
@@ -342,6 +368,11 @@
 
     .mustry-cal-day--other {
         opacity: 0.45;
+    }
+
+    // Don't dim a focus ring along with the out-of-month cell.
+    .mustry-cal-day--other:focus-within {
+        opacity: 1;
     }
 
     // Drop target of an in-flight month drag.

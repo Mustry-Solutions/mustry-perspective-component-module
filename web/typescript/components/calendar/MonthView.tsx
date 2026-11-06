@@ -1,8 +1,9 @@
 // Month grid: day-cell background grid + an event-bar overlay per week row.
 import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
-import { CalEvent, DayCell, MonthGrid, clampWeekLanes, layoutWeekSegments } from './calendarLogic';
+import { CalEvent, DayCell, MonthGrid, clampWeekLanes, layoutWeekSegments, monthTabStop } from './calendarLogic';
 import { CalLabels, Category } from './calendarTypes';
+import { DayCreateButton } from './DayCreateButton';
 import { EventBar } from './EventBar';
 
 interface MonthViewProps {
@@ -16,9 +17,11 @@ interface MonthViewProps {
     editable: boolean;
     dragEventId: string;   // event id of an in-flight month drag ('' = none) — dims its bars
     dropDayIso: string;    // drop-target day cell of that drag ('' = none) — highlights the cell
+    dayStopIso: string;    // day of the last-focused create button ('' = none yet)
     enterClass: (ev: CalEvent) => string;
     hoverProps: (ev: CalEvent) => { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void };
     onDayClick: (iso: string) => void;
+    onDayStop: (iso: string) => void;
     openDayPop: (iso: string, e: React.MouseEvent) => void;
     onEventClick: (ev: CalEvent, e: React.MouseEvent) => void;
     onStartMove: (ev: CalEvent, e: React.PointerEvent) => void;
@@ -26,10 +29,12 @@ interface MonthViewProps {
 
 export function MonthView(props: MonthViewProps): React.ReactElement {
     const {
-        grid, events, locale, monthCap, categories, labels, weeksRef, editable, dragEventId, dropDayIso,
-        enterClass, hoverProps, onDayClick, openDayPop, onEventClick, onStartMove
+        grid, events, locale, monthCap, categories, labels, weeksRef, editable, dragEventId, dropDayIso, dayStopIso,
+        enterClass, hoverProps, onDayClick, onDayStop, openDayPop, onEventClick, onStartMove
     } = props;
     const wdFmt = intlFormat(locale, { weekday: 'short' });
+    const fullFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const tabStop = monthTabStop(grid, dayStopIso);
 
     const dayCell = (cell: DayCell): React.ReactElement => {
         const cls = ['mustry-cal-day'];
@@ -39,6 +44,11 @@ export function MonthView(props: MonthViewProps): React.ReactElement {
         if (cell.iso === dropDayIso) { cls.push('mustry-cal-day--drop'); }
         return (
             <div className={cls.join(' ')} key={cell.iso} data-day={cell.iso} onClick={() => onDayClick(cell.iso)}>
+                <DayCreateButton
+                    iso={cell.iso} grid={grid} weeksRef={weeksRef} isTabStop={cell.iso === tabStop}
+                    label={labels.newEventOn.replace('{date}', fullFmt.format(cell.date))}
+                    onFocusDay={onDayStop}
+                />
                 <button type="button" className="mustry-cal-daynum" onClick={(e) => openDayPop(cell.iso, e)} title={labels.showDayEvents}>
                     {cell.date.getDate()}
                 </button>

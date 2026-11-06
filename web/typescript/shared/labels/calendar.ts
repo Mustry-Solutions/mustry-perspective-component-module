@@ -24,6 +24,7 @@ export interface CalLabels {
     noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
     more: string;                 // month-cell overflow, '{n}' = hidden count
     showDayEvents: string;        // date-number tooltip (opens the day popover)
+    newEventOn: string;           // keyboard create button's accessible name, '{date}' = the full date
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // empty-state badge tooltip (Calendar.emptyHint)
     emptyHintIntro: string;
@@ -57,6 +58,7 @@ export const EN_CALENDAR_LABELS: CalLabels = {
     noEvents: 'No events',
     more: '+{n} more',
     showDayEvents: "Show this day's events",
+    newEventOn: 'New event on {date}',
     previousMonth: 'Previous month', nextMonth: 'Next month',
     emptyHintIntro: 'This calendar shows the events in its data; switch Month / Week / Day / List in the toolbar.',
     emptyHintCreate: 'Add an event: in Week or Day view, drag over an empty time slot.',
@@ -89,6 +91,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Aucun événement',
         more: '+{n} autres',
         showDayEvents: 'Voir les événements du jour',
+        newEventOn: 'Nouvel événement le {date}',
         previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
         emptyHintIntro: "Ce calendrier affiche les événements de ses données ; changez de vue (Mois / Semaine / Jour / Liste) dans la barre d'outils.",
         emptyHintCreate: 'Ajouter un événement : en vue Semaine ou Jour, faites glisser sur un créneau vide.',
@@ -119,6 +122,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Keine Ereignisse',
         more: '+{n} weitere',
         showDayEvents: 'Ereignisse dieses Tages anzeigen',
+        newEventOn: 'Neues Ereignis am {date}',
         previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
         emptyHintIntro: 'Dieser Kalender zeigt die Ereignisse seiner Daten; wechseln Sie die Ansicht (Monat / Woche / Tag / Liste) in der Symbolleiste.',
         emptyHintCreate: 'Ereignis hinzufügen: in der Wochen- oder Tagesansicht über einen leeren Zeitraum ziehen.',
@@ -149,6 +153,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Sin eventos',
         more: '+{n} más',
         showDayEvents: 'Ver los eventos de este día',
+        newEventOn: 'Nuevo evento el {date}',
         previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
         emptyHintIntro: 'Este calendario muestra los eventos de sus datos; cambie de vista (Mes / Semana / Día / Lista) en la barra de herramientas.',
         emptyHintCreate: 'Añadir un evento: en la vista Semana o Día, arrastre sobre un intervalo vacío.',
@@ -179,6 +184,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Geen evenementen',
         more: '+{n} meer',
         showDayEvents: 'Toon de evenementen van deze dag',
+        newEventOn: 'Nieuw evenement op {date}',
         previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
         emptyHintIntro: 'Deze kalender toont de evenementen uit zijn data; wissel van weergave (Maand / Week / Dag / Lijst) in de werkbalk.',
         emptyHintCreate: 'Evenement toevoegen: sleep in de Week- of Dagweergave over een leeg tijdvak.',
@@ -209,6 +215,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Nessun evento',
         more: '+{n} altri',
         showDayEvents: 'Mostra gli eventi di questo giorno',
+        newEventOn: 'Nuovo evento il {date}',
         previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
         emptyHintIntro: 'Questo calendario mostra gli eventi dei suoi dati; cambia vista (Mese / Settimana / Giorno / Elenco) nella barra degli strumenti.',
         emptyHintCreate: 'Aggiungi un evento: nella vista Settimana o Giorno, trascina su una fascia oraria vuota.',
@@ -239,6 +246,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         noEvents: 'Sem eventos',
         more: '+{n} mais',
         showDayEvents: 'Mostrar os eventos deste dia',
+        newEventOn: 'Novo evento em {date}',
         previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
         emptyHintIntro: 'Este calendário mostra os eventos dos seus dados; mude de vista (Mês / Semana / Dia / Lista) na barra de ferramentas.',
         emptyHintCreate: 'Adicionar um evento: na vista Semana ou Dia, arraste sobre um intervalo vazio.',

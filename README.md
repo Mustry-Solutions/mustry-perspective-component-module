@@ -190,6 +190,8 @@ self.props.data.events = events
 
 **Intent** (the user did something): `onEventClick` (full event) · `onDateClick` (`{date}`) · `onSelect` (`{start, end, allDay}` — dragged-out empty range).
 
+In month view `onDateClick` is also reachable from the keyboard: the grid has one extra Tab stop, a day button that arrow keys move between days and Enter/Space activates. Its accessible name comes from `config.labels.newEventOn`; override that if your handler does something other than create. Week and day view cells are still pointer-only.
+
 **Change** (the data should change): **`onChange`** (`{ action: create|edit|delete|move|resize, event }`) — fires for every mutation; the single hook for persistence and triggering downstream logic. `event` always carries the final start/end, so write-back needs no second lookup.
 
 > When the built-in editor is on (`builtInEditor` + `editable`), clicking an event opens the editor instead of firing `onEventClick`, and create/edit/delete all surface through `onChange`.

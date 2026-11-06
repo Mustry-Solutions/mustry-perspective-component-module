@@ -475,3 +475,28 @@ export function backgroundBandsForDay(events: CalEvent[], dayIso: string, winSta
     return out;
 }
 
+// --- month-view keyboard create buttons (one Tab stop, arrows move it) --------
+
+/** The day whose create button is in the Tab order: the last one focused while it's
+ *  still on screen, else today if it's in this month, else the 1st of the month. */
+export function monthTabStop(grid: MonthGrid, lastIso: string): string {
+    const cells = grid.weeks.reduce<DayCell[]>((all, week) => all.concat(week), []);
+    const stop = cells.find((c) => c.iso === lastIso)
+        || cells.find((c) => c.isToday && c.inMonth)
+        || cells.find((c) => c.inMonth)
+        || cells[0];
+    return stop.iso;
+}
+
+/** Where an arrow key moves from `iso`: `iso` itself at the edge of the grid (no paging),
+ *  null for any other key. Left/Right wrap between week rows, in reading order. */
+export function monthArrowTarget(grid: MonthGrid, iso: string, key: string): string | null {
+    const cols = grid.weeks[0].length;
+    const delta: { [key: string]: number } = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols };
+    if (!(key in delta)) {
+        return null;
+    }
+    const cells = grid.weeks.reduce<DayCell[]>((all, week) => all.concat(week), []);
+    const target = cells[cells.findIndex((c) => c.iso === iso) + delta[key]];
+    return target ? target.iso : iso;
+}

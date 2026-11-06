@@ -1,0 +1,125 @@
+{
+  "custom": {
+    "dates": ""
+  },
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1000,
+      "height": 720
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": {
+      "name": "root"
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Month-view keyboard fixture: read-only config (no editor, not editable, not selectable). Every onDateClick appends its date to the line below, so a test can assert the date and the count. Used by the e2e suite.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 960,
+          "height": 40
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "dates"
+        },
+        "position": {
+          "x": 16,
+          "y": 50,
+          "width": 960,
+          "height": 24
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "'onDateClick: ' + {view.custom.dates}"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.display.calendar",
+        "version": 0,
+        "props": {
+          "config": {
+            "editable": false,
+            "selectable": false,
+            "builtInEditor": false
+          },
+          "data": {
+            "events": []
+          },
+          "state": {
+            "view": "month"
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "calendar"
+        },
+        "position": {
+          "x": 16,
+          "y": 80,
+          "width": 968,
+          "height": 620
+        },
+        "propConfig": {
+          "props.data.events": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "now(0)"
+              },
+              "transforms": [
+                {
+                  "type": "script",
+                  "code": "\t# One all-day bar on today, so there is a bar to click in the current month.\n\tday = system.date.format(value, \"yyyy-MM-dd\")\n\treturn [{\"id\": \"bar\", \"title\": \"Fixture bar\", \"start\": day, \"end\": day, \"allDay\": True}]\n"
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "component": {
+            "onDateClick": [
+              {
+                "type": "script",
+                "scope": "G",
+                "config": {
+                  "script": "\tself.view.custom.dates = self.view.custom.dates + event.date + \";\"\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
