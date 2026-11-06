@@ -350,6 +350,11 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         expect(await snapshot(page)).toEqual(before);
     });
 
+    test('a schedule delete the gateway rejects says so', async ({ page }) => {
+        await openRoute(page, '/authz-open', USER);
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleDelete', { name: 'zauthz-no-such-schedule' }], /^onScheduleDelete ERRORS: /);
+    });
+
     test('a roster name that differs only by case never changes the existing roster', async ({ page }) => {
         await ensureFixtures(page);
         await openRoute(page, '/authz-open', USER);
