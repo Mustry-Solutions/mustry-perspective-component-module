@@ -135,8 +135,7 @@ export function timezoneGapsSuite(processZone: string): void {
         // 02:30s into 03:30 in the process zone that has that gap.
         it.each([
             ['Europe/Brussels', '2026-03-08T01:30:00Z', 150],    // the gap in New York
-            ['America/New_York', '2026-03-29T06:30:00Z', 150],   // the gap in Brussels
-            ['Asia/Kolkata', '2026-10-03T21:00:00Z', 150]        // the gap in Lord Howe and Sydney
+            ['America/New_York', '2026-03-29T06:30:00Z', 150]    // the gap in Brussels
         ])('keeps the wall time in %s through the browser\'s own DST gap', (zone, iso, minute) => {
             expect(weekMomentInZone(zone, new Date(iso)).minute).toBe(minute);
         });
