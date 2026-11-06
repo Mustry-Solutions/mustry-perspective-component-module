@@ -21,7 +21,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Month-view keyboard fixture: read-only config (no editor, not editable, not selectable). Every onDateClick appends its date to the line below, so a test can assert the date and the count. Used by the e2e suite.",
+          "text": "Month-view keyboard fixture: read-only config (no editor, not editable, not selectable). Every onDateClick appends its date to the line below, so a test can assert the date and the count. The one bar is on a fixed date: the e2e suite pins the browser clock to 2026-06-17.",
           "style": {
             "fontSize": "13px"
           }
@@ -74,7 +74,15 @@
             "builtInEditor": false
           },
           "data": {
-            "events": []
+            "events": [
+              {
+                "id": "bar",
+                "title": "Fixture bar",
+                "start": "2026-06-15",
+                "end": "2026-06-15",
+                "allDay": true
+              }
+            ]
           },
           "state": {
             "view": "month"
@@ -89,22 +97,6 @@
           "y": 80,
           "width": 968,
           "height": 620
-        },
-        "propConfig": {
-          "props.data.events": {
-            "binding": {
-              "type": "expr",
-              "config": {
-                "expression": "now(0)"
-              },
-              "transforms": [
-                {
-                  "type": "script",
-                  "code": "\t# One all-day bar on today, so there is a bar to click in the current month.\n\tday = system.date.format(value, \"yyyy-MM-dd\")\n\treturn [{\"id\": \"bar\", \"title\": \"Fixture bar\", \"start\": day, \"end\": day, \"allDay\": True}]\n"
-                }
-              ]
-            }
-          }
         },
         "events": {
           "component": {

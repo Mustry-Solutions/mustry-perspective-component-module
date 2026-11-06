@@ -33,8 +33,9 @@ deliberate decision, never an accident.
   nothing, so the event stays where it was.
 - **Calendar:** clicking an empty day in month view (`onDateClick`, or the built-in
   editor) now has a keyboard path. The grid gets one new Tab stop: arrow keys move it
-  between days and Enter or Space activates it. New label `config.labels.newEventOn`
-  names it for screen readers, with translations in every bundled locale (#90).
+  between days and Enter or Space activates it. A screen reader hears the full date,
+  or, when the button opens the built-in editor, the new label
+  `config.labels.newEventOn` (translated in every bundled locale) (#90).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

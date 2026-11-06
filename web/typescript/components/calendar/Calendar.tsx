@@ -718,8 +718,9 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     };
 
     private onDayClick = (iso: string): void => {
-        // A pointer press has already closed the popover (DocDismiss); a key press hasn't.
+        // A pointer press has already closed the popovers (DocDismiss); a key press hasn't.
         this.closeDayPop();
+        this.closeMini();
         if (this.useEditor()) {
             const focused = document.activeElement as HTMLElement | null;
             this.editorOpener = focused && focused.classList.contains('mustry-cal-daycreate') ? focused : null;
@@ -820,6 +821,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 labels={this.props.props.labels}
                 weeksRef={this.weeksRef}
                 editable={this.props.props.editable}
+                opensEditor={this.useEditor()}
                 dragEventId={monthDrag ? monthDrag.eventId || '' : ''}
                 dropDayIso={monthDrag ? monthDrag.dayIso : ''}
                 dayStopIso={this.state.dayStopIso}

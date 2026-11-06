@@ -3,6 +3,8 @@
 // the cell stays the one place that fires. CSS makes it pointer-transparent, so a
 // pointer never lands on it and hit-testing is unchanged. It can't be the cell itself:
 // role="button" on the cell couldn't legally contain the date-number button.
+// It says "create" (the name and the "+") only when the click does open the editor;
+// otherwise the cell's action is the author's onDateClick, and it names the date alone.
 import * as React from 'react';
 import { MonthGrid, monthArrowTarget } from './calendarLogic';
 
@@ -12,11 +14,22 @@ interface DayCreateButtonProps {
     weeksRef: React.RefObject<HTMLDivElement>;
     isTabStop: boolean;      // only one of these is in the Tab order; arrows move between them
     label: string;
+    showPlus: boolean;
     onFocusDay: (iso: string) => void;
 }
 
-export function DayCreateButton({ iso, grid, weeksRef, isTabStop, label, onFocusDay }: DayCreateButtonProps): React.ReactElement {
+export function DayCreateButton({ iso, grid, weeksRef, isTabStop, label, showPlus, onFocusDay }: DayCreateButtonProps): React.ReactElement {
     const onKeyDown = (e: React.KeyboardEvent): void => {
+        // Enter clicks on every auto-repeat, so a held key would fire the action again and
+        // again, and would reopen the editor once closing it hands focus back to this button.
+        if (e.repeat && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            return;
+        }
+        // Alt+Left is browser back, Cmd+Left is line start: those aren't ours to take.
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+            return;
+        }
         const target = monthArrowTarget(grid, iso, e.key);
         if (target === null) {
             return;
@@ -34,7 +47,7 @@ export function DayCreateButton({ iso, grid, weeksRef, isTabStop, label, onFocus
             type="button" className="mustry-cal-daycreate" tabIndex={isTabStop ? 0 : -1} aria-label={label}
             onFocus={() => onFocusDay(iso)} onKeyDown={onKeyDown}
         >
-            <span aria-hidden="true">+</span>
+            {showPlus && <span aria-hidden="true">+</span>}
         </button>
     );
 }

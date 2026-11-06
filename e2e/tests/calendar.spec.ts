@@ -83,10 +83,22 @@ test('calendar: a windowed binding\'s new page does not fade in', async ({ page 
 });
 
 // --- month view keyboard path to the day-cell click (issue #90) --------------
+// Pinned to the browser's local noon on a mid-grid Wednesday, so an arrow always has
+// somewhere to go and the assertions can name exact dates. Nothing here needs the gateway
+// to agree: "today" is the browser's, and the fixture's one bar is on a fixed date.
+const PINNED_NOW = new Date(2026, 5, 17, 12);
+const TODAY = '2026-06-17';
+const TODAY_LONG = 'Wednesday, June 17, 2026';
 const DAY_KEYS = '/calendar-day-keys';   // read-only calendar; echoes each onDateClick date
+const WITH_EDITOR = '/calendar-empty';   // built-in editor on, no events
 const dayButton = '.mustry-cal-daycreate';
 
 const echoed = (page: Page) => page.getByText(/^onDateClick: /);
+
+async function openPinned(page: Page, route: string) {
+    await page.clock.setFixedTime(PINNED_NOW);
+    await openRoute(page, route, '.mustry-calendar');
+}
 
 /** Tab from the toolbar until a day create button has focus; returns its day. */
 async function tabToDayButton(page: Page): Promise<string> {
@@ -104,25 +116,74 @@ async function tabToDayButton(page: Page): Promise<string> {
     throw new Error('Tab never reached a day create button');
 }
 
+const focusedDay = (page: Page) => page.evaluate(() => {
+    const cell = document.activeElement && document.activeElement.closest<HTMLElement>('.mustry-cal-day');
+    return cell ? cell.dataset.day! : '';
+});
+
 for (const [name, key] of [['Enter', 'Enter'], ['Space', ' ']]) {
     test(`calendar: ${name} on a focused month day fires onDateClick once, with that date`, async ({ page }) => {
-        await openRoute(page, DAY_KEYS, '.mustry-calendar');
-        const day = await tabToDayButton(page);
+        await openPinned(page, DAY_KEYS);
+        expect(await tabToDayButton(page)).toBe(TODAY);
         await page.keyboard.press(key);
-        await expect(echoed(page)).toHaveText(`onDateClick: ${day};`);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
         await page.waitForTimeout(500);   // a duplicate would arrive just after the first
-        await expect(echoed(page)).toHaveText(`onDateClick: ${day};`);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+    });
+
+    test(`calendar: holding ${name} on a month day fires onDateClick once`, async ({ page }) => {
+        await openPinned(page, DAY_KEYS);
+        await tabToDayButton(page);
+        for (let i = 0; i < 4; i++) {
+            await page.keyboard.down(key);   // after the first, these are auto-repeats
+        }
+        await page.keyboard.up(key);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+        await page.waitForTimeout(500);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
     });
 }
 
+for (const action of ['Cancel', 'Create']) {
+    test(`calendar: Enter held on the editor's ${action} doesn't reopen it`, async ({ page }) => {
+        await openPinned(page, WITH_EDITOR);
+        await tabToDayButton(page);
+        await page.keyboard.press('Enter');
+        const editor = page.locator('.mustry-cal-editor');
+        await expect(editor).toBeVisible();
+
+        await editor.getByRole('button', { name: action, exact: true }).focus();
+        await page.keyboard.down('Enter');
+        await expect(editor).toHaveCount(0);
+        await expect(page.locator(`[data-day="${TODAY}"] ${dayButton}`)).toBeFocused();
+        await page.keyboard.down('Enter');   // an auto-repeat, now landing on the day button
+        await page.keyboard.down('Enter');
+        await page.keyboard.up('Enter');
+        await page.waitForTimeout(300);
+        await expect(editor).toHaveCount(0);
+    });
+}
+
+test('calendar: Enter held on a month day opens the editor and leaves it open', async ({ page }) => {
+    await openPinned(page, WITH_EDITOR);
+    await tabToDayButton(page);
+    await page.keyboard.down('Enter');
+    const editor = page.locator('.mustry-cal-editor');
+    await expect(editor).toBeVisible();
+    await page.keyboard.down('Enter');   // an auto-repeat, now landing on the focused title
+    await page.keyboard.up('Enter');
+    await page.waitForTimeout(300);
+    await expect(editor).toBeVisible();
+});
+
 test('calendar: the month day buttons are one Tab stop, and arrows move it', async ({ page }) => {
-    await openRoute(page, DAY_KEYS, '.mustry-calendar');
+    await openPinned(page, DAY_KEYS);
     await expect(page.locator(`${dayButton}[tabindex="0"]`)).toHaveCount(1);
-    const today = await tabToDayButton(page);
+    expect(await tabToDayButton(page)).toBe(TODAY);
 
     await page.keyboard.press('ArrowDown');
-    const moved = await page.evaluate(() => document.activeElement!.closest<HTMLElement>('.mustry-cal-day')!.dataset.day!);
-    expect(moved).not.toBe(today);
+    const moved = '2026-06-24';
+    expect(await focusedDay(page)).toBe(moved);
     await expect(page.locator(`[data-day="${moved}"] ${dayButton}`)).toHaveAttribute('tabindex', '0');
     await expect(page.locator(`${dayButton}[tabindex="0"]`)).toHaveCount(1);
 
@@ -143,23 +204,71 @@ test('calendar: the month day buttons are one Tab stop, and arrows move it', asy
     expect(stops, 'no second day button in the Tab order').toBe(0);
 });
 
-test('calendar: a focused month day button names the full date and shows a ring', async ({ page }) => {
-    await openRoute(page, DAY_KEYS, '.mustry-calendar');
+test('calendar: an arrow with a modifier stays with the browser', async ({ page }) => {
+    await openPinned(page, DAY_KEYS);
+    await tabToDayButton(page);
+    // On window, so it runs after React's document-level handler has had its say.
+    await page.evaluate(() => {
+        const w = window as unknown as { prevented: boolean[] };
+        w.prevented = [];
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') { w.prevented.push(e.defaultPrevented); }
+        });
+    });
+    const prevented = () => page.evaluate(() => (window as unknown as { prevented: boolean[] }).prevented);
+
+    for (const modifier of ['Alt', 'Control', 'Meta', 'Shift']) {
+        await page.keyboard.press(`${modifier}+ArrowRight`);
+        expect(await focusedDay(page), `${modifier}+ArrowRight`).toBe(TODAY);
+    }
+    expect(await prevented()).toEqual([false, false, false, false]);
+
+    await page.keyboard.press('ArrowRight');   // and the plain key is still ours
+    expect(await focusedDay(page)).toBe('2026-06-18');
+    expect(await prevented()).toEqual([false, false, false, false, true]);
+});
+
+test('calendar: with the editor, a focused month day button says it creates, and shows a ring', async ({ page }) => {
+    await openPinned(page, WITH_EDITOR);
     const button = page.locator(`${dayButton}[tabindex="0"]`);
     await expect(button).toHaveCSS('opacity', '0');
-    const day = await tabToDayButton(page);
-    const [y, m, d] = day.split('-').map(Number);
-    const date = new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    await expect(page.getByRole('button', { name: `New event on ${date}` })).toBeFocused();
+    await tabToDayButton(page);
+    await expect(page.getByRole('button', { name: `New event on ${TODAY_LONG}`, exact: true })).toBeFocused();
     await expect(button).toHaveCSS('opacity', '1');
     await expect(button).toHaveCSS('outline-style', 'solid');
+    await expect(button).toHaveText('+');
     // Off the button again, it's gone: nothing shows without focus.
     await page.keyboard.press('Tab');
-    await expect(page.locator(`[data-day="${day}"] ${dayButton}`)).toHaveCSS('opacity', '0');
+    await expect(page.locator(`[data-day="${TODAY}"] ${dayButton}`)).toHaveCSS('opacity', '0');
+});
+
+test('calendar: without the editor, a month day button names the date alone and claims nothing', async ({ page }) => {
+    await openPinned(page, DAY_KEYS);
+    const button = page.locator(`${dayButton}[tabindex="0"]`);
+    await tabToDayButton(page);
+    await expect(page.getByRole('button', { name: TODAY_LONG, exact: true })).toBeFocused();
+    await expect(page.getByRole('button', { name: /^New event on/ })).toHaveCount(0);
+    await expect(button).toHaveText('');
+    await expect(button).toHaveCSS('outline-style', 'solid');
+    // It's still a real path to the click, which is why it's offered at all.
+    await page.keyboard.press('Enter');
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+});
+
+test('calendar: only the day button undims an out-of-month cell, not its date number', async ({ page }) => {
+    await openPinned(page, DAY_KEYS);
+    const cell = page.locator('.mustry-cal-day--other').first();
+    await expect(cell).toHaveCSS('opacity', '0.45');
+    const number = cell.locator('.mustry-cal-daynum');
+    await number.click();
+    await expect(number).toBeFocused();
+    await expect(cell).toHaveCSS('opacity', '0.45');
+    await cell.locator(dayButton).focus();
+    await expect(cell).toHaveCSS('opacity', '1');
 });
 
 test('calendar: pointer behaviour in month cells is unchanged by the day buttons', async ({ page }) => {
-    await openRoute(page, DAY_KEYS, '.mustry-calendar');
+    await openPinned(page, DAY_KEYS);
     await expect(page.locator('.mustry-cal-mbar').first()).toBeVisible();
     const days = page.locator('.mustry-cal-day:not(.mustry-cal-day--today)');
 
@@ -193,27 +302,37 @@ test('calendar: pointer behaviour in month cells is unchanged by the day buttons
 });
 
 test('calendar: Enter on a month day closes an open day popover', async ({ page }) => {
-    await openRoute(page, DAY_KEYS, '.mustry-calendar');
-    const day = await tabToDayButton(page);
+    await openPinned(page, DAY_KEYS);
+    await tabToDayButton(page);
     await page.keyboard.press('Tab');   // the same day's date number
     await page.keyboard.press('Enter');
     await expect(page.locator('.mustry-cal-daypop')).toBeVisible();
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Enter');
     await expect(page.locator('.mustry-cal-daypop')).toHaveCount(0);
-    await expect(echoed(page)).toHaveText(`onDateClick: ${day};`);
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+});
+
+test('calendar: Enter on a month day closes an open mini-month', async ({ page }) => {
+    await openPinned(page, DAY_KEYS);
+    await page.locator('.mustry-cal-title--btn').click();
+    await expect(page.locator('.mustry-cal-mini')).toBeVisible();
+    await tabToDayButton(page);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.mustry-cal-mini')).toHaveCount(0);
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
 });
 
 test('calendar: with the built-in editor, a month day key opens it and focus comes back', async ({ page }) => {
-    await openRoute(page, '/calendar-empty', '.mustry-calendar');
-    const day = await tabToDayButton(page);
+    await openPinned(page, WITH_EDITOR);
+    await tabToDayButton(page);
     await page.keyboard.press('Enter');
     const editor = page.locator('.mustry-cal-editor');
     await expect(editor).toBeVisible();
-    await expect(editor.locator('input[type="date"]').first()).toHaveValue(day);
+    await expect(editor.locator('input[type="date"]').first()).toHaveValue(TODAY);
     await page.keyboard.press('Escape');
     await expect(editor).toHaveCount(0);
-    await expect(page.locator(`[data-day="${day}"] ${dayButton}`)).toBeFocused();
+    await expect(page.locator(`[data-day="${TODAY}"] ${dayButton}`)).toBeFocused();
 
     await page.keyboard.press(' ');
     await expect(editor).toBeVisible();
@@ -221,6 +340,8 @@ test('calendar: with the built-in editor, a month day key opens it and focus com
     await expect(editor).toHaveCount(0);
 });
 
+// Real clock: this fixture's events are seeded from the gateway's today. Nothing below
+// needs a particular date: it takes whichever bar comes first and any cell outside its row.
 test('calendar: dragging a month bar still hit-tests the day cells', async ({ page }) => {
     await openRoute(page, '/calendar', '.mustry-calendar');
     await page.getByRole('button', { name: 'Month', exact: true }).click();
@@ -248,7 +369,7 @@ test('calendar: dragging a month bar still hit-tests the day cells', async ({ pa
 });
 
 test('calendar: dragging empty time in week view still creates', async ({ page }) => {
-    await openRoute(page, '/calendar-empty', '.mustry-calendar');
+    await openPinned(page, WITH_EDITOR);
     await page.getByRole('button', { name: 'Week', exact: true }).click();
     const col = page.locator('.mustry-cal-tg-col').first();
     await expect(col).toBeVisible();

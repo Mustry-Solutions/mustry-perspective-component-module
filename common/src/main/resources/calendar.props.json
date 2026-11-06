@@ -254,7 +254,7 @@
             },
             "newEventOn": {
               "type": "string",
-              "description": "Accessible name of the month-view keyboard button that does what a click on the day cell does; {date} = the full date. Override it if your onDateClick does something other than create."
+              "description": "Accessible name of the month-view keyboard button when it opens the built-in editor (builtInEditor and selectable); {date} = the full date. Without the editor the button fires onDateClick and its name is the full date alone."
             },
             "previousMonth": {
               "type": "string",

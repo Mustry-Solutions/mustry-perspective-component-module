@@ -24,7 +24,7 @@ export interface CalLabels {
     noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
     more: string;                 // month-cell overflow, '{n}' = hidden count
     showDayEvents: string;        // date-number tooltip (opens the day popover)
-    newEventOn: string;           // keyboard create button's accessible name, '{date}' = the full date
+    newEventOn: string;           // month day button's accessible name when it opens the editor, '{date}' = the full date
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // empty-state badge tooltip (Calendar.emptyHint)
     emptyHintIntro: string;
