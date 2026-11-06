@@ -1,0 +1,276 @@
+{
+ "custom": {},
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 1290,
+   "height": 750
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     },
+     "text": "Timezone fixture (#148). Left: config.timezone empty, so the gateway's zone. Right: America/Chicago. e2e/tests/timezone.spec.ts runs this with a browser in another zone and a fixed clock."
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 1260,
+     "height": 40
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.schedulemanager",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "",
+      "editable": false
+     },
+     "data": {
+      "schedules": [
+       {
+        "name": "Weekdays",
+        "description": "Fixture: Mon-Fri office hours",
+        "observeHolidays": false,
+        "allDays": false,
+        "repeatAlternating": false,
+        "startingAt": "",
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": false,
+        "sunday": false,
+        "mondayTime": "8:00-17:00",
+        "tuesdayTime": "8:00-17:00",
+        "wednesdayTime": "8:00-17:00",
+        "thursdayTime": "8:00-17:00",
+        "fridayTime": "8:00-17:00",
+        "saturdayTime": "",
+        "sundayTime": ""
+       }
+      ]
+     },
+     "state": {
+      "selectedSchedule": "Weekdays"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "schedDefault",
+     "domId": "tz-sched-default"
+    },
+    "position": {
+     "x": 16,
+     "y": 56,
+     "width": 620,
+     "height": 380
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.schedulemanager",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/Chicago",
+      "editable": false
+     },
+     "data": {
+      "schedules": [
+       {
+        "name": "Weekdays",
+        "description": "Fixture: Mon-Fri office hours",
+        "observeHolidays": false,
+        "allDays": false,
+        "repeatAlternating": false,
+        "startingAt": "",
+        "monday": true,
+        "tuesday": true,
+        "wednesday": true,
+        "thursday": true,
+        "friday": true,
+        "saturday": false,
+        "sunday": false,
+        "mondayTime": "8:00-17:00",
+        "tuesdayTime": "8:00-17:00",
+        "wednesdayTime": "8:00-17:00",
+        "thursdayTime": "8:00-17:00",
+        "fridayTime": "8:00-17:00",
+        "saturdayTime": "",
+        "sundayTime": ""
+       }
+      ]
+     },
+     "state": {
+      "selectedSchedule": "Weekdays"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "schedChicago",
+     "domId": "tz-sched-chicago"
+    },
+    "position": {
+     "x": 650,
+     "y": 56,
+     "width": 620,
+     "height": 380
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readDefault",
+     "domId": "tz-active-default"
+    },
+    "position": {
+     "x": 16,
+     "y": 440,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'gateway=' + {session.props.gateway.timezone.id} + ' isActiveNow=' + toStr({../schedDefault.props.output.isActiveNow})"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readChicago",
+     "domId": "tz-active-chicago"
+    },
+    "position": {
+     "x": 650,
+     "y": 440,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'isActiveNow=' + toStr({../schedChicago.props.output.isActiveNow})"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.holidaymanager",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "",
+      "editable": false
+     },
+     "data": {
+      "holidays": [
+       {
+        "name": "Plant day",
+        "date": "2026-06-17",
+        "repeatAnnually": false
+       },
+       {
+        "name": "Far off",
+        "date": "2036-01-01",
+        "repeatAnnually": false
+       }
+      ]
+     },
+     "state": {
+      "selectedHoliday": "Plant day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "holDefault",
+     "domId": "tz-hol-default"
+    },
+    "position": {
+     "x": 16,
+     "y": 470,
+     "width": 620,
+     "height": 260
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.holidaymanager",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/Chicago",
+      "editable": false
+     },
+     "data": {
+      "holidays": [
+       {
+        "name": "Plant day",
+        "date": "2026-06-17",
+        "repeatAnnually": false
+       },
+       {
+        "name": "Far off",
+        "date": "2036-01-01",
+        "repeatAnnually": false
+       }
+      ]
+     },
+     "state": {
+      "selectedHoliday": "Plant day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "holChicago",
+     "domId": "tz-hol-chicago"
+    },
+    "position": {
+     "x": 650,
+     "y": 470,
+     "width": 620,
+     "height": 260
+    }
+   }
+  ]
+ }
+}

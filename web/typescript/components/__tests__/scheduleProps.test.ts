@@ -9,6 +9,7 @@ describe('mapScheduleProps', () => {
         expect(p.dayEndHour).toBe(24);
         expect(p.schedules).toEqual([]);
         expect(p.selectedSchedule).toBe('');
+        expect(p.timezone).toBe('');
         expect(p.labels.listHeader).toBe('Schedules');
     });
 
@@ -31,6 +32,10 @@ describe('mapScheduleProps', () => {
         }));
         expect(p.labels.listHeader).toBe('Horaires');   // from the fr pack
         expect(p.labels.activeNow).toBe('En service');  // per-key override wins
+    });
+
+    it('reads config.timezone', () => {
+        expect(mapScheduleProps(stubReader({ config: { timezone: 'America/Chicago' } })).timezone).toBe('America/Chicago');
     });
 
     it('falls back to sane enum values', () => {

@@ -8,7 +8,22 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Changed
+- The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
+  read "now" and "today" in the gateway's zone when it's empty, instead of the
+  browser's. Ignition evaluates schedules and holidays in the gateway's zone, so
+  `output.isActiveNow`, the active dots, the now-line, the preview strip and the
+  *past* badge were wrong for an operator in another zone. Set `config.timezone`
+  to read them in a different zone.
+
 ### Fixed
+- The timeline's sub-day zooms stay on their grid across a daylight-saving change:
+  from the midnight after it, `hour` pages start at 00:00/08:00/16:00 again without
+  pressing Today, instead of 07:00/15:00/23:00. On the change day itself the windows
+  still count 8 real hours from midnight, so no time is skipped. Prev and next undo
+  each other across the change.
+- The mini month navigator's Today button and today highlight follow the calendar's
+  or timeline's `config.timezone`, not the browser's zone.
 - Resource Timeline: changing zoom no longer lands on an unrelated part of the
   window. If the now-line was on screen it stays on screen; otherwise the moment
   at the centre of the view stays at the centre, or against the window's edge
