@@ -71,7 +71,7 @@
     "propConfig": {
      "props.text": {
       "binding": { "type": "property", "config": { "path": "../keypad.props.output.value" }, "transforms": [
-       { "type": "script", "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'value: ' + str(value) + '  text: ' + str(p.text) + '  isValid: ' + str(p.isValid)" }
+       { "type": "script", "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'value: ' + str(value) + '  text: ' + str(p.text)" }
       ] }
      }
     },

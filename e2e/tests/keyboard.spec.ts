@@ -71,6 +71,7 @@ test('numpad: output.isValid describes the bound value while a draft is typed (#
     // Enter clamps: onCommit reports the typed number, the output the bound 100.
     await numKey(page, 'Enter').click();
     await expect(page.getByText(/numpad onCommit value=100(\.0)?.*isValid=False/)).toBeVisible();
+    await expect(page.getByText(/^value: 100/)).toBeVisible();
     await expect(page.getByText('keypad output.isValid=True')).toBeVisible();
 });
 

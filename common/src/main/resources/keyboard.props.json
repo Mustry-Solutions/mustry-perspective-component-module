@@ -134,7 +134,7 @@
         "text": {
           "type": "string",
           "default": "",
-          "description": "The value formatted with decimals + units."
+          "description": "The value formatted with decimals + units (clamped when enforceRange)."
         },
         "isValid": {
           "type": "boolean",
