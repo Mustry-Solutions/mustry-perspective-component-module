@@ -9,7 +9,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { CSV_BOM } from '../../shared/csv';
-import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
+import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, toEpochMs, wallOfDay, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents, occurrenceOf } from '../../shared/recurrence';
 import { resolveColor } from '../../shared/eventStyle';
 import { EnterTracker } from '../../shared/enterAnimation';
@@ -713,7 +713,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         } else if (d) {
             this.keptFocus = null;
             this.disarmFollow('miniPick');
-            this.setState({ anchorMs: resolveZoned(d, this.props.props.timezone).epochMs });
+            this.setState({ anchorMs: resolveZoned(wallOfDay(d, 0), this.props.props.timezone).epochMs });
         }
     }
 
