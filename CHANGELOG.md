@@ -8,6 +8,14 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
+`output.isValid` checked the value after clamping, so it could never fail: a
+tag writing 150 to a 0-100 keyboard left it `true`, and a binding on it could
+not flag the bad value. It now checks the bound `value.value` before clamping.
+`output.value` and `output.text` stay clamped. While a number is being typed,
+`output.isValid` keeps describing the bound value, not the draft; `onChange`
+carries the typed number and `onCommit.isValid` says whether it was in range.
+
 ## [0.9.0] - 2026-11-04
 
 ### Added: Idle Guard, a screensaver for Perspective pages

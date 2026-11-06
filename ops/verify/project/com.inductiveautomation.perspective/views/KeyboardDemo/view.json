@@ -71,7 +71,7 @@
     "propConfig": {
      "props.text": {
       "binding": { "type": "property", "config": { "path": "../keypad.props.output.value" }, "transforms": [
-       { "type": "script", "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'value: ' + str(value) + '  text: ' + str(p.text) + '  isValid: ' + str(p.isValid)" }
+       { "type": "script", "code": "\tp = self.getSibling('keypad').props.output\n\treturn 'value: ' + str(value) + '  text: ' + str(p.text)" }
       ] }
      }
     },
@@ -167,6 +167,40 @@
     },
     "meta": { "name": "popkbd" },
     "position": { "x": 16, "y": 474, "width": 320, "height": 40 }
+   },
+   {
+    "type": "ia.input.button",
+    "version": 0,
+    "props": { "text": "Write 150 to setpoint" },
+    "events": {
+     "component": {
+      "onActionPerformed": [
+       { "type": "script", "scope": "G", "config": {
+        "script": "\tself.view.custom.setpoint = 150"
+       } }
+      ]
+     }
+    },
+    "meta": { "name": "writeOverMax" },
+    "position": { "x": 360, "y": 474, "width": 180, "height": 36 }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": { "style": { "fontSize": "12px", "fontFamily": "monospace" } },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": { "path": "../keypad.props.output.isValid" },
+       "transforms": [
+        { "type": "script", "code": "\treturn 'keypad output.isValid=' + str(value)" }
+       ]
+      }
+     }
+    },
+    "meta": { "name": "isValidReadout" },
+    "position": { "x": 552, "y": 480, "width": 300, "height": 24 }
    }
   ]
  }
