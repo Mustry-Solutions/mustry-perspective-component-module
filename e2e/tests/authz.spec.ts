@@ -159,11 +159,21 @@ async function ensureFixtures(page: Page) {
     return after;
 }
 
+/**
+ * The one record here that isn't named zauthz*: adminAuth.WRITE_ROLES names the role, so the
+ * login tests need it spelled this way. On a developer's gateway it can be a real role, so
+ * only what this file created is deleted.
+ */
+let supervisorCreated = false;
+
 /** The accounts the login tests use, reset on the open view by an anonymous session. */
 async function ensureAccounts(page: Page) {
     await ensureFixtures(page);
     const now = await snapshot(page);
-    await fireAndExpect(page, [USER, 'onRoleSave', { name: 'Supervisor' }], /^onRoleSave added/);
+    if (!now.kept.Supervisor) {
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: 'Supervisor' }], /^onRoleSave added/);
+        supervisorCreated = true;
+    }
     for (const [username, roles] of ACCOUNTS) {
         await fireAndExpect(page, [USER, 'onUserSave', { user: user(username, { roles }), isNew: !now.users[username], password: PASSWORD }], /^onUserSave persisted/);
     }
@@ -173,8 +183,11 @@ async function ensureAccounts(page: Page) {
 async function cleanup(page: Page) {
     await openRoute(page, '/authz-open', USER);
     await sweep(page);
-    await fireAndExpect(page, [USER, 'onRoleDelete', { name: 'Supervisor' }], /^onRoleDelete (removed|ERRORS)/);
-    expect(await snapshot(page)).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
+    if (supervisorCreated) {
+        await fireAndExpect(page, [USER, 'onRoleDelete', { name: 'Supervisor' }], /^onRoleDelete removed/);
+        supervisorCreated = false;
+    }
+    expect(await snapshot(page)).toMatchObject({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
 }
 
 /** Keep hold of the session's socket and record what it sends. Call before the first page load. */
@@ -314,10 +327,15 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         // the check on the add's result keeps the old schedule here.
         await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('ZAUTHZ-SCHEDULE-B', 'HACKED'), oldName: 'zauthz-schedule', isNew: false }],
             /^onScheduleSave ERRORS: .*conflict/);
+        // Holidays have no such check, so the snapshot is what shows the old name survived.
+        await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: 'ZAUTHZ-HOLIDAY-B', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
+            /^onHolidaySave /);
         expect(await snapshot(page)).toEqual(before);
 
         await openRoute(page, '/authz-open', USER);
         await fireAndExpect(page, [USER, 'onRoleSave', { name: 'zauthz-role-b', oldName: 'zauthz-role' }], /^onRoleSave ERRORS: .*exists/);
+        expect(await snapshot(page)).toEqual(before);
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: 'ZAUTHZ-ROLE-B', oldName: 'zauthz-role' }], /^onRoleSave /);
         expect(await snapshot(page)).toEqual(before);
     });
 
@@ -327,19 +345,37 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         const before = await snapshot(page);
         await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user', { notes: 'HACKED' }), isNew: true }], /^onUserSave REFUSED: a user named/);
         await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: 'zauthz-holiday', date: '2031-02-02', repeatAnnually: false }, isNew: true }], /^onHolidaySave REFUSED: a holiday named/);
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('zauthz-schedule', 'HACKED'), isNew: true }], /^onScheduleSave REFUSED: a schedule named/);
+        await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: 'zauthz-roster', users: [], isNew: true }], /^onRosterSave REFUSED: a roster named/);
         expect(await snapshot(page)).toEqual(before);
     });
 
-    test('the admin account and role are kept, whatever the case and whether renamed or deleted', async ({ page }) => {
+    test('a roster name that differs only by case never changes the existing roster', async ({ page }) => {
+        await ensureFixtures(page);
+        await openRoute(page, '/authz-open', USER);
+        const before = await snapshot(page);
+        await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: 'ZAUTHZ-ROSTER', users: [], isNew: true }], /^onRosterSave /);
+        expect((await snapshot(page)).rosters['zauthz-roster']).toEqual(before.rosters['zauthz-roster']);
+    });
+
+    test('the admin account and role are kept, whatever the spelling and whether renamed or deleted', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
         // The user source matches these case-insensitively: without the guard, these really remove them.
         for (const username of ['admin', 'ADMIN', 'Admin']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: the demo keeps the admin account/);
         }
-        for (const name of ['Administrator', 'ADMINISTRATOR', 'administrator']) {
-            await fireAndExpect(page, [USER, 'onRoleDelete', { name }], /^onRoleDelete REFUSED: the demo keeps the Administrator role/);
-            await fireAndExpect(page, [USER, 'onRoleSave', { name: 'zauthz-renamed-role', oldName: name }], /^onRoleSave REFUSED: the demo keeps the Administrator role/);
+        // Spellings a lowercase comparison of the event text can't recognise (a dotless i).
+        for (const username of [' admin', 'admin ', 'adm\u0131n']) {
+            await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: no user named/);
         }
+        const keeps = 'the demo keeps the Administrator role';
+        await fireAndExpect(page, [USER, 'onRoleDelete', { name: 'Administrator' }], new RegExp(`^onRoleDelete REFUSED: ${keeps}`));
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: 'zauthz-renamed-role', oldName: 'Administrator' }], new RegExp(`^onRoleSave REFUSED: ${keeps}`));
+        for (const name of ['ADMINISTRATOR', 'administrator', ' Administrator', 'Adm\u0131n\u0131strator']) {
+            await fireAndExpect(page, [USER, 'onRoleDelete', { name }], /^onRoleDelete REFUSED: no role named/);
+            await fireAndExpect(page, [USER, 'onRoleSave', { name: 'zauthz-renamed-role', oldName: name }], /^onRoleSave REFUSED: no role named/);
+        }
+        expect((await snapshot(page)).kept).toMatchObject({ admin: true, Administrator: true });
     });
 
     test('raw frames cannot change a PROTECTED flag; the same frames land on a PUBLIC prop', async ({ page }) => {
@@ -387,12 +423,17 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         await openRoute(page, '/authz-no-role', USER);
         const before = await snapshot(page);
         const session = page.locator('#authz-gateway-session'); // read on the gateway by a binding
-        await expect(session).toHaveText('auth=false theme=light');
+        await expect(session).toHaveText('auth=false theme=light geo=false');
         expect(sent.some((f) => f.startsWith('sync:{')), 'the real client must use this framing').toBe(true);
 
-        // Positive control, with the sync number the attacks use.
+        // Positive controls, with the sync number the attacks use: a flat key, then the two
+        // shapes the attacks take, a dotted key and a nested map.
         await sendRaw(page, { session: { props: { theme: qv('dark') } } });
-        await expect(session).toHaveText('auth=false theme=dark');
+        await expect(session).toHaveText('auth=false theme=dark geo=false');
+        await sendRaw(page, { session: { props: { 'geolocation.enabled': qv(true) } } });
+        await expect(session).toHaveText('auth=false theme=dark geo=true');
+        await sendRaw(page, { session: { props: { geolocation: map({ enabled: qv(false) }) } } });
+        await expect(session).toHaveText('auth=false theme=dark geo=false');
 
         await sendRaw(page, { session: { props: {
             'auth.authenticated': qv(true),
@@ -406,7 +447,7 @@ test.describe('Admin family: the event scripts authorize the write', () => {
 
         // The socket handles frames in order, so when this lands the attacks have been handled.
         await sendRaw(page, { session: { props: { theme: qv('light') } } });
-        await expect(session).toHaveText('auth=false theme=light');
+        await expect(session).toHaveText('auth=false theme=light geo=false');
         await fireAndExpect(page, PROMOTE, /REFUSED: requires one of the roles /);
         expect(await snapshot(page)).toEqual(before);
     });
@@ -482,6 +523,24 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         await openRoute(page, '/authz-no-role', USER);
     });
 
+    test('cleanup leaves a Supervisor role it did not create', async ({ page }) => {
+        await cleanup(page);
+        const hadIt = (await snapshot(page)).kept.Supervisor;
+        const role = (eventName: string, verdict: RegExp) => fireAndExpect(page, [USER, eventName, { name: 'Supervisor' }], verdict);
+        if (!hadIt) {
+            await role('onRoleSave', /^onRoleSave added/);
+        }
+        try {
+            await ensureAccounts(page);
+            await cleanup(page);
+            expect((await snapshot(page)).kept.Supervisor).toBe(true);
+        } finally {
+            if (!hadIt) {
+                await role('onRoleDelete', /^onRoleDelete removed/);
+            }
+        }
+    });
+
     test('cleanup: the control removes what the attacks aimed at', async ({ page }) => {
         await cleanup(page);
     });
@@ -529,6 +588,15 @@ test.describe('Admin family: the reference views stay guarded', () => {
         holidaymanager: ['onHolidaySave', 'onHolidayDelete'],
     };
 
+    /** The check has to refuse and return, and come before the first writer call. */
+    const expectGuardFirst = (script: string, what: string) => {
+        const check = GUARD.exec(script);
+        expect(check, `${what}: the check must refuse and return`).not.toBeNull();
+        const write = script.search(WRITER);
+        expect(write, `${what} must write`).toBeGreaterThan(-1);
+        expect(check!.index + check![0].length, `${what}: the check must come before the first write`).toBeLessThanOrEqual(write);
+    };
+
     test('every admin manager has PROTECTED flags and every event authorizes before it writes', () => {
         const guarded: Record<string, number> = {};
         for (const dir of VIEW_DIRS) {
@@ -545,12 +613,7 @@ test.describe('Admin family: the reference views stay guarded', () => {
                     expect(Object.keys(events).sort(), `${name} ${manager.meta.name}`).toEqual([...EVENTS[manager.type.split('.').pop()]].sort());
                     for (const [event, handler] of Object.entries<any>(events)) {
                         for (const action of [handler].flat()) {
-                            const script: string = action.config.script;
-                            const check = GUARD.exec(script);
-                            expect(check, `${name} ${event}: the check must refuse and return`).not.toBeNull();
-                            const write = script.search(WRITER);
-                            expect(write, `${name} ${event} must write`).toBeGreaterThan(-1);
-                            expect(check!.index + check![0].length, `${name} ${event}: the check must come before the first write`).toBeLessThanOrEqual(write);
+                            expectGuardFirst(action.config.script, `${name} ${event}`);
                             guarded[name] = (guarded[name] ?? 0) + 1;
                         }
                     }
@@ -576,7 +639,7 @@ test.describe('Admin family: the reference views stay guarded', () => {
                         continue;
                     }
                     if (kind === 'script') {
-                        expect(text, `${name}: an event script that writes`).toMatch(GUARD);
+                        expectGuardFirst(text, `${name}: an event script`);
                         continue;
                     }
                     // A binding runs for every session that opens the view.
@@ -591,8 +654,13 @@ test.describe('Admin family: the reference views stay guarded', () => {
     });
 
     test('the project libraries do not write', () => {
-        for (const library of ['ops/verify/project/ignition/script-python/adminAuth', 'ops/verify/project/ignition/script-python/authzCheck', 'ops/demo/project/ignition/script-python/adminAuth']) {
-            expect(fs.readFileSync(path.join(REPO, library, 'code.py'), 'utf8').match(WRITER), library).toBeNull();
+        const libraries = ['ops/verify/project', 'ops/demo/project'].flatMap((project) => {
+            const dir = path.join(REPO, project, 'ignition/script-python');
+            return fs.readdirSync(dir).map((library) => path.join(dir, library, 'code.py'));
+        });
+        expect(libraries.length, 'the libraries must be found').toBeGreaterThan(0);
+        for (const library of libraries) {
+            expect(fs.readFileSync(library, 'utf8').match(WRITER), library).toBeNull();
         }
     });
 

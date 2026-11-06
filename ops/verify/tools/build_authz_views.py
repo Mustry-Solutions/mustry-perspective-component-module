@@ -64,7 +64,7 @@ def build(name, editable, others, source):
     for label_name, dom_id, expression in [
         ('flagReadout', 'authz-gateway-flag', '{../usermgr.props.config.allowDelete}'),
         ('publicReadout', 'authz-gateway-public', '{../usermgr.props.state.selectedUser}'),
-        ('sessionReadout', 'authz-gateway-session', '"auth=" + {session.props.auth.authenticated} + " theme=" + {session.props.theme}'),
+        ('sessionReadout', 'authz-gateway-session', '"auth=" + {session.props.auth.authenticated} + " theme=" + {session.props.theme} + " geo=" + {session.props.geolocation.enabled}'),
     ]:
         children.append(label(label_name, dom_id, {'props.text': {'binding': {
             'type': 'expr', 'config': {'expression': expression}}}}))

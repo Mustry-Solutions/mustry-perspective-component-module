@@ -216,7 +216,14 @@ in the event script, and set the access of `props.config` to `PROTECTED` so a
 client can't rewrite the flags. The reference scripts and their `adminAuth`
 project library show how; see "Capability flags are not security" in the README.
 Perspective security levels limit who can open a page, but they don't authorize
-individual events, so they don't replace those checks. Neither flags nor role
+individual events, so they don't replace those checks.
+
+**Never expose the verify or demo project on a network you don't fully trust.**
+Neither asks anyone to log in, and their sample views let anonymous sessions
+write, which includes setting `admin`'s password. In a real project, delete
+`DEMO_ANONYMOUS_VIEWS` from the `adminAuth` library.
+
+Neither flags nor role
 checks protect reads: `data.users`, for one, sends contact details and roles to
 the page. With the reference scripts a Supervisor can edit an Administrator's
 contact details and schedule, which affects where alarm notifications go; decide

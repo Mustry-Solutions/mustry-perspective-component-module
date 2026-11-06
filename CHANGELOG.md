@@ -16,8 +16,10 @@ on such a page could send a crafted `onUserSave`, for example to give themselves
 Administrator. Every event script now checks the session user's roles and re-reads the
 flags on the gateway before it writes, through a short `adminAuth` project
 library, and the reference views set `props.config` to `PROTECTED` so a client
-can't rewrite those flags. A schedule rename can no longer delete another schedule, and
-the scripts no longer trust `isNew`. Nothing changes in the module itself, so **projects
+can't rewrite those flags. A schedule rename can no longer delete another schedule, the
+scripts no longer trust `isNew`, and a create no longer overwrites a schedule or roster
+another operator just created under that name: it reports the conflict. A schedule delete
+now reports a failure the gateway returns instead of saying it worked. Nothing changes in the module itself, so **projects
 that copied the old scripts stay open until they adopt the check**; the README
 and the event and prop descriptions now say that the flags aren't a security
 boundary. The verify and demo projects don't ask anyone to log in, so their sample

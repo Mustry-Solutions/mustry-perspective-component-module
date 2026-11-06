@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired when the user presses Save on a dirty draft. Persist event.holiday with system.user.editHoliday (or addHoliday when isNew; on a rename — oldName present — edit under the old name with the new model) and refresh the data.holidays binding. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library).",
+  "description": "Fired when the user presses Save on a dirty draft. Persist event.holiday with system.user.editHoliday, or addHoliday when the gateway has no holiday of that name (on a rename — oldName present — edit under the old name with the new model) and refresh the data.holidays binding. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library). isNew is only a UI hint a crafted client can set to anything: work out whether a save creates from gateway data (system.user.getHolidayNames()).",
   "properties": {
     "holiday": {
       "type": "object",
@@ -8,7 +8,7 @@
     },
     "isNew": {
       "type": "boolean",
-      "description": "True when this save comes from the create flow (persist with system.user.addHoliday)."
+      "description": "True when this save comes from the create flow. A UI hint only, so don't decide what to write from it: work out whether the save creates from gateway data. Use it only to report a conflict instead of overwriting a holiday that already has this name."
     },
     "oldName": {
       "type": "string",
