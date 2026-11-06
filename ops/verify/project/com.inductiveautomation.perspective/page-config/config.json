@@ -92,6 +92,22 @@
    "viewPath": "AdminConsole",
    "viewParams": {}
   },
+  "/authz-open": {
+   "viewPath": "AuthzOpen",
+   "viewParams": {}
+  },
+  "/authz-read-only": {
+   "viewPath": "AuthzReadOnly",
+   "viewParams": {}
+  },
+  "/authz-flags-off": {
+   "viewPath": "AuthzFlagsOff",
+   "viewParams": {}
+  },
+  "/authz-no-role": {
+   "viewPath": "AuthzNoRole",
+   "viewParams": {}
+  },
   "/holidays": {
    "viewPath": "HolidayDemo",
    "viewParams": {}

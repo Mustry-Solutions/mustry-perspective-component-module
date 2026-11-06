@@ -1,0 +1,262 @@
+{
+ "custom": {
+  "lastEvent": "",
+  "refreshTick": 0
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 960,
+   "height": 800
+  }
+ },
+ "root": {
+  "type": "ia.container.flex",
+  "meta": {
+   "name": "root"
+  },
+  "props": {
+   "direction": "column"
+  },
+  "children": [
+   {
+    "type": "mustrysolutions.perspective.admin.schedulemanager",
+    "meta": {
+     "name": "schedmgr"
+    },
+    "position": {
+     "basis": "120px",
+     "shrink": 0
+    },
+    "props": {
+     "config": {
+      "editable": true,
+      "allowCreate": true,
+      "allowDelete": true
+     }
+    },
+    "propConfig": {
+     "props.config": {
+      "access": "PROTECTED"
+     }
+    },
+    "events": {
+     "component": {
+      "onScheduleSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: rebuild a BasicScheduleModel from the flat mirror\n\t# and write it to the gateway, then bump refreshTick so the binding refetches\n\t# and the component's dirty badge clears against the saved data. A rename\n\t# (event.oldName present) adds the new name first, then removes the old.\n\tfrom com.inductiveautomation.ignition.common.user.schedule import BasicScheduleModel\n\ts = event.schedule\n\tname = str(s.name)\n\told = getattr(event, 'oldName', None)\n\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\t# Whether this creates is worked out from the gateway, not from event.isNew.\n\tnames = [str(n) for n in system.user.getScheduleNames()]\n\tcreating = name not in names and not (old and str(old) in names)\n\trefused = adminAuth.refusal(self, ['editable', 'allowCreate'] if creating else ['editable'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onScheduleSave REFUSED: ' + refused\n\t\treturn\n\tm = BasicScheduleModel()\n\tm.name = name\n\tm.description = str(s.description)\n\tm.observeHolidays = bool(s.observeHolidays)\n\tm.allDays = bool(s.allDays)\n\tfor day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:\n\t\tsetattr(m, day, bool(s[day]))\n\t\tsetattr(m, day + 'Time', str(s[day + 'Time']))\n\tdef add(model):\n\t\ttry:\n\t\t\tsystem.user.addSchedule(model)\n\t\texcept TypeError:\n\t\t\tsystem.user.addSchedule(name, model)\n\ttry:\n\t\tif old and str(old) != name:\n\t\t\tadd(m)\n\t\t\tsystem.user.removeSchedule(str(old))\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telif name in [str(n) for n in system.user.getScheduleNames()]:\n\t\t\tsystem.user.editSchedule(name, m)\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave persisted \"' + name + '\"'\n\t\telse:\n\t\t\tadd(m)\n\t\t\tself.view.custom.lastEvent = 'onScheduleSave created \"' + name + '\" (isNew=' + str(bool(event.isNew)) + ')'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleSave FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onScheduleDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowDelete'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onScheduleDelete REFUSED: ' + refused\n\t\treturn\n\ttry:\n\t\tsystem.user.removeSchedule(str(event.name))\n\t\tself.view.custom.lastEvent = 'onScheduleDelete removed \"' + str(event.name) + '\"'\n\texcept Exception as e:\n\t\tself.view.custom.lastEvent = 'onScheduleDelete FAILED: ' + str(e)\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.rostermanager",
+    "meta": {
+     "name": "rostermgr"
+    },
+    "position": {
+     "basis": "120px",
+     "shrink": 0
+    },
+    "props": {
+     "config": {
+      "editable": true,
+      "allowCreate": true,
+      "allowDelete": true
+     }
+    },
+    "propConfig": {
+     "props.config": {
+      "access": "PROTECTED"
+     }
+    },
+    "events": {
+     "component": {
+      "onRosterSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: system.roster is append-only, so the full desired\n\t# order is rewritten wholesale — create if new, clear, then append in order.\n\t# addUsers/removeUsers take USER OBJECTS (not username strings): resolve\n\t# each username against the user source first. Bare except on purpose —\n\t# Jython's 'except Exception' does not catch Java exceptions.\n\timport sys\n\tname = str(event.name)\n\twanted = [str(u) for u in event.users]\n\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\t# Whether this creates is worked out from the gateway, not from event.isNew.\n\tcreating = name not in [str(n) for n in system.roster.getRosterNames()]\n\trefused = adminAuth.refusal(self, ['editable', 'allowCreate'] if creating else ['editable'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onRosterSave REFUSED: ' + refused\n\t\treturn\n\ttry:\n\t\tif name not in [str(n) for n in system.roster.getRosterNames()]:\n\t\t\tsystem.roster.createRoster(name, 'Created from RosterDemo')\n\t\tcurrent = system.roster.getUsers(name)\n\t\tif current:\n\t\t\tsystem.roster.removeUsers(name, current)\n\t\tobjs = []\n\t\tmissing = []\n\t\tfor uname in wanted:\n\t\t\tu = system.user.getUser('default', uname)\n\t\t\tif u is None:\n\t\t\t\tmissing.append(uname)\n\t\t\telse:\n\t\t\t\tobjs.append(u)\n\t\tif objs:\n\t\t\tsystem.roster.addUsers(name, objs)\n\t\tmsg = 'onRosterSave persisted \"' + name + '\" (' + str(len(objs)) + ' users, isNew=' + str(bool(event.isNew)) + ')'\n\t\tif missing:\n\t\t\tmsg = msg + ' — skipped unknown: ' + ','.join(missing)\n\t\tself.view.custom.lastEvent = msg\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRosterDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowDelete'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onRosterDelete REFUSED: ' + refused\n\t\treturn\n\timport sys\n\ttry:\n\t\tsystem.roster.deleteRoster(str(event.name))\n\t\tself.view.custom.lastEvent = 'onRosterDelete removed \"' + str(event.name) + '\"'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRosterDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.usermanager",
+    "meta": {
+     "name": "usermgr"
+    },
+    "position": {
+     "basis": "120px",
+     "shrink": 0
+    },
+    "props": {
+     "config": {
+      "editable": true,
+      "allowCreate": true,
+      "allowDelete": true,
+      "allowPasswordChange": true,
+      "allowRoleManagement": true
+     }
+    },
+    "propConfig": {
+     "props.config": {
+      "access": "PROTECTED"
+     }
+    },
+    "events": {
+     "component": {
+      "onUserSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: rebuild the PyUser from the flat mirror and write\n\t# it back (addUser when isNew, editUser otherwise). Roles and contacts are\n\t# rebuilt wholesale; a staged event.password is applied via u.set and NEVER\n\t# logged. Bare except on purpose (Java exceptions).\n\timport sys\n\ts = event.user\n\tusername = str(s.username)\n\tSRC = 'default'\n\tpw = None\n\ttry:\n\t\tpw = event.password\n\texcept:\n\t\tpw = None\n\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\t# Creating a user, setting a password or changing a user's roles takes the strictest\n\t# check. Role changes are worked out against the gateway's copy of the user.\n\tcurrent = system.user.getUser(SRC, username)\n\trolesChanged = set([str(r) for r in s.roles]) != set([str(r) for r in current.roles] if current else [])\n\tflags = ['editable'] + (['allowCreate'] if bool(event.isNew) else []) + (['allowPasswordChange'] if pw else [])\n\tsensitive = bool(event.isNew) or bool(pw) or rolesChanged\n\trefused = adminAuth.refusal(self, flags, adminAuth.SECURITY_ROLES if sensitive else adminAuth.WRITE_ROLES)\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onUserSave REFUSED: ' + refused\n\t\treturn\n\ttry:\n\t\tif bool(event.isNew):\n\t\t\tu = system.user.getNewUser(SRC, username)\n\t\telse:\n\t\t\tu = system.user.getUser(SRC, username)\n\t\tu.set('firstname', str(s.firstName))\n\t\tu.set('lastname', str(s.lastName))\n\t\tu.set('schedule', str(s.schedule))\n\t\tu.set('language', str(s.language))\n\t\tu.set('notes', str(s.notes))\n\t\ttry:\n\t\t\tu.setRoles([str(r) for r in s.roles])\n\t\texcept:\n\t\t\tfor r in list(u.roles):\n\t\t\t\tu.removeRole(str(r))\n\t\t\tfor r in s.roles:\n\t\t\t\tu.addRole(str(r))\n\t\ttry:\n\t\t\tu.setContactInfo([])\n\t\texcept:\n\t\t\tfor c in list(u.contactInfo):\n\t\t\t\tu.removeContactInfo(str(c.contactType), str(c.value))\n\t\tfor c in s.contactInfo:\n\t\t\tu.addContactInfo(str(c.contactType), str(c.value))\n\t\tadjs = []\n\t\tfor a in s.scheduleAdjustments:\n\t\t\tadjs.append(system.user.createScheduleAdjustment(system.date.parse(str(a.start), 'yyyy-MM-dd HH:mm'), system.date.parse(str(a.end), 'yyyy-MM-dd HH:mm'), bool(a.available), str(a.note)))\n\t\ttry:\n\t\t\tu.setScheduleAdjustments(adjs)\n\t\texcept:\n\t\t\tfor a in list(u.scheduleAdjustments):\n\t\t\t\tu.removeScheduleAdjustment(a)\n\t\t\tfor a in adjs:\n\t\t\t\tu.addScheduleAdjustment(a)\n\t\tif pw:\n\t\t\tu.set('password', str(pw))\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addUser(SRC, u)\n\t\telse:\n\t\t\tresp = system.user.editUser(SRC, u)\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onUserSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onUserSave persisted \"' + username + '\" (isNew=' + str(bool(event.isNew)) + (', password set' if pw else '') + ')'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onUserSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onUserDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowDelete'], adminAuth.SECURITY_ROLES)\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onUserDelete REFUSED: ' + refused\n\t\treturn\n\timport sys\n\tusername = str(event.username)\n\tif username == 'admin':\n\t\tself.view.custom.lastEvent = 'onUserDelete REFUSED: the demo keeps the admin account'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeUser('default', username)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onUserDelete removed \"' + username + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onUserDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRoleSave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowRoleManagement'], adminAuth.SECURITY_ROLES)\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onRoleSave REFUSED: ' + refused\n\t\treturn\n\t# Role-catalog persistence: add or rename (editRole keeps user assignments\n\t# — the source stores role ids — but POLICIES reference roles by name).\n\timport sys\n\tname = str(event.name)\n\told = None\n\ttry:\n\t\told = event.oldName\n\texcept:\n\t\told = None\n\ttry:\n\t\tif old and str(old) != name:\n\t\t\tresp = system.user.editRole('default', str(old), name)\n\t\t\taction = 'renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telse:\n\t\t\tresp = system.user.addRole('default', name)\n\t\t\taction = 'added \"' + name + '\"'\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onRoleSave ' + action\n\texcept:\n\t\tself.view.custom.lastEvent = 'onRoleSave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onRoleDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowRoleManagement'], adminAuth.SECURITY_ROLES)\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onRoleDelete REFUSED: ' + refused\n\t\treturn\n\timport sys\n\tname = str(event.name)\n\tif name == 'Administrator':\n\t\tself.view.custom.lastEvent = 'onRoleDelete REFUSED: the demo keeps the Administrator role'\n\telse:\n\t\ttry:\n\t\t\tresp = system.user.removeRole('default', name)\n\t\t\terrs = [str(x) for x in resp.getErrors()]\n\t\t\tif errs:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete ERRORS: ' + '; '.join(errs)\n\t\t\telse:\n\t\t\t\tself.view.custom.lastEvent = 'onRoleDelete removed \"' + name + '\"'\n\t\texcept:\n\t\t\tself.view.custom.lastEvent = 'onRoleDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.admin.holidaymanager",
+    "meta": {
+     "name": "holidaymgr"
+    },
+    "position": {
+     "basis": "120px",
+     "shrink": 0
+    },
+    "props": {
+     "config": {
+      "editable": true,
+      "allowCreate": true,
+      "allowDelete": true
+     }
+    },
+    "propConfig": {
+     "props.config": {
+      "access": "PROTECTED"
+     }
+    },
+    "events": {
+     "component": {
+      "onHolidaySave": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# Reference persistence: rebuild a HolidayModel and write it back —\n\t# addHoliday when new, else editHoliday under the OLD name on a rename.\n\timport sys\n\tfrom com.inductiveautomation.ignition.common.user.schedule import HolidayModel\n\ts = event.holiday\n\tname = str(s.name)\n\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowCreate'] if bool(event.isNew) else ['editable'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onHolidaySave REFUSED: ' + refused\n\t\treturn\n\ttry:\n\t\td = system.date.parse(str(s.date), 'yyyy-MM-dd')\n\t\ttry:\n\t\t\tm = HolidayModel(name, d, bool(s.repeatAnnually))\n\t\texcept:\n\t\t\tm = HolidayModel()\n\t\t\tm.name = name\n\t\t\tm.date = d\n\t\t\tm.repeatAnnually = bool(s.repeatAnnually)\n\t\told = None\n\t\ttry:\n\t\t\told = event.oldName\n\t\texcept:\n\t\t\told = None\n\t\tif bool(event.isNew):\n\t\t\tresp = system.user.addHoliday(m)\n\t\t\taction = 'created \"' + name + '\"'\n\t\telif old and str(old) != name:\n\t\t\tresp = system.user.editHoliday(str(old), m)\n\t\t\taction = 'renamed \"' + str(old) + '\" -> \"' + name + '\"'\n\t\telse:\n\t\t\tresp = system.user.editHoliday(name, m)\n\t\t\taction = 'persisted \"' + name + '\"'\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onHolidaySave ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onHolidaySave ' + action\n\texcept:\n\t\tself.view.custom.lastEvent = 'onHolidaySave FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ],
+      "onHolidayDelete": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\t# AUTHORIZE FIRST: the flags only hide UI, and a crafted client can send this event\n\t# with any payload. See the adminAuth project library.\n\trefused = adminAuth.refusal(self, ['editable', 'allowDelete'])\n\tif refused:\n\t\tself.view.custom.lastEvent = 'onHolidayDelete REFUSED: ' + refused\n\t\treturn\n\timport sys\n\ttry:\n\t\tresp = system.user.removeHoliday(str(event.name))\n\t\terrs = [str(x) for x in resp.getErrors()]\n\t\tif errs:\n\t\t\tself.view.custom.lastEvent = 'onHolidayDelete ERRORS: ' + '; '.join(errs)\n\t\telse:\n\t\t\tself.view.custom.lastEvent = 'onHolidayDelete removed \"' + str(event.name) + '\"'\n\texcept:\n\t\tself.view.custom.lastEvent = 'onHolidayDelete FAILED: ' + str(sys.exc_info()[1])\n\tself.view.custom.refreshTick = self.view.custom.refreshTick + 1"
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "meta": {
+     "name": "eventLabel",
+     "domId": "authz-event"
+    },
+    "position": {
+     "basis": "60px",
+     "shrink": 0
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "property",
+       "config": {
+        "path": "view.custom.lastEvent"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "meta": {
+     "name": "snapshot",
+     "domId": "authz-snapshot"
+    },
+    "position": {
+     "basis": "60px",
+     "shrink": 0
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "runScript(\"authzCheck.snapshot\", 500)"
+       }
+      }
+     }
+    }
+   }
+  ]
+ }
+}
