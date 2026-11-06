@@ -8,6 +8,17 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed
+- A time that falls in a daylight-saving gap now resolves forward by the length
+  of the gap in every `config.timezone`, as the browser-local path always has:
+  02:30 on New York's spring-forward day is 03:30 EDT. Zones west of UTC used to
+  go back an hour instead (01:30 EST), and in zones whose gap covers midnight,
+  such as Havana, that put the start of the day on the evening before. Affects
+  the picker outputs, calendar write-backs, and timeline windows and shift ticks.
+- The browser's own daylight-saving gap no longer moves a time resolved in another
+  `config.timezone`: picking 02:30 on 2026-03-29 in a Brussels browser with
+  `America/New_York` now gives 02:30 New York time, not 03:30.
+
 ## [0.9.0] - 2026-11-04
 
 ### Added: Idle Guard, a screensaver for Perspective pages
