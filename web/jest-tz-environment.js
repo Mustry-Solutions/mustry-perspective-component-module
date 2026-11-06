@@ -15,6 +15,10 @@ class TimeZoneEnvironment extends TestEnvironment {
     constructor(config, context) {
         super(config, context);
         this.tz = config.projectConfig.testEnvironmentOptions.tz;
+        // `process.env.TZ = undefined` would set the string "undefined".
+        if (!this.tz) {
+            throw new Error('jest-tz-environment needs a zone: @jest-environment-options {"tz": "Europe/Brussels"}');
+        }
     }
 
     async setup() {

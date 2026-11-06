@@ -83,6 +83,11 @@ export function dstResolutionSuite(processZone: string): void {
     describe(`DST resolution with the process in ${processZone}`, () => {
         it('really is running in that zone', () => {
             expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(processZone);
+            // UTC is the only zone with no gap to test: an empty list anywhere else
+            // would turn the browser-gap tests below into skips and prove nothing.
+            if (processZone !== 'UTC') {
+                expect(BROWSER_GAPS[processZone].length).toBeGreaterThan(0);
+            }
             for (const g of BROWSER_GAPS[processZone]) {
                 const f = fields(g.wall);
                 expect(localDate(f).getHours() * 60 + localDate(f).getMinutes()).not.toBe(f.h * 60 + f.mi);
