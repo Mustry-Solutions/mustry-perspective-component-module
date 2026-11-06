@@ -30,6 +30,13 @@ The demo has no login, so the Admin tab's writes rely on a demo-only exemption f
 anonymous sessions (`DEMO_ANONYMOUS_VIEWS` in the `adminAuth` project library). A real
 project deletes it: see "Capability flags are not security" in the main README.
 
+**Keep the demo and verify projects off any network you don't fully trust.** Anyone who
+can reach those views can take over the gateway's user source without logging in,
+including setting `admin`'s password, and `docker-compose.yml` publishes the gateway's
+ports on all interfaces rather than only localhost. Opening a view also seeds demo users
+with the known password `Demo-1234!`. The exemption matches by name, so a real project
+named `demo` with a view named `Admin` would get it too.
+
 Two one-click moments from the top bar, any time they land well:
 
 - **Language dropdown** (EN/FR/DE/NL/ES/IT/PT) — the WHOLE app relocalizes in

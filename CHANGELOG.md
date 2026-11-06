@@ -13,15 +13,18 @@ The admin managers' capability flags (`editable`, `allowCreate`, `allowDelete`,
 `allowPasswordChange`, `allowRoleManagement`) only hide controls, but the
 reference event scripts wrote whatever event they received. Anyone with a session
 on such a page could send a crafted `onUserSave`, for example to give themselves
-Administrator. The scripts now check the session user's roles and re-read the
-flags on the gateway before every write, through a short `adminAuth` project
+Administrator. Every event script now checks the session user's roles and re-reads the
+flags on the gateway before it writes, through a short `adminAuth` project
 library, and the reference views set `props.config` to `PROTECTED` so a client
-can't rewrite those flags. Nothing changes in the module itself, so **projects
+can't rewrite those flags. A schedule rename can no longer delete another schedule, and
+the scripts no longer trust `isNew`. Nothing changes in the module itself, so **projects
 that copied the old scripts stay open until they adopt the check**; the README
 and the event and prop descriptions now say that the flags aren't a security
 boundary. The verify and demo projects don't ask anyone to log in, so their sample
 views keep working for anonymous sessions through a clearly named demo-only setting that a
-real project deletes.
+real project deletes, and **anyone who can reach those views can take over the gateway's
+users, so don't expose them**. Their read bindings also still seed demo data, including users
+with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
 
 ### Fixed
 - Resource Timeline: changing zoom no longer lands on an unrelated part of the

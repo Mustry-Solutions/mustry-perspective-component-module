@@ -59,6 +59,15 @@ def build(name, editable, others, source):
         'type': 'property', 'config': {'path': 'view.custom.lastEvent'}}}}))
     children.append(label('snapshot', 'authz-snapshot', {'props.text': {'binding': {
         'type': 'expr', 'config': {'expression': 'runScript("authzCheck.snapshot", 500)'}}}}))
+    # Read-outs for the raw-frame tests. These bindings run on the gateway, so the text
+    # shows what the gateway holds, whatever the client's own copy of the prop says.
+    for label_name, dom_id, expression in [
+        ('flagReadout', 'authz-gateway-flag', '{../usermgr.props.config.allowDelete}'),
+        ('publicReadout', 'authz-gateway-public', '{../usermgr.props.state.selectedUser}'),
+        ('sessionReadout', 'authz-gateway-session', '"auth=" + {session.props.auth.authenticated} + " theme=" + {session.props.theme}'),
+    ]:
+        children.append(label(label_name, dom_id, {'props.text': {'binding': {
+            'type': 'expr', 'config': {'expression': expression}}}}))
     view = {
         'custom': {'lastEvent': '', 'refreshTick': 0},
         'params': {},

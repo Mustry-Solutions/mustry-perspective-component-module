@@ -39,7 +39,7 @@
         "allowPasswordChange": {
           "type": "boolean",
           "default": false,
-          "description": "OFF by default. Shows a set-password field whose staged value travels ONLY in the onUserSave payload (never props/state/output). Put this component behind Perspective security levels and TLS before enabling. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
+          "description": "OFF by default. Shows a set-password field whose staged value travels ONLY in the onUserSave payload (never props/state/output). Use TLS before enabling. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "labels": {
           "type": "object",

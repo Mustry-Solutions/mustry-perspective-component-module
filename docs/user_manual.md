@@ -211,13 +211,19 @@ contract: bind gateway data in, persist events out via `system.user.*` /
 (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`,
 `allowRoleManagement`) are a UX layer, **not a security boundary**: they hide
 controls, but a client can still send the events with any payload. Authorize
-every write on the gateway: put the page behind Perspective security levels,
-check the session user's roles and re-read the flags in the event script, and
-set the access of `props.config` to `PROTECTED` so a client can't rewrite the
-flags. The reference scripts and their `adminAuth` project library show how; see
-"Capability flags are not security" in the README. The User Manager's password
-and role-catalog features should stay off unless the page is appropriately
-secured (see §15).
+every write on the gateway: check the session user's roles and re-read the flags
+in the event script, and set the access of `props.config` to `PROTECTED` so a
+client can't rewrite the flags. The reference scripts and their `adminAuth`
+project library show how; see "Capability flags are not security" in the README.
+Perspective security levels limit who can open a page, but they don't authorize
+individual events, so they don't replace those checks. Neither flags nor role
+checks protect reads: `data.users`, for one, sends contact details and roles to
+the page. With the reference scripts a Supervisor can edit an Administrator's
+contact details and schedule, which affects where alarm notifications go; decide
+whether that suits your project. The bindings marked `DEMO ONLY` create demo
+users with a known password for any session: never copy them. The User Manager's
+password and role-catalog features should stay off unless the event scripts
+authorize those writes (see §16).
 
 Every rail row has a **⋯ menu** (visible on hover and on the selected row)
 with **Duplicate** — which opens the create flow prefilled from that row —
@@ -277,8 +283,9 @@ via `onHolidaySave` / `onHolidayDelete`.
 
 Don't wait for a mega-component: place the four admin components in a
 native **Tab Container** (children need `position: {tabIndex: N}`), choose
-which controls each tab shows with its capability flags, and put sensitive
-tabs behind their own security level or page. The flags only hide UI: the event
+which controls each tab shows with its capability flags, and move sensitive
+tabs to their own page if you want a security level to limit who can open them.
+The flags only hide UI: the event
 scripts must still authorize each write (see the security note in §13). The module's verify project ships a reference
 `AdminConsole` view doing exactly this, with all tabs sharing one refresh
 tick so a save in one refreshes the others.
