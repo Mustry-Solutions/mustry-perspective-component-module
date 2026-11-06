@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired from role-catalog manage mode (config.allowRoleManagement) when a role is added or renamed. Persist with system.user.addRole(userSource, name), or system.user.editRole(userSource, oldName, name) when oldName is present, then refresh the data.availableRoles binding. Renames keep user assignments, but security policies reference roles BY NAME.",
+  "description": "Fired from role-catalog manage mode (config.allowRoleManagement) when a role is added or renamed. Persist with system.user.addRole(userSource, name), or system.user.editRole(userSource, oldName, name) when oldName is present, then refresh the data.availableRoles binding. Renames keep user assignments, but security policies reference roles BY NAME. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library).",
   "properties": {
     "name": {
       "type": "string",

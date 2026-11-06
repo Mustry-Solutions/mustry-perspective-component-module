@@ -44,17 +44,17 @@
         "editable": {
           "type": "boolean",
           "default": true,
-          "description": "The week grid is a paint surface: drag empty space to add availability, drag block edges to resize, click a block to remove; description and the allDays/observeHolidays toggles become editable. All edits are draft-only until Save fires onScheduleSave — handle it and persist (see the ScheduleDemo view). False = viewer."
+          "description": "The week grid is a paint surface: drag empty space to add availability, drag block edges to resize, click a block to remove; description and the allDays/observeHolidays toggles become editable. All edits are draft-only until Save fires onScheduleSave — handle it and persist (see the ScheduleDemo view). False = viewer. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "allowCreate": {
           "type": "boolean",
           "default": true,
-          "description": "Show the '+ New schedule' flow (a blank draft; Save fires onScheduleSave with isNew: true). Requires editable."
+          "description": "Show the '+ New schedule' flow (a blank draft; Save fires onScheduleSave with isNew: true). Requires editable. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "allowDelete": {
           "type": "boolean",
           "default": true,
-          "description": "Show the two-step Delete button (fires onScheduleDelete). Requires editable."
+          "description": "Show the two-step Delete button (fires onScheduleDelete). Requires editable. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "snapMinutes": {
           "type": "number",

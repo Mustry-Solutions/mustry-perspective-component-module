@@ -494,7 +494,27 @@ Each rail row has a **⋯ menu** — hover-revealed, and always visible on the s
 
 ### Composing an Admin Console
 
-The three admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to dial each tab. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all four components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.
+The admin components are deliberately separate — tabs and page routing are the platform's job, and page-level **security levels** are the robust boundary between "can edit shift schedules" and "can edit users". To get a single admin panel, compose them in a native **Tab Container** and use each component's capability flags (`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`, `allowRoleManagement`) to decide which controls each tab shows. The committed [`AdminConsole` view](ops/verify/project/com.inductiveautomation.perspective/views/AdminConsole) (route `/admin` in the verify project) is the reference: all four components live in tabs, sharing one refresh tick so a save in one tab refreshes the others.
+
+### Capability flags are not security
+
+The flags are a **UX layer, not a security boundary**. They hide controls in the browser, and that is all they do: anyone with a session on the page can send `onUserSave` or any other event with whatever payload they like, without touching the UI. Authorization belongs on the gateway, in the event script or in Perspective security. The persistence is your script, so the check is too.
+
+The reference scripts in the verify and demo projects show the pattern, using the short [`adminAuth` project library](ops/verify/project/ignition/script-python/adminAuth/code.py). Copy it and set its roles:
+
+```python
+refused = adminAuth.refusal(self, ['editable', 'allowDelete'], adminAuth.SECURITY_ROLES)
+if refused:
+    self.view.custom.lastEvent = 'onUserDelete REFUSED: ' + refused
+    return
+```
+
+- **Check the session user's roles and re-read the flags before every write, and refuse if anything is unexpected.** Passwords, role assignments, creating or deleting users and the role catalog take the strictest roles.
+- **Set the access of each manager's `props.config` to `PROTECTED`.** By default a client can write component props, including the flag your script re-reads; the gateway ignores such a write to a `PROTECTED` prop.
+- **Treat the whole event as untrusted**, `isNew` included. The Schedule and Roster scripts work out whether a save creates something from the gateway's data.
+- **Delete `DEMO_ANONYMOUS_VIEWS` in a real project.** The verify and demo projects have no login, so that setting lets anonymous sessions write from the named sample views. Everywhere else an anonymous session holds no role and is refused.
+
+`e2e/tests/authz.spec.ts` fires crafted events at these scripts and checks that the data does not change.
 
 
 ---

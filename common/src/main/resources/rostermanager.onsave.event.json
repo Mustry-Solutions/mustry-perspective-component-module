@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired when the user presses Save on a dirty draft. `users` is the FULL desired ordered list (order = escalation sequence). Reconcile via system.roster: create the roster when isNew, then removeUsers(current) and addUsers(users) — the API is append-only, so ordering is rewritten wholesale. Refresh the data.rosters binding afterwards.",
+  "description": "Fired when the user presses Save on a dirty draft. `users` is the FULL desired ordered list (order = escalation sequence). Reconcile via system.roster: create the roster when isNew, then removeUsers(current) and addUsers(users) — the API is append-only, so ordering is rewritten wholesale. Refresh the data.rosters binding afterwards. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library).",
   "properties": {
     "name": {
       "type": "string",

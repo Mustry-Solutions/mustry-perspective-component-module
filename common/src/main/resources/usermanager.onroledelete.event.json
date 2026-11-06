@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired from role-catalog manage mode when a role's two-step delete is confirmed. Persist with system.user.removeRole(userSource, event.name) and refresh the data.availableRoles (and data.users) bindings — deleting a role strips it from users, and any security policy referencing it by name silently stops matching.",
+  "description": "Fired from role-catalog manage mode when a role's two-step delete is confirmed. Persist with system.user.removeRole(userSource, event.name) and refresh the data.availableRoles (and data.users) bindings — deleting a role strips it from users, and any security policy referencing it by name silently stops matching. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library).",
   "properties": {
     "name": {
       "type": "string",

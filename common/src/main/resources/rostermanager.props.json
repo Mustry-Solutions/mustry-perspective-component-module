@@ -22,17 +22,17 @@
         "editable": {
           "type": "boolean",
           "default": true,
-          "description": "Allow editing: drag rows to reorder the escalation sequence, add users via the picker, remove rows. Edits are draft-only until Save fires onRosterSave. False = viewer."
+          "description": "Allow editing: drag rows to reorder the escalation sequence, add users via the picker, remove rows. Edits are draft-only until Save fires onRosterSave. False = viewer. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "allowCreate": {
           "type": "boolean",
           "default": true,
-          "description": "Show the '+ New roster' flow (Save fires onRosterSave with isNew: true). Requires editable."
+          "description": "Show the '+ New roster' flow (Save fires onRosterSave with isNew: true). Requires editable. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "allowDelete": {
           "type": "boolean",
           "default": true,
-          "description": "Show the two-step Delete button (fires onRosterDelete). Requires editable."
+          "description": "Show the two-step Delete button (fires onRosterDelete). Requires editable. UX only, not a security boundary: authorize the write in the event script or with Perspective security."
         },
         "labels": {
           "type": "object",

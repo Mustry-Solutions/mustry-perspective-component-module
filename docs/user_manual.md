@@ -207,10 +207,17 @@ contract: bind gateway data in, persist events out via `system.user.*` /
 
 ![Admin Console — the four components composed in a tab container](images/admin-console.png)
 
-**Security note:** these components are UI only. Put them behind
-Perspective security levels; the User Manager's password and role-catalog
-features are opt-in flags that should stay off unless the page is
-appropriately secured (see §15).
+**Security note:** these components are UI only, and their capability flags
+(`editable`, `allowCreate`, `allowDelete`, `allowPasswordChange`,
+`allowRoleManagement`) are a UX layer, **not a security boundary**: they hide
+controls, but a client can still send the events with any payload. Authorize
+every write on the gateway: put the page behind Perspective security levels,
+check the session user's roles and re-read the flags in the event script, and
+set the access of `props.config` to `PROTECTED` so a client can't rewrite the
+flags. The reference scripts and their `adminAuth` project library show how; see
+"Capability flags are not security" in the README. The User Manager's password
+and role-catalog features should stay off unless the page is appropriately
+secured (see §15).
 
 Every rail row has a **⋯ menu** (visible on hover and on the selected row)
 with **Duplicate** — which opens the create flow prefilled from that row —
@@ -269,9 +276,10 @@ via `onHolidaySave` / `onHolidayDelete`.
 ## 18. Composing an Admin Console
 
 Don't wait for a mega-component: place the four admin components in a
-native **Tab Container** (children need `position: {tabIndex: N}`), dial
-each tab with its capability flags, and put sensitive tabs behind their
-own security level or page. The module's verify project ships a reference
+native **Tab Container** (children need `position: {tabIndex: N}`), choose
+which controls each tab shows with its capability flags, and put sensitive
+tabs behind their own security level or page. The flags only hide UI: the event
+scripts must still authorize each write (see the security note in §13). The module's verify project ships a reference
 `AdminConsole` view doing exactly this, with all tabs sharing one refresh
 tick so a save in one refreshes the others.
 
