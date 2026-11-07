@@ -23,6 +23,7 @@ web/.gradle/
 
 # --- Staged module artifacts for the local dev gateway ---
 ops/modules/*.modl
+ops/modules-*/
 
 # --- Designer write-back noise in the bind-mounted verify project ---
 # The dev gateway saves these on its own; none carry project content we keep.
