@@ -327,12 +327,13 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: 'zauthz-holiday-b', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
             /^onHolidaySave ERRORS: .*already exists/);
         // The gateway's names conflict case-insensitively and the script's lookup doesn't, so only
+        // (8.3 and 2027 word the conflict differently, "PushConflictException" on 2027: /i.)
         // the check on the add's result keeps the old schedule here.
         await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('ZAUTHZ-SCHEDULE-B', 'HACKED'), oldName: 'zauthz-schedule', isNew: false }],
-            /^onScheduleSave ERRORS: .*conflict/);
+            /^onScheduleSave ERRORS: .*conflict/i);
         // Holidays have no such check: the gateway's conflict is what keeps both.
         await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: 'ZAUTHZ-HOLIDAY-B', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
-            /^onHolidaySave ERRORS: .*conflict/);
+            /^onHolidaySave ERRORS: .*conflict/i);
         expect(await snapshot(page)).toEqual(before);
 
         await openRoute(page, '/authz-open', USER);
