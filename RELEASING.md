@@ -60,9 +60,11 @@ year version, so the same `.modl` can't load on both 8.3 and 2027.
 
 To publish one:
 
-1. Pick a commit where **E2E Ignition 2027 beta (advisory)** passed. It isn't a
-   required check, so `main` can be red on it. The workflow stops if it didn't
-   pass, or if the tag's SDK isn't the one in `ops/ignition-2027.env`.
+1. Pick a commit on `main` where **E2E Ignition 2027 beta (advisory)** passed.
+   It isn't a required check, so `main` can be red on it. The workflow stops if
+   the commit isn't on `main`, if the job didn't pass, or if the tag's SDK isn't the
+   one in `ops/ignition-2027.env`. If you tagged before the job finished, wait
+   for it, then re-run the failed Release run: the tag doesn't need replacing.
 2. Tag that commit `vX.Y.Z-ignition<sdk>`, with `X.Y.Z` taken from the fallback
    version in `build.gradle.kts`, and push the tag:
    ```bash
