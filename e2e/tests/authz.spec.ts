@@ -187,7 +187,10 @@ async function cleanup(page: Page) {
         await fireAndExpect(page, [USER, 'onRoleDelete', { name: 'Supervisor' }], /^onRoleDelete removed/);
         supervisorCreated = false;
     }
-    expect(await snapshot(page)).toMatchObject({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
+    // toEqual, not toMatchObject: an empty {} there matches any object, so leftover
+    // users or rosters would pass. `kept` is the only field that stays non-empty.
+    const left = await snapshot(page);
+    expect({ ...left, kept: undefined }).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
 }
 
 /** Keep hold of the session's socket and record what it sends. Call before the first page load. */
