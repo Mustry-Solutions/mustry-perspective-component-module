@@ -24,9 +24,11 @@ remediation, and credit you (if you wish) once a fix ships.
 ## Scope
 
 This module is UI-layer Perspective components. Note that the admin-family
-components (User / Roster / Schedule / Holiday managers) are **UI only** and
-must be placed behind Perspective security levels; their password and
-role-catalog features are opt-in flags. Misconfiguration of gateway security
+components (User / Roster / Schedule / Holiday managers) are **UI only**, and
+every write has to be authorized in the event script on the gateway: a security
+level limits who can open a page, but any session on that page can still send a
+crafted event. See "Capability flags are not security" in the README. Their
+password and role-catalog features are opt-in flags. Misconfiguration of gateway security
 is outside the scope of this policy, but we're happy to advise.
 
 ## Supported versions

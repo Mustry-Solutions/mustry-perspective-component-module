@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired when the user confirms the two-step Delete button. Persist with system.roster.deleteRoster(event.name) and refresh the data.rosters binding.",
+  "description": "Fired when the user confirms the two-step Delete button. Persist with system.roster.deleteRoster(event.name) and refresh the data.rosters binding. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library).",
   "properties": {
     "name": {
       "type": "string",

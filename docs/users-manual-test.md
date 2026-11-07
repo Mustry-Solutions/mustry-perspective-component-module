@@ -26,6 +26,11 @@ The committed demo at `/users` (verify project) binds the gateway's
 
 - [ ] The component is only reachable behind an authenticated Perspective
       session with an appropriate security level.
+- [ ] Every event script authorizes the write on the gateway before it writes
+      (roles and re-read flags, `adminAuth.refusal` in the reference scripts),
+      `props.config` is `PROTECTED`, and `DEMO_ANONYMOUS_VIEWS` is deleted. A
+      security level doesn't replace this: see "Capability flags are not
+      security" in the README.
 - [ ] `config.allowPasswordChange` is OFF unless the page is TLS-terminated
       end-to-end; verify the staged password never appears in
       `output.*`, `state.*`, session props or the browser console.

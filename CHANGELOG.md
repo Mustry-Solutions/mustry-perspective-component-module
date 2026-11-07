@@ -8,6 +8,26 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Security: the admin reference scripts authorize their writes
+The admin managers' capability flags (`editable`, `allowCreate`, `allowDelete`,
+`allowPasswordChange`, `allowRoleManagement`) only hide controls, but the
+reference event scripts wrote whatever event they received. Anyone with a session
+on such a page could send a crafted `onUserSave`, for example to give themselves
+Administrator. Every event script now checks the session user's roles and re-reads the
+flags on the gateway before it writes, through a short `adminAuth` project
+library, and the reference views set `props.config` to `PROTECTED` so a client
+can't rewrite those flags. A schedule rename can no longer delete another schedule, the
+scripts no longer trust `isNew`, and a create no longer overwrites a schedule or roster
+another operator just created under that name: it reports the conflict. A schedule delete
+now reports a failure the gateway returns instead of saying it worked. Nothing changes in the module itself, so **projects
+that copied the old scripts stay open until they adopt the check**; the README
+and the event and prop descriptions now say that the flags aren't a security
+boundary. The verify and demo projects don't ask anyone to log in, so their sample
+views keep working for anonymous sessions through a clearly named demo-only setting that a
+real project deletes, and **anyone who can reach those views can take over the gateway's
+users, so don't expose them**. Their read bindings also still seed demo data, including users
+with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
+
 ### Changed
 - The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
   read "now" and "today" in the gateway's zone when it's empty, instead of the

@@ -28,17 +28,17 @@
         "editable": {
           "type": "boolean",
           "default": true,
-          "description": "Allow editing name/date/repeat with the shared Save/Discard tail. Edits are draft-only until Save fires onHolidaySave. False = viewer."
+          "description": "Allow editing name/date/repeat with the shared Save/Discard tail. Edits are draft-only until Save fires onHolidaySave. False = viewer. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowCreate": {
           "type": "boolean",
           "default": true,
-          "description": "Show the '+ New holiday' flow (Save fires onHolidaySave with isNew: true). Requires editable."
+          "description": "Show the '+ New holiday' flow (Save fires onHolidaySave with isNew: true). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowDelete": {
           "type": "boolean",
           "default": true,
-          "description": "Show the two-step Delete button (fires onHolidayDelete). Requires editable."
+          "description": "Show the two-step Delete button (fires onHolidayDelete). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "labels": {
           "type": "object",
