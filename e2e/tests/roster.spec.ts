@@ -113,7 +113,10 @@ test.describe('Roster Manager', () => {
         await expect(root.locator('.mustry-commit-save')).toBeDisabled();
         await root.locator('.mustry-sched-name-input').fill('E2E Roster');
         await root.locator('.mustry-roster-add').click();
-        await root.locator('.mustry-roster-picker-item').filter({ hasText: 'admin' }).click();
+        // By exact username: authz.spec creates a 'zauthz-admin' user, and when it runs
+        // alongside this one a substring match finds both.
+        await root.locator('.mustry-roster-picker-item')
+            .filter({ has: page.locator('.mustry-roster-picker-sub', { hasText: /^admin$/ }) }).click();
         await expect(root.locator('.mustry-roster-row')).toHaveCount(1);
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onRosterSave persisted "E2E Roster" \(1 users, isNew=True\)/)).toBeVisible();

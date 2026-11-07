@@ -14,6 +14,15 @@ test.describe('User Manager', () => {
     }
 
     /**
+     * The list row's username line for the 'admin' account: "admin" or "admin · <roles>".
+     * Built from the page: a `has` locator is matched inside each row, so it must not
+     * carry the root's own selector.
+     */
+    function adminDesc(root: any) {
+        return root.page().locator('.mustry-sched-item-desc', { hasText: /^admin( ·|$)/ });
+    }
+
+    /**
      * Select a user and WAIT for their detail to render — selection round-trips
      * through the gateway, so reading the form before it settles would show the
      * previously selected user's values.
@@ -235,14 +244,16 @@ test.describe('User Manager', () => {
 
     test('the demo refuses to delete the admin account', async ({ page }) => {
         const root = await openPopulated(page);
-        await root.locator('.mustry-sched-item').filter({ hasText: 'admin' }).first().click();
+        // By exact username: a substring match plus first() could pick authz.spec's
+        // 'zauthz-admin' when that runs alongside, and test the wrong account.
+        await root.locator('.mustry-sched-item').filter({ has: adminDesc(root) }).click();
         const del = root.locator('.mustry-sched-delete');
         await del.click();
         await del.click();
         await expect(page.getByText(/onUserDelete REFUSED/)).toBeVisible();
         await page.reload();
         const root2 = await openPopulated(page);
-        await expect(root2.locator('.mustry-sched-item').filter({ hasText: 'admin' }).first()).toBeVisible();
+        await expect(root2.locator('.mustry-sched-item').filter({ has: adminDesc(root2) })).toBeVisible();
     });
 
     test('row menu: duplicating a user prefills dash-named create flow', async ({ page }) => {
