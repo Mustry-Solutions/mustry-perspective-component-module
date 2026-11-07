@@ -24,6 +24,8 @@ An Ignition **8.3.6** module that adds custom [Perspective](https://www.inductiv
 
 ## Install & quick start
 
+**Ignition 2027 beta:** 8.3 builds don't load on 2027. Separate builds for the 2027 beta are published as [prereleases](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases), named `BETA for Ignition <version>`. They are for testing the beta, not for production.
+
 **Requirements:** an Ignition **8.3.6+** gateway. Maker Edition gateways are supported: the module declares itself Maker Edition compatible, which Maker requires of every module it loads.
 
 1. **Download** the latest `Mustry-Perspective-Components.modl` from the [Releases](https://github.com/Mustry-Solutions/mustry-perspective-component-module/releases) page.
@@ -617,7 +619,7 @@ Toasts use the Perspective theme variables (`--neutral-10` background, `--neutra
 
 ## Build, test, deploy
 
-Requires JDK 17 (`JAVA_HOME`). Node 22.23.2 (pinned in `web/build.gradle.kts`) is downloaded automatically by the build.
+Requires JDK 17 (`JAVA_HOME`), plus JDK 25 to build for the Ignition 2027 beta (`ops/README.md`). Node 22.23.2 (pinned in `web/build.gradle.kts`) is downloaded automatically by the build.
 
 ```bash
 # Build the signed-or-unsigned .modl (web bundle + Java).

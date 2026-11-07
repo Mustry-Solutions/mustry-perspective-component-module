@@ -10,6 +10,7 @@
 # volume and reloads automatically on every redeploy.
 #
 # Drive it with the scripts in ./ops (setup.sh / deploy.sh / teardown.sh / ...).
+# `source ops/ignition-2027.env` first to run an Ignition 2027 beta gateway beside it.
 
 services:
   # One-shot volume prep: on a brand-new volume Docker would create the verify
@@ -18,7 +19,7 @@ services:
   # user BEFORE the gateway ever starts (user resolved by name inside the
   # image, so an image upgrade changing the uid keeps working). Idempotent.
   init:
-    image: inductiveautomation/ignition:8.3.10
+    image: ${IGNITION_IMAGE:-inductiveautomation/ignition:8.3.10}
     user: root
     entrypoint:
       - sh
@@ -30,8 +31,8 @@ services:
     restart: "no"
 
   gateway:
-    image: inductiveautomation/ignition:8.3.10
-    container_name: mspc-ignition
+    image: ${IGNITION_IMAGE:-inductiveautomation/ignition:8.3.10}
+    container_name: ${GATEWAY_CONTAINER:-mspc-ignition}
     depends_on:
       init:
         condition: service_completed_successfully
@@ -60,7 +61,7 @@ services:
       - gateway-data:/usr/local/bin/ignition/data
       # Dedicated third-party module folder (see externalModulesFolder arg below).
       # setup.sh/deploy.sh stage the freshly built+signed .modl here.
-      - ./ops/modules:/external-modules
+      - ./${GATEWAY_MODULES_DIR:-ops/modules}:/external-modules
       # Verification harness: a committed Perspective project (view + page with the
       # module's components) mounted in so a browser session can render it. Edits
       # saved in the Designer write straight back into the repo.

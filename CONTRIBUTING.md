@@ -14,6 +14,7 @@ guide covers how to build, test, and submit changes.
 ## Prerequisites
 
 - **JDK 17** (Temurin), **Node 18+**, **Docker** (for the local dev gateway).
+  **JDK 25** as well to build for the Ignition 2027 beta (`ops/README.md`).
 - The module builds with Gradle (`io.ia.sdk.modl`); the web components are
   React/TypeScript under `web/`.
 

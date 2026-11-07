@@ -24,5 +24,5 @@ else
 fi
 
 echo
-info "Staged module file(s) in ops/modules:"
+info "Staged module file(s) in ${MODULES_DIR#"${PROJECT_ROOT}/"}:"
 ls -1 "${MODULES_DIR}"/*.modl 2>/dev/null || echo "   (none staged — run ops/setup.sh or ops/deploy.sh)"

@@ -6,7 +6,6 @@ set -euo pipefail
 # Resolve key paths relative to this file, so scripts work from any directory.
 OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${OPS_DIR}/.." && pwd)"
-MODULES_DIR="${OPS_DIR}/modules"
 
 # Local self-signed signing material for development (gitignored). On a fresh
 # gateway the certificate is accepted either once in the commissioning wizard
@@ -21,9 +20,10 @@ SIGNING_DNAME="CN=Mustry Solutions (Dev), O=Mustry Solutions, C=BE"
 
 # Must match MODULE_ID in common/.../MustryPerspectiveComponentsModule.java.
 MODULE_ID="com.mustrysolutions.perspective.components"
-CONTAINER_NAME="mspc-ignition"
 
-# Use Java 17 for Gradle (matches the module's toolchain).
+# Use Java 17 for Gradle (matches the module's default toolchain). A build for
+# another Ignition line (ops/ignition-2027.env) only needs its JDK installed:
+# Gradle discovers it as the toolchain while still launching on this one.
 JAVA_17_HOME="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
 if [[ -d "${JAVA_17_HOME}" ]]; then
   export JAVA_HOME="${JAVA_17_HOME}"
@@ -46,6 +46,11 @@ if [[ -f "${PROJECT_ROOT}/.env" ]]; then
   done < "${PROJECT_ROOT}/.env"
   unset env_line env_key env_value
 fi
+CONTAINER_NAME="${GATEWAY_CONTAINER:-mspc-ignition}"
+MODULES_DIR="${PROJECT_ROOT}/${GATEWAY_MODULES_DIR:-ops/modules}"
+# Exists before anything can bring the gateway up: Docker would create a missing
+# bind-mount source as root, and later builds couldn't stage a module into it.
+mkdir -p "${MODULES_DIR}"
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-9088}"
 GATEWAY_URL="http://localhost:${GATEWAY_HTTP_PORT}"
 ADMIN_USER="admin"
@@ -127,7 +132,7 @@ build_and_stage_module() {
   # Clear old copies so only the current build is staged.
   rm -f "${MODULES_DIR}"/*.modl 2>/dev/null || true
   cp "${modl}" "${MODULES_DIR}/"
-  ok "Staged $(basename "${modl}") -> ops/modules/"
+  ok "Staged $(basename "${modl}") -> ${MODULES_DIR#"${PROJECT_ROOT}/"}/"
 }
 
 # --- wait for gateway -----------------------------------------------------
@@ -191,7 +196,7 @@ wait_for_modules_registry() {
 accept_staged_module() {
   local modl fingerprint tmp
   modl="$(find "${MODULES_DIR}" -maxdepth 1 -name '*.modl' | head -1)"
-  [[ -n "${modl}" ]] || { err "No staged .modl in ops/modules."; return 1; }
+  [[ -n "${modl}" ]] || { err "No staged .modl in ${MODULES_DIR#"${PROJECT_ROOT}/"}."; return 1; }
   fingerprint="$(openssl x509 -in "${CERT_FILE}" -noout -fingerprint -sha1 \
                    | cut -d= -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
   [[ -n "${fingerprint}" ]] || { err "Could not fingerprint ${CERT_FILE}."; return 1; }
