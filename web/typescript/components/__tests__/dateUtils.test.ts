@@ -202,22 +202,19 @@ describe('formatPattern', () => {
 
 describe('resolveZoned', () => {
     it('UTC: zero offset, epoch matches Date.UTC', () => {
-        const wall = new Date(2026, 5, 15, 12, 0, 0);
-        const r = resolveZoned(wall, 'UTC');
+        const r = resolveZoned({ y: 2026, mo: 6, d: 15, h: 12 }, 'UTC');
         expect(r.iso).toBe('2026-06-15T12:00:00+00:00');
         expect(r.epochMs).toBe(Date.UTC(2026, 5, 15, 12, 0, 0));
     });
 
     it('America/New_York is -04:00 in June (EDT)', () => {
-        const wall = new Date(2026, 5, 15, 12, 0, 0);
-        const r = resolveZoned(wall, 'America/New_York');
+        const r = resolveZoned({ y: 2026, mo: 6, d: 15, h: 12 }, 'America/New_York');
         expect(r.iso).toBe('2026-06-15T12:00:00-04:00');
         expect(r.epochMs).toBe(Date.UTC(2026, 5, 15, 16, 0, 0)); // 12:00 EDT = 16:00 UTC
     });
 
     it('America/New_York is -05:00 in January (EST)', () => {
-        const wall = new Date(2026, 0, 15, 12, 0, 0);
-        const r = resolveZoned(wall, 'America/New_York');
+        const r = resolveZoned({ y: 2026, mo: 1, d: 15, h: 12 }, 'America/New_York');
         expect(r.iso).toBe('2026-01-15T12:00:00-05:00');
         expect(r.epochMs).toBe(Date.UTC(2026, 0, 15, 17, 0, 0)); // 12:00 EST = 17:00 UTC
     });
@@ -225,16 +222,15 @@ describe('resolveZoned', () => {
     // A wall time in the spring-forward gap does not exist. Whichever instant it
     // resolves to, the ISO string must name that same instant (#144).
     it('Europe/Brussels spring-forward gap: ISO and epoch name the same instant', () => {
-        const r = resolveZoned(new Date(2026, 2, 29, 2, 30, 0), 'Europe/Brussels');
+        const r = resolveZoned({ y: 2026, mo: 3, d: 29, h: 2, mi: 30 }, 'Europe/Brussels');
         expect(r.epochMs).toBe(Date.UTC(2026, 2, 29, 1, 30, 0));
         expect(r.iso).toBe('2026-03-29T03:30:00+02:00');
         expect(Date.parse(r.iso)).toBe(r.epochMs);
     });
 
     it('America/New_York spring-forward gap: ISO and epoch name the same instant', () => {
-        // Only the agreement is asserted: the wall Date carries process-local
-        // fields, and a process running in a US zone has already shifted 02:30.
-        const r = resolveZoned(new Date(2026, 2, 8, 2, 30, 0), 'America/New_York');
+        const r = resolveZoned({ y: 2026, mo: 3, d: 8, h: 2, mi: 30 }, 'America/New_York');
+        expect(r.iso).toBe('2026-03-08T03:30:00-04:00');
         expect(Date.parse(r.iso)).toBe(r.epochMs);
     });
 
@@ -261,9 +257,9 @@ describe('resolveZoned', () => {
     });
 
     it('an unknown zone falls back to local time on every call', () => {
-        const wall = new Date(2026, 5, 15, 12, 0, 0);
+        const fields = { y: 2026, mo: 6, d: 15, h: 12 };
         for (let i = 0; i < 2; i++) {
-            expect(resolveZoned(wall, 'Not/AZone').epochMs).toBe(wall.getTime());
+            expect(resolveZoned(fields, 'Not/AZone').epochMs).toBe(new Date(2026, 5, 15, 12).getTime());
         }
     });
 

@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "description": "Fired when the user presses Save on a dirty draft. `users` is the FULL desired ordered list (order = escalation sequence). Reconcile via system.roster: create the roster when isNew, then removeUsers(current) and addUsers(users) — the API is append-only, so ordering is rewritten wholesale. Refresh the data.rosters binding afterwards.",
+  "description": "Fired when the user presses Save on a dirty draft. `users` is the FULL desired ordered list (order = escalation sequence). Reconcile via system.roster: create the roster when the gateway has none of that name, then removeUsers(current) and addUsers(users) — the API is append-only, so ordering is rewritten wholesale. Refresh the data.rosters binding afterwards. Capability flags only hide UI: a crafted client can send this event with any payload, so check the session user's roles and re-read the flags here on the gateway before writing (see the adminAuth reference library). isNew is only a UI hint a crafted client can set to anything: work out whether a save creates from gateway data (system.roster.getRosterNames()).",
   "properties": {
     "name": {
       "type": "string",
@@ -13,7 +13,7 @@
     },
     "isNew": {
       "type": "boolean",
-      "description": "True when this save comes from the create flow (persist with system.roster.createRoster first)."
+      "description": "True when this save comes from the create flow. A UI hint only, so don't decide what to write from it: work out whether the save creates from gateway data. Use it only to report a conflict instead of overwriting a roster that already has this name."
     }
   }
 }

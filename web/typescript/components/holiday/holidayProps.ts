@@ -8,6 +8,8 @@ export interface HolidayManagerProps {
     allowCreate: boolean;
     allowDelete: boolean;
     locale: string;
+    /** IANA zone "today" is read in; empty = the gateway's zone (see gatewayZone.ts). */
+    timezone: string;
     labels: HolidayManagerLabels;
     holidays: HolidayItem[];
     /** state.selectedHoliday (two-way) — the selected holiday's name. */
@@ -28,6 +30,7 @@ export function mapHolidayProps(tree: PropReader): HolidayManagerProps {
         allowCreate: tree.readBoolean('config.allowCreate', true),
         allowDelete: tree.readBoolean('config.allowDelete', true),
         locale,
+        timezone: tree.readString('config.timezone', ''),
         labels: labels as unknown as HolidayManagerLabels,
         holidays: (tree.readArray('data.holidays', []) || []).map(normalizeHoliday),
         selectedHoliday: tree.readString('state.selectedHoliday', '')

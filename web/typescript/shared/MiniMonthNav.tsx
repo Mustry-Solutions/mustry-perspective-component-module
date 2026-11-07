@@ -3,7 +3,7 @@
 // styles are the top-level .mustry-cal-mini classes.
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { fmtDate, intlFormat, monthLabel, startOfMonth, today } from './dateUtils';
+import { fmtDate, intlFormat, monthLabel, startOfMonth, todayInZone } from './dateUtils';
 import { buildMonthGrid } from './monthGrid';
 
 export interface MiniNav {
@@ -21,6 +21,7 @@ export interface MiniNavLabels {
 interface MiniMonthNavProps {
     mini: MiniNav;
     locale: string;
+    timezone: string;   // the host's config.timezone: "today" is that zone's date
     firstDay: number;   // 0 = Sunday .. 6 = Saturday
     range: { start: string; end: string };
     cursorIso: string;
@@ -31,8 +32,8 @@ interface MiniMonthNavProps {
 }
 
 export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
-    const { mini, locale, firstDay, range, cursorIso, showRange, labels, onStep, onPick } = props;
-    const grid = buildMonthGrid(startOfMonth(mini.month), firstDay, true);
+    const { mini, locale, timezone, firstDay, range, cursorIso, showRange, labels, onStep, onPick } = props;
+    const grid = buildMonthGrid(startOfMonth(mini.month), firstDay, true, todayInZone(timezone));
     const wdFmt = intlFormat(locale, { weekday: 'narrow' });
     const MINI_W = 236;
     const left = Math.max(6, Math.min(mini.rect.left, window.innerWidth - MINI_W - 6));
@@ -59,7 +60,7 @@ export function MiniMonthNav(props: MiniMonthNavProps): React.ReactElement {
                 })}
             </div>
             <div className="mustry-cal-mini-foot">
-                <button type="button" className="mustry-cal-mini-today" onClick={() => onPick(fmtDate(today()))}>{labels.today}</button>
+                <button type="button" className="mustry-cal-mini-today" onClick={() => onPick(fmtDate(todayInZone(timezone)))}>{labels.today}</button>
             </div>
         </div>,
         document.body

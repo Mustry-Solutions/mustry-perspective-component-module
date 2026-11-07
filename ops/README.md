@@ -42,6 +42,13 @@ module with no prompt. You only commission again after `teardown.sh --purge`.
 > The Ignition gateway runs in **trial mode** (no license). Perspective works in
 > trial; the trial resets every 2 hours — just click "reset trial" in the gateway.
 
+> **Warning: keep the gateway off any network you don't fully trust.** The verify and demo
+> projects don't ask anyone to log in, and `DEMO_ANONYMOUS_VIEWS` in their `adminAuth` library
+> lets anonymous sessions write from the sample views. Anyone who can reach those views can take
+> over the gateway's user source, including setting `admin`'s password, and
+> `docker-compose.yml` publishes the ports on all interfaces, not only localhost. See
+> "Capability flags are not security" in the main README.
+
 ## Scripts
 
 | Script | What it does |

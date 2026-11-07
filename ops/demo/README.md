@@ -26,6 +26,17 @@ full-screen (Cmd-Ctrl-F in Chrome).
 | **Handover** | Write in the editor, **Save**, and the display copy updates; tick a checklist step on the *display* side — it fires an event and persists. The numpad is the no-OS-keyboard answer for panel PCs. | Rich Text Editor + On-Screen Keyboard |
 | **Admin** | Schedules / rosters / users / holidays over the *real* gateway user source — the screens every integrator rebuilds. Last tab: a validated JSON config (invalid JSON cannot be saved) and the brand accent — change it and revisit Overview. | Admin family + Code Editor + Color Picker |
 
+The demo has no login, so the Admin tab's writes rely on a demo-only exemption for
+anonymous sessions (`DEMO_ANONYMOUS_VIEWS` in the `adminAuth` project library). A real
+project deletes it: see "Capability flags are not security" in the main README.
+
+**Keep the demo and verify projects off any network you don't fully trust.** Anyone who
+can reach those views can take over the gateway's user source without logging in,
+including setting `admin`'s password, and `docker-compose.yml` publishes the gateway's
+ports on all interfaces rather than only localhost. Opening a view also seeds demo users
+with the known password `Demo-1234!`. The exemption matches by name, so a real project
+named `demo` with a view named `Admin` would get it too.
+
 Two one-click moments from the top bar, any time they land well:
 
 - **Language dropdown** (EN/FR/DE/NL/ES/IT/PT) — the WHOLE app relocalizes in

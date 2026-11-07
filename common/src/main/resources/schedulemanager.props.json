@@ -9,6 +9,7 @@
       "description": "Schedule Manager behaviour and appearance.",
       "default": {
         "locale": "",
+        "timezone": "",
         "firstDayOfWeek": "monday",
         "dayStartHour": 0,
         "dayEndHour": 24,
@@ -22,6 +23,11 @@
           "type": "string",
           "default": "",
           "description": "BCP-47 locale for weekday names (e.g. 'en-US', 'nl-NL'). Empty = browser/session default. Also selects the built-in UI-text language (see config.labels)."
+        },
+        "timezone": {
+          "type": "string",
+          "default": "",
+          "description": "IANA zone (e.g. 'America/Chicago') \"now\" is read in: output.isActiveNow, the active dots, the now-line and the preview strip. Empty = the gateway's zone (session.props.gateway.timezone.id), where Ignition itself evaluates schedules. Unlike the calendar and timeline, whose empty value means browser-local; browser-local only if the session can't report a zone or the value isn't a zone the browser recognizes."
         },
         "firstDayOfWeek": {
           "enum": [
@@ -44,17 +50,17 @@
         "editable": {
           "type": "boolean",
           "default": true,
-          "description": "The week grid is a paint surface: drag empty space to add availability, drag block edges to resize, click a block to remove; description and the allDays/observeHolidays toggles become editable. All edits are draft-only until Save fires onScheduleSave — handle it and persist (see the ScheduleDemo view). False = viewer."
+          "description": "The week grid is a paint surface: drag empty space to add availability, drag block edges to resize, click a block to remove; description and the allDays/observeHolidays toggles become editable. All edits are draft-only until Save fires onScheduleSave — handle it and persist (see the ScheduleDemo view). False = viewer. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowCreate": {
           "type": "boolean",
           "default": true,
-          "description": "Show the '+ New schedule' flow (a blank draft; Save fires onScheduleSave with isNew: true). Requires editable."
+          "description": "Show the '+ New schedule' flow (a blank draft; Save fires onScheduleSave with isNew: true). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowDelete": {
           "type": "boolean",
           "default": true,
-          "description": "Show the two-step Delete button (fires onScheduleDelete). Requires editable."
+          "description": "Show the two-step Delete button (fires onScheduleDelete). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "snapMinutes": {
           "type": "number",
@@ -299,7 +305,7 @@
         "isActiveNow": {
           "type": "boolean",
           "default": false,
-          "description": "Whether the SELECTED schedule is active at the current time (re-evaluated every 30s). Alternating schedules evaluate against week A."
+          "description": "Whether the SELECTED schedule is active at the current time in config.timezone (re-evaluated every 30s). Alternating schedules evaluate against week A."
         },
         "validationErrors": {
           "type": "array",
