@@ -335,6 +335,11 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 - [ ] **Enter/Space on an event** (month chip or week/day block, including draggable
       ones) opens the editor / fires `onEventClick`; the editor auto-focuses Title
       and closes on Escape.
+- [ ] **Month view, Tab to the day create button** (one Tab stop, full-cell ring, and a
+      "+" when it opens the editor): arrow keys move it between days, including out-of-month ones; Enter/Space
+      opens the editor / fires `onDateClick` for that day; closing the editor returns
+      focus to it. A screen reader reads "New event on" and the full date with the editor,
+      the full date alone without it.
 
 ## Theming & i18n
 

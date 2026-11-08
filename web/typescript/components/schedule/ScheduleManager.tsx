@@ -9,7 +9,10 @@ import {
 import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
 import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { weekdayHeaders } from '../../shared/dateUtils';
-import { dayRanges, isActiveAt, orderedDays, DAY_KEYS, DayKey, MINUTES_PER_DAY, ScheduleItem } from './scheduleLogic';
+import { managerTimeZone } from '../../shared/gatewayZone';
+import {
+    dayRanges, isActiveAt, orderedDays, weekMomentInZone, DAY_KEYS, DayKey, MINUTES_PER_DAY, ScheduleItem
+} from './scheduleLogic';
 import {
     applyPaint, applyResize, draftEquals, draftFromItem, draftToFlat, emptyDraft, newScheduleToFlat,
     removeRange, ScheduleDraft
@@ -143,8 +146,7 @@ export class ScheduleManager
     };
 
     private now(): { dayIndex: number; minute: number } {
-        const d = new Date();
-        return { dayIndex: (d.getDay() + 6) % 7, minute: d.getHours() * 60 + d.getMinutes() };
+        return weekMomentInZone(managerTimeZone(this.props.props.timezone, this.props.store));
     }
 
     private onGestureCommit = (kind: ScheduleGestureKind, _g: ScheduleGesture, preview: ScheduleGesturePreview | null): void => {

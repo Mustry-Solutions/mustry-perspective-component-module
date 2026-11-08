@@ -24,22 +24,22 @@
         "editable": {
           "type": "boolean",
           "default": true,
-          "description": "Allow editing the detail form (names, roles, schedule, contact info). Edits are draft-only until Save fires onUserSave. Set FALSE for read-only sources (AD/LDAP) — the component cannot detect writability itself."
+          "description": "Allow editing the detail form (names, roles, schedule, contact info). Edits are draft-only until Save fires onUserSave. Set FALSE for read-only sources (AD/LDAP) — the component cannot detect writability itself. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowCreate": {
           "type": "boolean",
           "default": true,
-          "description": "Show the '+ New user' flow (Save fires onUserSave with isNew: true). Requires editable."
+          "description": "Show the '+ New user' flow (Save fires onUserSave with isNew: true). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowDelete": {
           "type": "boolean",
           "default": true,
-          "description": "Show the two-step Delete button (fires onUserDelete). Requires editable."
+          "description": "Show the two-step Delete button (fires onUserDelete). Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "allowPasswordChange": {
           "type": "boolean",
           "default": false,
-          "description": "OFF by default. Shows a set-password field whose staged value travels ONLY in the onUserSave payload (never props/state/output). Put this component behind Perspective security levels and TLS before enabling."
+          "description": "OFF by default. Shows a set-password field whose staged value travels ONLY in the onUserSave payload (never props/state/output). Use TLS before enabling. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         },
         "labels": {
           "type": "object",
@@ -227,7 +227,7 @@
         "allowRoleManagement": {
           "type": "boolean",
           "default": false,
-          "description": "OFF by default. Adds a manage mode to the Roles section that edits the role CATALOG itself (add / rename / two-step delete), firing onRoleSave/onRoleDelete immediately. Renames keep user assignments (the source stores role ids) but security policies reference roles BY NAME — enable deliberately. Requires editable."
+          "description": "OFF by default. Adds a manage mode to the Roles section that edits the role CATALOG itself (add / rename / two-step delete), firing onRoleSave/onRoleDelete immediately. Renames keep user assignments (the source stores role ids) but security policies reference roles BY NAME — enable deliberately. Requires editable. UX only, not a security boundary: authorize the write in the event script (see the README section 'Capability flags are not security')."
         }
       }
     },

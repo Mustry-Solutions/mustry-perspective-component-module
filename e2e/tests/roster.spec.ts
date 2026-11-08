@@ -113,7 +113,10 @@ test.describe('Roster Manager', () => {
         await expect(root.locator('.mustry-commit-save')).toBeDisabled();
         await root.locator('.mustry-sched-name-input').fill('E2E Roster');
         await root.locator('.mustry-roster-add').click();
-        await root.locator('.mustry-roster-picker-item').filter({ hasText: 'admin' }).click();
+        // By exact username: authz.spec creates a 'zauthz-admin' user, and when it runs
+        // alongside this one a substring match finds both.
+        await root.locator('.mustry-roster-picker-item')
+            .filter({ has: page.locator('.mustry-roster-picker-sub', { hasText: /^admin$/ }) }).click();
         await expect(root.locator('.mustry-roster-row')).toHaveCount(1);
         await root.locator('.mustry-commit-save').click();
         await expect(page.getByText(/onRosterSave persisted "E2E Roster" \(1 users, isNew=True\)/)).toBeVisible();
@@ -126,5 +129,40 @@ test.describe('Roster Manager', () => {
         await expect(root2.locator('.mustry-sched-item').filter({ hasText: 'E2E Roster' })).toHaveCount(1);
         await deleteIfPresent(root2, 'E2E Roster');
         await expect(page.getByText(/onRosterDelete removed "E2E Roster"/)).toBeVisible();
+    });
+
+    test('creating a name a second operator just took reports it and keeps their roster', async ({ page, browser }) => {
+        const name = 'E2E Conflict';
+        const create = async (root: any, picks: number) => {
+            await root.locator('.mustry-sched-new').click();
+            await root.locator('.mustry-sched-name-input').fill(name);
+            for (let i = 0; i < picks; i++) {
+                await root.locator('.mustry-roster-add').click();
+                await root.locator('.mustry-roster-picker-item').first().click();
+            }
+            await expect(root.locator('.mustry-roster-row')).toHaveCount(picks);
+            await root.locator('.mustry-commit-save').click();
+        };
+        const root = await openPopulated(page);
+        await deleteIfPresent(root, name);
+
+        // This page's rail stays stale: only its own saves refresh it.
+        const context = await browser.newContext();
+        const other = await context.newPage();
+        const otherRoot = await openPopulated(other);
+        await create(otherRoot, 2);
+        await expect(other.getByText(/onRosterSave persisted "E2E Conflict" \(2 users, isNew=True\)/)).toBeVisible();
+        await expect(root.locator('.mustry-sched-item').filter({ hasText: name })).toHaveCount(0);
+
+        await create(root, 1);
+        await expect(page.getByText(/onRosterSave REFUSED: a roster named "E2E Conflict" already exists/)).toBeVisible();
+
+        // The second operator's roster still has both members.
+        await other.reload();
+        const fresh = await openPopulated(other);
+        await fresh.locator('.mustry-sched-item').filter({ hasText: name }).click();
+        await expect(fresh.locator('.mustry-roster-row')).toHaveCount(2);
+        await deleteIfPresent(fresh, name);
+        await context.close();
     });
 });
