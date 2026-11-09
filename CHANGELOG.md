@@ -8,6 +8,14 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Fixed: 2027 beta builds no longer outrank the final release
+A beta build was stamped `X.Y.Z.<beta number>`, which sorts above the final
+`X.Y.Z`, so moving a gateway from the beta build to the final 2027 build would
+have been a downgrade. Beta builds are now stamped plain `X.Y.Z`. The beta
+already published installs as `0.9.1.1`, so every later 2027 build is `0.9.2`
+or higher, and the dev version moves to `0.9.2-SNAPSHOT`. The release gate now
+refuses a beta build that isn't numbered above every published one.
+
 ### Added: build and test against the Ignition 2027 beta
 8.3 builds don't load on Ignition 2027, which gates modules on the year version
 and moves to Java 25. `ops/ignition-2027.env` now runs a 2027 gateway beside the
