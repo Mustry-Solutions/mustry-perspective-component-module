@@ -1,4 +1,8 @@
 version: 2
+# Every dependabot PR runs the full CI (about 20 billed minutes with the E2E
+# suite), so tooling that ships nothing updates monthly and in one PR per
+# directory. Security updates for npm and Actions do not wait for these
+# schedules. /web (the code that ships) and Gradle keep a weekly schedule.
 updates:
   # Root lint workspace (ESLint + typescript-eslint + plugins). Separate from
   # /web: it ships nothing, so majors here are safe to take automatically — a
@@ -13,7 +17,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
     groups:
       eslint:
@@ -69,8 +73,12 @@ updates:
   - package-ecosystem: npm
     directory: /e2e
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
+    groups:
+      e2e:
+        patterns:
+          - "*"
 
   # Dev gateway image (inductiveautomation/ignition) in docker-compose.yml,
   # which is also the gateway the E2E check runs against. Patch releases only:
@@ -79,21 +87,31 @@ updates:
   - package-ecosystem: docker-compose
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 2
     ignore:
       - dependency-name: "inductiveautomation/ignition"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Gradle (SDK plugin + module deps)
+  # Stays weekly: without a submitted Gradle dependency graph, security alerts
+  # do not cover these dependencies, so this schedule is the only update path.
   - package-ecosystem: gradle
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      gradle:
+        patterns:
+          - "*"
 
   # GitHub Actions used by the CI / release workflows
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -64,7 +64,9 @@ ops/demo.sh [--fresh]   # sales demo ("Mustry Bottling Co.", ops/demo/) — ever
 **Ignition 2027 beta** (needs JDK 25): `source ops/ignition-2027.env`, then use
 the same scripts. Gateway on :9288 beside the 8.3 one on :9088, with its own
 container, volume and `.modl` folder, built from the 2027 SDK. An 8.3 `.modl` and a
-2027 `.modl` are not interchangeable. CI runs it as an advisory (not required) job.
+2027 `.modl` are not interchangeable. CI runs it as an advisory (not required) job on every main commit, and on PRs that
+touch the build, the Java code, the gateway scripts or `ci.yml` (or on demand via
+`workflow_dispatch`).
 
 The demo project's views are committed JSON generated data-free: they seed
 `session.custom.demo` relative to "today" on session start. **Project-file
