@@ -68,8 +68,8 @@ To publish one:
 2. Tag that commit `vX.Y.Z-ignition<sdk>`, with `X.Y.Z` taken from the fallback
    version in `build.gradle.kts`, and push the tag:
    ```bash
-   git tag -a v0.9.1-ignition2027.2.0-beta1 -m "0.9.1 for Ignition 2027.2.0-beta1"
-   git push origin v0.9.1-ignition2027.2.0-beta1
+   git tag -a v0.9.2-ignition2027.2.0-beta1 -m "0.9.2 for Ignition 2027.2.0-beta1"
+   git push origin v0.9.2-ignition2027.2.0-beta1
    ```
 
 The Release workflow reads the SDK from the tag, builds and signs on Java 25, and:
@@ -79,13 +79,17 @@ The Release workflow reads the SDK from the tag, builds and signs on Java 25, an
   `ops/beta-release-notes.md` (no CHANGELOG section or changelog PR needed),
 - names the file `Mustry-Perspective-Components-ignition-<sdk>.modl` and the
   module `Mustry Perspective Components (BETA for Ignition <sdk>)`,
-- stamps the numeric module version `X.Y.Z.<beta number>`.
+- stamps the plain module version `X.Y.Z`. A fourth field (`X.Y.Z.<beta>`)
+  would sort above the final `X.Y.Z`, so moving a gateway from the beta build
+  to the final 2027 build of that release would be a downgrade.
 
-The fallback SNAPSHOT version isn't bumped afterwards. Each new build needs a
-higher `X.Y.Z.<beta number>` than the last one, so raise the patch number when
-that wouldn't be true: to rebuild for the same Ignition beta (a tag can't be
-reused either), or when a new SDK restarts the beta number (`2027.2.0-beta3` gives
-`.3`, then `2027.3.0-beta1` gives `.1`).
+Each new beta build needs a higher `X.Y.Z` than the last one, so after
+publishing one, bump the fallback SNAPSHOT version to the next patch in a
+follow-up PR, as after a release.
+
+**The first beta build is an exception.** `v0.9.1-ignition2027.2.0-beta1` was
+published before this rule and installs as `0.9.1.1`, so every later 2027 build,
+beta or final, must be `0.9.2` or higher.
 
 When Inductive Automation ships a new beta, change the image and SDK in
 `ops/ignition-2027.env` in a PR, let the advisory job run, and publish a new build

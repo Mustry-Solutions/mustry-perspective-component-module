@@ -84,8 +84,10 @@ jobs:
           # Ignition's module.xml version parser is numeric-only: a prerelease
           # suffix (v0.4.0-beta.1) reaching it produces a .modl the gateway
           # rejects at install (a class of failure the observability module
-          # shipped once), so a beta build maps to the numeric x.y.z.<beta>
-          # through -PreleaseVersion=x.y.z-beta.<beta> (build.gradle.kts).
+          # shipped once), so a beta build is stamped plain x.y.z. Not
+          # x.y.z.<beta>: a fourth field sorts above the final x.y.z, so moving
+          # a gateway from the beta build to the final 2027 build of the same
+          # release would be a downgrade. The file and module names say BETA.
           # A bash match covers the whole string, so a typed value with a
           # newline cannot slip an extra line into $GITHUB_OUTPUT (a line-based
           # grep would pass it as long as one line looked valid).
@@ -95,7 +97,7 @@ jobs:
             java="17"
             prerelease=false
           elif [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-ignition([0-9]{4}\.[0-9]+\.[0-9]+-beta([0-9]+))$ ]]; then
-            release_version="${BASH_REMATCH[1]}-beta.${BASH_REMATCH[3]}"
+            release_version="${BASH_REMATCH[1]}"
             sdk="${BASH_REMATCH[2]}"
             java="25"
             prerelease=true
