@@ -112,7 +112,14 @@ build_and_stage_module() {
   info "Building and signing the module with Gradle (first build downloads dependencies)..."
   # `clean` so the signed .modl is produced fresh and never confused with a stale
   # unsigned artifact. This module is small, so a clean build is quick.
-  ( cd "${PROJECT_ROOT}" && ./gradlew clean build --console plain \
+  # MODULE_BUILD_SKIP_CHECKS=1 leaves out `check` (the Jest suite): CI's e2e
+  # jobs set it because the Build & test job already ran it on the same commit.
+  local skip_checks=()
+  if [[ "${MODULE_BUILD_SKIP_CHECKS:-}" == "1" ]]; then
+    skip_checks=(-x check)
+  fi
+  # The `+` form keeps an empty array safe under `set -u` on macOS bash 3.2.
+  ( cd "${PROJECT_ROOT}" && ./gradlew clean build --console plain ${skip_checks[@]+"${skip_checks[@]}"} \
       -Dorg.gradle.java.installations.auto-download=false \
       -Pignition.signing.keystoreFile="${KEYSTORE_FILE}" \
       -Pignition.signing.keystorePassword="${SIGNING_PASS}" \

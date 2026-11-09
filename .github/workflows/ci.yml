@@ -4,6 +4,18 @@ on:
   push:
     branches: [main]
   pull_request:
+    # The defaults plus ready_for_review, so a draft that skipped the E2E jobs
+    # runs them once it is marked ready.
+    types: [opened, synchronize, reopened, ready_for_review]
+  # Runs every job, including the Ignition 2027 suite, for any branch on demand.
+  workflow_dispatch:
+
+# A new push to a PR cancels that PR's run still in progress: only the newest
+# commit can merge. Pushes to main group per commit and are never cancelled,
+# because the beta release gate reads the 2027 job's result on each main commit.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Least privilege: CI only reads the repo (no writes, no packages, etc.).
 # Fork PRs already run without secrets — this keeps the token read-only too.
@@ -15,12 +27,57 @@ jobs:
   # needs no JDK, so it reports independently of the ~2 min build and keeps the
   # local inner loop unchanged. Scope is both npm projects — the components AND
   # the Playwright suite — driven from the root lint workspace (eslint.config.js).
+  #
+  # Lint also decides which of the other jobs a PR needs, so that decision
+  # costs no extra job (GitHub bills every job by the started minute). The
+  # gated jobs use job-level `if:` rather than workflow-level `paths:`: a
+  # skipped job still reports its required check as passed, while a workflow
+  # that never starts leaves the required checks pending and blocks the merge.
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      build: ${{ steps.scope.outputs.build }}
+      e2e: ${{ steps.scope.outputs.e2e }}
+      e2e_2027: ${{ steps.scope.outputs.e2e_2027 }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # A PR checks out its merge commit; parent 1 is the base branch tip,
+          # so HEAD^1..HEAD is exactly what the PR changes.
+          fetch-depth: 2
+
+      # build:    anything but docs. README.md counts as code: the Jest suite
+      #           checks it against the components (docSync.test.ts).
+      # e2e:      anything but docs and README.md.
+      # e2e_2027: the advisory 2027 suite runs on every main commit (the beta
+      #           release gate needs it there) and on demand; on a PR only when
+      #           it touches what differs between the two Ignition lines: the
+      #           build, the Java code compiled against the SDK, the gateway
+      #           scripts or this workflow.
+      - name: Decide which jobs this change needs
+        id: scope
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            echo "Not a PR: every job runs."
+            { echo "build=true"; echo "e2e=true"; echo "e2e_2027=true"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          build=false; e2e=false; e2e_2027=false
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            case "$f" in
+              README.md) build=true ;;
+              docs/*|.claude/*|.github/ISSUE_TEMPLATE/*|.github/CODEOWNERS|.github/dependabot.yml|*.md|LICENSE) ;;
+              *) build=true; e2e=true ;;
+            esac
+            case "$f" in
+              .github/workflows/ci.yml|ops/ignition-2027.env|ops/lib.sh|ops/e2e.sh|docker-compose.yml|*.gradle.kts|gradle/*|*.java) e2e_2027=true ;;
+            esac
+          done < <(git diff --name-only HEAD^1 HEAD)
+          echo "build=$build e2e=$e2e e2e_2027=$e2e_2027"
+          { echo "build=$build"; echo "e2e=$e2e"; echo "e2e_2027=$e2e_2027"; } >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -39,6 +96,10 @@ jobs:
 
   build:
     name: Build & test
+    # Waits for Lint only to read its scope; `!cancelled()` keeps it running
+    # when lint fails, so both results still show up on the PR.
+    needs: lint
+    if: ${{ !cancelled() && needs.lint.outputs.build == 'true' }}
     runs-on: ubuntu-latest
     # Normal runs finish in ~2 min; without a cap a wedged job burns the
     # 6-hour GitHub default (observed once: a runner-side hang in job setup).
@@ -111,8 +172,12 @@ jobs:
     # failure blocks the PR visibly via Lint going red — this `needs` only
     # saves the runner, it isn't the gate.
     needs: [build, lint]
-    # Normal runs finish in ~6 min (gateway boot + suite); cap well above
-    # that so a hung boot fails fast instead of running for hours.
+    # Not on pushes to main: the ruleset requires this check on the PR with the
+    # branch up to date (strict), so main receives exactly the tree that just
+    # passed it. Not on drafts either; ready_for_review starts it.
+    if: ${{ needs.lint.outputs.e2e == 'true' && github.event_name != 'push' && !github.event.pull_request.draft }}
+    # Normal runs finish in ~16 min (gateway boot + suite); cap above that so
+    # a hung boot fails fast instead of running for hours.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -152,8 +217,12 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      # Build & test already ran the Jest suite on this commit; this rebuild
+      # only needs the dev-signed .modl.
       - name: Bring up gateway and run the suite
         run: ops/e2e.sh --fresh
+        env:
+          MODULE_BUILD_SKIP_CHECKS: "1"
 
       - name: Upload Playwright report
         if: failure()
@@ -178,6 +247,9 @@ jobs:
     name: E2E Ignition 2027 beta (advisory)
     runs-on: ubuntu-latest
     needs: [build, lint]
+    # Every main commit and manual run; on a PR only when it touches the build,
+    # the Java code or the gateway scripts (see the Lint job).
+    if: ${{ needs.lint.outputs.e2e_2027 == 'true' && !github.event.pull_request.draft }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -219,6 +291,8 @@ jobs:
         run: |
           source ops/ignition-2027.env
           ops/e2e.sh --fresh
+        env:
+          MODULE_BUILD_SKIP_CHECKS: "1"
 
       - name: Upload Playwright report
         if: failure()

@@ -47,6 +47,8 @@ jobs:
   prepare:
     name: Version & user manual
     runs-on: ubuntu-latest
+    # Normal runs take under a minute; a hung download should not run for hours.
+    timeout-minutes: 15
     permissions:
       contents: read
       checks: read   # the beta gate reads the 2027 job's result on this commit
@@ -135,11 +137,15 @@ jobs:
           name: user-manual
           path: build/user_manual.pdf
           if-no-files-found: error
+          # Only a hand-off to the next job; the release itself carries the PDF.
+          retention-days: 1
 
   release:
     name: Build, sign & publish
     needs: prepare
     runs-on: ubuntu-latest
+    # Normal runs take about 2 min.
+    timeout-minutes: 20
     permissions:
       contents: write   # create the release + upload the asset
     steps:
@@ -264,6 +270,7 @@ jobs:
           name: signed-modl-${{ needs.prepare.outputs.version }}
           path: ${{ steps.modl.outputs.path }}
           if-no-files-found: error
+          retention-days: 7
 
       # After the build on purpose: `gradlew clean` wipes build/. Runs on dry
       # runs too, so they exercise the hand-off from the prepare job.
