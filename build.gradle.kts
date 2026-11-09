@@ -51,19 +51,12 @@ ignitionModule {
      * Version of the module.  Here being set to the same version that gradle uses, up above in this file.
      */
     /*
-     * Ignition's module version parser accepts only numeric x.y.z(.b) — a
-     * semver prerelease like 0.4.0-beta.1 makes module.xml unparseable and
-     * the gateway rejects the .modl. Keep full semver for the GitHub release;
-     * map it to numbers here: 0.4.0-beta.1 -> 0.4.0.1, 0.4.0-SNAPSHOT -> 0.4.0.
-     * (The release workflow rejects prerelease tags other than its beta-build
-     * form, vX.Y.Z-ignition<sdk>, which it passes here as plain X.Y.Z.)
+     * Ignition's module version parser accepts only numeric x.y.z(.b), so a
+     * suffix must never reach module.xml: 0.4.0-SNAPSHOT -> 0.4.0. No fourth
+     * field either: it would sort above the final x.y.z. The release workflow
+     * passes plain x.y.z, for beta builds too (vX.Y.Z-ignition<sdk>).
      */
-    moduleVersion.set(project.provider {
-        val v = project.version.toString()
-        val base = v.substringBefore("-")
-        val preNumber = Regex("[0-9]+$").find(v.substringAfter("-", ""))?.value
-        if (v.contains("-") && preNumber != null) "$base.$preNumber" else base
-    })
+    moduleVersion.set(project.provider { project.version.toString().substringBefore("-") })
 
     moduleDescription.set((if (prerelease_sdk) "BETA build for Ignition $sdk_version, not for production. " else "") + "Custom Perspective components: pickers, calendar/scheduler, resource timeline, data grid, pan & zoom, rich-text and code editors, colour picker, on-screen keyboard, and the admin family (schedule, roster, user and holiday management), the Idle Guard screensaver, plus toasts from scripts (system.mustry.toast).")
 

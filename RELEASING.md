@@ -18,6 +18,10 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
 1. **Update the changelog.** Rename the `## [Unreleased]` heading to
    `## [X.Y.Z] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` above it.
    Do this in a normal PR and merge it.
+   Take `X.Y.Z` from the fallback version in `build.gradle.kts` (or higher, for a
+   minor or major release). Normal releases and beta builds share one rising
+   sequence of numbers, so a release can skip numbers that beta builds used;
+   the gaps are expected.
 2. **Tag the merge commit and push the tag:**
    ```bash
    git switch main && git pull
@@ -42,7 +46,7 @@ Releases are driven entirely by an annotated git tag `vX.Y.Z`.
 
 4. **Bump the dev version.** In a follow-up PR, set the fallback version in
    `build.gradle.kts` to the next patch as a SNAPSHOT (after `v0.2.0`:
-   `0.2.1-SNAPSHOT`). module.xml drops the `-SNAPSHOT` suffix, so a dev build
+   `0.2.1-SNAPSHOT`), and never lower it. module.xml drops the `-SNAPSHOT` suffix, so a dev build
    left on the old number would claim to be the release it follows and
    install as a downgrade.
 
@@ -62,11 +66,13 @@ To publish one:
 
 1. Pick a commit on `main` where **E2E Ignition 2027 beta (advisory)** passed.
    It isn't a required check, so `main` can be red on it. The workflow stops if
-   the commit isn't on `main`, if the job didn't pass, or if the tag's SDK isn't the
-   one in `ops/ignition-2027.env`. If you tagged before the job finished, wait
+   the commit isn't on `main`, if the job didn't pass, if the tag's SDK isn't the
+   one in `ops/ignition-2027.env`, or if `X.Y.Z` isn't higher than every published
+   beta build's. If you tagged before the job finished, wait
    for it, then re-run the failed Release run: the tag doesn't need replacing.
 2. Tag that commit `vX.Y.Z-ignition<sdk>`, with `X.Y.Z` taken from the fallback
-   version in `build.gradle.kts`, and push the tag:
+   version in `build.gradle.kts` on `main` as it is now (not at an older commit
+   you may be tagging), and push the tag:
    ```bash
    git tag -a v0.9.2-ignition2027.2.0-beta1 -m "0.9.2 for Ignition 2027.2.0-beta1"
    git push origin v0.9.2-ignition2027.2.0-beta1
@@ -96,8 +102,9 @@ When Inductive Automation ships a new beta, change the image and SDK in
 from a commit where it passed. A beta
 build may not survive a later Ignition beta.
 
-**When 2027 is released:** build on the final SDK, make the 2027 job a required
-check, and have the normal `vX.Y.Z` release publish both `.modl` files. That last
+**When 2027 is released:** build on the final SDK, give that build a higher
+`X.Y.Z` than the last published beta build, make the 2027 job a required check,
+and have the normal `vX.Y.Z` release publish both `.modl` files. That last
 step isn't implemented yet because the final SDK doesn't exist.
 
 ## Signing secrets
@@ -127,7 +134,7 @@ unrelated to release signing.
 
 `./gradlew build` locally produces the fallback SNAPSHOT version from
 `build.gradle.kts` (the `releaseVersion` property is unset), one patch ahead
-of the latest release. module.xml carries it without the suffix
-(`0.8.1-SNAPSHOT` → `0.8.1`). Only the tagged Release workflow stamps a real
+of the latest tag, a beta build's included. module.xml carries it without the
+suffix (`0.9.2-SNAPSHOT` → `0.9.2`). Only the tagged Release workflow stamps a real
 version. `ops/setup.sh`/`deploy.sh` sign with the local dev keystore for
 the disposable gateway, which is independent of release signing.
