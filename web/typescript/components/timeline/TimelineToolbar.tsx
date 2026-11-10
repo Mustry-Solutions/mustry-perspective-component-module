@@ -15,11 +15,13 @@ interface TimelineToolbarProps {
     showMiniNav: boolean;
     miniOpen: boolean;
     showExport: boolean;
+    showExportIcs: boolean;
     emptyLabel: string;
     emptyHint: string;
     onToggleMini: (e: React.MouseEvent) => void;
     onSetZoom: (zoom: TimelineZoom) => void;
     onExportCsv: () => void;
+    onExportIcs: () => void;
     onToggleFollowNow: () => void;
     onPrev: () => void;
     onToday: () => void;
@@ -60,6 +62,11 @@ export function TimelineToolbar(p: TimelineToolbarProps): React.ReactElement {
                 {p.showExport && (
                     <button type="button" className="mustry-tml-nav-btn mustry-tml-export-btn" onClick={p.onExportCsv} title={labels.exportCsv} aria-label={labels.exportCsv}>
                         <IconRenderer path="material/get_app" color="var(--tml-accent)" />
+                    </button>
+                )}
+                {p.showExportIcs && (
+                    <button type="button" className="mustry-tml-nav-btn mustry-tml-export-btn mustry-tml-export-ics-btn" onClick={p.onExportIcs} title={labels.exportIcs} aria-label={labels.exportIcs}>
+                        <IconRenderer path="material/event" color="var(--tml-accent)" />
                     </button>
                 )}
                 <button

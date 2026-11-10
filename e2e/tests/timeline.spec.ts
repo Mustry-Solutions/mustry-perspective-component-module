@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { Page } from '@playwright/test';
 import { test, expect, openRoute } from './helpers';
 
@@ -443,4 +444,16 @@ test.describe('timeline: zoom changes keep the moment in view (issue #214)', () 
         expect(await page.evaluate('window.__zoomWithRefresh'), 'both changes landed in one update').toBe(true);
         await expectNowOnScreen(page);
     });
+});
+
+test('timeline: the .ics button downloads a calendar file', async ({ page }) => {
+    await openRoute(page, '/timeline', '.mustry-timeline');
+    const button = page.locator('.mustry-tml-export-ics-btn');
+    await expect(button.locator('svg')).toBeVisible();
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+    expect(download.suggestedFilename()).toBe('timeline-events.ics');
+    const text = fs.readFileSync(await download.path(), 'utf8');
+    expect(text.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+    expect(text).toContain('BEGIN:VEVENT\r\n');
+    expect(text).toContain('LOCATION:');
 });

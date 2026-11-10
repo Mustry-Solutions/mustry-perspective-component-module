@@ -11,6 +11,7 @@
         "showToolbar": true,
         "showMiniNav": true,
         "showExport": false,
+        "showExportIcs": false,
         "editable": false,
         "selectable": false,
         "weekStart": "monday",
@@ -60,6 +61,11 @@
           "type": "boolean",
           "default": false,
           "description": "Show a toolbar button that downloads the loaded events as a CSV file."
+        },
+        "showExportIcs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a toolbar button that downloads the loaded events as an iCalendar file (calendar-events.ics) for Outlook, Google Calendar and similar apps. Recurring series stay series."
         },
         "weekStart": {
           "enum": [
@@ -215,6 +221,10 @@
             "exportCsv": {
               "type": "string",
               "description": "Tooltip + accessible label of the CSV export button."
+            },
+            "exportIcs": {
+              "type": "string",
+              "description": "Tooltip + accessible label of the .ics export button."
             },
             "previous": {
               "type": "string",

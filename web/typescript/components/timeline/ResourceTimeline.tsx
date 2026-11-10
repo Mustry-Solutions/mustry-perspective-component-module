@@ -9,6 +9,7 @@ import {
 } from '@inductiveautomation/perspective-client';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { CSV_BOM } from '../../shared/csv';
+import { downloadFile } from '../../shared/download';
 import { addDays, fmtDate, msToZonedIso, pad2, parseDate, resolveZoned, toEpochMs, wallOfDay, zoneWallClock } from '../../shared/dateUtils';
 import { expandEvents, occurrenceOf } from '../../shared/recurrence';
 import { resolveColor } from '../../shared/eventStyle';
@@ -22,7 +23,7 @@ import {
     buildRows, buildTicks, containingAnchorMs, containingCustomWindow, customScale, customTickStepMs, customWindow,
     customWindowOnDate, customZoom, focusScrollLeft, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
     KeptFocus, barMinPx, isConfiguredEmpty, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs,
-    pageCustomWindow, resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs,
+    pageCustomWindow, resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, timelineEventsToIcs, windowFor, windowOutputs,
     zoneMidnightMs, zonedFormat
 } from './timelineLogic';
 import { TimelineProps, mapTimelineProps } from './timelineProps';
@@ -728,15 +729,15 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
     private exportCsv = (): void => {
         const p = this.props.props;
         const csv = timelineEventsToCsv([...(p.events || []), ...(p.recurringEvents || [])]);
-        const blob = new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'timeline-events.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        downloadFile([CSV_BOM, csv], 'text/csv;charset=utf-8;', 'timeline-events.csv');
+    };
+
+    private exportIcs = (): void => {
+        const p = this.props.props;
+        const ics = timelineEventsToIcs([...(p.events || []), ...(p.recurringEvents || [])], p.categories || [], p.resources || [], {
+            timezone: p.timezone, now: new Date()
+        });
+        downloadFile([ics], 'text/calendar;charset=utf-8;', 'timeline-events.ics');
     };
 
     // --- hover detail popover ----------------------------------------------
@@ -831,11 +832,13 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                 showMiniNav={p.showMiniNav}
                 miniOpen={!!this.state.mini}
                 showExport={p.showExport}
+                showExportIcs={p.showExportIcs}
                 emptyLabel={emptyLabel}
                 emptyHint={this.emptyHint()}
                 onToggleMini={this.toggleMini}
                 onSetZoom={this.setZoom}
                 onExportCsv={this.exportCsv}
+                onExportIcs={this.exportIcs}
                 onToggleFollowNow={this.toggleFollowNow}
                 onPrev={this.prev}
                 onToday={this.goToday}

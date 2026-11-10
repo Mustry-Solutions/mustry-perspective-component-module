@@ -27,6 +27,7 @@ export interface TimelineLabels {
     emptyHintCreate: string;
     emptyHintBind: string;
     exportCsv: string;                // export button tooltip / accessible label
+    exportIcs: string;                // .ics export button tooltip / accessible label
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // built-in editor
     newEvent: string; editEvent: string;
@@ -58,6 +59,7 @@ export const EN_TIMELINE_LABELS: TimelineLabels = {
     emptyHintCreate: 'Add an event: drag over an empty span on a resource row.',
     emptyHintBind: 'Events come from the data binding — enable "selectable" + "builtInEditor" to add them here.',
     exportCsv: 'Export events to CSV',
+    exportIcs: 'Export events to iCalendar (.ics)',
     previousMonth: 'Previous month', nextMonth: 'Next month',
     newEvent: 'New event', editEvent: 'Edit event',
     thisEvent: 'This event', allEvents: 'All events',
@@ -88,6 +90,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: "Ajouter un événement : faites glisser sur une plage vide d'une ligne de ressource.",
         emptyHintBind: 'Les événements proviennent de la liaison de données — activez « selectable » + « builtInEditor » pour les ajouter ici.',
         exportCsv: 'Exporter les événements en CSV',
+        exportIcs: 'Exporter les événements en iCalendar (.ics)',
         previousMonth: 'Mois précédent', nextMonth: 'Mois suivant',
         newEvent: 'Nouvel événement', editEvent: "Modifier l'événement",
         thisEvent: 'Cet événement', allEvents: 'Tous les événements',
@@ -116,6 +119,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: 'Ereignis hinzufügen: über einen leeren Bereich einer Ressourcenzeile ziehen.',
         emptyHintBind: 'Ereignisse kommen aus der Datenanbindung — aktivieren Sie „selectable“ + „builtInEditor“, um sie hier anzulegen.',
         exportCsv: 'Ereignisse als CSV exportieren',
+        exportIcs: 'Ereignisse als iCalendar (.ics) exportieren',
         previousMonth: 'Vorheriger Monat', nextMonth: 'Nächster Monat',
         newEvent: 'Neues Ereignis', editEvent: 'Ereignis bearbeiten',
         thisEvent: 'Dieses Ereignis', allEvents: 'Alle Ereignisse',
@@ -144,6 +148,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: 'Añadir un evento: arrastre sobre un tramo vacío de una fila de recurso.',
         emptyHintBind: 'Los eventos provienen del enlace de datos — active «selectable» + «builtInEditor» para añadirlos aquí.',
         exportCsv: 'Exportar eventos a CSV',
+        exportIcs: 'Exportar eventos a iCalendar (.ics)',
         previousMonth: 'Mes anterior', nextMonth: 'Mes siguiente',
         newEvent: 'Nuevo evento', editEvent: 'Editar evento',
         thisEvent: 'Este evento', allEvents: 'Todos los eventos',
@@ -172,6 +177,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: 'Evenement toevoegen: sleep over een leeg stuk van een resource-rij.',
         emptyHintBind: 'Evenementen komen uit de databinding — zet "selectable" + "builtInEditor" aan om ze hier toe te voegen.',
         exportCsv: 'Evenementen exporteren als CSV',
+        exportIcs: 'Evenementen exporteren als iCalendar (.ics)',
         previousMonth: 'Vorige maand', nextMonth: 'Volgende maand',
         newEvent: 'Nieuw evenement', editEvent: 'Evenement bewerken',
         thisEvent: 'Dit evenement', allEvents: 'Alle evenementen',
@@ -200,6 +206,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: 'Aggiungi un evento: trascina su un tratto vuoto di una riga risorsa.',
         emptyHintBind: 'Gli eventi provengono dal binding dei dati — attiva "selectable" + "builtInEditor" per aggiungerli qui.',
         exportCsv: 'Esporta eventi in CSV',
+        exportIcs: 'Esporta eventi in iCalendar (.ics)',
         previousMonth: 'Mese precedente', nextMonth: 'Mese successivo',
         newEvent: 'Nuovo evento', editEvent: 'Modifica evento',
         thisEvent: 'Questo evento', allEvents: 'Tutti gli eventi',
@@ -228,6 +235,7 @@ const TIMELINE_PACKS: { [lang: string]: TimelineLabels } = {
         emptyHintCreate: 'Adicionar um evento: arraste sobre um trecho vazio de uma linha de recurso.',
         emptyHintBind: 'Os eventos vêm da ligação de dados — ative "selectable" + "builtInEditor" para os adicionar aqui.',
         exportCsv: 'Exportar eventos para CSV',
+        exportIcs: 'Exportar eventos para iCalendar (.ics)',
         previousMonth: 'Mês anterior', nextMonth: 'Mês seguinte',
         newEvent: 'Novo evento', editEvent: 'Editar evento',
         thisEvent: 'Este evento', allEvents: 'Todos os eventos',

@@ -714,6 +714,7 @@ describe('mapTimelineProps', () => {
         expect(p.labels.zoomWeek).toBe('Week');
         expect(p.editable).toBe(false);
         expect(p.showExport).toBe(false);
+        expect(p.showExportIcs).toBe(false);
         expect(p.animations).toBe(true);
         expect(mapTimelineProps(stubReader({ config: { animations: false } })).animations).toBe(false);
         expect(p.weekStart).toBe('monday');

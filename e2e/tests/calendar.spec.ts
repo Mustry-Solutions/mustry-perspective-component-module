@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import * as fs from 'fs';
 import { test, expect, openRoute } from './helpers';
 
 // Evergreen demo: events are seeded relative to today on view load. The exact
@@ -381,4 +382,16 @@ test('calendar: dragging empty time in week view still creates', async ({ page }
     await page.mouse.move(x, y + 80, { steps: 8 });
     await page.mouse.up();
     await expect(page.locator('.mustry-cal-editor')).toBeVisible();
+});
+
+test('calendar: the .ics button downloads a calendar file', async ({ page }) => {
+    await openRoute(page, '/calendar', '.mustry-calendar');
+    const button = page.locator('.mustry-cal-export-ics-btn');
+    await expect(button.locator('svg')).toBeVisible();
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+    expect(download.suggestedFilename()).toBe('calendar-events.ics');
+    const text = fs.readFileSync(await download.path(), 'utf8');
+    expect(text.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+    expect(text).toContain('BEGIN:VEVENT\r\n');
+    expect(text.endsWith('END:VCALENDAR\r\n')).toBe(true);
 });

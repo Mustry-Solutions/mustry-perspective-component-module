@@ -27,6 +27,7 @@ import {
     buildMonthGrid,
     groupEventsByDay,
     eventsToCsv,
+    eventsToIcs,
     weekDays,
     isoDateTime,
     followTickMs,
@@ -43,9 +44,10 @@ import {
 } from './calendarLogic';
 import {
     CalView, Gesture, Editor, Preview,
-    CalendarProps, CalendarState, hourHeightPx
+    CalendarProps, CalendarState, DEFAULT_DUR_MIN, hourHeightPx
 } from './calendarTypes';
 import { CSV_BOM } from '../../shared/csv';
+import { downloadFile } from '../../shared/download';
 import { resolveColor as styleResolveColor } from '../../shared/eventStyle';
 import { expandEvents } from '../../shared/recurrence';
 import { mapCalendarProps } from './calendarProps';
@@ -622,15 +624,16 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     private exportCsv = (): void => {
         const p = this.props.props;
         const csv = eventsToCsv(p.events || [], p.recurringEvents || []);
-        const blob = new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'calendar-events.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        downloadFile([CSV_BOM, csv], 'text/csv;charset=utf-8;', 'calendar-events.csv');
+    };
+
+    /** Export the loaded events (windowed + recurring definitions) to an .ics file (downloaded client-side). */
+    private exportIcs = (): void => {
+        const p = this.props.props;
+        const ics = eventsToIcs(p.events || [], p.recurringEvents || [], p.categories || [], {
+            timezone: p.timezone, now: new Date(), defaultDurationMin: DEFAULT_DUR_MIN
+        });
+        downloadFile([ics], 'text/calendar;charset=utf-8;', 'calendar-events.ics');
     };
 
     // --- mini-month navigator (popover from the toolbar title) -------------
@@ -792,6 +795,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 showMiniNav={this.props.props.showMiniNav}
                 miniOpen={!!this.state.mini}
                 showExport={this.props.props.showExport}
+                showExportIcs={this.props.props.showExportIcs}
                 emptyLabel={this.isConfiguredEmpty() ? this.emptyText() : ''}
                 emptyHint={this.emptyHint()}
                 followNow={this.props.props.followNow}
@@ -799,6 +803,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 onToggleMini={this.toggleMini}
                 onSetView={(v) => this.setView(v)}
                 onExport={this.exportCsv}
+                onExportIcs={this.exportIcs}
                 onToggleFollow={this.toggleFollowNow}
                 onPrev={this.prev}
                 onToday={this.goToday}
