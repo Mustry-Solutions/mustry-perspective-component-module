@@ -49,6 +49,7 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         showToolbar: tree.readBoolean('config.showToolbar', true),
         showMiniNav: tree.readBoolean('config.showMiniNav', true),
         showExport: tree.readBoolean('config.showExport', false),
+        showExportIcs: tree.readBoolean('config.showExportIcs', false),
         showLegend: tree.readBoolean('config.showLegend', true),
         categories: (tree.readArray('config.categories', []) || [])
             .map((c: any) => ({

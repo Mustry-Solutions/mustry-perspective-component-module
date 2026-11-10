@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: iCalendar (.ics) export for the calendar and timeline
+`config.showExportIcs` adds a toolbar button that downloads the loaded events as
+an `.ics` file, so they can be opened in Outlook, Google Calendar or Apple
+Calendar. Recurring series stay series and keep their local time across DST
+changes, and UIDs come from event ids so re-importing updates instead of
+duplicating. Off by default.
+
 ### Added: build and test against the Ignition 2027 beta
 8.3 builds don't load on Ignition 2027, which gates modules on the year version
 and moves to Java 25. `ops/ignition-2027.env` now runs a 2027 gateway beside the

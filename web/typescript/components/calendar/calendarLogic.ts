@@ -3,6 +3,7 @@
 // month-grid construction live in the shared layer.
 
 import { csvCell } from '../../shared/csv';
+import { buildIcs, IcsOptions } from '../../shared/ics';
 import {
     addDays, fmtDate, parseDate, startOfWeek, sameDay, pad2, today, toEpochMs
 } from '../../shared/dateUtils';
@@ -101,6 +102,27 @@ export function eventsToCsv(events: CalEvent[], recurringEvents: CalEvent[] = []
         ].map((c) => csvCell(String(c))).join(','));
     }
     return rows.join('\r\n');
+}
+
+/** The loaded events as .ics text. Series stay series (RRULE); one bound via both sources exports once.
+ *  A date-only start renders as an all-day event even without `allDay`, so it exports as one. */
+export function eventsToIcs(
+    events: CalEvent[], recurringEvents: CalEvent[], categories: Array<{ id: string; label: string }>, opts: IcsOptions
+): string {
+    const labelOf = new Map(categories.map((c) => [c.id, c.label] as [string, string]));
+    const items = [...(events || []), ...(recurringEvents || [])].filter(Boolean).map((ev) => ({
+        id: ev.id,
+        title: ev.title,
+        start: ev.start,
+        end: ev.end,
+        allDay: !!ev.allDay || /^\d{4}-\d{2}-\d{2}$/.test(String(ev.start)),
+        status: ev.status,
+        description: ev.description,
+        category: ev.category ? labelOf.get(ev.category) || ev.category : undefined,
+        transparent: ev.display === 'background',
+        rrule: ev.rrule
+    }));
+    return buildIcs(items, opts);
 }
 
 /** A horizontal event bar within one month week-row. */

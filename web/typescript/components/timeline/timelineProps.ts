@@ -33,6 +33,7 @@ export interface TimelineProps {
     selectable: boolean;     // drag empty track to create
     builtInEditor: boolean;  // built-in editor popover for create/edit/delete
     showExport: boolean;     // toolbar CSV-download button
+    showExportIcs: boolean;  // toolbar .ics-download button
     animations: boolean;     // enter animation for newly-appearing bars/state bands
     weekStart: WeekStart;             // for the mini month navigator
     shifts: ShiftDef[];               // enables the 'shift' zoom preset when non-empty
@@ -108,6 +109,7 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         selectable: tree.readBoolean('config.selectable', false),
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         showExport: tree.readBoolean('config.showExport', false),
+        showExportIcs: tree.readBoolean('config.showExportIcs', false),
         animations: tree.readBoolean('config.animations', true),
         weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         shifts,

@@ -55,6 +55,7 @@
             "selectable": true,
             "builtInEditor": true,
             "showExport": true,
+            "showExportIcs": true,
             "resources": [
               {
                 "id": "mixer1",

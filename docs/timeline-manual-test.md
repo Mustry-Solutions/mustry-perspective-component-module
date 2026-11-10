@@ -137,6 +137,12 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
 - [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with
       `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
+## iCalendar export
+
+- [ ] `config.showExportIcs` shows a second download button; clicking downloads
+      `timeline-events.ics`, which imports into Outlook and Google Calendar with
+      each event's resource as its location and series kept as series.
+
 ## Keyboard / a11y
 
 - [ ] Tab reaches every control: toolbar, group headers, bars, state bands, legend —

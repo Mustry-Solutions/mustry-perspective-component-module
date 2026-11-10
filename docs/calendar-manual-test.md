@@ -328,6 +328,14 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
 - [ ] Fields with commas / quotes / newlines are quoted/escaped correctly.
 - [ ] Opens cleanly in Excel (UTF-8 BOM — accents intact); cells starting with `=`, `+`, `-`, `@` are apostrophe-guarded (no formula execution).
 
+## iCalendar export
+
+- [ ] Set `config.showExportIcs = true` → a second download button appears in the toolbar.
+- [ ] Clicking it downloads `calendar-events.ics`. Import it into Outlook and Google Calendar:
+  - [ ] Timed events land at the right local time, and all-day events on the right days (a multi-day event doesn't gain or lose a day).
+  - [ ] A weekly series imports as one series and keeps its local time on both sides of a DST change. Deleted occurrences stay deleted.
+  - [ ] Importing the same file twice doesn't duplicate events.
+
 ## Keyboard / a11y
 
 - [ ] Tab reaches every control: toolbar, view switcher, event chips/blocks, date

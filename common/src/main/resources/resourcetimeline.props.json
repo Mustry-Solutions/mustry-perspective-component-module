@@ -296,6 +296,10 @@
               "type": "string",
               "description": "Tooltip + accessible label of the CSV export button."
             },
+            "exportIcs": {
+              "type": "string",
+              "description": "Tooltip + accessible label of the .ics export button."
+            },
             "previousMonth": {
               "type": "string",
               "description": "Accessible label of the mini-nav back arrow."
@@ -386,6 +390,11 @@
           "type": "boolean",
           "default": false,
           "description": "Toolbar button that downloads the loaded events (windowed + recurring definitions) as timeline-events.csv."
+        },
+        "showExportIcs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Toolbar button that downloads the loaded events (windowed + recurring definitions) as timeline-events.ics for Outlook, Google Calendar and similar apps. Each event's resource becomes its location."
         },
         "animations": {
           "type": "boolean",

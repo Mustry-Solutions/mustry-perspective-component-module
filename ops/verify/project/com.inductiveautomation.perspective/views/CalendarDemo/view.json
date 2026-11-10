@@ -47,6 +47,7 @@
             "refreshSeconds": 60,
             "showLegend": true,
             "showExport": true,
+            "showExportIcs": true,
             "slotMinutes": 15,
             "shifts": [
               {
