@@ -6,6 +6,7 @@
 // 23/25 hours long and must render that way instead of tearing the axis. Tick
 // LABELS are zone-aware via Intl.
 import { csvCell } from '../../shared/csv';
+import { buildIcs, IcsOptions } from '../../shared/ics';
 import { resolveZoned, toEpochMs, zoneWallClock } from '../../shared/dateUtils';
 import { OccurrenceTag, RRule } from '../../shared/recurrence';
 import { ShiftDef, shiftStartMinutes } from '../../shared/shifts';
@@ -603,6 +604,27 @@ export function timelineEventsToCsv(events: TimelineEvent[]): string {
         ].map((c) => csvCell(String(c))).join(','));
     }
     return rows.join('\r\n');
+}
+
+/** The loaded events as .ics text, with each bar's resource as its location. Series stay series (RRULE). */
+export function timelineEventsToIcs(
+    events: TimelineEvent[], categories: Array<{ id: string; label: string }>, resources: TimelineResource[], opts: IcsOptions
+): string {
+    const categoryLabel = new Map(categories.map((c) => [c.id, c.label] as [string, string]));
+    const resourceLabel = new Map(resources.map((r) => [r.id, r.label] as [string, string]));
+    const items = (events || []).filter(Boolean).map((ev) => ({
+        id: ev.id,
+        title: ev.title,
+        start: ev.start,
+        end: ev.end,
+        status: ev.status,
+        description: ev.description,
+        category: ev.category ? categoryLabel.get(ev.category) || ev.category : undefined,
+        location: resourceLabel.get(ev.resourceId) || ev.resourceId,
+        transparent: ev.display === 'state' || ev.display === 'background',
+        rrule: ev.rrule
+    }));
+    return buildIcs(items, opts);
 }
 
 // --- per-row bar/band layout --------------------------------------------------

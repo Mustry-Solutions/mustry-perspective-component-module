@@ -54,7 +54,7 @@ function weekStartOf(r: RRule): number {
  *  series must be enumerated from the base (their `count` is the real bound), so they are
  *  left as-is. The starting index is biased low; the `< base` guard here and the
  *  overlap check in expandOne drop any extras. */
-function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date): Date[] {
+export function occurrenceStartDates(base: Date, r: RRule, winStart: Date, winEnd: Date): Date[] {
     const interval = Math.max(1, r.interval || 1);
     const until = r.until ? parseDate(r.until) : null;
     const hasCount = !!(r.count && r.count > 0);
