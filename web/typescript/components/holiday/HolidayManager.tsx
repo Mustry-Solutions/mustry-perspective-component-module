@@ -71,8 +71,27 @@ export class HolidayManager
         this.scheduleDayTick();
     }
 
+    componentDidUpdate(): void {
+        super.componentDidUpdate();
+        // config.timezone changed, or the gateway's zone arrived after mount: aim at the new
+        // zone's midnight now instead of up to an hour later.
+        if (this.dayTimerZone !== this.zone()) {
+            this.scheduleDayTick();
+        }
+    }
+
     componentWillUnmount(): void {
         super.componentWillUnmount();
+        this.clearDayTick();
+    }
+
+    private dayTimerZone = '';
+
+    private zone(): string {
+        return managerTimeZone(this.props.props.timezone, this.props.store);
+    }
+
+    private clearDayTick(): void {
         if (this.dayTimer !== null) {
             window.clearTimeout(this.dayTimer);
             this.dayTimer = null;
@@ -80,9 +99,11 @@ export class HolidayManager
     }
 
     private scheduleDayTick(): void {
-        const zone = managerTimeZone(this.props.props.timezone, this.props.store);
-        const delay = Math.min(msUntilNextZoneDay(Date.now(), zone) + DAY_TICK_SLACK_MS, MAX_DAY_TICK_MS);
+        this.clearDayTick();
+        this.dayTimerZone = this.zone();
+        const delay = Math.min(msUntilNextZoneDay(Date.now(), this.dayTimerZone) + DAY_TICK_SLACK_MS, MAX_DAY_TICK_MS);
         this.dayTimer = window.setTimeout(() => {
+            this.dayTimer = null;
             this.forceUpdate();
             this.scheduleDayTick();
         }, delay);

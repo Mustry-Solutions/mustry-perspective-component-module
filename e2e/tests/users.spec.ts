@@ -258,6 +258,8 @@ test.describe('User Manager', () => {
 
     test('row menu paints above a sibling component later in the view (#254)', async ({ page }) => {
         const root = await openPopulated(page);
+        // An author's theme on the manager must reach the popup, which no longer sits inside it.
+        await root.evaluate((el: HTMLElement) => el.style.setProperty('--adm-bg', 'rgb(1, 2, 3)'));
         const row = root.locator('.mustry-sched-item').first();
         await row.hover();
         await row.locator('.mustry-row-menu-btn').click();
@@ -286,11 +288,22 @@ test.describe('User Manager', () => {
                 [b.x + b.width / 2, b.y + b.height / 2]);
             expect(onTop, `${await item.textContent()} must be the topmost element at its centre`).toBe(true);
         }
-        // Still themed like the manager, though it now lives on document.body.
-        const bg = await pop.evaluate((el) => getComputedStyle(el).backgroundColor);
-        expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+        expect(await pop.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(1, 2, 3)');
         await page.keyboard.press('Escape');
         await expect(pop).toHaveCount(0);
+    });
+
+    test('row menu from the keyboard: focus moves into it, and Escape brings it back (#254)', async ({ page }) => {
+        const root = await openPopulated(page);
+        const row = root.locator('.mustry-sched-item').first();
+        const more = row.locator('.mustry-row-menu-btn');
+        await more.focus();
+        await page.keyboard.press('Enter');
+        const pop = page.locator('.mustry-row-menu-pop');
+        await expect(pop.locator('.mustry-row-menu-item').first()).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(pop).toHaveCount(0);
+        await expect(more).toBeFocused();
     });
 
     test('row menu: duplicating a user prefills dash-named create flow', async ({ page }) => {

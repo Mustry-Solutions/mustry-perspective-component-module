@@ -51,8 +51,10 @@ function themeOf(el: HTMLElement): React.CSSProperties {
  * position:fixed from the button's rect, portalled to document.body so neither
  * the rail's overflow can clip it nor a sibling component later in the view
  * paint over it and take its clicks (#254); any scroll/resize/outside-click/
- * Escape closes it. React events still bubble to the span, so a click in the
- * popup never selects the row underneath.
+ * Escape closes it. React events still bubble through the portal to the span,
+ * which stops clicks and keys, so neither selects the row
+ * underneath. Opened from the keyboard, focus moves into the popup and Escape
+ * brings it back to the button.
  */
 export class RowMenu extends React.Component<RowMenuProps, RowMenuState> {
 
@@ -80,10 +82,18 @@ export class RowMenu extends React.Component<RowMenuProps, RowMenuState> {
         }
         const rect = this.btnEl!.getBoundingClientRect();
         const width = 150;
+        // Opened from the keyboard (a click with no pointer): the popup sits at the end of
+        // document.body, out of the Tab order, so focus moves into it.
+        const fromKeyboard = e.detail === 0;
         this.setState({
             open: true, confirming: false, theme: themeOf(this.btnEl!),
             top: rect.bottom + 2,
             left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8))
+        }, () => {
+            const first = fromKeyboard && this.popEl ? this.popEl.querySelector('button') : null;
+            if (first) {
+                first.focus();
+            }
         });
         window.addEventListener('mousedown', this.onOutside, true);
         window.addEventListener('keydown', this.onKeyDown, true);
@@ -114,8 +124,19 @@ export class RowMenu extends React.Component<RowMenuProps, RowMenuState> {
 
     private onKeyDown = (e: KeyboardEvent): void => {
         if (e.key === 'Escape') {
+            const hadFocus = !!this.popEl && this.popEl.contains(document.activeElement);
             this.close();
+            if (hadFocus && this.btnEl) {
+                this.btnEl.focus();
+            }
         }
+    };
+
+    /** The row's Enter/Space handler selects it and cancels the press, which made the ⋯
+     *  button and the items unusable from the keyboard: keep keys inside the menu. Popup
+     *  keys reach this span too, since React bubbles through the portal. */
+    private stopKeys = (e: React.KeyboardEvent): void => {
+        e.stopPropagation();
     };
 
     private clearConfirmTimer(): void {
@@ -147,7 +168,7 @@ export class RowMenu extends React.Component<RowMenuProps, RowMenuState> {
             return null;
         }
         return (
-            <span className={'mustry-row-menu' + (this.state.open ? ' mustry-row-menu--open' : '')} onClick={(e) => e.stopPropagation()}>
+            <span className={'mustry-row-menu' + (this.state.open ? ' mustry-row-menu--open' : '')} onClick={(e) => e.stopPropagation()} onKeyDown={this.stopKeys}>
                 <button
                     type="button"
                     ref={this.setBtnEl}

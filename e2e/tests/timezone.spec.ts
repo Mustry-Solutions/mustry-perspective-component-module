@@ -88,10 +88,12 @@ test.describe('Holiday Manager zone', () => {
 
 test.describe('Holiday Manager at midnight (#257)', () => {
     test('the past badge moves on when the day turns in its zone, with nothing else re-rendering', async ({ page }) => {
-        // 23:59:30 on the 17th in Chicago. install() fakes timers too, so the
-        // midnight timer only fires when the test runs the clock past it.
-        await page.clock.install({ time: new Date('2026-06-18T04:59:30Z') });
+        // The installed clock runs in real time until paused, so start well before midnight
+        // and pause at 23:59:30 Chicago once the page is up: however slow the load, the
+        // midnight timer then only fires when the test runs the clock past it.
+        await page.clock.install({ time: new Date('2026-06-18T04:50:00Z') });
         await openRoute(page, '/timezone-managers', '#tz-hol-chicago');
+        await page.clock.pauseAt(new Date('2026-06-18T04:59:30Z'));
         const plantDay = page.locator('#tz-hol-chicago .mustry-sched-item').filter({ hasText: 'Plant day' });
         await expect(plantDay).not.toHaveClass(/mustry-holiday-item--past/);
         await page.clock.runFor(60_000);
