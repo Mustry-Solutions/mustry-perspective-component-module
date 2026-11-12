@@ -312,6 +312,15 @@ export function knownTimeZone(timeZone: string): string {
     }
 }
 
+/** Ms from `nowMs` to the next midnight in `timeZone` (browser-local if empty or
+ *  unknown): when "today" next changes there. Always > 0. A midnight that falls
+ *  in a DST gap resolves to the first instant after it, as resolveZoned does. */
+export function msUntilNextZoneDay(nowMs: number, timeZone: string): number {
+    const zone = knownTimeZone(timeZone);
+    const w = zoneWallClock(new Date(nowMs), zone);
+    return resolveZoned({ y: w.y, mo: w.mo, d: w.d + 1 }, zone).epochMs - nowMs;
+}
+
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
 export function zoneWallClock(instant: Date, timeZone: string): WallClock {
     if (!timeZone) {

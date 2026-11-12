@@ -9,7 +9,7 @@ import {
 import { AdminManagerBase, AdminManagerDescriptor } from '../../shared/adminManagerBase';
 import { AdminDraftState } from '../../shared/adminManagerLogic';
 import { AdminFooter } from '../../shared/AdminFooter';
-import { fmtDate, todayInZone } from '../../shared/dateUtils';
+import { fmtDate, msUntilNextZoneDay, todayInZone } from '../../shared/dateUtils';
 import { managerTimeZone } from '../../shared/gatewayZone';
 import {
     HolidayDraft, HolidayItem, emptyHolidayDraft, holidayDraftEquals, holidayDraftFromItem,
@@ -22,6 +22,12 @@ import { HolidayManagerProps, mapHolidayProps } from './holidayProps';
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.admin.holidaymanager';
 
 type HolidayManagerState = AdminDraftState<HolidayDraft>;
+
+// "Today" drives the sort and the past badge, so re-render when the day turns in
+// the manager's zone. Fire a moment after midnight (timers can fire early by a
+// few ms), and at least hourly so a zone change or a sleeping laptop catches up.
+const DAY_TICK_SLACK_MS = 1000;
+const MAX_DAY_TICK_MS = 3_600_000;
 
 /**
  * Holiday Manager — fourth of the admin family. Master-detail over the
@@ -56,6 +62,30 @@ export class HolidayManager
     constructor(props: ComponentProps<HolidayManagerProps>) {
         super(props);
         this.state = { draft: null, draftFor: '', creating: false, nameDraft: '', confirmingDelete: false };
+    }
+
+    private dayTimer: number | null = null;
+
+    componentDidMount(): void {
+        super.componentDidMount();
+        this.scheduleDayTick();
+    }
+
+    componentWillUnmount(): void {
+        super.componentWillUnmount();
+        if (this.dayTimer !== null) {
+            window.clearTimeout(this.dayTimer);
+            this.dayTimer = null;
+        }
+    }
+
+    private scheduleDayTick(): void {
+        const zone = managerTimeZone(this.props.props.timezone, this.props.store);
+        const delay = Math.min(msUntilNextZoneDay(Date.now(), zone) + DAY_TICK_SLACK_MS, MAX_DAY_TICK_MS);
+        this.dayTimer = window.setTimeout(() => {
+            this.forceUpdate();
+            this.scheduleDayTick();
+        }, delay);
     }
 
     // --- machine wiring -----------------------------------------------------

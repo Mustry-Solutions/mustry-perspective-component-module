@@ -86,6 +86,19 @@ test.describe('Holiday Manager zone', () => {
     });
 });
 
+test.describe('Holiday Manager at midnight (#257)', () => {
+    test('the past badge moves on when the day turns in its zone, with nothing else re-rendering', async ({ page }) => {
+        // 23:59:30 on the 17th in Chicago. install() fakes timers too, so the
+        // midnight timer only fires when the test runs the clock past it.
+        await page.clock.install({ time: new Date('2026-06-18T04:59:30Z') });
+        await openRoute(page, '/timezone-managers', '#tz-hol-chicago');
+        const plantDay = page.locator('#tz-hol-chicago .mustry-sched-item').filter({ hasText: 'Plant day' });
+        await expect(plantDay).not.toHaveClass(/mustry-holiday-item--past/);
+        await page.clock.runFor(60_000);
+        await expect(plantDay).toHaveClass(/mustry-holiday-item--past/);
+    });
+});
+
 test.describe('mini month navigator zone', () => {
     // 12:00 UTC on the 17th: 21:00 on the 17th in Tokyo, 02:00 on the 18th in Kiritimati.
     const NOON = '2026-06-17T12:00:00Z';
