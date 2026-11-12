@@ -149,3 +149,15 @@ test.describe('timeline hour paging across DST', () => {
         }
     });
 });
+
+test.describe('timeline with an unknown config.timezone (#255)', () => {
+    test('renders browser-local instead of throwing on mount', async ({ page }) => {
+        // 12:00 UTC on the 17th is 21:00 in Tokyo: the day window opens on Tokyo's midnight.
+        await page.clock.setFixedTime(new Date('2026-06-17T12:00:00Z'));
+        const root = await openRoute(page, '/timezone-nav', '#tz-timeline-badzone');
+        await expect(root.locator('.mustry-tml-title--btn')).toBeVisible();
+        await expect(page.locator('#tz-badzone-visible')).toContainText('2026-06-16T15:00:00.000Z');
+        await root.getByRole('button', { name: 'Next', exact: true }).click();
+        await expect(page.locator('#tz-badzone-visible')).toContainText('2026-06-17T15:00:00.000Z');
+    });
+});

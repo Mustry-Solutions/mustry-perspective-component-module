@@ -4,7 +4,7 @@
  "props": {
   "defaultSize": {
    "width": 1290,
-   "height": 520
+   "height": 730
   }
  },
  "root": {
@@ -23,7 +23,7 @@
       "fontSize": "12px",
       "fontFamily": "monospace"
      },
-     "text": "Timezone fixture (#148). The mini month navigator's today follows config.timezone (Pacific/Kiritimati, UTC+14), and the Chicago timeline pages sub-day zooms across DST on its wall clock. See e2e/tests/timezone.spec.ts."
+     "text": "Timezone fixture (#148). The mini month navigator's today follows config.timezone (Pacific/Kiritimati, UTC+14), and the Chicago timeline pages sub-day zooms across DST on its wall clock. See e2e/tests/timezone.spec.ts. The bottom-left timeline has an unknown config.timezone (#255) and must render browser-local."
     },
     "meta": {
      "name": "help"
@@ -182,6 +182,69 @@
        "type": "expr",
        "config": {
         "expression": "'visibleStart=' + {../timelineChicago.props.output.visibleStart}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.resourcetimeline",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "Not/AZone",
+      "locale": "en-US",
+      "resources": [
+       {
+        "id": "a",
+        "label": "Line A"
+       }
+      ]
+     },
+     "data": {
+      "events": []
+     },
+     "state": {
+      "zoom": "day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "timelineBadZone",
+     "domId": "tz-timeline-badzone"
+    },
+    "position": {
+     "x": 16,
+     "y": 490,
+     "width": 620,
+     "height": 200
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readBadZone",
+     "domId": "tz-badzone-visible"
+    },
+    "position": {
+     "x": 16,
+     "y": 692,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'visibleStart=' + {../timelineBadZone.props.output.visibleStart}"
        }
       }
      }

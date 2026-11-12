@@ -1,6 +1,6 @@
 // Pure mapping from the component's PropertyTree to typed TimelineProps. Kept
 // perspective-client-free (PropReader) so it can be unit-tested under node jest.
-import { WeekStart, toEpochMs, toWeekStart } from '../../shared/dateUtils';
+import { WeekStart, knownTimeZone, toEpochMs, toWeekStart } from '../../shared/dateUtils';
 import { PropReader } from '../../shared/propReader';
 import { Category } from '../../shared/types';
 import { EN_TIMELINE_LABELS, TimelineLabels, timelineLabelBase } from '../../shared/labelPacks';
@@ -85,6 +85,9 @@ function mapEvent(e: any): TimelineEvent {
 
 export function mapTimelineProps(tree: PropReader): TimelineProps {
     const locale = tree.readString('config.locale', '');
+    // An unknown zone reads as browser-local here, once, so no zone helper downstream
+    // (window math, tick labels, the editor) can throw on it.
+    const timezone = knownTimeZone(tree.readString('config.timezone', ''));
     // config.locale picks the built-in label language; config.labels.* overrides per
     // key. A value equal to the built-in English text counts as "unset" (see the
     // calendar/picker mappers — materialized schema defaults must not shadow packs).
@@ -117,12 +120,12 @@ export function mapTimelineProps(tree: PropReader): TimelineProps {
         collapsedGroups: (tree.readArray('state.collapsedGroups', []) || []).map((g: any) => String(g)).filter((g: string) => g),
         hiddenCategories: (tree.readArray('state.hiddenCategories', []) || []).map((c: any) => String(c)).filter((c: string) => c),
         rowHeight: ((h) => (Number.isFinite(h) ? Math.max(20, Math.min(120, h)) : 36))(tree.readNumber('config.rowHeight', 36)),
-        timezone: tree.readString('config.timezone', ''),
+        timezone,
         locale,
         refreshSeconds: tree.readNumber('config.refreshSeconds', 0),
         followNow: tree.readBoolean('state.followNow', false),
-        windowStart: windowEdgeMs(tree.read('state.windowStart', null), tree.readString('config.timezone', '')),
-        windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), tree.readString('config.timezone', '')),
+        windowStart: windowEdgeMs(tree.read('state.windowStart', null), timezone),
+        windowEnd: windowEdgeMs(tree.read('state.windowEnd', null), timezone),
         windowStartAsEpoch: typeof tree.read('state.windowStart', null) === 'number',
         windowEndAsEpoch: typeof tree.read('state.windowEnd', null) === 'number',
         windowSet: [tree.read('state.windowStart', null), tree.read('state.windowEnd', null)]

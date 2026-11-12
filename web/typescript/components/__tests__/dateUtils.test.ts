@@ -4,8 +4,18 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockInZone
+    wallClockInZone, knownTimeZone
 } from '../../shared/dateUtils';
+
+describe('knownTimeZone', () => {
+    it('keeps a zone Intl knows and reads an unknown one as browser-local', () => {
+        expect(knownTimeZone('Europe/Brussels')).toBe('Europe/Brussels');
+        expect(knownTimeZone('UTC')).toBe('UTC');
+        expect(knownTimeZone('')).toBe('');
+        expect(knownTimeZone('Not/AZone')).toBe('');
+        expect(knownTimeZone('Europe/Brusels')).toBe('');
+    });
+});
 
 describe('pad2', () => {
     it('pads to two digits', () => {

@@ -703,6 +703,16 @@ describe('mapTimelineProps', () => {
         expect(q.labels.followNow).toBe('En direct');
     });
 
+    it('reads an unknown config.timezone as browser-local, so mounting cannot throw (#255)', () => {
+        const p = mapTimelineProps(stubReader({ config: { timezone: 'Not/AZone' }, state: { windowStart: '2026-03-08T00:00:00' } }));
+        expect(p.timezone).toBe('');
+        expect(p.windowStart).toBe(new Date(2026, 2, 8).getTime());
+        // Every call the constructor and first render make with the mapped zone.
+        expect(() => containingAnchorMs(Date.now(), 'day', p.timezone)).not.toThrow();
+        expect(() => windowFor(containingAnchorMs(Date.now(), 'hour', p.timezone), 'hour', p.timezone)).not.toThrow();
+        expect(mapTimelineProps(stubReader({ config: { timezone: 'America/New_York' } })).timezone).toBe('America/New_York');
+    });
+
     it('applies defaults (day zoom, clamped rowHeight, empty arrays, English labels)', () => {
         const p = mapTimelineProps(stubReader({}));
         expect(p.zoom).toBe('day');

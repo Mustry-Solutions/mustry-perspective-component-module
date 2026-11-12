@@ -297,6 +297,21 @@ export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
     return { epochMs, iso: msToZonedIso(epochMs, zone) };
 }
 
+/** `timeZone` if Intl knows it, else '' (browser-local): a mistyped or unknown
+ *  config.timezone must degrade to the browser's zone, as `resolveZoned` and
+ *  `wallClockInZone` do, instead of throwing a RangeError on every zone call. */
+export function knownTimeZone(timeZone: string): string {
+    if (!timeZone) {
+        return '';
+    }
+    try {
+        offsetFormatter(timeZone);
+        return timeZone;
+    } catch (e) {
+        return '';
+    }
+}
+
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
 export function zoneWallClock(instant: Date, timeZone: string): WallClock {
     if (!timeZone) {
