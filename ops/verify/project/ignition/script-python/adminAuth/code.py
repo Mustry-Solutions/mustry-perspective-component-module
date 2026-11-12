@@ -64,21 +64,28 @@ def refusal(component, flags, roles=WRITE_ROLES):
 		return _refuse('the authorization check failed')
 
 
+# Characters that break a name across lines or hide in it: C0 and C1 controls, the line and
+# paragraph separators, zero-width and bidi formatting marks, and the byte-order mark.
+_INVISIBLE = set([unichr(c) for c in range(0, 32) + range(127, 160) + range(0x200b, 0x2010)
+	+ range(0x202a, 0x202f) + range(0x2066, 0x206a) + [0x2028, 0x2029, 0xfeff]])
+
+
 def nameProblem(name):
-	"""Why name can't be the name of a new schedule, holiday or roster, or None if it can.
+	"""Why name can't be the name of a new user, role, schedule, holiday or roster, or None.
 
 	The managers check a name only in the browser, so a crafted event skips that. The gateway
-	itself accepts an empty name, one with a line break, and '..', a path segment.
+	itself accepts an empty name, one with a line break, and '..'. A slash is allowed: names
+	like "24/7" are real.
 	"""
 	name = unicode(name or '')
 	if not name.strip():
 		return 'the name is empty'
 	if name != name.strip():
 		return 'the name starts or ends with a space'
-	if [c for c in name if ord(c) < 32 or ord(c) == 127]:
-		return 'the name contains a control character'
-	if not name.strip('.') or '/' in name or '\\' in name:
-		return 'the name looks like a path'
+	if [c for c in name if c in _INVISIBLE]:
+		return 'the name contains a line break or an invisible character'
+	if not name.strip('.'):
+		return 'the name is only dots'
 	return None
 
 

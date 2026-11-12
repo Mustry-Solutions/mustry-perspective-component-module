@@ -12,6 +12,11 @@ def _mine(names):
 	return sorted([unicode(n) for n in names if unicode(n).lower().startswith('zauthz')])
 
 
+def _odd(names):
+	"""Names the spec's refused cases would create, which the zauthz prefix can't catch."""
+	return sorted([unicode(n) for n in names if adminAuth.nameProblem(n)])
+
+
 def snapshot():
 	"""The zauthz* users, roles, schedules, rosters and holidays as JSON. Polled by the Authz views."""
 	try:
@@ -31,6 +36,9 @@ def snapshot():
 			'schedules': _mine(system.user.getScheduleNames()),
 			'rosters': rosters,
 			'holidays': _mine(system.user.getHolidayNames()),
+			# Every badly named record, whatever its prefix: a refused-name test must leave this alone.
+			'odd': _odd([u.get('username') for u in system.user.getUsers('default')] + list(allRoles)
+				+ list(system.user.getScheduleNames()) + list(allRosters.keys()) + list(system.user.getHolidayNames())),
 			'kept': {
 				'admin': system.user.getUser('default', 'admin') is not None,
 				'Administrator': 'Administrator' in allRoles,

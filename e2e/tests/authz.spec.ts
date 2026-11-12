@@ -190,7 +190,7 @@ async function cleanup(page: Page) {
     // toEqual, not toMatchObject: an empty {} there matches any object, so leftover
     // users or rosters would pass. `kept` is the only field that stays non-empty.
     const left = await snapshot(page);
-    expect({ ...left, kept: undefined }).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
+    expect({ ...left, kept: undefined, odd: undefined }).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
 }
 
 /** Keep hold of the session's socket and record what it sends. Call before the first page load. */
@@ -363,25 +363,30 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         expect(await snapshot(page)).toEqual(before);
     });
 
-    test('a new schedule, holiday or roster name the gateway would store wrongly is refused (#260)', async ({ page }) => {
+    test('a new name the gateway would store wrongly is refused, for every kind of record (#260)', async ({ page }) => {
         await ensureFixtures(page);
         await openRoute(page, '/authz-open', USER);
         const before = await snapshot(page);
         const BAD: Array<[string, RegExp]> = [
             ['', /the name is empty/], ['   ', /the name is empty/], [' zauthz-pad', /starts or ends with a space/],
-            ['zauthz\nline', /control character/], ['zauthz\ttab', /control character/],
-            ['..', /looks like a path/], ['.', /looks like a path/], ['zauthz/../x', /looks like a path/], ['zauthz\\x', /looks like a path/],
+            ['zauthz\nline', /line break/], ['zauthz\ttab', /line break/], ['zauthz\u2028sep', /line break/],
+            ['zauthz\u202eflip', /invisible character/], ['zauthz\u200bgap', /invisible character/],
+            ['..', /only dots/], ['.', /only dots/],
         ];
         for (const [name, why] of BAD) {
-            await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule(name), isNew: true }], new RegExp(`^onScheduleSave REFUSED: .*${why.source}`));
-            await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name, date: '2031-02-02', repeatAnnually: false }, isNew: true }],
-                new RegExp(`^onHolidaySave REFUSED: .*${why.source}`));
-            await fireAndExpect(page, [ROSTER, 'onRosterSave', { name, users: [], isNew: true }], new RegExp(`^onRosterSave REFUSED: .*${why.source}`));
+            const refused = (event: string) => new RegExp(`^${event} REFUSED: .*${why.source}`);
+            await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule(name), isNew: true }], refused('onScheduleSave'));
+            await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name, date: '2031-02-02', repeatAnnually: false }, isNew: true }], refused('onHolidaySave'));
+            await fireAndExpect(page, [ROSTER, 'onRosterSave', { name, users: [], isNew: true }], refused('onRosterSave'));
+            await fireAndExpect(page, [USER, 'onRoleSave', { name }], refused('onRoleSave'));
+            await fireAndExpect(page, [USER, 'onUserSave', { user: user(name), isNew: true, password: PASSWORD }], refused('onUserSave'));
         }
         // A rename onto such a name is refused too, and keeps the old one.
-        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('..'), oldName: 'zauthz-schedule', isNew: false }], /^onScheduleSave REFUSED: .*looks like a path/);
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('..'), oldName: 'zauthz-schedule', isNew: false }], /^onScheduleSave REFUSED: the name is only dots/);
         await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: '..', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
-            /^onHolidaySave REFUSED: .*looks like a path/);
+            /^onHolidaySave REFUSED: the name is only dots/);
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: '..', oldName: 'zauthz-role' }], /^onRoleSave REFUSED: the name is only dots/);
+        // `odd` lists every badly named record on the gateway, whatever its prefix.
         expect(await snapshot(page)).toEqual(before);
     });
 
@@ -404,6 +409,14 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         expect(now.holidays).toContain(holiday);
         expect(now.rosters[roster]).toEqual(['zauthz-user']);
         expect(now.users['zauthz-user']).toMatchObject({ firstname: 'Zoë', notes: 'café — 日本', roles: [role] });
+        // The views' read bindings hand them to the managers intact too, so a save from the UI
+        // writes back what it read.
+        const holidays = await openRoute(page, '/holidays', HOLIDAY);
+        await expect(holidays.locator('.mustry-sched-item').filter({ hasText: holiday })).toHaveCount(1, { timeout: 15_000 });
+        const schedules = await openRoute(page, '/schedule', SCHEDULE);
+        await expect(schedules.locator('.mustry-sched-item').filter({ hasText: sched })).toHaveCount(1, { timeout: 15_000 });
+        const users = await openRoute(page, '/users', USER);
+        await expect(users.locator('.mustry-sched-item').filter({ hasText: 'Zoë' })).toHaveCount(1, { timeout: 15_000 });
         // The deletes find them by the same names: the next reset sweeps them through the scripts.
         await ensureFixtures(page);
     });
@@ -736,31 +749,33 @@ test.describe('Admin family: the reference views stay guarded', () => {
         }
     });
 
-    test('no admin event script passes event text through str() (#258)', () => {
-        // str() on a unicode value garbles anything non-ASCII in Jython: unicode() keeps it.
+    test('no admin event script or read binding passes text through str() (#258)', () => {
+        // str() on a unicode value garbles anything non-ASCII in Jython: unicode() keeps it. The
+        // bindings matter as much as the events: a garbled read is written back on the next save.
+        let seen = 0;
         for (const dir of VIEW_DIRS) {
             for (const file of viewFiles(dir)) {
                 const name = path.basename(path.dirname(file));
                 for (const manager of managers(JSON.parse(fs.readFileSync(file, 'utf8')))) {
-                    for (const [event, handler] of Object.entries<any>(manager.events?.component ?? {})) {
-                        for (const action of [handler].flat()) {
-                            expect(action.config.script, `${name} ${event}`).not.toMatch(/\bstr\(/);
-                        }
+                    for (const { text } of scripts(manager)) {
+                        expect(text, `${name} ${manager.meta.name}`).not.toMatch(/\bstr\(/);
+                        seen++;
                     }
                 }
             }
         }
+        expect(seen, 'the scripts must be found').toBeGreaterThan(70);
     });
 
     test('the save scripts check a new name on the gateway before they write (#260)', () => {
-        const CHECK = /bad = adminAuth\.nameProblem\(name\)\n\s*if bad:\n[^\n]*REFUSED[^\n]*\n\s*return\n/;
+        const CHECK = /bad = adminAuth\.nameProblem\((?:name|username)\)\n\s*if bad:\n[^\n]*REFUSED[^\n]*\n\s*return\n/;
         let checked = 0;
         for (const dir of VIEW_DIRS) {
             for (const file of viewFiles(dir)) {
                 const name = path.basename(path.dirname(file));
                 for (const manager of managers(JSON.parse(fs.readFileSync(file, 'utf8')))) {
                     for (const [event, handler] of Object.entries<any>(manager.events?.component ?? {})) {
-                        if (!['onScheduleSave', 'onHolidaySave', 'onRosterSave'].includes(event)) {
+                        if (!['onScheduleSave', 'onHolidaySave', 'onRosterSave', 'onRoleSave', 'onUserSave'].includes(event)) {
                             continue;
                         }
                         for (const action of [handler].flat()) {
@@ -774,8 +789,8 @@ test.describe('Admin family: the reference views stay guarded', () => {
                 }
             }
         }
-        // Schedule, holiday and roster saves in the four demo views, AdminConsole, Admin and the four Authz views.
-        expect(checked).toBe(3 + 3 * 6);
+        // The four demo views (UserDemo has two saves), then all five saves in AdminConsole, Admin and the four Authz views.
+        expect(checked).toBe(5 + 5 * 6);
     });
 
     test('the verify and demo projects carry the same adminAuth library', () => {
