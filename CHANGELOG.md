@@ -79,6 +79,15 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   between days and Enter or Space activates it. A screen reader hears the full date,
   or, when the button opens the built-in editor, the new label
   `config.labels.newEventOn` (translated in every bundled locale) (#90).
+- Resource Timeline: an unknown or mistyped `config.timezone` no longer throws when
+  the component mounts. It reads as the browser's zone, as the calendar, the
+  managers and the mini month navigator already did (#255).
+- Holiday Manager: on a page left open past midnight, "today", the order of the
+  list and the *past* badge now move on when the day turns in the manager's zone,
+  instead of waiting for something else to re-render it (#257).
+- Admin managers: a row's ⋯ menu now opens above the rest of the page. A component
+  placed below the manager could paint over the menu of a low row and take its
+  clicks (#254).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a
