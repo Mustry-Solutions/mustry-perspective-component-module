@@ -429,12 +429,15 @@ test.describe('Admin family: the event scripts authorize the write', () => {
     test('the admin account and role are kept, whatever the spelling and whether renamed or deleted', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
         // The user source matches these case-insensitively: without the guard, these really remove them.
-        for (const username of ['admin', 'ADMIN', 'Admin']) {
+        // A dotless i too: lowercasing the event text can't recognise it, but the user source's
+        // case-insensitive match (ı upper-cases to I) finds admin. The guard refuses because it reads
+        // the username of the user the gateway resolved, not the event text. Before #258 str()
+        // garbled the ı on the way in, so the gateway found no user at all.
+        for (const username of ['admin', 'ADMIN', 'Admin', 'adm\u0131n']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: the demo keeps the admin account/);
         }
-        // Spellings a lowercase comparison of the event text can't recognise (a dotless i). The
-        // gateway doesn't match these to admin either, so the old check held; this records that.
-        for (const username of [' admin', 'admin ', 'adm\u0131n']) {
+        // Spellings the gateway doesn't match to admin.
+        for (const username of [' admin', 'admin ']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: no user named/);
         }
         const keeps = 'the demo keeps the Administrator role';
