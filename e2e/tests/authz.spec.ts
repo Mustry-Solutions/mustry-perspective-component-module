@@ -190,7 +190,7 @@ async function cleanup(page: Page) {
     // toEqual, not toMatchObject: an empty {} there matches any object, so leftover
     // users or rosters would pass. `kept` is the only field that stays non-empty.
     const left = await snapshot(page);
-    expect({ ...left, kept: undefined }).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
+    expect({ ...left, kept: undefined, odd: undefined }).toEqual({ users: {}, roles: [], schedules: [], rosters: {}, holidays: [] });
 }
 
 /** Keep hold of the session's socket and record what it sends. Call before the first page load. */
@@ -363,6 +363,64 @@ test.describe('Admin family: the event scripts authorize the write', () => {
         expect(await snapshot(page)).toEqual(before);
     });
 
+    test('a new name the gateway would store wrongly is refused, for every kind of record (#260)', async ({ page }) => {
+        await ensureFixtures(page);
+        await openRoute(page, '/authz-open', USER);
+        const before = await snapshot(page);
+        const BAD: Array<[string, RegExp]> = [
+            ['', /the name is empty/], ['   ', /the name is empty/], [' zauthz-pad', /starts or ends with a space/],
+            ['zauthz\nline', /line break/], ['zauthz\ttab', /line break/], ['zauthz\u2028sep', /line break/],
+            ['zauthz\u202eflip', /invisible character/], ['zauthz\u200bgap', /invisible character/],
+            ['..', /only dots/], ['.', /only dots/],
+        ];
+        for (const [name, why] of BAD) {
+            const refused = (event: string) => new RegExp(`^${event} REFUSED: .*${why.source}`);
+            await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule(name), isNew: true }], refused('onScheduleSave'));
+            await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name, date: '2031-02-02', repeatAnnually: false }, isNew: true }], refused('onHolidaySave'));
+            await fireAndExpect(page, [ROSTER, 'onRosterSave', { name, users: [], isNew: true }], refused('onRosterSave'));
+            await fireAndExpect(page, [USER, 'onRoleSave', { name }], refused('onRoleSave'));
+            await fireAndExpect(page, [USER, 'onUserSave', { user: user(name), isNew: true, password: PASSWORD }], refused('onUserSave'));
+        }
+        // A rename onto such a name is refused too, and keeps the old one.
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule('..'), oldName: 'zauthz-schedule', isNew: false }], /^onScheduleSave REFUSED: the name is only dots/);
+        await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: '..', date: '2031-02-02', repeatAnnually: false }, oldName: 'zauthz-holiday', isNew: false }],
+            /^onHolidaySave REFUSED: the name is only dots/);
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: '..', oldName: 'zauthz-role' }], /^onRoleSave REFUSED: the name is only dots/);
+        // `odd` lists every badly named record on the gateway, whatever its prefix.
+        expect(await snapshot(page)).toEqual(before);
+    });
+
+    test('non-ASCII names and text are stored as sent (#258)', async ({ page }) => {
+        await ensureFixtures(page);
+        await openRoute(page, '/authz-open', USER);
+        const role = 'zauthz-rôle';
+        const sched = 'zauthz-schédule-日本';
+        const holiday = 'zauthz-hôliday';
+        const roster = 'zauthz-röster';
+        const saved = /^on\w+Save (added|created|persisted)/;
+        await fireAndExpect(page, [USER, 'onRoleSave', { name: role }], saved);
+        await fireAndExpect(page, [SCHEDULE, 'onScheduleSave', { schedule: schedule(sched, 'café'), isNew: true }], saved);
+        await fireAndExpect(page, [HOLIDAY, 'onHolidaySave', { holiday: { name: holiday, date: '2031-03-03', repeatAnnually: false }, isNew: true }], saved);
+        await fireAndExpect(page, [ROSTER, 'onRosterSave', { name: roster, users: ['zauthz-user'], isNew: true }], saved);
+        await fireAndExpect(page, [USER, 'onUserSave', { user: user('zauthz-user', { firstName: 'Zoë', notes: 'café — 日本', roles: [role] }), isNew: false }], saved);
+        const now = await snapshot(page);
+        expect(now.roles).toContain(role);
+        expect(now.schedules).toContain(sched);
+        expect(now.holidays).toContain(holiday);
+        expect(now.rosters[roster]).toEqual(['zauthz-user']);
+        expect(now.users['zauthz-user']).toMatchObject({ firstname: 'Zoë', notes: 'café — 日本', roles: [role] });
+        // The views' read bindings hand them to the managers intact too, so a save from the UI
+        // writes back what it read.
+        const holidays = await openRoute(page, '/holidays', HOLIDAY);
+        await expect(holidays.locator('.mustry-sched-item').filter({ hasText: holiday })).toHaveCount(1, { timeout: 15_000 });
+        const schedules = await openRoute(page, '/schedule', SCHEDULE);
+        await expect(schedules.locator('.mustry-sched-item').filter({ hasText: sched })).toHaveCount(1, { timeout: 15_000 });
+        const users = await openRoute(page, '/users', USER);
+        await expect(users.locator('.mustry-sched-item').filter({ hasText: 'Zoë' })).toHaveCount(1, { timeout: 15_000 });
+        // The deletes find them by the same names: the next reset sweeps them through the scripts.
+        await ensureFixtures(page);
+    });
+
     test('a schedule delete the gateway rejects says so', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
         // A system schedule: the gateway refuses to delete it, in the returned UIResponse.
@@ -384,12 +442,15 @@ test.describe('Admin family: the event scripts authorize the write', () => {
     test('the admin account and role are kept, whatever the spelling and whether renamed or deleted', async ({ page }) => {
         await openRoute(page, '/authz-open', USER);
         // The user source matches these case-insensitively: without the guard, these really remove them.
-        for (const username of ['admin', 'ADMIN', 'Admin']) {
+        // A dotless i too: lowercasing the event text can't recognise it, but the user source's
+        // case-insensitive match (ı upper-cases to I) finds admin. The guard refuses because it reads
+        // the username of the user the gateway resolved, not the event text. Before #258 str()
+        // garbled the ı on the way in, so the gateway found no user at all.
+        for (const username of ['admin', 'ADMIN', 'Admin', 'adm\u0131n']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: the demo keeps the admin account/);
         }
-        // Spellings a lowercase comparison of the event text can't recognise (a dotless i). The
-        // gateway doesn't match these to admin either, so the old check held; this records that.
-        for (const username of [' admin', 'admin ', 'adm\u0131n']) {
+        // Spellings the gateway doesn't match to admin.
+        for (const username of [' admin', 'admin ']) {
             await fireAndExpect(page, [USER, 'onUserDelete', { username }], /^onUserDelete REFUSED: no user named/);
         }
         const keeps = 'the demo keeps the Administrator role';
@@ -686,6 +747,50 @@ test.describe('Admin family: the reference views stay guarded', () => {
         for (const library of libraries) {
             expect(fs.readFileSync(library, 'utf8').match(WRITER), library).toBeNull();
         }
+    });
+
+    test('no admin event script or read binding passes text through str() (#258)', () => {
+        // str() on a unicode value garbles anything non-ASCII in Jython: unicode() keeps it. The
+        // bindings matter as much as the events: a garbled read is written back on the next save.
+        let seen = 0;
+        for (const dir of VIEW_DIRS) {
+            for (const file of viewFiles(dir)) {
+                const name = path.basename(path.dirname(file));
+                for (const manager of managers(JSON.parse(fs.readFileSync(file, 'utf8')))) {
+                    for (const { text } of scripts(manager)) {
+                        expect(text, `${name} ${manager.meta.name}`).not.toMatch(/\bstr\(/);
+                        seen++;
+                    }
+                }
+            }
+        }
+        expect(seen, 'the scripts must be found').toBeGreaterThan(70);
+    });
+
+    test('the save scripts check a new name on the gateway before they write (#260)', () => {
+        const CHECK = /bad = adminAuth\.nameProblem\((?:name|username)\)\n\s*if bad:\n[^\n]*REFUSED[^\n]*\n\s*return\n/;
+        let checked = 0;
+        for (const dir of VIEW_DIRS) {
+            for (const file of viewFiles(dir)) {
+                const name = path.basename(path.dirname(file));
+                for (const manager of managers(JSON.parse(fs.readFileSync(file, 'utf8')))) {
+                    for (const [event, handler] of Object.entries<any>(manager.events?.component ?? {})) {
+                        if (!['onScheduleSave', 'onHolidaySave', 'onRosterSave', 'onRoleSave', 'onUserSave'].includes(event)) {
+                            continue;
+                        }
+                        for (const action of [handler].flat()) {
+                            const script: string = action.config.script;
+                            const check = CHECK.exec(script);
+                            expect(check, `${name} ${event}: the name check must refuse and return`).not.toBeNull();
+                            expect(check!.index + check![0].length, `${name} ${event}: before the first write`).toBeLessThanOrEqual(script.search(WRITER));
+                            checked++;
+                        }
+                    }
+                }
+            }
+        }
+        // The four demo views (UserDemo has two saves), then all five saves in AdminConsole, Admin and the four Authz views.
+        expect(checked).toBe(5 + 5 * 6);
     });
 
     test('the verify and demo projects carry the same adminAuth library', () => {
