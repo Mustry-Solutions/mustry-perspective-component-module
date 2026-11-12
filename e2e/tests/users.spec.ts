@@ -256,6 +256,43 @@ test.describe('User Manager', () => {
         await expect(root2.locator('.mustry-sched-item').filter({ has: adminDesc(root2) })).toBeVisible();
     });
 
+    test('row menu paints above a sibling component later in the view (#254)', async ({ page }) => {
+        const root = await openPopulated(page);
+        const row = root.locator('.mustry-sched-item').first();
+        await row.hover();
+        await row.locator('.mustry-row-menu-btn').click();
+        const pop = page.locator('.mustry-row-menu-pop');
+        await expect(pop).toBeVisible();
+        // Move the readout label, the next component in the view, over the open
+        // popup: what a low row's menu met on this page before the popup was portalled.
+        await page.evaluate(() => {
+            const popRect = document.querySelector('.mustry-row-menu-pop')!.getBoundingClientRect();
+            let el = document.querySelector('.mustry-usermgr') as HTMLElement;
+            while (el.parentElement && el.parentElement.children.length < 2) {
+                el = el.parentElement;
+            }
+            const sibling = el.nextElementSibling as HTMLElement;
+            const box = el.parentElement!.getBoundingClientRect();
+            Object.assign(sibling.style, {
+                top: `${popRect.top - box.top}px`, left: `${popRect.left - box.left}px`,
+                width: `${popRect.width}px`, height: `${popRect.height}px`,
+            });
+        });
+        const items = pop.locator('.mustry-row-menu-item');
+        await expect(items).toHaveCount(2);
+        for (const item of await items.all()) {
+            const b = (await item.boundingBox())!;
+            const onTop = await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('.mustry-row-menu-pop'),
+                [b.x + b.width / 2, b.y + b.height / 2]);
+            expect(onTop, `${await item.textContent()} must be the topmost element at its centre`).toBe(true);
+        }
+        // Still themed like the manager, though it now lives on document.body.
+        const bg = await pop.evaluate((el) => getComputedStyle(el).backgroundColor);
+        expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+        await page.keyboard.press('Escape');
+        await expect(pop).toHaveCount(0);
+    });
+
     test('row menu: duplicating a user prefills dash-named create flow', async ({ page }) => {
         const root = await openPopulated(page);
         await deleteIfPresent(root, 'kpatel-copy');

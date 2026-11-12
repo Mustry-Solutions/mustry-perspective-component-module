@@ -14,11 +14,10 @@ import { test, expect, openRoute } from './helpers';
 // by the gateway) is there for those tests: nothing forces a login, so the other specs
 // stay anonymous.
 
-// The test data is named zauthz-* to sort last: these are real gateway rows that show up in
-// the rails of specs running in parallel, and must not push the rows those specs click. A row
-// pushed low enough has its menu painted under a sibling component: that bug is issue #254,
-// https://github.com/Mustry-Solutions/mustry-perspective-component-module/issues/254.
-// Fixing it should remove the need for this.
+// The test data is named zauthz-*: these are real gateway rows that show up in the rails of
+// specs running in parallel, and the prefix keeps them together and easy to read back. Their
+// sort order no longer matters: a row menu pushed low used to paint under a sibling component
+// (#254), and its popup is now portalled above the page.
 const REPO = path.join(__dirname, '..', '..');
 const VIEW_DIRS = ['ops/verify/project', 'ops/demo/project'].map((p) =>
     path.join(REPO, p, 'com.inductiveautomation.perspective/views'));
