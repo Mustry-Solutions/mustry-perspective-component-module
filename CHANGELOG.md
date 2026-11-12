@@ -45,6 +45,15 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   to read them in a different zone.
 
 ### Fixed
+- Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
+  first name `Zoë`, were stored garbled, because the scripts passed event values
+  through `str()`. They now store them as sent. Projects that copied the scripts
+  should copy them again (#258).
+- Admin reference scripts: the schedule, holiday and roster save scripts refuse a
+  new name that is empty, has a line break or another control character, starts or
+  ends with a space, or is a path such as `..`. The managers only checked names in
+  the browser, so a crafted event could create one. The check is
+  `adminAuth.nameProblem()`; existing records keep their names (#260).
 - The timeline's sub-day zooms stay on their grid across a daylight-saving change:
   from the midnight after it, `hour` pages start at 00:00/08:00/16:00 again without
   pressing Today, instead of 07:00/15:00/23:00. On the change day itself the windows

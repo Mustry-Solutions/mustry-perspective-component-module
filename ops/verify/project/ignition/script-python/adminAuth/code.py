@@ -57,11 +57,29 @@ def refusal(component, flags, roles=WRITE_ROLES):
 		if auth.authenticated == True:
 			if set([unicode(r) for r in auth.user.roles or []]) & set(roles):
 				return None
-		elif str(component.view.id).split('@')[0] in DEMO_ANONYMOUS_VIEWS.get(system.project.getProjectName(), []):
+		elif unicode(component.view.id).split('@')[0] in DEMO_ANONYMOUS_VIEWS.get(system.project.getProjectName(), []):
 			return None
 		return _refuse('requires one of the roles ' + ', '.join(roles))
 	except:
 		return _refuse('the authorization check failed')
+
+
+def nameProblem(name):
+	"""Why name can't be the name of a new schedule, holiday or roster, or None if it can.
+
+	The managers check a name only in the browser, so a crafted event skips that. The gateway
+	itself accepts an empty name, one with a line break, and '..', a path segment.
+	"""
+	name = unicode(name or '')
+	if not name.strip():
+		return 'the name is empty'
+	if name != name.strip():
+		return 'the name starts or ends with a space'
+	if [c for c in name if ord(c) < 32 or ord(c) == 127]:
+		return 'the name contains a control character'
+	if not name.strip('.') or '/' in name or '\\' in name:
+		return 'the name looks like a path'
+	return None
 
 
 def _refuse(reason):
