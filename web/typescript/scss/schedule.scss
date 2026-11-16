@@ -462,7 +462,14 @@
 }
 
 .mustry-row-menu-pop {
-    z-index: 30;
+    // Portalled to document.body (RowMenu.tsx): defaults here, the opening
+    // manager's resolved theme inline on top. Above Perspective's overlays (a
+    // manager can sit in a popup), but under the Idle Guard's 2147483000: the
+    // screensaver must cover an open menu too.
+    @include adm-vars;
+    z-index: 2147482000;
+    box-sizing: border-box;
+    font-size: 13px;
     display: flex;
     flex-direction: column;
     min-width: 150px;

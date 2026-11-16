@@ -297,6 +297,30 @@ export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
     return { epochMs, iso: msToZonedIso(epochMs, zone) };
 }
 
+/** `timeZone` if Intl knows it, else '' (browser-local): a mistyped or unknown
+ *  config.timezone must degrade to the browser's zone, as `resolveZoned` and
+ *  `wallClockInZone` do, instead of throwing a RangeError on every zone call. */
+export function knownTimeZone(timeZone: string): string {
+    if (!timeZone) {
+        return '';
+    }
+    try {
+        offsetFormatter(timeZone);
+        return timeZone;
+    } catch (e) {
+        return '';
+    }
+}
+
+/** Ms from `nowMs` to the next midnight in `timeZone` (browser-local if empty or
+ *  unknown): when "today" next changes there. Always > 0. A midnight that falls
+ *  in a DST gap resolves to the first instant after it, as resolveZoned does. */
+export function msUntilNextZoneDay(nowMs: number, timeZone: string): number {
+    const zone = knownTimeZone(timeZone);
+    const w = zoneWallClock(new Date(nowMs), zone);
+    return resolveZoned({ y: w.y, mo: w.mo, d: w.d + 1 }, zone).epochMs - nowMs;
+}
+
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
 export function zoneWallClock(instant: Date, timeZone: string): WallClock {
     if (!timeZone) {

@@ -4,8 +4,46 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockInZone
+    wallClockInZone, knownTimeZone, msUntilNextZoneDay
 } from '../../shared/dateUtils';
+
+describe('knownTimeZone', () => {
+    it('keeps a zone Intl knows and reads an unknown one as browser-local', () => {
+        expect(knownTimeZone('Europe/Brussels')).toBe('Europe/Brussels');
+        expect(knownTimeZone('UTC')).toBe('UTC');
+        expect(knownTimeZone('')).toBe('');
+        expect(knownTimeZone('Not/AZone')).toBe('');
+        expect(knownTimeZone('Europe/Brusels')).toBe('');
+    });
+});
+
+describe('msUntilNextZoneDay', () => {
+    const at = (iso: string) => Date.parse(iso);
+    it('counts to the next midnight in the zone, not the process zone', () => {
+        // 23:59:30 on the 17th in Chicago (CDT, UTC-5).
+        expect(msUntilNextZoneDay(at('2026-06-18T04:59:30Z'), 'America/Chicago')).toBe(30_000);
+        // Exactly midnight: the next day is a full day away.
+        expect(msUntilNextZoneDay(at('2026-06-18T05:00:00Z'), 'America/Chicago')).toBe(24 * 3_600_000);
+        expect(msUntilNextZoneDay(at('2026-06-17T12:00:00Z'), 'UTC')).toBe(12 * 3_600_000);
+    });
+
+    it('follows 23 and 25 hour days', () => {
+        expect(msUntilNextZoneDay(at('2026-03-08T06:00:00Z'), 'America/Chicago')).toBe(23 * 3_600_000);
+        expect(msUntilNextZoneDay(at('2026-11-01T05:00:00Z'), 'America/Chicago')).toBe(25 * 3_600_000);
+    });
+
+    it('lands after a midnight that falls in a DST gap', () => {
+        // Santiago springs forward at 00:00 -> 01:00 on 2026-09-06; 23:00 on the 5th is UTC-4.
+        const ms = msUntilNextZoneDay(at('2026-09-06T03:00:00Z'), 'America/Santiago');
+        expect(ms).toBeGreaterThan(0);
+        expect(ms).toBe(3_600_000);
+    });
+
+    it('reads an unknown zone as the process zone instead of throwing', () => {
+        const now = at('2026-06-17T12:00:00Z');
+        expect(msUntilNextZoneDay(now, 'Not/AZone')).toBe(msUntilNextZoneDay(now, ''));
+    });
+});
 
 describe('pad2', () => {
     it('pads to two digits', () => {

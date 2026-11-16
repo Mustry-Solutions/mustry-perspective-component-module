@@ -48,7 +48,7 @@
         "timezone": {
           "type": "string",
           "default": "",
-          "description": "IANA zone for display (e.g. America/Chicago). Converts event instants and today/now to that zone; empty = browser-local. The time scale itself is epoch-linear, so DST days render as 23/25 hours."
+          "description": "IANA zone for display (e.g. America/Chicago). Converts event instants and today/now to that zone; empty, or a zone the browser does not recognize, = browser-local. The time scale itself is epoch-linear, so DST days render as 23/25 hours."
         },
         "locale": {
           "type": "string",

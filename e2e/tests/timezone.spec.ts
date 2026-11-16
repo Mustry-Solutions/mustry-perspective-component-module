@@ -86,6 +86,21 @@ test.describe('Holiday Manager zone', () => {
     });
 });
 
+test.describe('Holiday Manager at midnight (#257)', () => {
+    test('the past badge moves on when the day turns in its zone, with nothing else re-rendering', async ({ page }) => {
+        // The installed clock runs in real time until paused, so start well before midnight
+        // and pause at 23:59:30 Chicago once the page is up: however slow the load, the
+        // midnight timer then only fires when the test runs the clock past it.
+        await page.clock.install({ time: new Date('2026-06-18T04:50:00Z') });
+        await openRoute(page, '/timezone-managers', '#tz-hol-chicago');
+        await page.clock.pauseAt(new Date('2026-06-18T04:59:30Z'));
+        const plantDay = page.locator('#tz-hol-chicago .mustry-sched-item').filter({ hasText: 'Plant day' });
+        await expect(plantDay).not.toHaveClass(/mustry-holiday-item--past/);
+        await page.clock.runFor(60_000);
+        await expect(plantDay).toHaveClass(/mustry-holiday-item--past/);
+    });
+});
+
 test.describe('mini month navigator zone', () => {
     // 12:00 UTC on the 17th: 21:00 on the 17th in Tokyo, 02:00 on the 18th in Kiritimati.
     const NOON = '2026-06-17T12:00:00Z';
@@ -147,5 +162,17 @@ test.describe('timeline hour paging across DST', () => {
             await prev.click();
             await expect(visible).toContainText(step);
         }
+    });
+});
+
+test.describe('timeline with an unknown config.timezone (#255)', () => {
+    test('renders browser-local instead of throwing on mount', async ({ page }) => {
+        // 12:00 UTC on the 17th is 21:00 in Tokyo: the day window opens on Tokyo's midnight.
+        await page.clock.setFixedTime(new Date('2026-06-17T12:00:00Z'));
+        const root = await openRoute(page, '/timezone-nav', '#tz-timeline-badzone');
+        await expect(root.locator('.mustry-tml-title--btn')).toBeVisible();
+        await expect(page.locator('#tz-badzone-visible')).toContainText('2026-06-16T15:00:00.000Z');
+        await root.getByRole('button', { name: 'Next', exact: true }).click();
+        await expect(page.locator('#tz-badzone-visible')).toContainText('2026-06-17T15:00:00.000Z');
     });
 });
