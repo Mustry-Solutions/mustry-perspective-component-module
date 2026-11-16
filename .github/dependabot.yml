@@ -14,6 +14,14 @@ updates:
   # construction, and eslint-plugin-react's peer range gates the whole set.
   # Ungrouped, dependabot opened two permanently-red PRs (#86, #88) for one
   # upgrade. One PR that goes green when the ecosystem is ready is the point.
+  #
+  # Split by update type: in one group, a blocked major (ESLint 10, red since
+  # 2026-09 because eslint-plugin-react caps its peer range at ^9.7) also held
+  # back every minor and patch in the set. typescript-eslint 8.69 to 8.72
+  # never landed, and 8.73, which fixes a minimatch advisory, would have
+  # waited behind the major too. Minors and patches now land on their own,
+  # and the major waits in its own PR. Dependabot puts each update in the
+  # first group that matches it, so keep the minor/patch group first.
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -21,6 +29,15 @@ updates:
     open-pull-requests-limit: 3
     groups:
       eslint:
+        update-types: ["minor", "patch"]
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+          - "eslint-plugin-*"
+      eslint-major:
+        update-types: ["major"]
         patterns:
           - "eslint"
           - "@eslint/*"
