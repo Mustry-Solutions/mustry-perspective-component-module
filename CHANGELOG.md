@@ -36,6 +36,22 @@ real project deletes, and **anyone who can reach those views can take over the g
 users, so don't expose them**. Their read bindings also still seed demo data, including users
 with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
 
+### Security: Rich Text Editor moves to TipTap 3
+TipTap 2 has an open advisory, GHSA-cp6q-959q-f8rh (`@tiptap/core` < 3.30.4:
+`mergeAttributes()` turns an own `__proto__` key into inherited DOM attributes), and no
+2.x release fixes it. The editor now runs on TipTap 3.34. Nothing changes for authors: same props, same
+markup, same events. TipTap 3 changes three defaults that would have changed the editor,
+and all three are kept as they were:
+- Its StarterKit now bundles links and underline. Both still follow
+  `config.features.link` and `config.features.underline`, and links still go through
+  the editor's own URL policy, not TipTap's wider allowlist.
+- Its character count now cuts the start of a bound document that is already over
+  `config.charLimit` on load. The limit stays a typing limit: bound content is never
+  shortened.
+- It now appends an empty paragraph after a document that ends in a table, list or
+  image. The editor no longer adds one, so the HTML it holds still matches
+  `data.content`.
+
 ### Changed
 - The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
   read "now" and "today" in the gateway's zone when it's empty, instead of the
@@ -45,6 +61,18 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   to read them in a different zone.
 
 ### Fixed
+- Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
+  first name `Zoë`, were garbled, because the event scripts and the views' read
+  bindings passed them through `str()`. A garbled read was written back on the next
+  save, and a renamed-looking schedule, holiday or roster was saved as a second
+  record. Both now use `unicode()`. Projects that copied the scripts or bindings
+  should copy them again (#258).
+- Admin reference scripts: the save scripts refuse a new user, role, schedule,
+  holiday or roster name that is empty, starts or ends with a space, contains a line
+  break, a control character or an invisible formatting character, or is only dots,
+  such as `..`. The managers only checked names in the browser, so a crafted event
+  could create one. The check is `adminAuth.nameProblem()`; existing records keep
+  their names (#260).
 - The timeline's sub-day zooms stay on their grid across a daylight-saving change:
   from the midnight after it, `hour` pages start at 00:00/08:00/16:00 again without
   pressing Today, instead of 07:00/15:00/23:00. On the change day itself the windows
