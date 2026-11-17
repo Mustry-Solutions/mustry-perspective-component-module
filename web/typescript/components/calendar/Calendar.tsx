@@ -31,6 +31,7 @@ import {
     isoDateTime,
     followTickMs,
     followDisarms,
+    cursorAfterZoneChange,
     followCursorStale,
     followScrollStale,
     toggleHiddenCategory,
@@ -142,7 +143,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>, prevState: CalendarState): void {
-        this.syncOutput();
+        const zoneCursor = this.zoneChangeCursor(prevProps.props);
+        if (zoneCursor) {
+            // Not following now: today moves with the zone, any other date stays. The
+            // re-render publishes the window, so the old zone's is never written.
+            this.setState({ cursor: zoneCursor }, () => this.scrollTimeGrid());
+        } else {
+            this.syncOutput();
+        }
         if (prevState.editor && !this.state.editor && this.editorOpener) {
             this.editorOpener.focus();   // a keyboard user continues from the day they started on
             this.editorOpener = null;
@@ -164,6 +172,18 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             // waiting out the next tick.
             this.tickFollow();
         }
+    }
+
+    /** The cursor a config.timezone change moves to, or null when it stays (or
+     *  follow-now re-anchors it on its own tick). */
+    private zoneChangeCursor(prev: CalendarProps): Date | null {
+        const p = this.props.props;
+        if (p.followNow || prev.timezone === p.timezone) {
+            return null;
+        }
+        const now = new Date();
+        const next = cursorAfterZoneChange(this.state.cursor, todayInZone(prev.timezone, now), todayInZone(p.timezone, now));
+        return fmtDate(next) === fmtDate(this.state.cursor) ? null : next;
     }
 
     componentWillUnmount(): void {

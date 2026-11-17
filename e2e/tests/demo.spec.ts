@@ -98,6 +98,14 @@ for (const timezoneId of ['Pacific/Kiritimati', 'Pacific/Pago_Pago']) {
             await openDemo(page, '/schedule', '.mustry-timeline');
             await expect(page.getByText('Downtime escalation', { exact: false }).first()).toBeVisible();
         });
+
+        test('demo maintenance: the calendar opens on the gateway\'s today', async ({ page }) => {
+            // The zone binding lands after mount; the cursor must follow it to the
+            // gateway's today, so day view shows today's column, not the browser's day.
+            const root = await openDemo(page, '/maintenance', '.mustry-calendar');
+            await root.getByRole('button', { name: 'Day', exact: true }).click();
+            await expect(root.locator('.mustry-cal-tg-dayhead--today')).toHaveCount(1);
+        });
     });
 }
 

@@ -1013,6 +1013,25 @@ describe('anchorAfterZoneChange (a bound config.timezone arriving after mount)',
         expect(new Date(anchorAfterZoneChange(bxMidnight, 'day', BX, 'Asia/Tokyo', now)).toISOString())
             .toBe('2026-11-19T15:00:00.000Z');           // Nov 20 00:00 in Tokyo
     });
+    it('keeps the calendar day even between zones more than 12 hours apart', () => {
+        const ppMidnight = Date.UTC(2026, 10, 20, 11);   // Nov 20 00:00 in Pago Pago (UTC-11)
+        expect(new Date(anchorAfterZoneChange(ppMidnight, 'day', 'Pacific/Pago_Pago', 'Pacific/Kiritimati', now)).toISOString())
+            .toBe('2026-11-19T10:00:00.000Z');           // Nov 20 00:00 in Kiritimati (UTC+14)
+    });
+    it('keeps a week on its start date instead of moving it to the middle of the week', () => {
+        const nov24 = Date.UTC(2026, 10, 23, 23);        // Nov 24 00:00 in Brussels, a paged week
+        expect(new Date(anchorAfterZoneChange(nov24, 'week', BX, 'UTC', now)).toISOString()).toBe('2026-11-24T00:00:00.000Z');
+        const nov14 = Date.UTC(2026, 10, 13, 23);        // a week picked from Nov 14 that holds now
+        expect(new Date(anchorAfterZoneChange(nov14, 'week', BX, 'UTC', now)).toISOString()).toBe('2026-11-14T00:00:00.000Z');
+    });
+    it('the same zone under another name changes nothing', () => {
+        const nov24 = Date.UTC(2026, 10, 23, 23);
+        expect(anchorAfterZoneChange(nov24, 'week', BX, 'Europe/Brussels', now)).toBe(nov24);
+    });
+    it('keeps a sub-day window that is not now on its wall time', () => {
+        const bx8 = Date.UTC(2026, 10, 20, 7);           // Nov 20 08:00 in Brussels, an hour window
+        expect(new Date(anchorAfterZoneChange(bx8, 'hour', BX, 'UTC', now)).toISOString()).toBe('2026-11-20T08:00:00.000Z');
+    });
     it('keeps the current stride at a sub-day zoom', () => {
         const a = anchorAfterZoneChange(containingAnchorMs(now, 'hour', BX), 'hour', BX, 'America/New_York', now);
         expect(a).toBe(containingAnchorMs(now, 'hour', 'America/New_York'));

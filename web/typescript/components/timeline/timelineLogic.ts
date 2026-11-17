@@ -197,17 +197,25 @@ export function containingAnchorMs(ms: number, zoom: TimelineZoom, timeZone: str
 
 /**
  * The anchor after config.timezone changes (a bound zone usually arrives just
- * after mount). The old anchor is a midnight in the OLD zone, so keeping it would
- * pair it with an end computed in the new one: Brussels to UTC left a one-hour
- * "day". Re-anchor on the window holding the same moment instead: now, when the
- * old window showed it, else the middle of the old window.
+ * after mount). The old anchor is a wall time in the OLD zone, so keeping its
+ * instant would pair it with an end computed in the new one: Brussels to UTC
+ * left a one-hour "day". A window on today stays on today, in the new zone.
+ * Any other window keeps its wall date and time (Nov 20, or the week that
+ * starts Nov 14), now read in the new zone; a sub-day window then snaps to the
+ * new zone's stride grid. An instant would not do: zones more than 12 h apart
+ * put the same moment on another date.
  */
 export function anchorAfterZoneChange(
     prevAnchorMs: number, zoom: TimelineZoom, prevTimeZone: string, timeZone: string, nowMs: number
 ): number {
-    const old = windowFor(prevAnchorMs, zoom, prevTimeZone);
-    const focusMs = nowMs >= old.startMs && nowMs < old.endMs ? nowMs : old.startMs + (old.endMs - old.startMs) / 2;
-    return containingAnchorMs(focusMs, zoom, timeZone);
+    if (prevAnchorMs === containingAnchorMs(nowMs, zoom, prevTimeZone)) {
+        return containingAnchorMs(nowMs, zoom, timeZone);
+    }
+    const w = zoneWallClock(new Date(prevAnchorMs), prevTimeZone);
+    if (!isSubDayZoom(zoom)) {
+        return resolveZoned({ y: w.y, mo: w.mo, d: w.d }, timeZone).epochMs;
+    }
+    return containingAnchorMs(resolveZoned(w, timeZone).epochMs, zoom, timeZone);
 }
 
 /**

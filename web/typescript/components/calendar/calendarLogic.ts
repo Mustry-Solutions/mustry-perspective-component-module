@@ -248,6 +248,13 @@ export function followCursorStale(cursor: Date, todayZone: Date): boolean {
     return fmtDate(cursor) !== fmtDate(todayZone);
 }
 
+/** The cursor after config.timezone changes (a bound zone usually arrives just
+ *  after mount): a cursor on today in the old zone moves to today in the new
+ *  one; any other date is a wall date and stays. */
+export function cursorAfterZoneChange(cursor: Date, todayOldZone: Date, todayNewZone: Date): Date {
+    return fmtDate(cursor) === fmtDate(todayOldZone) ? todayNewZone : cursor;
+}
+
 // --- legend category filter (state.hiddenCategories, two-way) ------------------
 
 /** The next hidden-category array after a legend click. The `state.hiddenCategories`

@@ -246,9 +246,9 @@ surface: drag empty space to add availability (snapped to
 `config.snapMinutes`), drag block edges to resize, click a block to remove.
 Name/description/flags edit inline; alternating (A/B) schedules render
 week A read-only. The preview strip answers *"active now? until when?"*
-live, and a red line marks the current time. Both read the weekly hours
-only: on a holiday, a schedule that observes holidays still shows as
-active, although Ignition treats it as inactive. Save fires `onScheduleSave
+live, and a red line marks the current time. The strip and the active
+dots read the weekly hours only: on a holiday, a schedule that observes
+holidays still shows as active, although Ignition treats it as inactive. Save fires `onScheduleSave
 {schedule, isNew, oldName?}` — the payload is a 1:1 mirror of Ignition's
 `BasicScheduleModel`, so persistence is a few lines of
 `system.user.editSchedule`/`addSchedule`.

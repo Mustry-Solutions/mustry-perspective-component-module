@@ -131,11 +131,15 @@ and all three are kept as they were:
   browser "Today" in a Brussels picker started at 01:00 on 2026-03-08, and a
   Brussels browser showed a New York 02:30 as 03:30 on 2026-03-29. It now keeps
   them as plain dates and times in `config.timezone` (#247).
-- Resource Timeline: changing `config.timezone` after the timeline is on screen,
-  such as a zone binding that arrives just after mount, left the day window
-  with a start from the old zone and an end from the new one: from Brussels to
-  UTC, a one-hour "day" with no bars. It now re-anchors on the window holding
-  the same moment (today, if it was showing today).
+- Resource Timeline and Calendar: changing `config.timezone` after the
+  component is on screen, such as a zone binding that arrives just after
+  mount, now moves a view on today to today in the new zone and keeps any
+  other date. The timeline used to pair a start from the old zone with an end
+  from the new one (from Brussels to UTC, a one-hour "day" with no bars), and
+  the calendar stayed on the browser's date (#292).
+- Calendar: a `config.timezone` the browser doesn't recognize, such as a
+  Java-only gateway id like `GMT+01:00`, now reads browser-local in every view.
+  Week and day view used to fail to render (#292).
 - Schedule Manager: the docs now say that `output.isActiveNow`, the active dots
   and the preview strip read the weekly hours only. Holidays aren't evaluated,
   so a schedule that observes holidays reads active during its hours on a
