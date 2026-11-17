@@ -193,7 +193,7 @@
               },
               "observeHolidays": {
                 "type": "boolean",
-                "description": "Schedule observes the gateway's holiday list."
+                "description": "Schedule observes the gateway's holiday list. Shown and saved as is; the component doesn't read the holiday list, so output.isActiveNow, the active dots and the preview strip ignore it."
               },
               "allDays": {
                 "type": "boolean",
@@ -305,7 +305,7 @@
         "isActiveNow": {
           "type": "boolean",
           "default": false,
-          "description": "Whether the SELECTED schedule is active at the current time in config.timezone (re-evaluated every 30s). Alternating schedules evaluate against week A."
+          "description": "Whether the SELECTED schedule is active at the current time in config.timezone (re-evaluated every 30s), from its weekly hours only. Holidays are not evaluated: a schedule with observeHolidays reads true during its hours on a holiday, where Ignition treats it as inactive. Alternating schedules evaluate against week A."
         },
         "validationErrors": {
           "type": "array",
