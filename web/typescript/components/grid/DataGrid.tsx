@@ -13,11 +13,12 @@ import { DocDismiss } from '../../shared/dismiss';
 import {
     CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
     aggregateValue, batchPayload, cellText, columnLayout, editDraft, editErrorText, effectiveColumns,
-    formatCell, gridIsEmpty, gridToCsv, locateCell, matchStyle, nextCell, nextSelection, nextSort,
+    formatCell, gridIsEmpty, gridToCsv, keyResizeWidth, locateCell, matchStyle, nextCell, nextSelection, nextSort,
     parsePasteMatrix, pastePlan, pendingKey, quickFilterRows, reorderFields, rowWithPending,
     settlePending, sortRows, unusableIdWarning, unusableRowIds, validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
+import { fillLabel } from '../../shared/labels/common';
 import { GridCell, GridHeadCell } from './GridCells';
 import { GridToolbar } from './GridToolbar';
 
@@ -72,7 +73,8 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
     private resizeObs: ResizeObserver | null = null;
     private selectionAnchor = '';   // last plainly-clicked row id (shift-range endpoint)
     private filterTimer = 0;        // debounces the state.quickFilter write while typing
-    private suppressSort = false;   // a header drag/resize just ended — swallow its click
+    private suppressSort = false;   // a header drag just ended — swallow its click
+    private keyResize = false;      // state.resize is a keyboard resize's preview (see resizeByKey)
     // True from startEdit until the editor closes. this.state.editing lags inside a
     // batched React handler: Enter/Tab commit, then hand focus back to the grid,
     // which blurs the editor synchronously — its onBlur must not commit (and fire
@@ -109,6 +111,11 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         }
         this.reconcilePending();
         this.warnUnusableIds();
+        const rz = this.state.resize;
+        if (this.keyResize && rz && this.props.props.columnLayout.widths[rz.field] === rz.width) {
+            this.keyResize = false;   // the key write echoed back; the prop leads again
+            this.setState({ resize: null });
+        }
     }
 
     componentWillUnmount(): void {
@@ -476,6 +483,12 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
         if (this.state.editing) {
             return;   // the editor's own keydown handles it
         }
+        if ((e.target as HTMLElement).closest('.mustry-dg-head')) {
+            // The header's buttons and resize handles keep their own keys: Tab moves
+            // between them, Enter sorts. Without this, once a body cell had focus, Tab
+            // there moved the cell highlight instead, and Enter on a handle edited a cell.
+            return;
+        }
         const nav = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Tab'];
         if (nav.indexOf(e.key) >= 0) {
             if (e.key === 'Tab' && !this.state.focus) {
@@ -555,6 +568,7 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
 
     // --- header gestures: resize handle + drag to reorder ----------------------
     private startResize(col: GridColumn, e: React.PointerEvent): void {
+        this.keyResize = false;   // a drag takes over the preview
         e.stopPropagation();
         e.preventDefault();
         const startX = e.clientX;
@@ -570,16 +584,48 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             el.removeEventListener('pointercancel', up);
             const rz = this.state.resize;
             if (rz) {
-                const widths = { ...this.props.props.columnLayout.widths, [rz.field]: rz.width };
-                this.props.store.props.write('state.columnLayout.widths',
-                    Object.keys(widths).map((f) => ({ field: f, width: widths[f] })));
+                this.writeWidth(rz.field, rz.width);
             }
-            this.suppressSort = true;
+            // No suppressSort: the handle sits beside the header button, so this
+            // gesture's click never reaches the sort.
             this.setState({ resize: null });
         };
         el.addEventListener('pointermove', move);
         el.addEventListener('pointerup', up);
         el.addEventListener('pointercancel', up);
+    }
+
+    /** Keyboard resize on a column's handle (#91): writes the width at once. */
+    private resizeByKey(col: GridColumn, e: React.KeyboardEvent): void {
+        const w = keyResizeWidth(col.width, e.key, { shift: e.shiftKey, alt: e.altKey, ctrl: e.ctrlKey, meta: e.metaKey });
+        if (w === null) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();   // not a cell-navigation key for the grid body
+        if (w !== col.width) {
+            // The written width comes back through the store a moment later; the preview
+            // (state.resize, as in a pointer drag) carries it until then, so quick presses
+            // each build on the last instead of all on the old width.
+            this.keyResize = true;
+            this.setState({ resize: { field: col.field, width: w } });
+            this.writeWidth(col.field, w);
+        }
+    }
+
+    /** Leaving a handle drops its key preview; the written width leads from here. */
+    private endKeyResize(): void {
+        if (this.keyResize) {
+            this.keyResize = false;
+            this.setState({ resize: null });
+        }
+    }
+
+    /** Persist one column's width into the two-way state.columnLayout.widths. */
+    private writeWidth(field: string, width: number): void {
+        const widths = { ...this.props.props.columnLayout.widths, [field]: width };
+        this.props.store.props.write('state.columnLayout.widths',
+            Object.keys(widths).map((f) => ({ field: f, width: widths[f] })));
     }
 
     private startHeaderDrag(col: GridColumn, e: React.PointerEvent): void {
@@ -695,6 +741,9 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 onSort={() => this.setSort(col.field)}
                 onDragStart={(e) => this.startHeaderDrag(col, e)}
                 onResizeStart={(e) => this.startResize(col, e)}
+                onResizeKey={(e) => this.resizeByKey(col, e)}
+                onResizeBlur={() => this.endKeyResize()}
+                resizeLabel={fillLabel(this.props.props.labels.resizeColumn, { column: col.header || col.field })}
             />
         );
     }
