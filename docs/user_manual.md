@@ -241,17 +241,17 @@ and a two-step **Delete**.
 
 ![Schedule Manager](images/schedule-manager.png)
 
-Master-detail over `system.user.getSchedules()`. The week grid is a paint
-surface: drag empty space to add availability (snapped to
-`config.snapMinutes`), drag block edges to resize, click a block to remove.
-Name/description/flags edit inline; alternating (A/B) schedules render
-week A read-only. The preview strip answers *"active now? until when?"*
-live, and a red line marks the current time. The strip and the active
-dots read the weekly hours only: on a holiday, a schedule that observes
-holidays still shows as active, although Ignition treats it as inactive. Save fires `onScheduleSave
-{schedule, isNew, oldName?}` — the payload is a 1:1 mirror of Ignition's
-`BasicScheduleModel`, so persistence is a few lines of
-`system.user.editSchedule`/`addSchedule`.
+Master-detail over `system.user.getSchedules()`. The week grid is a
+paint surface: drag empty space to add availability (snapped to
+`config.snapMinutes`), drag block edges to resize, click a block to
+remove. Name/description/flags edit inline; alternating (A/B) schedules
+render week A read-only. The preview strip answers *"active now? until
+when?"* live, and a red line marks the current time. The strip and the
+active dots read the weekly hours only: on a holiday, a schedule that
+observes holidays still shows as active, although Ignition treats it as
+inactive. Save fires `onScheduleSave {schedule, isNew, oldName?}` — the
+payload is a 1:1 mirror of Ignition's `BasicScheduleModel`, so
+persistence is a few lines of `system.user.editSchedule`/`addSchedule`.
 
 ## 15. Roster Manager
 
@@ -285,10 +285,11 @@ set `config.editable: false` for a directory viewer.
 
 The gateway holiday list, sorted by **next occurrence** (annual repeats
 compute their next date; past one-offs sink and dim). Pairs with the
-Schedule Manager: schedules with *Observes holidays* enabled are inactive
-on these dates in Ignition. The Schedule Manager's *active now* display
-doesn't take the holidays into account. Strict calendar validation on the date field; save/delete
-via `onHolidaySave` / `onHolidayDelete`.
+Schedule Manager: schedules with *Observes holidays* enabled are
+inactive on these dates in Ignition. The Schedule Manager's *active now*
+display doesn't take the holidays into account. Strict calendar
+validation on the date field; save/delete via `onHolidaySave` /
+`onHolidayDelete`.
 
 ## 18. Composing an Admin Console
 

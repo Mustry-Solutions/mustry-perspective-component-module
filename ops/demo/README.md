@@ -63,7 +63,10 @@ tags, named queries or historian and this is your project."
   `session.props.gateway.timezone.id`, and the Schedule and Holiday managers
   read the gateway's zone by default, so a presenter whose laptop is in another
   zone, or on another date near midnight, still sees the seeded data and
-  escalated work orders on the right day. The seeder is a property-change
+  escalated work orders on the right day. A gateway zone id the browser
+  doesn't recognize (a Java-only id like `GMT+01:00`) makes those components
+  fall back to the browser's zone, so keep the gateway on an IANA zone, as
+  `ops/demo.sh` does. The seeder is a property-change
   script on a hidden label in the docked `Nav` view, keyed on
   `session.custom.demo.seeded` (declared in the project's `session-props`).
 - All page views bind their `data.*` to `session.custom.demo.*`; the

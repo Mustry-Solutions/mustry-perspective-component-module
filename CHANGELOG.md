@@ -59,6 +59,10 @@ and all three are kept as they were:
   `output.isActiveNow`, the active dots, the now-line, the preview strip and the
   *past* badge were wrong for an operator in another zone. Set `config.timezone`
   to read them in a different zone.
+- Schedule Manager: the docs now say that `output.isActiveNow`, the active dots
+  and the preview strip read the weekly hours only. Holidays aren't evaluated,
+  so a schedule that observes holidays reads active during its hours on a
+  holiday, where Ignition treats it as inactive (#256).
 
 ### Fixed
 - Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
@@ -140,10 +144,6 @@ and all three are kept as they were:
 - Calendar: a `config.timezone` the browser doesn't recognize, such as a
   Java-only gateway id like `GMT+01:00`, now reads browser-local in every view.
   Week and day view used to fail to render (#292).
-- Schedule Manager: the docs now say that `output.isActiveNow`, the active dots
-  and the preview strip read the weekly hours only. Holidays aren't evaluated,
-  so a schedule that observes holidays reads active during its hours on a
-  holiday, where Ignition treats it as inactive (#256).
 - Sales demo: the Schedule board, Maintenance calendar and Quality picker now
   read the gateway's zone, the same clock that seeds the demo and dates an
   escalated work order. A browser on another date, such as a presenter near
