@@ -159,7 +159,9 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventB
  *  times (see seriesWrite); anything else writes the editor's walls as they are. */
 function tlWrittenWalls(ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup): SeriesWrite {
     if (ed.seriesId && ed.scope === 'series') {
-        return seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, false, timezone);
+        const w = seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, false, timezone);
+        // A save that drops the rule makes a one-off, which is checked like any other.
+        return { ...w, unchanged: w.unchanged && !!ed.repeatFreq };
     }
     return { start: ed.start, end: ed.end, unchanged: false };
 }

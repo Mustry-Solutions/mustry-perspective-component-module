@@ -461,8 +461,10 @@ describe('writtenRangeProblem', () => {
         expect(writtenRangeProblem('2026-03-09T10:00', '2026-03-09T09:00', NY)).toBe('range');
         expect(writtenRangeProblem('2026-03-08T02:30', '2026-03-08T04:00', NY)).toBeNull();
     });
-    it('lets an unchanged series save through', () => {
+    it('lets an unchanged series save through a gap, never a range stored backwards', () => {
         expect(writtenRangeProblem('2026-03-08T02:30', '2026-03-08T03:30', NY, true)).toBeNull();
+        expect(writtenRangeProblem('2026-06-01T10:00', '2026-06-01T09:00', NY, true)).toBe('range');
+        expect(writtenRangeProblem('2026-06-01T10:00', '2026-06-01T10:00', NY, true)).toBe('range');
     });
 });
 
@@ -507,10 +509,32 @@ describe('shiftRule', () => {
     });
     it('moves exdates across a month end, and wraps weekdays both ways', () => {
         const base = { freq: 'weekly' as const, byweekday: [0, 6] };
-        expect(shiftRule({ ...base, exdate: ['2026-06-30'] }, 1, base)).toEqual({ freq: 'weekly', byweekday: [0, 1], exdate: ['2026-07-01'] });
+        expect(shiftRule({ ...base, exdate: ['2026-06-30'] }, 1, base)).toEqual({ freq: 'weekly', byweekday: [0, 1], wkst: 2, exdate: ['2026-07-01'] });
         expect(shiftRule({ ...base }, -1, base).byweekday).toEqual([5, 6]);
     });
     it('leaves weekdays alone without the base rule to compare to', () => {
         expect(shiftRule({ freq: 'weekly', byweekday: [1] }, 1).byweekday).toEqual([1]);
+    });
+});
+
+describe('shiftRule keeps every occurrence moved by exactly the shift', () => {
+    const { expandEvents } = jest.requireActual('../../shared/recurrence');
+    const dates = (start: string, rrule: object): string[] =>
+        expandEvents([{ id: 's', start, end: start, rrule }], new Date(2026, 4, 20), new Date(2026, 7, 1), 'UTC')
+            .map((o: { start: string }) => o.start.slice(0, 10));
+    const shifted = (ds: string[], n: number) => ds.map((d) => shiftWallDays(d, n));
+    const cases: Array<[string, object, number]> = [
+        ['every 2 weeks Sun+Mon, +1', { freq: 'weekly', interval: 2, byweekday: [0, 1] }, 1],
+        ['every 2 weeks Mon+Tue, -1', { freq: 'weekly', interval: 2, byweekday: [1, 2] }, -1],
+        ['every 2 weeks Fri+Sat wkst Sun, +1', { freq: 'weekly', interval: 2, byweekday: [5, 6], wkst: 0 }, 1],
+        ['every 3 weeks Mon+Wed+Sat, +3', { freq: 'weekly', interval: 3, byweekday: [1, 3, 6] }, 3],
+        ['weekly Mon/Wed, -2', { freq: 'weekly', byweekday: [1, 3] }, -2]
+    ];
+    it.each(cases)('%s', (_name, rule, n) => {
+        const before = dates('2026-06-01T09:00:00', rule);
+        const after = dates(shiftWallDays('2026-06-01T09:00:00', n), shiftRule(rule as never, n, rule as never));
+        // Compare inside the window both cover.
+        const inside = (d: string) => d >= '2026-06-05' && d <= '2026-07-25';
+        expect(after.filter(inside)).toEqual(shifted(before, n).filter(inside));
     });
 });

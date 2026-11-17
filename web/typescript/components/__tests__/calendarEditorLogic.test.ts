@@ -521,6 +521,15 @@ describe('a series that starts in a DST gap (#297)', () => {
     it('a range typed backwards keeps the plain message, even with a time in the gap', () => {
         expect(editorProblem(ed({ start: '2026-03-08T04:00', end: '2026-03-08T02:30' }), NY)).toBe('range');
     });
+    it('the exemption never passes a range stored backwards', () => {
+        const back: CalEvent = { id: 's', title: 'S', start: '2026-06-01T10:00:00', end: '2026-06-01T09:00:00', rrule: { freq: 'daily' } };
+        const e = { ...editorForEvent(occOf('s', '2026-06-15', { title: 'S', start: '2026-06-15T10:00:00', end: '2026-06-15T09:00:00' }), () => back), scope: 'series' as const };
+        expect(editorProblem(e, NY, () => back)).toBe('range');
+    });
+    it('dropping the rule makes a one-off, which is checked as one', () => {
+        const e = { ...opened('2026-03-09'), scope: 'series' as const, repeatFreq: '' as const };
+        expect(editorProblem(e, NY, lookup)).toBe('gap');
+    });
     it('a series with no stored end has nothing to keep and is checked as usual', () => {
         const noEnd: CalEvent = { ...base, end: undefined };
         const e = { ...opened('2026-03-09'), scope: 'series' as const };

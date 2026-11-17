@@ -89,7 +89,9 @@ export function resolvesForward(start: string, end: string, timezone: string): b
  *  times (see seriesWrite); anything else writes the editor's walls as they are. */
 function writtenWalls(ed: Editor, timezone: string, baseEventById: BaseEventLookup): SeriesWrite {
     if (ed.seriesId && ed.scope === 'series') {
-        return seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, ed.allDay, timezone);
+        const w = seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, ed.allDay, timezone);
+        // A save that drops the rule makes a one-off, which is checked like any other.
+        return { ...w, unchanged: w.unchanged && !!ed.repeatFreq };
     }
     return { start: ed.start, end: ed.end, unchanged: false };
 }

@@ -505,13 +505,10 @@ export function seriesWrite(
  *  can: 'gap' = it runs forward as written but not as instants, because a DST
  *  gap skips one of its times (say so, the generic message doesn't explain it); 'range' = the end
  *  is not after the start. `unchanged` (a series save that keeps its stored
- *  times) is always allowed. */
+ *  times) lets the gap case through, never a range stored backwards. */
 export function writtenRangeProblem(
     start: string, end: string, timeZone: string, unchanged = false
 ): 'gap' | 'range' | null {
-    if (unchanged) {
-        return null;
-    }
     const s = toEpochMs(start, timeZone);
     const e = toEpochMs(end, timeZone);
     if (s !== null && e !== null && e > s) {
@@ -520,7 +517,10 @@ export function writtenRangeProblem(
     // Only a range that runs forward as written is collapsed by the gap; one
     // typed backwards gets the plain message.
     const forwardAsWritten = wallToSeconds(start.slice(0, 19)) < wallToSeconds(end.slice(0, 19));
-    return forwardAsWritten && (wallInGap(start, timeZone) || wallInGap(end, timeZone)) ? 'gap' : 'range';
+    if (!forwardAsWritten || !(wallInGap(start, timeZone) || wallInGap(end, timeZone))) {
+        return 'range';
+    }
+    return unchanged ? null : 'gap';
 }
 
 /** The placeholders of the editors' gap message for a skipped wall time: the

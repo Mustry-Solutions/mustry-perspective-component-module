@@ -41,7 +41,8 @@ export interface RecurringItem extends OccurrenceTag {
  * A rule moved with its series by `days` (a whole-series edit that changed the
  * start date): every EXDATE moves too, so the occurrences it removed stay
  * removed, and a weekly rule's weekdays turn with the start when they are still
- * the base rule's (moving a Mon/Wed series by one day gives Tue/Thu). Weekdays
+ * the base rule's (moving a Mon/Wed series by one day gives Tue/Thu), with its
+ * week start, so every occurrence moves by exactly `days`. Weekdays
  * the editor changed are the user's choice and are kept. `until` and `count`
  * are kept as written: the editor shows them. Returns `rr` itself when days is 0.
  */
@@ -55,9 +56,13 @@ export function shiftRule(rr: RRule, days: number, baseRule?: RRule): RRule {
     }
     const same = (a: number[] | undefined, b: number[] | undefined): boolean =>
         !!a && !!b && a.length === b.length && a.slice().sort().join() === b.slice().sort().join();
+    const turn = (wd: number): number => (((wd + days) % 7) + 7) % 7;
     if (rr.freq === 'weekly' && rr.byweekday && rr.byweekday.length && days % 7 !== 0
         && baseRule && same(rr.byweekday, baseRule.byweekday)) {
-        out.byweekday = rr.byweekday.map((wd) => (((wd + days) % 7) + 7) % 7).sort((a, b) => a - b);
+        out.byweekday = rr.byweekday.map(turn).sort((a, b) => a - b);
+        // The week start turns too: weeks are bucketed from it, so turning only the
+        // weekdays would regroup an every-2-weeks Sun+Mon into different weeks.
+        out.wkst = turn(weekStartOf(rr));
     }
     return out;
 }

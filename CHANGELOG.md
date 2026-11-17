@@ -69,8 +69,10 @@ and all three are kept as they were:
   you didn't change, its weekdays all move with it, so moving Monday's
   occurrence to Tuesday turns a Mon/Wed series into Tue/Thu. The date change
   used to be dropped without a word. `until` and `count` stay as the editor
-  shows them, and an edit that only changes times keeps the series on its own
-  dates as before (#291).
+  shows them, so a move can add or drop an occurrence at the series' end. A
+  monthly or yearly series moves to the new day of the month, so a series on
+  the 31st moved one day runs on the 1st of every month. An edit that only
+  changes times keeps the series on its own dates as before (#291).
 
 ### Fixed
 - Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
