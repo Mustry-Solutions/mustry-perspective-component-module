@@ -128,16 +128,24 @@ export function combine(dateOnly: Date, sec: number): Date {
 
 /** Format a date with a token pattern (YYYY, YY, MM, M, DD, D, HH, mm, ss). */
 export function formatPattern(d: Date, pattern: string): string {
+    return formatWallPattern({
+        y: d.getFullYear(), mo: d.getMonth() + 1, d: d.getDate(), h: d.getHours(), mi: d.getMinutes(), s: d.getSeconds()
+    }, pattern);
+}
+
+/** formatPattern for wall-clock fields: no Date is built, so a time the browser's
+ *  own zone skips (a DST gap) is shown as it is, not moved an hour on. */
+export function formatWallPattern(w: WallClock, pattern: string): string {
     const map: { [k: string]: string } = {
-        YYYY: String(d.getFullYear()),
-        YY: pad2(d.getFullYear() % 100),
-        MM: pad2(d.getMonth() + 1),
-        M: String(d.getMonth() + 1),
-        DD: pad2(d.getDate()),
-        D: String(d.getDate()),
-        HH: pad2(d.getHours()),
-        mm: pad2(d.getMinutes()),
-        ss: pad2(d.getSeconds())
+        YYYY: String(w.y),
+        YY: pad2(w.y % 100),
+        MM: pad2(w.mo),
+        M: String(w.mo),
+        DD: pad2(w.d),
+        D: String(w.d),
+        HH: pad2(w.h),
+        mm: pad2(w.mi),
+        ss: pad2(w.s)
     };
     // Longer tokens first in the alternation so YYYY beats YY, MM beats M, DD beats D.
     return pattern.replace(/YYYY|YY|MM|DD|HH|mm|ss|M|D/g, (t) => map[t]);
@@ -184,6 +192,44 @@ export interface WallClock extends WallFields {
     h: number;
     mi: number;
     s: number;
+}
+
+/** "YYYY-MM-DD" of wall-clock fields. */
+export function fmtWallDate(w: WallFields): string {
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}`;
+}
+
+/** Seconds since midnight of a wall clock. */
+export function wallSeconds(w: WallClock): number {
+    return w.h * 3600 + w.mi * 60 + w.s;
+}
+
+/** The wall clock at seconds-since-midnight on a wall day. */
+export function wallAt(day: WallFields, sec: number): WallClock {
+    const t = clampSec(sec);
+    return { y: day.y, mo: day.mo, d: day.d, h: Math.floor(t / 3600), mi: Math.floor((t % 3600) / 60), s: t % 60 };
+}
+
+/** A wall clock moved by whole calendar days, keeping its time of day. Field
+ *  arithmetic in UTC, so no zone's DST can move the time. */
+export function addWallClockDays(w: WallClock, days: number): WallClock {
+    const t = new Date(Date.UTC(w.y, w.mo - 1, w.d + days));
+    return { y: t.getUTCFullYear(), mo: t.getUTCMonth() + 1, d: t.getUTCDate(), h: w.h, mi: w.mi, s: w.s };
+}
+
+/** A wall clock moved by whole months, keeping its time of day. A day the target
+ *  month lacks clamps to its last day (Mar 31 minus a month is Feb 28, not Mar 3). */
+export function addWallClockMonths(w: WallClock, months: number): WallClock {
+    const first = new Date(Date.UTC(w.y, w.mo - 1 + months, 1));
+    const y = first.getUTCFullYear();
+    const mo = first.getUTCMonth() + 1;
+    const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return { y, mo, d: Math.min(w.d, last), h: w.h, mi: w.mi, s: w.s };
+}
+
+/** Day of the week of a wall day, 0 = Sunday. */
+export function wallWeekday(w: WallFields): number {
+    return new Date(Date.UTC(w.y, w.mo - 1, w.d)).getUTCDay();
 }
 
 /** The wall clock at seconds-since-midnight on a date-only value's calendar day.
@@ -299,7 +345,7 @@ export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
 
 /** `timeZone` if Intl knows it, else '' (browser-local): a mistyped or unknown
  *  config.timezone must degrade to the browser's zone, as `resolveZoned` and
- *  `wallClockInZone` do, instead of throwing a RangeError on every zone call. */
+ *  `wallClockOrLocal` do, instead of throwing a RangeError on every zone call. */
 export function knownTimeZone(timeZone: string): string {
     if (!timeZone) {
         return '';
@@ -498,22 +544,21 @@ export function wallInputStep(value: string): string {
     return /T\d\d:\d\d:\d\d/.test(value) ? '1' : '';
 }
 
-/** Local Date whose fields are the wall clock of `instant` in `timeZone` (browser-local
- *  if empty), so field-based day math matches what an operator in that zone sees. An
- *  unknown zone reads as browser-local, as `resolveZoned` does, instead of throwing. */
-export function wallClockInZone(instant: Date, timeZone: string): Date {
-    let w: ReturnType<typeof zoneWallClock>;
+/** The wall-clock fields of `instant` in `timeZone` (browser-local if empty). An
+ *  unknown zone reads as browser-local instead of throwing. No Date is
+ *  built, so a time the browser's own zone skips stays as it is. */
+export function wallClockOrLocal(instant: Date, timeZone: string): WallClock {
     try {
-        w = zoneWallClock(instant, timeZone);
+        return zoneWallClock(instant, timeZone);
     } catch (e) {
-        w = zoneWallClock(instant, '');
+        return zoneWallClock(instant, '');
     }
-    return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
 }
 
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
 export function todayInZone(timeZone: string, instant: Date = new Date()): Date {
-    return startOfDay(wallClockInZone(instant, timeZone));
+    const w = wallClockOrLocal(instant, timeZone);
+    return new Date(w.y, w.mo - 1, w.d);
 }
 
 /** Minutes-from-midnight of "now" in `timeZone`. */

@@ -4,7 +4,7 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockInZone, knownTimeZone, msUntilNextZoneDay, seriesEditWalls
+    wallClockOrLocal, knownTimeZone, msUntilNextZoneDay, seriesEditWalls
 } from '../../shared/dateUtils';
 
 describe('knownTimeZone', () => {
@@ -368,15 +368,20 @@ describe('todayInZone / nowMinutesInZone', () => {
     });
 });
 
-describe('wallClockInZone', () => {
-    it('is a local Date whose fields are the zone wall clock', () => {
-        const w = wallClockInZone(new Date('2026-06-25T13:00:00Z'), 'America/Chicago');
-        expect([fmtDate(w), secondsOfDay(w)]).toEqual(['2026-06-25', 8 * 3600]);
+describe('wallClockOrLocal', () => {
+    it('is the zone wall clock', () => {
+        expect(wallClockOrLocal(new Date('2026-06-25T13:00:00Z'), 'America/Chicago'))
+            .toEqual({ y: 2026, mo: 6, d: 25, h: 8, mi: 0, s: 0 });
     });
 
     it('blank zone keeps the instant (browser-local)', () => {
         const instant = new Date(2026, 5, 25, 13, 0, 0);
-        expect(wallClockInZone(instant, '').getTime()).toBe(instant.getTime());
+        expect(wallClockOrLocal(instant, '')).toEqual({ y: 2026, mo: 6, d: 25, h: 13, mi: 0, s: 0 });
+    });
+
+    it('an unknown zone reads browser-local instead of throwing', () => {
+        const instant = new Date(2026, 5, 25, 13, 0, 0);
+        expect(wallClockOrLocal(instant, 'Not/AZone')).toEqual(wallClockOrLocal(instant, ''));
     });
 });
 
