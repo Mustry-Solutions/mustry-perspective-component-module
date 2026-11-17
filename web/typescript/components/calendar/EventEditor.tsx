@@ -2,9 +2,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
-import { intlFormat } from '../../shared/dateUtils';
+import { gapHintVars, intlFormat } from '../../shared/dateUtils';
+import { fillLabel } from '../../shared/labels/common';
 import { CalLabels, Category, Editor } from './calendarTypes';
-import { BaseEventLookup, editorProblem } from './calendarEditorLogic';
+import { BaseEventLookup, editorGapWall, editorProblem } from './calendarEditorLogic';
 import { UNCATEGORIZED_COLOR } from '../../shared/eventStyle';
 
 interface EventEditorProps {
@@ -26,6 +27,7 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
     const problem = editorProblem(ed, timezone, baseEventById);   // non-null blocks Save
+    const gapWall = problem === 'gap' ? editorGapWall(ed, timezone, baseEventById) : null;
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
 
@@ -97,6 +99,11 @@ export function EventEditor(props: EventEditorProps): React.ReactElement {
                 )}
                 {problem === 'range' && (
                     <div className="mustry-cal-editor-problem">{labels.invalidRange}</div>
+                )}
+                {problem === 'gap' && (
+                    <div className="mustry-cal-editor-problem">
+                        {gapWall ? fillLabel(labels.timeInGap, gapHintVars(gapWall, timezone, locale)) : labels.invalidRange}
+                    </div>
                 )}
                 {showRepeat && (
                     <label className="mustry-cal-editor-field">

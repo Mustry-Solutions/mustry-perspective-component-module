@@ -320,6 +320,10 @@
               "type": "string",
               "description": "Editor validation hint shown (and Save disabled) when the end is not after the start."
             },
+            "timeInGap": {
+              "type": "string",
+              "description": "Editor validation hint shown (and Save disabled) when a time doesn't exist because a daylight-saving gap skips it; {time}, {date} and {tz} are filled in."
+            },
             "repeat": {
               "type": "string",
               "description": "Editor: repeat field label."

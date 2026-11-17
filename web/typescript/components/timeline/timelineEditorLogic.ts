@@ -6,8 +6,11 @@
 // occurrence detaches it into a standalone override (id "base-x-date") plus an
 // EXDATE on the series; the editor's apply-to choice can target the whole series
 // instead, which re-anchors on the base's date and keeps its rule.
-import { msToZonedIso, msToWallInput, seriesEditWalls, toEpochMs, wallInputOf } from '../../shared/dateUtils';
-import { occurrenceOf, RRule } from '../../shared/recurrence';
+import {
+    firstGapWall, msToZonedIso, msToWallInput, seriesShiftDays, SeriesWrite, seriesWrite, toEpochMs, wallInGap, wallInputOf,
+    writtenRangeProblem
+} from '../../shared/dateUtils';
+import { occurrenceOf, RRule, shiftRule } from '../../shared/recurrence';
 import { TimelineEvent } from './timelineLogic';
 
 /** Recurrence context of a mutation (same contract as the calendar's onChange). */
@@ -98,7 +101,9 @@ export function tlBuildRRule(ed: TlEditor, baseEventById: TlBaseEventLookup): RR
     if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
         rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
     }
-    return rr;
+    // A whole-series edit that moved the start date moves the rule with it.
+    const shift = base && ed.scope === 'series' ? seriesShiftDays(ed.occurrenceDate, ed.start) : 0;
+    return shiftRule(rr, shift, base && base.rrule);
 }
 
 /** A fresh editor for a new bar on the given row/range. */
@@ -150,30 +155,35 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventB
 }
 
 /** The start and end walls saving the editor writes: a whole-series edit moves
- *  the editor's times onto the series' own date (see seriesEditWalls); anything
- *  else writes the editor's walls as they are. */
-function tlWrittenWalls(ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup): { start: string; end: string } {
+ *  the series by the days the opened occurrence moved and takes the editor's
+ *  times (see seriesWrite); anything else writes the editor's walls as they are. */
+function tlWrittenWalls(ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup): SeriesWrite {
     if (ed.seriesId && ed.scope === 'series') {
-        const base = baseEventById(ed.seriesId);
-        return seriesEditWalls(base && base.start, ed.start, ed.end, false, timezone);
+        return seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, false, timezone);
     }
-    return { start: ed.start, end: ed.end };
+    return { start: ed.start, end: ed.end, unchanged: false };
 }
 
 /** Why the editor can't save, or null when it can: 'parse' = a time field doesn't
  *  parse; 'range' = end is not after start, compared as the instants that would
- *  be written. A whole-series edit is checked on the series' own date, where it
- *  is written, not on the occurrence that was opened. */
+ *  be written; 'gap' = the same, because a DST gap skips one of the times (see
+ *  tlEditorGapWall). A whole-series edit is checked where it is written, on the
+ *  series' own (possibly moved) date, not on the occurrence that was opened; one
+ *  that keeps the series' stored times is always allowed. */
 export function tlEditorProblem(
     ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup = () => undefined
-): 'parse' | 'range' | null {
+): 'parse' | 'range' | 'gap' | null {
     if (toEpochMs(ed.start, timezone) === null || toEpochMs(ed.end, timezone) === null) {
         return 'parse';
     }
     const w = tlWrittenWalls(ed, timezone, baseEventById);
-    const s = toEpochMs(w.start, timezone);
-    const e = toEpochMs(w.end, timezone);
-    return s !== null && e !== null && e > s ? null : 'range';
+    return writtenRangeProblem(w.start, w.end, timezone, w.unchanged);
+}
+
+/** The time a save would write that a DST gap skips (for the 'gap' message), or null. */
+export function tlEditorGapWall(ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup = () => undefined): string | null {
+    const w = tlWrittenWalls(ed, timezone, baseEventById);
+    return firstGapWall([w.start, w.end], timezone);
 }
 
 /** The emitted form of an editor time field: offset-bearing ISO in the display zone. */
@@ -186,9 +196,11 @@ function emitWallInput(v: string, timezone: string): string {
  * Decide what saving the editor should fire:
  *  (1) one occurrence of a series -> a detached standalone override (the series gets
  *      an EXDATE from the write-back; the override must NOT carry the rule);
- *  (2) the whole series -> the base event, re-anchored on its own date keeping the
+ *  (2) the whole series -> the base event, moved by the days the opened
+ *      occurrence's start date moved (0 when only times changed), keeping the
  *      edited span in days, with the (possibly edited or removed) rule — prior
- *      exdates are preserved;
+ *      exdates are preserved and move with it. A save that keeps the series'
+ *      times writes its stored start/end back where a DST gap skips them;
  *  (3) a plain create / edit of a standalone bar, which may add a rule.
  *  Carries the fields the editor doesn't edit (color/status/display) so a
  *  verbatim write-back never strips them.
@@ -224,13 +236,17 @@ export function tlSaveSpec(
 
     if (ed.seriesId && ed.scope === 'series') {
         const w = tlWrittenWalls(ed, timezone, baseEventById);
+        const base = baseEventById(ed.seriesId);
+        // Unchanged times: a stored time a gap skips stays as written, not resolved.
+        const keep = (wall: string, raw: string | undefined): string =>
+            (w.unchanged && raw && wallInGap(wall, timezone) ? raw : emitWallInput(wall, timezone));
         return {
             action: 'edit',
             event: {
                 id: ed.seriesId,
                 ...common,
-                start: emitWallInput(w.start, timezone),
-                end: emitWallInput(w.end, timezone),
+                start: keep(w.start, base && base.start),
+                end: keep(w.end, base && base.end),
                 rrule: rr || null   // null = recurrence removed from the series
             },
             extra: { scope: 'series', seriesId: ed.seriesId }

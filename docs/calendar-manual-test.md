@@ -241,7 +241,7 @@ self.props.data.events = events
 - [ ] **Create:** the editor's **Repeat** control offers Daily/Weekly/Monthly/Yearly + "every N" + (weekly) a weekday picker + Ends Never/On-date/After-N. Saving produces an event with an `rrule`; the occurrences appear.
 - [ ] **Open an occurrence:** the editor shows an **apply-to** choice (*This event* / *All events*) and recovers the series' rule (visible under *All events*).
 - [ ] **This event** (edit): only the opened day changes; it detaches into a standalone override and the series skips that date (via `rrule.exdate`). Others are unchanged.
-- [ ] **All events** (edit): every occurrence updates (title/time/category/rule); the series keeps its anchor date; previously-detached overrides are left alone.
+- [ ] **All events** (edit): every occurrence updates (title/time/category/rule); the series keeps its anchor date unless the start date was changed, which moves the whole series (and its removed dates) by that many days; previously-detached overrides are left alone.
 - [ ] **Delete → This event:** only that occurrence disappears (exdate); the rest remain.
 - [ ] **Delete → All events:** the whole series goes.
 - [ ] **Drag/resize one occurrence:** detaches it (override + exdate), like "This event".

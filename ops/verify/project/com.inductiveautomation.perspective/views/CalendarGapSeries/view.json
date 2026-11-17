@@ -1,0 +1,143 @@
+{
+ "custom": {
+  "log": ""
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 700,
+   "height": 760
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Series editing fixture (#291, #297): America/New_York, week view from Sunday, built-in editor, no persistence. Every onChange appends action, id, title, start, end and the rule's exdates to the line below. The e2e suite pins the browser clock to 2026-03-08, when New York skips 02:00-03:00. 'Gap series' starts at 02:30 on that day; 'Shift series' runs daily from 03-02 with 03-05 removed.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 660,
+     "height": 56
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "13px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "log",
+     "domId": "series-log"
+    },
+    "position": {
+     "x": 16,
+     "y": 68,
+     "width": 660,
+     "height": 40
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'log: ' + {view.custom.log}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.calendar",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/New_York",
+      "locale": "en-US",
+      "editable": true,
+      "selectable": false,
+      "builtInEditor": true,
+      "slotMinutes": 30,
+      "dayStartHour": 0,
+      "dayEndHour": 24,
+      "scrollToHour": 0,
+      "showMiniNav": false,
+      "weekStart": "sunday"
+     },
+     "data": {
+      "events": [
+       {
+        "id": "gapSeries",
+        "title": "Gap series",
+        "start": "2026-03-08T02:30:00",
+        "end": "2026-03-08T03:30:00",
+        "rrule": {
+         "freq": "daily",
+         "count": 7
+        }
+       },
+       {
+        "id": "shiftSeries",
+        "title": "Shift series",
+        "start": "2026-03-02T10:00:00",
+        "end": "2026-03-02T11:00:00",
+        "rrule": {
+         "freq": "daily",
+         "exdate": [
+          "2026-03-05"
+         ]
+        }
+       }
+      ]
+     },
+     "state": {
+      "view": "week"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "calendar",
+     "domId": "series-calendar"
+    },
+    "position": {
+     "x": 16,
+     "y": 112,
+     "width": 660,
+     "height": 640
+    },
+    "events": {
+     "component": {
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\te = event.event\n\ttry:\n\t\tex = ','.join([str(x) for x in e['rrule']['exdate']])\n\texcept:\n\t\tex = ''\n\tline = '%s %s %s %s %s ex=%s;' % (event.action, e['id'], e['title'], e['start'], e['end'], ex)\n\tself.view.custom.log = self.view.custom.log + line\n"
+        }
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

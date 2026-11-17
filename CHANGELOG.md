@@ -63,6 +63,14 @@ and all three are kept as they were:
   and the preview strip read the weekly hours only. Holidays aren't evaluated,
   so a schedule that observes holidays reads active during its hours on a
   holiday, where Ignition treats it as inactive (#256).
+- Calendar and Resource Timeline: an "All events" edit that changes the start
+  date now moves the whole series by that many days. The series' start, its
+  removed occurrences (`rrule.exdate`) and, for a weekly rule whose weekdays
+  you didn't change, its weekdays all move with it, so moving Monday's
+  occurrence to Tuesday turns a Mon/Wed series into Tue/Thu. The date change
+  used to be dropped without a word. `until` and `count` stay as the editor
+  shows them, and an edit that only changes times keeps the series on its own
+  dates as before (#291).
 
 ### Fixed
 - Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
@@ -157,6 +165,14 @@ and all three are kept as they were:
   New York's spring-forward day), so saving it unchanged with "All events"
   moved the whole series an hour. The editor now shows the wall time as
   written, as the calendar's does (#290).
+- Calendar and Resource Timeline: a recurring series that starts in a
+  daylight-saving gap (02:30 on New York's spring-forward day) couldn't be
+  saved with "All events" at all, not even to rename it. A series save that
+  keeps the times now goes through and writes the stored times back as they
+  are. When a gap is what blocks a save, the editor now says so, with the new
+  label `timeInGap` ("02:30 doesn't exist on Mar 8 in America/New_York: the
+  clocks skip it") in all seven locale packs, instead of "End must be after
+  start" (#297).
 - Data Grid: columns can be resized from the keyboard. Each header's resize
   handle is now a focusable separator beside the sort button: Tab to it, then
   ←/→ resize by 10 px (50 with Shift) and Home goes to the minimum. Its name

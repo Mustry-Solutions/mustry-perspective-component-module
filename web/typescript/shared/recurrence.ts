@@ -1,7 +1,7 @@
 // Recurrence (rrule) expansion, shared by every component that renders recurring
 // items (calendar events, timeline bars, …). Pure and framework-free; operates on
 // any item shape that carries id/start/end/rrule and preserves the rest verbatim.
-import { addDays, daysBetween, fmtDate, instantToZonedIso, parseDate, toEpochMs } from './dateUtils';
+import { addDays, daysBetween, fmtDate, instantToZonedIso, parseDate, shiftWallDays, toEpochMs } from './dateUtils';
 
 export interface RRule {
     freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -35,6 +35,31 @@ export interface RecurringItem extends OccurrenceTag {
     start: string;   // ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ss'
     end?: string;
     rrule?: RRule;
+}
+
+/**
+ * A rule moved with its series by `days` (a whole-series edit that changed the
+ * start date): every EXDATE moves too, so the occurrences it removed stay
+ * removed, and a weekly rule's weekdays turn with the start when they are still
+ * the base rule's (moving a Mon/Wed series by one day gives Tue/Thu). Weekdays
+ * the editor changed are the user's choice and are kept. `until` and `count`
+ * are kept as written: the editor shows them. Returns `rr` itself when days is 0.
+ */
+export function shiftRule(rr: RRule, days: number, baseRule?: RRule): RRule {
+    if (!days) {
+        return rr;
+    }
+    const out: RRule = { ...rr };
+    if (rr.exdate && rr.exdate.length) {
+        out.exdate = rr.exdate.map((d) => shiftWallDays(d, days));
+    }
+    const same = (a: number[] | undefined, b: number[] | undefined): boolean =>
+        !!a && !!b && a.length === b.length && a.slice().sort().join() === b.slice().sort().join();
+    if (rr.freq === 'weekly' && rr.byweekday && rr.byweekday.length && days % 7 !== 0
+        && baseRule && same(rr.byweekday, baseRule.byweekday)) {
+        out.byweekday = rr.byweekday.map((wd) => (((wd + days) % 7) + 7) % 7).sort((a, b) => a - b);
+    }
+    return out;
 }
 
 const MAX_OCC = 1000;

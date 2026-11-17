@@ -428,15 +428,28 @@ export function reanchorSeries(baseRaw: string | undefined, editedWall: string, 
 }
 
 /**
- * The start and end walls a whole-series edit writes. The series keeps its own
- * start date and takes the edited times; the end keeps the edited span in days,
- * so a range the editor ends on the next day still ends the day after the
- * series' start. Without a base start (the series isn't bound) the edited walls
- * are returned unchanged. Both the editor's check and its save use this, so the
- * check validates exactly what is written.
+ * How many days a whole-series edit moves the series: the days from the opened
+ * occurrence's date to the start date the editor now holds. 0 when either is
+ * missing or unparseable.
+ */
+export function seriesShiftDays(occurrenceDate: string | null | undefined, editedStart: string): number {
+    const occ = occurrenceDate ? parseDate(occurrenceDate) : null;
+    const s = parseDate(editedStart);
+    return occ && s ? daysBetween(occ, s) : 0;
+}
+
+/**
+ * The start and end walls a whole-series edit writes. The series' start date
+ * moves by `shiftDays` (see seriesShiftDays: moving the opened occurrence by N
+ * days moves every occurrence by N days) and takes the edited times; the end
+ * keeps the edited span in days, so a range the editor ends on the next day
+ * still ends the day after the series' start. Without a base start (the series
+ * isn't bound) the edited walls are returned unchanged. Both the editor's check
+ * and its save use this, so the check validates exactly what is written.
  */
 export function seriesEditWalls(
-    baseStartRaw: string | undefined, editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string
+    baseStartRaw: string | undefined, editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string,
+    shiftDays = 0
 ): { start: string; end: string } {
     const s = parseDate(editedStart);
     const e = parseDate(editedEnd);
@@ -444,9 +457,108 @@ export function seriesEditWalls(
         return { start: editedStart, end: editedEnd };
     }
     return {
-        start: reanchorSeries(baseStartRaw, editedStart, dateOnly, timeZone),
-        end: shiftWallDays(reanchorSeries(baseStartRaw, editedEnd, dateOnly, timeZone), daysBetween(s, e))
+        start: shiftWallDays(reanchorSeries(baseStartRaw, editedStart, dateOnly, timeZone), shiftDays),
+        end: shiftWallDays(reanchorSeries(baseStartRaw, editedEnd, dateOnly, timeZone), shiftDays + daysBetween(s, e))
     };
+}
+
+/** A wall string with whole seconds ('YYYY-MM-DDTHH:mm' gets ':00'); dates and
+ *  anything else are returned as they are. */
+function wallToSeconds(wall: string): string {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(wall) ? `${wall}:00` : wall;
+}
+
+/** What a whole-series edit writes, and whether it leaves the series' times
+ *  exactly as they are (same date, same start and end walls). */
+export interface SeriesWrite {
+    start: string;
+    end: string;
+    unchanged: boolean;
+}
+
+/**
+ * The walls a whole-series edit writes (see seriesEditWalls, moved by
+ * seriesShiftDays), plus `unchanged`: true when they are the base's own walls in
+ * the zone, so the edit changes the title, rule or other fields but no time.
+ * The editors let such a save through even when the times don't resolve forward
+ * (a series created at 02:30 on a DST-gap day) and write the base's stored
+ * times back as they are.
+ */
+export function seriesWrite(
+    base: { start?: string; end?: string } | undefined, occurrenceDate: string | null | undefined,
+    editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string
+): SeriesWrite {
+    const w = seriesEditWalls(
+        base && base.start, editedStart, editedEnd, dateOnly, timeZone, seriesShiftDays(occurrenceDate, editedStart)
+    );
+    const zoned = (raw: string | undefined): string => {
+        const v = instantToZonedIso(raw || '', timeZone);
+        return dateOnly ? v.slice(0, 10) : wallToSeconds(v.slice(0, 19));
+    };
+    const unchanged = !!base && !!base.start && !!base.end
+        && zoned(base.start) === (dateOnly ? w.start.slice(0, 10) : wallToSeconds(w.start.slice(0, 19)))
+        && zoned(base.end) === (dateOnly ? w.end.slice(0, 10) : wallToSeconds(w.end.slice(0, 19)));
+    return { start: w.start, end: w.end, unchanged };
+}
+
+/** Why a timed range the editor would write can't be saved, or null when it
+ *  can: 'gap' = it runs forward as written but not as instants, because a DST
+ *  gap skips one of its times (say so, the generic message doesn't explain it); 'range' = the end
+ *  is not after the start. `unchanged` (a series save that keeps its stored
+ *  times) is always allowed. */
+export function writtenRangeProblem(
+    start: string, end: string, timeZone: string, unchanged = false
+): 'gap' | 'range' | null {
+    if (unchanged) {
+        return null;
+    }
+    const s = toEpochMs(start, timeZone);
+    const e = toEpochMs(end, timeZone);
+    if (s !== null && e !== null && e > s) {
+        return null;
+    }
+    // Only a range that runs forward as written is collapsed by the gap; one
+    // typed backwards gets the plain message.
+    const forwardAsWritten = wallToSeconds(start.slice(0, 19)) < wallToSeconds(end.slice(0, 19));
+    return forwardAsWritten && (wallInGap(start, timeZone) || wallInGap(end, timeZone)) ? 'gap' : 'range';
+}
+
+/** The placeholders of the editors' gap message for a skipped wall time: the
+ *  time as written ('02:30'), its date in `locale` ('Mar 8'), and the zone
+ *  (the browser's own when `timeZone` is '' or unknown). */
+export function gapHintVars(wall: string, timeZone: string, locale: string): { time: string; date: string; tz: string } {
+    const d = parseDate(wall.slice(0, 10));
+    const zone = knownTimeZone(timeZone) || intlFormat('', {}).resolvedOptions().timeZone || '';
+    return {
+        time: wall.slice(11, 16),
+        date: d ? intlFormat(locale, { month: 'short', day: 'numeric' }).format(d) : wall.slice(0, 10),
+        tz: zone
+    };
+}
+
+/** The first of `walls` that a DST gap skips in `timeZone`, or null. */
+export function firstGapWall(walls: string[], timeZone: string): string | null {
+    for (const w of walls) {
+        if (wallInGap(w, timeZone)) {
+            return w;
+        }
+    }
+    return null;
+}
+
+/**
+ * Whether a naive wall time doesn't exist in `timeZone` because a DST gap skips
+ * it (New York 02:30 on spring-forward day). Absolute instants, date-only and
+ * unparseable strings are never in a gap.
+ */
+export function wallInGap(wall: string, timeZone: string): boolean {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(String(wall || '').slice(0, 19));
+    if (!m || /(Z|[+-]\d\d:?\d\d)$/.test(wall)) {
+        return false;
+    }
+    const f = { y: +m[1], mo: +m[2], d: +m[3], h: +m[4], mi: +m[5], s: +(m[6] || 0) };
+    const w = zoneWallClock(new Date(resolveZoned(f, knownTimeZone(timeZone)).epochMs), knownTimeZone(timeZone));
+    return w.y !== f.y || w.mo !== f.mo || w.d !== f.d || w.h !== f.h || w.mi !== f.mi || w.s !== f.s;
 }
 
 /**
