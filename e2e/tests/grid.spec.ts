@@ -326,6 +326,10 @@ test('grid: pinned columns stay put when the grid scrolls sideways (#296)', asyn
     expect(await x(pinnedHead)).toBeCloseTo(before.head, 0);
     expect(await x(pinnedBody)).toBeCloseTo(before.body, 0);
     expect(await x(pinnedFoot)).toBeCloseTo(before.foot, 0);
-    await expect(pinnedBody).toHaveCSS('position', 'sticky');
-    await expect(pinnedHead).toHaveCSS('position', 'sticky');
+    // And it's painted on top: the scrolled cells pass underneath it.
+    const onTop = await pinnedBody.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+    });
+    expect(onTop).toBe(true);
 });
