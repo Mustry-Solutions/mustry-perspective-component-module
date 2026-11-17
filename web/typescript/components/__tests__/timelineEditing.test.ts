@@ -430,3 +430,12 @@ describe('whole-series edits are checked where they are written (#248)', () => {
         });
     });
 });
+
+describe('whole-series edit without the base event bound (#248)', () => {
+    it('checks and saves the editor walls as they are', () => {
+        const o: TimelineEvent = { id: 'gone::2026-07-06', resourceId: 'crew-a', title: 'S', start: '2026-07-06T09:00:00', end: '2026-07-06T10:00:00', __seriesId: 'gone', __occDate: '2026-07-06' };
+        const e = { ...tlEditorForEvent(o, TZ), scope: 'series' as const };
+        expect(tlEditorProblem(e, TZ)).toBeNull();
+        expect(tlSaveSpec(e, TZ).event).toMatchObject({ start: '2026-07-06T09:00:00+00:00', end: '2026-07-06T10:00:00+00:00' });
+    });
+});
