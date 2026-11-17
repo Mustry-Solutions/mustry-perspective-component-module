@@ -176,3 +176,25 @@ test.describe('timeline with an unknown config.timezone (#255)', () => {
         await expect(page.locator('#tz-badzone-visible')).toContainText('2026-06-17T15:00:00.000Z');
     });
 });
+
+// #247: the picker held its range as browser-local Dates, so a time the browser's
+// own zone skips moved an hour before config.timezone resolved it.
+test.describe('picker in a browser whose midnight is a DST gap (#247)', () => {
+    test.use({ timezoneId: 'America/Havana' });   // springs forward at 00:00 on 2026-03-08
+
+    test('"Today" in a Brussels picker starts at 00:00, not 01:00', async ({ page }) => {
+        await page.clock.setFixedTime(new Date('2026-03-08T12:00:00Z'));
+        const root = await openRoute(page, '/timezone-nav', '#tz-picker-brussels');
+        await root.getByText('Today', { exact: true }).click();
+        await expect(page.locator('#tz-picker-brussels-start')).toContainText('startDateTime=2026-03-08T00:00:00+01:00');
+    });
+});
+
+test.describe('picker label in a browser with a DST gap at the selected time (#247)', () => {
+    test.use({ timezoneId: 'Europe/Brussels' });   // skips 02:00-03:00 on 2026-03-29
+
+    test('a New York picker shows its selected 02:30, not 03:30', async ({ page }) => {
+        const root = await openRoute(page, '/timezone-nav', '#tz-picker-newyork');
+        await expect(root.locator('.mustry-dtrp-trigger-text')).toHaveText('2026-03-29 02:30 – 2026-03-29 04:00');
+    });
+});

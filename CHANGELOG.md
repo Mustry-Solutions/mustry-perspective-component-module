@@ -116,6 +116,13 @@ and all three are kept as they were:
 - Admin managers: a row's ⋯ menu now opens above the rest of the page. A component
   placed below the manager could paint over the menu of a low row and take its
   clicks (#254).
+- Date/Time Range Picker: with `config.timezone` set to another zone than the
+  browser's, a preset, the realtime window or the trigger text could be an hour
+  off on a day the browser's own zone changes its clocks. The picker held those
+  times in the browser's zone, which moved a time that zone skips: in a Havana
+  browser "Today" in a Brussels picker started at 01:00 on 2026-03-08, and a
+  Brussels browser showed a New York 02:30 as 03:30 on 2026-03-29. It now keeps
+  them as plain dates and times in `config.timezone` (#247).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

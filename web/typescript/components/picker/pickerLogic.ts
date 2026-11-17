@@ -5,9 +5,8 @@
 // returns plain values — no `this`, no I/O.
 
 import {
-    addDays, clampSec, combine, daysBetween, daysInMonth, fmtDate, maxDate, minDate,
-    parseDate, resolveZoned, secondsOfDay, startOfDay, startOfMonth, startOfWeek,
-    wallClockInZone, wallOfDay
+    addWallClockDays, addWallClockMonths, clampSec, daysBetween, fmtDate, fmtWallDate, parseDate,
+    resolveZoned, wallAt, WallClock, wallClockOrLocal, wallOfDay, wallSeconds, wallWeekday
 } from '../../shared/dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
@@ -30,9 +29,12 @@ export interface PresetDef {
     period: PresetPeriod;
 }
 
-export interface DateRange {
-    start: Date;
-    end: Date;
+/** A range as wall-clock fields in config.timezone. Not Dates: a Date holds its
+ *  time in the browser's zone, which would move a time that zone skips (its own
+ *  DST gap) before the outputs resolve it in config.timezone (#247). */
+export interface WallRange {
+    start: WallClock;
+    end: WallClock;
 }
 
 // --- layout resolution ------------------------------------------------------
@@ -89,40 +91,27 @@ export interface PresetContext {
     firstDay: number;     // weekStart as 0 = Sunday .. 6 = Saturday
 }
 
-/** A wall-clock Date moved by whole calendar days, keeping its time of day. */
-function addWallDays(w: Date, days: number): Date {
-    return new Date(w.getFullYear(), w.getMonth(), w.getDate() + days, w.getHours(), w.getMinutes(), w.getSeconds());
-}
-
-/** A wall-clock Date moved by whole months, keeping its time of day. A day the target
- *  month lacks clamps to its last day (Mar 31 minus a month is Feb 28, not Mar 3). */
-function addWallMonths(w: Date, months: number): Date {
-    const first = new Date(w.getFullYear(), w.getMonth() + months, 1);
-    const day = Math.min(w.getDate(), daysInMonth(first));
-    return new Date(first.getFullYear(), first.getMonth(), day, w.getHours(), w.getMinutes(), w.getSeconds());
-}
-
 /** Rolling preset: a window of amount*unit from the instant `now`, in the given
- *  direction. Both ends are wall-clock Dates in `timeZone`, the zone the outputs
+ *  direction. Both ends are wall clocks in `timeZone`, the zone the outputs
  *  resolve them in. Hours are elapsed time; days, weeks and months are calendar
  *  steps, so "Last 7 days" keeps the wall time across a DST change. */
-export function rollingRange(amount: number, unit: PresetUnit, now: Date, forward: boolean, timeZone: string): DateRange {
+export function rollingRange(amount: number, unit: PresetUnit, now: Date, forward: boolean, timeZone: string): WallRange {
     const n = (forward ? 1 : -1) * amount;
-    const wallNow = wallClockInZone(now, timeZone);
-    let other: Date;
+    const wallNow = wallClockOrLocal(now, timeZone);
+    let other: WallClock;
     switch (unit) {
         case 'hours':
-            other = wallClockInZone(new Date(now.getTime() + n * 3600000), timeZone);
+            other = wallClockOrLocal(new Date(now.getTime() + n * 3600000), timeZone);
             break;
         case 'weeks':
-            other = addWallDays(wallNow, n * 7);
+            other = addWallClockDays(wallNow, n * 7);
             break;
         case 'months':
-            other = addWallMonths(wallNow, n);
+            other = addWallClockMonths(wallNow, n);
             break;
         case 'days':
         default:
-            other = addWallDays(wallNow, n);
+            other = addWallClockDays(wallNow, n);
             break;
     }
     return { start: forward ? wallNow : other, end: forward ? other : wallNow };
@@ -130,44 +119,42 @@ export function rollingRange(amount: number, unit: PresetUnit, now: Date, forwar
 
 /** Calendar preset: a period snapped to boundaries. 'this*' = period-to-date,
  *  'last*' = the full previous period. Week periods start on `firstDay` (0 = Sunday).
- *  `now` is a wall-clock Date: its local fields are the current time in the zone. */
-export function calendarRange(period: PresetPeriod, now: Date, firstDay: number): DateRange {
-    const todayStart = startOfDay(now);
-    const endOfToday = combine(todayStart, 86399);
+ *  `now` is the current wall clock in the zone. */
+export function calendarRange(period: PresetPeriod, now: WallClock, firstDay: number): WallRange {
+    const todayStart = wallAt(now, 0);
+    const endOfToday = wallAt(now, 86399);
+    const weekStart = addWallClockDays(todayStart, -((wallWeekday(now) - firstDay + 7) % 7));
+    const monthStart = wallAt({ y: now.y, mo: now.mo, d: 1 }, 0);
 
     switch (period) {
         case 'today':
             return { start: todayStart, end: endOfToday };
         case 'yesterday': {
-            const y = addDays(todayStart, -1);
-            return { start: y, end: combine(y, 86399) };
+            const y = addWallClockDays(todayStart, -1);
+            return { start: y, end: wallAt(y, 86399) };
         }
         case 'thisWeek':
-            return { start: startOfWeek(now, firstDay), end: endOfToday };
-        case 'lastWeek': {
-            const ws = startOfWeek(now, firstDay);
-            return { start: addDays(ws, -7), end: combine(addDays(ws, -1), 86399) };
-        }
+            return { start: weekStart, end: endOfToday };
+        case 'lastWeek':
+            return { start: addWallClockDays(weekStart, -7), end: wallAt(addWallClockDays(weekStart, -1), 86399) };
         case 'thisMonth':
-            return { start: startOfMonth(now), end: endOfToday };
+            return { start: monthStart, end: endOfToday };
         case 'lastMonth': {
-            const lastEnd = addDays(startOfMonth(now), -1);
-            return { start: startOfMonth(lastEnd), end: combine(lastEnd, 86399) };
+            const lastEnd = addWallClockDays(monthStart, -1);
+            return { start: wallAt({ y: lastEnd.y, mo: lastEnd.mo, d: 1 }, 0), end: wallAt(lastEnd, 86399) };
         }
         case 'thisYear':
-            return { start: new Date(now.getFullYear(), 0, 1), end: endOfToday };
+            return { start: wallAt({ y: now.y, mo: 1, d: 1 }, 0), end: endOfToday };
         case 'lastYear':
-        default: {
-            const y = now.getFullYear() - 1;
-            return { start: new Date(y, 0, 1), end: combine(new Date(y, 11, 31), 86399) };
-        }
+        default:
+            return { start: wallAt({ y: now.y - 1, mo: 1, d: 1 }, 0), end: wallAt({ y: now.y - 1, mo: 12, d: 31 }, 86399) };
     }
 }
 
 /** The (datetime) endpoints a preset would set. */
-export function presetRange(p: PresetDef, ctx: PresetContext): DateRange {
+export function presetRange(p: PresetDef, ctx: PresetContext): WallRange {
     if (p.type === 'calendar') {
-        return calendarRange(p.period, wallClockInZone(ctx.now, ctx.timeZone), ctx.firstDay);
+        return calendarRange(p.period, wallClockOrLocal(ctx.now, ctx.timeZone), ctx.firstDay);
     }
     return rollingRange(p.amount, p.unit, ctx.now, ctx.forward, ctx.timeZone);
 }
@@ -195,10 +182,10 @@ export function realtimeSelection(
 ): RealtimeSelection {
     const { start, end } = rollingRange(amount, unit, now, forward, timeZone);
     return {
-        startDate: fmtDate(startOfDay(start)),
-        startTimeSec: secondsOfDay(start),
-        endDate: fmtDate(startOfDay(end)),
-        endTimeSec: secondsOfDay(end)
+        startDate: fmtWallDate(start),
+        startTimeSec: wallSeconds(start),
+        endDate: fmtWallDate(end),
+        endTimeSec: wallSeconds(end)
     };
 }
 
@@ -258,15 +245,18 @@ export interface ConflictContext extends PresetContext {
 /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
 export function presetConflict(p: PresetDef, ctx: ConflictContext): string {
     const range = presetRange(p, ctx);
-    const lo = startOfDay(minDate(range.start, range.end));
-    const hi = startOfDay(maxDate(range.start, range.end));
-    if (ctx.min && lo.getTime() < ctx.min.getTime()) {
+    // Compared as "YYYY-MM-DD" days, which sort as strings.
+    const a = fmtWallDate(range.start);
+    const b = fmtWallDate(range.end);
+    const lo = a < b ? a : b;
+    const hi = a < b ? b : a;
+    if (ctx.min && lo < fmtDate(ctx.min)) {
         return fillLabel(ctx.labels.presetBeforeEarliest, { date: fmtDate(ctx.min) });
     }
-    if (ctx.max && hi.getTime() > ctx.max.getTime()) {
+    if (ctx.max && hi > fmtDate(ctx.max)) {
         return fillLabel(ctx.labels.presetAfterLatest, { date: fmtDate(ctx.max) });
     }
-    const span = daysBetween(lo, hi);
+    const span = daysBetween(parseDate(lo) as Date, parseDate(hi) as Date);
     if (ctx.minSpanDays > 0 && span < ctx.minSpanDays) {
         return fillLabel(ctx.labels.presetTooShort, { n: ctx.minSpanDays });
     }
