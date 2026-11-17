@@ -152,6 +152,11 @@ and all three are kept as they were:
 - Calendar: a `config.timezone` the browser doesn't recognize, such as a
   Java-only gateway id like `GMT+01:00`, now reads browser-local in every view.
   Week and day view used to fail to render (#292).
+- Resource Timeline: opening a recurring occurrence on a daylight-saving gap day
+  pre-filled the editor with the time the gap moves it to (02:30 became 03:30 on
+  New York's spring-forward day), so saving it unchanged with "All events"
+  moved the whole series an hour. The editor now shows the wall time as
+  written, as the calendar's does (#290).
 - Sales demo: the Schedule board, Maintenance calendar and Quality picker now
   read the gateway's zone, the same clock that seeds the demo and dates an
   escalated work order. A browser on another date, such as a presenter near
