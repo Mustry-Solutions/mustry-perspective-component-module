@@ -2,7 +2,7 @@ import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents,
     snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv, isOccurrence,
-    backgroundBandsForDay, followTickMs, followDisarms, followCursorStale,
+    backgroundBandsForDay, followTickMs, followDisarms, followCursorStale, cursorAfterZoneChange,
     toggleHiddenCategory, filterHiddenCategories,
     visibleRangeMs, monthTabStop, monthArrowTarget, CalEvent
 } from '../calendar/calendarLogic';
@@ -734,5 +734,16 @@ describe('monthArrowTarget', () => {
         expect(monthArrowTarget(june, '2026-06-17', 'Enter')).toBeNull();
         expect(monthArrowTarget(june, '2026-06-17', ' ')).toBeNull();
         expect(monthArrowTarget(june, '2026-06-17', 'Tab')).toBeNull();
+    });
+});
+
+describe('cursorAfterZoneChange (a bound config.timezone arriving after mount)', () => {
+    const d = (iso: string) => new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+    it('moves a cursor on the old zone\'s today to the new zone\'s today', () => {
+        // A UTC-11 browser on Oct 31 while a UTC gateway is already on Nov 1.
+        expect(cursorAfterZoneChange(d('2026-10-31'), d('2026-10-31'), d('2026-11-01'))).toEqual(d('2026-11-01'));
+    });
+    it('leaves any other date where it is', () => {
+        expect(cursorAfterZoneChange(d('2026-10-20'), d('2026-10-31'), d('2026-11-01'))).toEqual(d('2026-10-20'));
     });
 });

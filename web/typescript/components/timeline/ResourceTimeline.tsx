@@ -18,7 +18,7 @@ import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth, weekStartDay } from '../../shared/dateUtils';
 import {
-    BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
+    BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom, anchorAfterZoneChange,
     buildRows, buildTicks, containingAnchorMs, containingCustomWindow, customScale, customTickStepMs, customWindow,
     customWindowOnDate, customZoom, focusScrollLeft, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
     KeptFocus, barMinPx, isConfiguredEmpty, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs,
@@ -164,8 +164,11 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return { focusMs, onNow: focusMs === nowMs };
     }
 
-    componentDidUpdate(prevProps: ComponentProps<TimelineProps>, _prevState: ResourceTimelineState, rezoom?: RezoomSnapshot | null): void {
-        this.syncOutput();
+    componentDidUpdate(prevProps: ComponentProps<TimelineProps>, prevState: ResourceTimelineState, rezoom?: RezoomSnapshot | null): void {
+        const zoneAnchor = this.zoneChangeAnchor(prevProps.props, prevState, rezoom);
+        if (zoneAnchor === null) {
+            this.syncOutput();   // else the re-anchor below publishes, never the mixed-zone window
+        }
         // Skipped mid-drag so a gesture's re-renders can't start animating anything;
         // fresh ids are picked up on the post-commit update instead.
         if (!this.gestures.active) {
@@ -191,12 +194,29 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         if (rezoom) {
             this.rezoomTo(rezoom);
+        } else if (zoneAnchor !== null) {
+            this.keptFocus = null;
+            this.setState({ anchorMs: zoneAnchor }, () => this.scrollNowIntoView());
         }
         if (this.scrollNowOnUpdate && custom
                 && (!prevCustom || prevCustom.startMs !== custom.startMs || prevCustom.endMs !== custom.endMs)) {
             this.scrollNowOnUpdate = false;
             this.scrollNowIntoView();
         }
+    }
+
+    /** The anchor a config.timezone change moves to, or null when this update
+     *  needs none. Follow-now re-anchors on its own tick, a zoom change in
+     *  rezoomTo, and a custom window is absolute. */
+    private zoneChangeAnchor(
+        prev: TimelineProps, prevState: ResourceTimelineState, rezoom?: RezoomSnapshot | null
+    ): number | null {
+        const p = this.props.props;
+        if (rezoom || p.followNow || customOf(p) || prev.timezone === p.timezone || prev.zoom !== p.zoom) {
+            return null;
+        }
+        const anchorMs = anchorAfterZoneChange(prevState.anchorMs, p.zoom, prev.timezone, p.timezone, Date.now());
+        return anchorMs === this.state.anchorMs ? null : anchorMs;
     }
 
     componentWillUnmount(): void {
