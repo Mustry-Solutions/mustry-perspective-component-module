@@ -6,7 +6,7 @@
 
 import {
     addWallClockDays, addWallClockMonths, clampSec, daysBetween, fmtDate, fmtWallDate, parseDate,
-    resolveZoned, wallAt, WallClock, wallClockOrLocal, wallOfDay, wallSeconds, wallWeekday
+    resolveZoned, wallAt, WallClock, wallClockOrLocal, WallFields, wallOfDay, wallSeconds, wallWeekday
 } from '../../shared/dateUtils';
 
 export type DisableMode = 'past' | 'future' | 'none';
@@ -227,6 +227,16 @@ export function focusTrapTarget(count: number, activeIndex: number, shiftKey: bo
 
 // --- preset conflict --------------------------------------------------------
 
+/** Days since the epoch of a wall day: a whole-day count no zone can shift. */
+function wallDayNumber(w: WallFields): number {
+    return Math.round(Date.UTC(w.y, w.mo - 1, w.d) / 86400000);
+}
+
+/** The calendar day of a local Date, as wall fields. */
+function localWallDay(d: Date): WallFields {
+    return { y: d.getFullYear(), mo: d.getMonth() + 1, d: d.getDate() };
+}
+
 export interface ConflictLabels {
     presetBeforeEarliest: string;  // 'Starts before the earliest selectable date ({date})'
     presetAfterLatest: string;     // 'Ends after the latest selectable date ({date})'
@@ -245,18 +255,16 @@ export interface ConflictContext extends PresetContext {
 /** Reason a preset's resulting range would be invalid (dateBounds / spanDays), '' if OK. */
 export function presetConflict(p: PresetDef, ctx: ConflictContext): string {
     const range = presetRange(p, ctx);
-    // Compared as "YYYY-MM-DD" days, which sort as strings.
-    const a = fmtWallDate(range.start);
-    const b = fmtWallDate(range.end);
-    const lo = a < b ? a : b;
-    const hi = a < b ? b : a;
-    if (ctx.min && lo < fmtDate(ctx.min)) {
+    // Compared as whole days; the bounds are date-only local Dates, read by their fields.
+    const lo = Math.min(wallDayNumber(range.start), wallDayNumber(range.end));
+    const hi = Math.max(wallDayNumber(range.start), wallDayNumber(range.end));
+    if (ctx.min && lo < wallDayNumber(localWallDay(ctx.min))) {
         return fillLabel(ctx.labels.presetBeforeEarliest, { date: fmtDate(ctx.min) });
     }
-    if (ctx.max && hi > fmtDate(ctx.max)) {
+    if (ctx.max && hi > wallDayNumber(localWallDay(ctx.max))) {
         return fillLabel(ctx.labels.presetAfterLatest, { date: fmtDate(ctx.max) });
     }
-    const span = daysBetween(parseDate(lo) as Date, parseDate(hi) as Date);
+    const span = hi - lo;
     if (ctx.minSpanDays > 0 && span < ctx.minSpanDays) {
         return fillLabel(ctx.labels.presetTooShort, { n: ctx.minSpanDays });
     }

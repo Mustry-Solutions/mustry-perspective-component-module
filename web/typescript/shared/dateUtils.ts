@@ -345,7 +345,7 @@ export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
 
 /** `timeZone` if Intl knows it, else '' (browser-local): a mistyped or unknown
  *  config.timezone must degrade to the browser's zone, as `resolveZoned` and
- *  `wallClockInZone` do, instead of throwing a RangeError on every zone call. */
+ *  `wallClockOrLocal` do, instead of throwing a RangeError on every zone call. */
 export function knownTimeZone(timeZone: string): string {
     if (!timeZone) {
         return '';
@@ -522,17 +522,9 @@ export function wallInputStep(value: string): string {
     return /T\d\d:\d\d:\d\d/.test(value) ? '1' : '';
 }
 
-/** Local Date whose fields are the wall clock of `instant` in `timeZone` (browser-local
- *  if empty), so field-based day math matches what an operator in that zone sees. An
- *  unknown zone reads as browser-local, as `resolveZoned` does, instead of throwing. */
-export function wallClockInZone(instant: Date, timeZone: string): Date {
-    const w = wallClockOrLocal(instant, timeZone);
-    return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
-}
-
 /** The wall-clock fields of `instant` in `timeZone` (browser-local if empty). An
- *  unknown zone reads as browser-local instead of throwing. Unlike wallClockInZone
- *  no Date is built, so a time the browser's own zone skips stays as it is. */
+ *  unknown zone reads as browser-local instead of throwing. No Date is
+ *  built, so a time the browser's own zone skips stays as it is. */
 export function wallClockOrLocal(instant: Date, timeZone: string): WallClock {
     try {
         return zoneWallClock(instant, timeZone);
