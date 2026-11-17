@@ -116,6 +116,14 @@ and all three are kept as they were:
 - Admin managers: a row's ⋯ menu now opens above the rest of the page. A component
   placed below the manager could paint over the menu of a low row and take its
   clicks (#254).
+- Calendar and Resource Timeline: editing a recurring event with "All events"
+  could save the series with its end before its start. The save keeps the
+  series on its own date and takes the edited times, but the end went back onto
+  the series' old end date and the check ran on the occurrence that was opened.
+  An overnight edit (22:00 to 02:00 the next day) was written as 22:00 to 02:00
+  the same day, and on a daylight-saving day the check could pass a reversed
+  range or block a valid one. A series edit now keeps the edited length in days,
+  and the editor checks the range on the date it is written to (#248).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

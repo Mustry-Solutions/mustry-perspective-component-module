@@ -4,7 +4,7 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockInZone, knownTimeZone, msUntilNextZoneDay
+    wallClockInZone, knownTimeZone, msUntilNextZoneDay, seriesEditWalls
 } from '../../shared/dateUtils';
 
 describe('knownTimeZone', () => {
@@ -377,5 +377,31 @@ describe('wallClockInZone', () => {
     it('blank zone keeps the instant (browser-local)', () => {
         const instant = new Date(2026, 5, 25, 13, 0, 0);
         expect(wallClockInZone(instant, '').getTime()).toBe(instant.getTime());
+    });
+});
+
+describe('seriesEditWalls (a whole-series edit, #248)', () => {
+    const w = (base: string | undefined, s: string, e: string, dateOnly = false, tz = 'UTC') =>
+        seriesEditWalls(base, s, e, dateOnly, tz);
+
+    it('moves the edited times onto the series date, keeping the edited span in days', () => {
+        expect(w('2026-06-01T09:00:00', '2026-06-15T22:00', '2026-06-16T02:00'))
+            .toEqual({ start: '2026-06-01T22:00', end: '2026-06-02T02:00' });
+        expect(w('2026-06-01', '2026-06-15', '2026-06-18', true)).toEqual({ start: '2026-06-01', end: '2026-06-04' });
+    });
+    it('reads an offset or epoch-ms base on its date in the display zone', () => {
+        // 22:00 New York on Mar 2 is noon on Mar 3 in Tokyo.
+        expect(w('2026-03-02T22:00:00-05:00', '2026-03-15T12:00', '2026-03-15T13:00', false, 'Asia/Tokyo'))
+            .toEqual({ start: '2026-03-03T12:00', end: '2026-03-03T13:00' });
+        expect(w(String(Date.UTC(2026, 2, 3, 3)), '2026-03-15T12:00', '2026-03-15T13:00', false, 'Asia/Tokyo'))
+            .toEqual({ start: '2026-03-03T12:00', end: '2026-03-03T13:00' });
+    });
+    it('keeps an end before the start in days, for the editor check to refuse', () => {
+        expect(w('2026-06-10T09:00:00', '2026-06-15T09:00', '2026-06-14T10:00'))
+            .toEqual({ start: '2026-06-10T09:00', end: '2026-06-09T10:00' });
+    });
+    it('returns the edited walls when there is no usable base start', () => {
+        expect(w(undefined, '2026-06-15T09:00', '2026-06-15T10:00')).toEqual({ start: '2026-06-15T09:00', end: '2026-06-15T10:00' });
+        expect(w('not a date', '2026-06-15T09:00', '2026-06-15T10:00')).toEqual({ start: '2026-06-15T09:00', end: '2026-06-15T10:00' });
     });
 });
