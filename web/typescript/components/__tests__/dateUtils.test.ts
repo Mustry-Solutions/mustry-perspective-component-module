@@ -4,8 +4,10 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockOrLocal, knownTimeZone, msUntilNextZoneDay, seriesEditWalls, wallInputOf
+    wallClockOrLocal, knownTimeZone, msUntilNextZoneDay, seriesEditWalls, wallInputOf,
+    seriesShiftDays, wallInGap, writtenRangeProblem, gapHintVars, seriesWrite
 } from '../../shared/dateUtils';
+import { shiftRule } from '../../shared/recurrence';
 
 describe('knownTimeZone', () => {
     it('keeps a zone Intl knows and reads an unknown one as browser-local', () => {
@@ -430,5 +432,109 @@ describe('wallInputOf (#290)', () => {
         expect(wallInputOf('2026-07-03T09:00:60', 'UTC')).toBe('2026-07-03T09:01');
         expect(wallInputOf('2026-07-03T09:61', 'UTC')).toBe('2026-07-03T10:01');
         expect(wallInputOf('2028-02-29T09:00', 'UTC')).toBe('2028-02-29T09:00');   // a leap day exists
+    });
+});
+
+describe('wallInGap', () => {
+    it('is true for a time a spring-forward gap skips', () => {
+        expect(wallInGap('2026-03-08T02:30', 'America/New_York')).toBe(true);
+        expect(wallInGap('2026-03-08T02:00:00', 'America/New_York')).toBe(true);
+        expect(wallInGap('2026-03-29T02:15', 'Europe/Brussels')).toBe(true);
+        expect(wallInGap('2026-03-08T00:30', 'America/Havana')).toBe(true);
+    });
+    it('is false either side of the gap, in other zones and for other forms', () => {
+        expect(wallInGap('2026-03-08T01:59', 'America/New_York')).toBe(false);
+        expect(wallInGap('2026-03-08T03:00', 'America/New_York')).toBe(false);
+        expect(wallInGap('2026-03-08T02:30', 'Asia/Kolkata')).toBe(false);
+        expect(wallInGap('2026-03-08T02:30:00-05:00', 'America/New_York')).toBe(false);
+        expect(wallInGap('2026-03-08', 'America/New_York')).toBe(false);
+        expect(wallInGap('', 'America/New_York')).toBe(false);
+        expect(wallInGap('2026-11-01T01:30', 'America/New_York')).toBe(false);   // fall-back overlap exists (twice)
+    });
+});
+
+describe('writtenRangeProblem', () => {
+    const NY = 'America/New_York';
+    it('names the gap only when the range runs forward as written', () => {
+        expect(writtenRangeProblem('2026-03-08T02:30', '2026-03-08T03:00', NY)).toBe('gap');
+        expect(writtenRangeProblem('2026-03-08T04:00', '2026-03-08T02:30', NY)).toBe('range');
+        expect(writtenRangeProblem('2026-03-09T10:00', '2026-03-09T09:00', NY)).toBe('range');
+        expect(writtenRangeProblem('2026-03-08T02:30', '2026-03-08T04:00', NY)).toBeNull();
+    });
+    it('lets an unchanged series save through a gap, never a range stored backwards', () => {
+        expect(writtenRangeProblem('2026-03-08T02:30', '2026-03-08T03:30', NY, true)).toBeNull();
+        expect(writtenRangeProblem('2026-06-01T10:00', '2026-06-01T09:00', NY, true)).toBe('range');
+        expect(writtenRangeProblem('2026-06-01T10:00', '2026-06-01T10:00', NY, true)).toBe('range');
+    });
+});
+
+describe('gapHintVars', () => {
+    it('fills the time as written, the localized date and the zone', () => {
+        expect(gapHintVars('2026-03-08T02:30:00', 'America/New_York', 'en-US')).toEqual({ time: '02:30', date: 'Mar 8', tz: 'America/New_York' });
+        expect(gapHintVars('2026-03-29T02:30', 'Europe/Brussels', 'nl').date).toBe('29 mrt');
+    });
+    it('names a zone even for the browser-local path', () => {
+        expect(gapHintVars('2026-03-08T02:30', '', 'en').tz).not.toBe('');
+    });
+});
+
+describe('seriesShiftDays / seriesWrite', () => {
+    it('counts the days from the opened occurrence to the edited start date', () => {
+        expect(seriesShiftDays('2026-06-15', '2026-06-17T09:00')).toBe(2);
+        expect(seriesShiftDays('2026-06-15', '2026-06-14')).toBe(-1);
+        expect(seriesShiftDays(null, '2026-06-14T09:00')).toBe(0);
+        expect(seriesShiftDays('2026-06-15', '')).toBe(0);
+    });
+    it('reports unchanged only when both walls are the stored ones', () => {
+        const base = { start: '2026-06-01T09:00:00', end: '2026-06-01T10:00:00' };
+        expect(seriesWrite(base, '2026-06-15', '2026-06-15T09:00', '2026-06-15T10:00', false, 'UTC').unchanged).toBe(true);
+        expect(seriesWrite(base, '2026-06-15', '2026-06-15T09:00', '2026-06-15T10:30', false, 'UTC').unchanged).toBe(false);
+        expect(seriesWrite(base, '2026-06-15', '2026-06-16T09:00', '2026-06-16T10:00', false, 'UTC').unchanged).toBe(false);
+        expect(seriesWrite({ start: base.start }, '2026-06-15', '2026-06-15T09:00', '2026-06-15T10:00', false, 'UTC').unchanged).toBe(false);
+    });
+    it('reads a stored instant in the zone', () => {
+        const base = { start: '2026-06-01T13:00:00Z', end: '2026-06-01T14:00:00Z' };
+        expect(seriesWrite(base, '2026-06-15', '2026-06-15T09:00', '2026-06-15T10:00', false, 'America/New_York').unchanged).toBe(true);
+    });
+    it('seriesEditWalls moves both ends by the shift', () => {
+        expect(seriesEditWalls('2026-06-01T09:00:00', '2026-06-15T22:00', '2026-06-16T02:00', false, 'UTC', 3))
+            .toEqual({ start: '2026-06-04T22:00', end: '2026-06-05T02:00' });
+    });
+});
+
+describe('shiftRule', () => {
+    it('returns the rule itself for no shift', () => {
+        const rr = { freq: 'daily' as const, exdate: ['2026-06-03'] };
+        expect(shiftRule(rr, 0)).toBe(rr);
+    });
+    it('moves exdates across a month end, and wraps weekdays both ways', () => {
+        const base = { freq: 'weekly' as const, byweekday: [0, 6] };
+        expect(shiftRule({ ...base, exdate: ['2026-06-30'] }, 1, base)).toEqual({ freq: 'weekly', byweekday: [0, 1], wkst: 2, exdate: ['2026-07-01'] });
+        expect(shiftRule({ ...base }, -1, base).byweekday).toEqual([5, 6]);
+    });
+    it('leaves weekdays alone without the base rule to compare to', () => {
+        expect(shiftRule({ freq: 'weekly', byweekday: [1] }, 1).byweekday).toEqual([1]);
+    });
+});
+
+describe('shiftRule keeps every occurrence moved by exactly the shift', () => {
+    const { expandEvents } = jest.requireActual('../../shared/recurrence');
+    const dates = (start: string, rrule: object): string[] =>
+        expandEvents([{ id: 's', start, end: start, rrule }], new Date(2026, 4, 20), new Date(2026, 7, 1), 'UTC')
+            .map((o: { start: string }) => o.start.slice(0, 10));
+    const shifted = (ds: string[], n: number) => ds.map((d) => shiftWallDays(d, n));
+    const cases: Array<[string, object, number]> = [
+        ['every 2 weeks Sun+Mon, +1', { freq: 'weekly', interval: 2, byweekday: [0, 1] }, 1],
+        ['every 2 weeks Mon+Tue, -1', { freq: 'weekly', interval: 2, byweekday: [1, 2] }, -1],
+        ['every 2 weeks Fri+Sat wkst Sun, +1', { freq: 'weekly', interval: 2, byweekday: [5, 6], wkst: 0 }, 1],
+        ['every 3 weeks Mon+Wed+Sat, +3', { freq: 'weekly', interval: 3, byweekday: [1, 3, 6] }, 3],
+        ['weekly Mon/Wed, -2', { freq: 'weekly', byweekday: [1, 3] }, -2]
+    ];
+    it.each(cases)('%s', (_name, rule, n) => {
+        const before = dates('2026-06-01T09:00:00', rule);
+        const after = dates(shiftWallDays('2026-06-01T09:00:00', n), shiftRule(rule as never, n, rule as never));
+        // Compare inside the window both cover.
+        const inside = (d: string) => d >= '2026-06-05' && d <= '2026-07-25';
+        expect(after.filter(inside)).toEqual(shifted(before, n).filter(inside));
     });
 });

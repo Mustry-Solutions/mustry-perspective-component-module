@@ -3,7 +3,7 @@ import {
     createPreviewMs, isNoopMove, movePreviewMs, resizePreviewMs, rowAtY, snapMs, tlCommitDecision, TlGestureFlags
 } from '../timeline/timelineGestureLogic';
 import {
-    tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlEditorProblem, tlMoveResizeSpec, tlSaveSpec
+    tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlEditorGapWall, tlEditorProblem, tlMoveResizeSpec, tlSaveSpec
 } from '../timeline/timelineEditorLogic';
 import { TimelineEvent } from '../timeline/timelineLogic';
 
@@ -418,12 +418,12 @@ describe('whole-series edits are checked where they are written (#248)', () => {
         const base = series('2026-03-08T09:00:00', '2026-03-08T10:00:00');
         const e = allEvents(base, occ('2026-03-15', '2026-03-15T09:00:00', '2026-03-15T10:00:00'), '2026-03-15T02:30', '2026-03-15T03:00');
         expect(tlEditorProblem(e, NY)).toBeNull();
-        expect(tlEditorProblem(e, NY, () => base)).toBe('range');
+        expect(tlEditorProblem(e, NY, () => base)).toBe('gap');
     });
     it('allows an edit opened on a gap day when the series date has no gap', () => {
         const base = series('2026-03-01T09:00:00', '2026-03-01T10:00:00');
         const e = allEvents(base, occ('2026-03-08', '2026-03-08T09:00:00', '2026-03-08T10:00:00'), '2026-03-08T02:30', '2026-03-08T03:00');
-        expect(tlEditorProblem(e, NY)).toBe('range');
+        expect(tlEditorProblem(e, NY)).toBe('gap');
         expect(tlEditorProblem(e, NY, () => base)).toBeNull();
         expect(tlSaveSpec(e, NY, () => base).event).toMatchObject({
             start: '2026-03-01T02:30:00-05:00', end: '2026-03-01T03:00:00-05:00'
@@ -464,13 +464,13 @@ describe('editing an occurrence on a DST gap day (#290)', () => {
         });
     });
     it('a "This event" save on the gap day is refused, as in the calendar: both ends are 03:30', () => {
-        expect(tlEditorProblem(tlEditorForEvent(gapOcc, NY, lookup), NY, lookup)).toBe('range');
+        expect(tlEditorProblem(tlEditorForEvent(gapOcc, NY, lookup), NY, lookup)).toBe('gap');
     });
     it('a one-off event in the gap shows as written and is refused the same way', () => {
         const ev: TimelineEvent = { id: 'o', resourceId: 'crew-a', title: 'O', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00' };
         const e = tlEditorForEvent(ev, NY);
         expect(e).toMatchObject({ start: '2026-03-08T02:30', end: '2026-03-08T03:30' });
-        expect(tlEditorProblem(e, NY)).toBe('range');
+        expect(tlEditorProblem(e, NY)).toBe('gap');
         expect(tlEditorProblem({ ...e, end: '2026-03-08T04:30' }, NY)).toBeNull();   // moving a time gets out
     });
     it('an instant is still read in the display zone, with its precision kept', () => {
@@ -481,5 +481,59 @@ describe('editing an occurrence on a DST gap day (#290)', () => {
         const ev: TimelineEvent = { id: 'r', resourceId: 'crew-a', title: 'R', start: '2026-07-03T09:00:00', end: '2026-07-03T08:00:00' };
         expect(tlEditorForEvent(ev, NY)).toMatchObject({ start: '2026-07-03T09:00', end: '2026-07-03T10:00' });
         expect(tlEditorForEvent({ ...ev, end: undefined }, NY)).toMatchObject({ end: '2026-07-03T10:00' });
+    });
+});
+
+describe('a whole-series edit that moves the start date moves the series (#291)', () => {
+    const base: TimelineEvent = {
+        id: 's', resourceId: 'crew-a', title: 'S', start: '2026-07-01T09:00:00', end: '2026-07-01T10:00:00',
+        rrule: { freq: 'weekly', byweekday: [3, 5], exdate: ['2026-07-03'] }
+    };
+    const lookup = (id: string): TimelineEvent | undefined => (id === 's' ? base : undefined);
+    // Wed 07-08 opened, moved to Thu 07-09.
+    const o: TimelineEvent = { ...base, id: 's::2026-07-08', start: '2026-07-08T09:00:00', end: '2026-07-08T10:00:00', rrule: undefined, __seriesId: 's', __occDate: '2026-07-08' };
+    const e = { ...tlEditorForEvent(o, TZ, lookup), scope: 'series' as const, start: '2026-07-09T09:00', end: '2026-07-09T10:00' };
+
+    it('moves the start, the exdates and the weekdays by the same days', () => {
+        expect(tlEditorProblem(e, TZ, lookup)).toBeNull();
+        expect(tlSaveSpec(e, TZ, lookup).event).toMatchObject({
+            start: '2026-07-02T09:00:00+00:00', end: '2026-07-02T10:00:00+00:00',
+            rrule: { freq: 'weekly', byweekday: [4, 6], exdate: ['2026-07-04'] }
+        });
+    });
+    it('a time-only edit leaves the date and the rule as they were', () => {
+        const t = { ...e, start: '2026-07-08T11:00', end: '2026-07-08T12:00' };
+        expect(tlSaveSpec(t, TZ, lookup).event).toMatchObject({
+            start: '2026-07-01T11:00:00+00:00', rrule: { byweekday: [3, 5], exdate: ['2026-07-03'] }
+        });
+    });
+});
+
+describe('a series that starts in a DST gap (#297)', () => {
+    const NY = 'America/New_York';
+    const base: TimelineEvent = {
+        id: 'g', resourceId: 'crew-a', title: 'Gap shift',
+        start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00', rrule: { freq: 'daily' }
+    };
+    const lookup = (id: string): TimelineEvent | undefined => (id === 'g' ? base : undefined);
+    const opened = (date: string) => tlEditorForEvent({
+        ...base, id: `g::${date}`, start: `${date}T02:30:00`, end: `${date}T03:30:00`,
+        rrule: undefined, __seriesId: 'g', __occDate: date
+    }, NY, lookup);
+
+    it('an "All events" rename is allowed and keeps the stored 02:30', () => {
+        const e = { ...opened('2026-03-10'), scope: 'series' as const, title: 'Renamed' };
+        expect(tlEditorProblem(e, NY, lookup)).toBeNull();
+        expect(tlSaveSpec(e, NY, lookup).event).toMatchObject({
+            title: 'Renamed', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00-04:00'
+        });
+    });
+    it('a changed time is refused with the gap and names the skipped time', () => {
+        const e = { ...opened('2026-03-10'), scope: 'series' as const, end: '2026-03-10T03:15' };
+        expect(tlEditorProblem(e, NY, lookup)).toBe('gap');
+        expect(tlEditorGapWall(e, NY, lookup)).toBe('2026-03-08T02:30');
+    });
+    it('the gap-day occurrence alone ("This event") gets the gap message', () => {
+        expect(tlEditorGapWall(opened('2026-03-08'), NY, lookup)).toBe('2026-03-08T02:30');
     });
 });

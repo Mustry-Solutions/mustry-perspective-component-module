@@ -572,3 +572,71 @@ test('calendar: focusing a week column button moves no text and keeps the head r
     expect((await head.boundingBox())!.height).toBeCloseTo(before.head, 1);
     expect(await textX()).toBeCloseTo(before.text, 1);
 });
+
+// --- #291 / #297: whole-series edits in the built-in editor, New York gap week -----------
+// The fixture doesn't persist, so each test starts from the bound data.
+async function openSeries(page: Page) {
+    await page.clock.setFixedTime(GAP_NOW);
+    const root = await openRoute(page, '/calendar-gap-series', '.mustry-calendar');
+    await expect(root.locator('.mustry-cal-tg-col')).toHaveCount(7);
+    return root;
+}
+const seriesLog = (page: Page) => page.locator('#series-log');
+
+/** Open the editor on one occurrence of a series. */
+async function openOccurrence(page: Page, day: string, title: string) {
+    await page.locator(`.mustry-cal-tg-col[data-day="${day}"] .mustry-cal-tg-event`, { hasText: title }).click();
+    const editor = page.locator('.mustry-cal-editor');
+    await expect(editor).toBeVisible();
+    return editor;
+}
+
+test('calendar: a series that starts in the DST gap can be renamed with "All events" (#297)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-09', 'Gap series');
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    await editor.getByRole('textbox').first().fill('Renamed');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveCount(0);
+    await editor.getByRole('button', { name: 'Save' }).click();
+    // The stored 02:30 goes back as written; 03:30 exists and is written as an instant.
+    await expect(seriesLog(page)).toHaveText('log: edit gapSeries Renamed 2026-03-08T02:30:00 2026-03-08T03:30:00-04:00 ex=;');
+});
+
+test('calendar: a time the DST gap skips is named in the editor (#297)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-09', 'Gap series');
+    const [start, end] = [editor.locator('input[type="datetime-local"]').nth(0), editor.locator('input[type="datetime-local"]').nth(1)];
+    const message = "02:30 doesn't exist on Mar 8 in America/New_York: the clocks skip it";
+
+    // "This event", moved onto the gap day: 02:30-03:00 is really 03:30-03:00.
+    await start.fill('2026-03-08T02:30');
+    await end.fill('2026-03-08T03:00');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText(message);
+    await expect(editor.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    // "All events" with a changed time is checked on the series' own date, the gap day.
+    await start.fill('2026-03-09T02:30');
+    await end.fill('2026-03-09T03:15');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveCount(0);
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText(message);
+    await expect(editor.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    // A range typed backwards keeps the plain message.
+    await editor.getByRole('radio', { name: 'This event' }).check();
+    await start.fill('2026-03-09T04:00');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText('End must be after start');
+});
+
+test('calendar: moving an occurrence by days with "All events" moves the series and its exdates (#291)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-10', 'Shift series');
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    const inputs = editor.locator('input[type="datetime-local"]');
+    await inputs.nth(0).fill('2026-03-11T10:00');
+    await inputs.nth(1).fill('2026-03-11T11:00');
+    await editor.getByRole('button', { name: 'Save' }).click();
+    await expect(seriesLog(page)).toHaveText(
+        'log: edit shiftSeries Shift series 2026-03-03T10:00:00-05:00 2026-03-03T11:00:00-05:00 ex=2026-03-06;'
+    );
+});

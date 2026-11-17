@@ -24,6 +24,10 @@
    "viewPath": "CalendarGapDrag",
    "viewParams": {}
   },
+  "/calendar-gap-series": {
+   "viewPath": "CalendarGapSeries",
+   "viewParams": {}
+  },
   "/grid": {
    "viewPath": "GridDemo",
    "viewParams": {}
