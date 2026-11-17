@@ -6,7 +6,7 @@
 // occurrence detaches it into a standalone override (id "base-x-date") plus an
 // EXDATE on the series; the editor's apply-to choice can target the whole series
 // instead, which re-anchors on the base's date and keeps its rule.
-import { msToZonedIso, msToWallInput, seriesEditWalls, toEpochMs } from '../../shared/dateUtils';
+import { msToZonedIso, msToWallInput, seriesEditWalls, toEpochMs, wallInputOf } from '../../shared/dateUtils';
 import { occurrenceOf, RRule } from '../../shared/recurrence';
 import { TimelineEvent } from './timelineLogic';
 
@@ -114,23 +114,28 @@ export function tlEditorForCreate(resourceId: string, startMs: number, endMs: nu
 }
 
 /** An editor pre-filled from an existing bar (a missing/invalid end shows one
- *  hour). A recurring occurrence recovers its series context
+ *  hour). A naive wall time is shown as written, even one a DST gap skips (see
+ *  wallInputOf). A recurring occurrence recovers its series context
  *  (incl. the series' rule, for the "All events" scope) and defaults the
  *  apply-to choice to "this event". */
 export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventById: TlBaseEventLookup = () => undefined): TlEditor {
     const startMs = toEpochMs(ev.start, timezone) ?? Date.now();
-    let endMs = ev.end ? toEpochMs(ev.end, timezone) : null;
-    if (endMs === null || endMs <= startMs) {
-        endMs = startMs + 3600000;
-    }
+    const endMs = ev.end ? toEpochMs(ev.end, timezone) : null;
+    const start = wallInputOf(ev.start, timezone) ?? msToWallInput(startMs, timezone);
+    const endWall = ev.end ? wallInputOf(ev.end, timezone) : null;
+    // The end is kept when it is after the start as an instant or as a wall time:
+    // a gap can resolve both ends of 02:30-03:30 to the same instant.
+    const end = endWall !== null && endMs !== null && (endMs > startMs || endWall > start)
+        ? endWall
+        : msToWallInput(startMs + 3600000, timezone);
     const rawId = ev.id || '';
     const occ = occurrenceOf(ev);
     const seriesId = occ ? occ.seriesId : null;
     const rr = seriesId ? (baseEventById(seriesId) || {} as TimelineEvent).rrule : ev.rrule;
     return {
         id: rawId, resourceId: ev.resourceId, title: ev.title || '',
-        start: msToWallInput(startMs, timezone),
-        end: msToWallInput(endMs, timezone),
+        start,
+        end,
         category: ev.category || '', description: ev.description || '',
         carry: {
             ...(ev.color ? { color: ev.color } : {}),

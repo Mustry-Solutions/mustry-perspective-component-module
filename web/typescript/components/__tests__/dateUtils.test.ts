@@ -4,7 +4,7 @@ import {
     fmtDate, parseDate, clampSec, secToHms, hmsToSec, secondsOfDay, combine,
     formatPattern, resolveZoned, instantToZonedIso, todayInZone, nowMinutesInZone,
     shiftWallDays, toWeekStart, weekStartDay, weekdayHeaders, emitWall, toEpochMs, msToZonedIso,
-    wallClockOrLocal, knownTimeZone, msUntilNextZoneDay, seriesEditWalls
+    wallClockOrLocal, knownTimeZone, msUntilNextZoneDay, seriesEditWalls, wallInputOf
 } from '../../shared/dateUtils';
 
 describe('knownTimeZone', () => {
@@ -408,5 +408,27 @@ describe('seriesEditWalls (a whole-series edit, #248)', () => {
     it('returns the edited walls when there is no usable base start', () => {
         expect(w(undefined, '2026-06-15T09:00', '2026-06-15T10:00')).toEqual({ start: '2026-06-15T09:00', end: '2026-06-15T10:00' });
         expect(w('not a date', '2026-06-15T09:00', '2026-06-15T10:00')).toEqual({ start: '2026-06-15T09:00', end: '2026-06-15T10:00' });
+    });
+});
+
+describe('wallInputOf (#290)', () => {
+    it('keeps a naive wall time as written, even inside a DST gap', () => {
+        expect(wallInputOf('2026-03-08T02:30:00', 'America/New_York')).toBe('2026-03-08T02:30');
+        expect(wallInputOf('2026-03-08T02:30:05.5', 'America/New_York')).toBe('2026-03-08T02:30:05.500');
+    });
+    it('reads an instant or a date-only value in the zone', () => {
+        expect(wallInputOf('2026-07-03T13:00:00Z', 'America/New_York')).toBe('2026-07-03T09:00');
+        expect(wallInputOf(String(Date.UTC(2026, 6, 3, 13)), 'America/New_York')).toBe('2026-07-03T09:00');
+        expect(wallInputOf('2026-07-03', 'UTC')).toBe('2026-07-03T00:00');
+    });
+    it('is null for a value that does not parse', () => {
+        expect(wallInputOf('soon', 'UTC')).toBeNull();
+    });
+    it('reads a wall time no clock shows as the instant it rolls over to', () => {
+        expect(wallInputOf('2026-07-03T24:00:00', 'UTC')).toBe('2026-07-04T00:00');
+        expect(wallInputOf('2026-02-30T09:00', 'UTC')).toBe('2026-03-02T09:00');
+        expect(wallInputOf('2026-07-03T09:00:60', 'UTC')).toBe('2026-07-03T09:01');
+        expect(wallInputOf('2026-07-03T09:61', 'UTC')).toBe('2026-07-03T10:01');
+        expect(wallInputOf('2028-02-29T09:00', 'UTC')).toBe('2028-02-29T09:00');   // a leap day exists
     });
 });

@@ -755,6 +755,22 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     };
 
+    /** Enter/Space on a week/day column's day head (#250): what a plain click on that
+     *  column's empty time does. The editor opens on the same default 09:00-10:00 slot
+     *  (commitGesture 'createEditor'); otherwise onDateClick carries the date alone. */
+    private onColumnKey = (iso: string): void => {
+        this.hideHover();   // a pointer press on empty time hides it too (startCreate)
+        this.closeDayPop();
+        this.closeMini();
+        if (this.useEditor()) {
+            const focused = document.activeElement as HTMLElement | null;
+            this.editorOpener = focused && focused.classList.contains('mustry-cal-tg-daycreate') ? focused : null;
+            this.openEditor(isoDateTime(iso, 9 * 60), isoDateTime(iso, 10 * 60), false);
+        } else {
+            this.fireEvent('onDateClick', { date: iso });
+        }
+    };
+
     // --- toolbar -----------------------------------------------------------
     private title(): string {
         const { locale } = this.props.props;
@@ -951,6 +967,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 onStartMove={(ev, e) => this.gestures.startMove(ev, e)}
                 onStartResize={(ev, edge, e) => this.gestures.startResize(ev, edge, e)}
                 onScroll={() => this.hideHover()}
+                opensEditor={this.useEditor()}
+                dayStopIso={this.state.dayStopIso}
+                onDayStop={(iso) => this.setState({ dayStopIso: iso })}
+                onColumnKey={this.onColumnKey}
             />
         );
     }

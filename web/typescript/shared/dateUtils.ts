@@ -534,6 +534,38 @@ export function msToWallInput(ms: number, timeZone: string): string {
     return `${base}:${pad2(w.s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
 }
 
+/**
+ * An event time as a datetime-local value in `timeZone`, or null when it doesn't
+ * parse. A naive wall string keeps the wall time written in it: a time a DST gap
+ * skips (02:30 on New York's spring-forward day) stays 02:30, as the calendar's
+ * editor shows it, instead of the 03:30 it resolves to, so saving the editor
+ * unchanged writes back what was there. An instant (offset/Z/epoch) is read in
+ * the zone, as msToWallInput does. Seconds and milliseconds are kept (the calendar
+ * trims to minutes; the timeline's input carries them, see wallInputStep).
+ */
+export function wallInputOf(raw: string, timeZone: string): string | null {
+    const ms = toEpochMs(raw, timeZone);
+    if (ms === null) {
+        return null;
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(String(raw));
+    // Only a wall time that exists on a clock is kept as written: 24:00, Feb 30 or
+    // :60 isn't a datetime-local value (the input would show it blank), so those
+    // read as the instant they roll over to, as before.
+    const fieldsExist = (f: RegExpExecArray): boolean => +f[4] < 24 && +f[5] < 60 && +(f[6] || 0) < 60
+        && +f[2] >= 1 && +f[2] <= 12 && +f[3] >= 1 && +f[3] <= new Date(Date.UTC(+f[1], +f[2], 0)).getUTCDate();
+    if (!m || !fieldsExist(m)) {
+        return msToWallInput(ms, timeZone);
+    }
+    const base = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
+    const s = +(m[6] || 0);
+    const frac = m[7] ? Math.round(+`0.${m[7]}` * 1000) : 0;
+    if (!s && !frac) {
+        return base;
+    }
+    return `${base}:${pad2(s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
+}
+
 /** The `step` a datetime-local input needs to ACCEPT the precision in `value`
  *  (a browser silently rounds a value finer than its step to it, and only shows
  *  the seconds/ms field when the step asks for one). '' = leave it unset. */

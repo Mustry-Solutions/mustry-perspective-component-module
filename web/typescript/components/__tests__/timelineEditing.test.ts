@@ -439,3 +439,47 @@ describe('whole-series edit without the base event bound (#248)', () => {
         expect(tlSaveSpec(e, TZ).event).toMatchObject({ start: '2026-07-06T09:00:00+00:00', end: '2026-07-06T10:00:00+00:00' });
     });
 });
+
+describe('editing an occurrence on a DST gap day (#290)', () => {
+    const NY = 'America/New_York';
+    const base: TimelineEvent = {
+        id: 'g', resourceId: 'crew-a', title: 'Gap shift',
+        start: '2026-03-01T02:30:00', end: '2026-03-01T03:30:00', rrule: { freq: 'daily' }
+    };
+    // As expandEvents emits it: naive walls on the occurrence date.
+    const gapOcc: TimelineEvent = {
+        ...base, id: 'g::2026-03-08', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00',
+        rrule: undefined, __seriesId: 'g', __occDate: '2026-03-08'
+    };
+    const lookup = (id: string): TimelineEvent | undefined => (id === 'g' ? base : undefined);
+
+    it('pre-fills the wall time as written, not the 03:30 the gap resolves 02:30 to', () => {
+        expect(tlEditorForEvent(gapOcc, NY, lookup)).toMatchObject({ start: '2026-03-08T02:30', end: '2026-03-08T03:30' });
+    });
+    it('an unchanged "All events" save leaves the series at 02:30', () => {
+        const e = { ...tlEditorForEvent(gapOcc, NY, lookup), scope: 'series' as const };
+        expect(tlEditorProblem(e, NY, lookup)).toBeNull();
+        expect(tlSaveSpec(e, NY, lookup).event).toMatchObject({
+            start: '2026-03-01T02:30:00-05:00', end: '2026-03-01T03:30:00-05:00'
+        });
+    });
+    it('a "This event" save on the gap day is refused, as in the calendar: both ends are 03:30', () => {
+        expect(tlEditorProblem(tlEditorForEvent(gapOcc, NY, lookup), NY, lookup)).toBe('range');
+    });
+    it('a one-off event in the gap shows as written and is refused the same way', () => {
+        const ev: TimelineEvent = { id: 'o', resourceId: 'crew-a', title: 'O', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00' };
+        const e = tlEditorForEvent(ev, NY);
+        expect(e).toMatchObject({ start: '2026-03-08T02:30', end: '2026-03-08T03:30' });
+        expect(tlEditorProblem(e, NY)).toBe('range');
+        expect(tlEditorProblem({ ...e, end: '2026-03-08T04:30' }, NY)).toBeNull();   // moving a time gets out
+    });
+    it('an instant is still read in the display zone, with its precision kept', () => {
+        const ev: TimelineEvent = { id: 'i', resourceId: 'crew-a', title: 'I', start: '2026-07-03T13:00:07.250Z', end: '2026-07-03T14:00:00Z' };
+        expect(tlEditorForEvent(ev, NY)).toMatchObject({ start: '2026-07-03T09:00:07.250', end: '2026-07-03T10:00' });
+    });
+    it('a missing or reversed end still shows one hour from the start', () => {
+        const ev: TimelineEvent = { id: 'r', resourceId: 'crew-a', title: 'R', start: '2026-07-03T09:00:00', end: '2026-07-03T08:00:00' };
+        expect(tlEditorForEvent(ev, NY)).toMatchObject({ start: '2026-07-03T09:00', end: '2026-07-03T10:00' });
+        expect(tlEditorForEvent({ ...ev, end: undefined }, NY)).toMatchObject({ end: '2026-07-03T10:00' });
+    });
+});
