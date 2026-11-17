@@ -30,7 +30,7 @@ import { TimelineHover, TimelineHoverInfo } from './TimelineHover';
 import { TimelineGestureController, TlGesture, TlPreview } from './timelineGestureController';
 import { TlCommitKind, isNoopMove } from './timelineGestureLogic';
 import {
-    TlChangeSpec, TlEditor, tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlMoveResizeSpec, tlSaveSpec
+    TlChangeSpec, TlEditor, tlDeleteSpec, tlEditorForCreate, tlEditorForEvent, tlEditorProblem, tlMoveResizeSpec, tlSaveSpec
 } from './timelineEditorLogic';
 import { TimelineEditor } from './TimelineEditor';
 import { TimelineToolbar } from './TimelineToolbar';
@@ -471,6 +471,8 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return [...(p.events || []), ...(p.recurringEvents || [])].find((e) => e && e.id === id);
     }
 
+    private lookupBase = (id: string): TimelineEvent | undefined => this.baseEventById(id);
+
     /** An event's real (unclamped) extent, with the same no-end rules as the layout. */
     private eventExtent = (ev: TimelineEvent): { startMs: number; endMs: number } => {
         const tz = this.props.props.timezone;
@@ -613,7 +615,10 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         if (!ed) {
             return;
         }
-        this.fireSpec(tlSaveSpec(ed, this.props.props.timezone, (id) => this.baseEventById(id)));
+        if (tlEditorProblem(ed, this.props.props.timezone, this.lookupBase)) {
+            return;   // Save is disabled then; never write a range that ends before it starts
+        }
+        this.fireSpec(tlSaveSpec(ed, this.props.props.timezone, this.lookupBase));
         this.setState({ editor: null });
     };
 
@@ -1003,6 +1008,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
                         resources={p.resources}
                         categories={p.categories}
                         timezone={p.timezone}
+                        baseEventById={this.lookupBase}
                         locale={p.locale}
                         labels={p.labels}
                         onUpdate={(patch) => this.updateEditor(patch)}

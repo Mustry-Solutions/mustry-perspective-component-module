@@ -4,7 +4,7 @@
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from './calendarLogic';
-import { emitWall, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
+import { emitWall, reanchorSeries, seriesEditWalls, toEpochMs } from '../../shared/dateUtils';
 import { occurrenceOf } from '../../shared/recurrence';
 import { Editor } from './calendarTypes';
 
@@ -82,11 +82,25 @@ export function resolvesForward(start: string, end: string, timezone: string): b
     return s !== null && e !== null && e > s;
 }
 
+/** The start and end walls saving the editor writes: a whole-series edit moves
+ *  the editor's times onto the series' own date (see seriesEditWalls); anything
+ *  else writes the editor's walls as they are. */
+function writtenWalls(ed: Editor, timezone: string, baseEventById: BaseEventLookup): { start: string; end: string } {
+    if (ed.seriesId && ed.scope === 'series') {
+        const base = baseEventById(ed.seriesId);
+        return seriesEditWalls(base && base.start, ed.start, ed.end, ed.allDay, timezone);
+    }
+    return { start: ed.start, end: ed.end };
+}
+
 /** Why the editor can't save, or null when it can: 'parse' = a time field is
  *  empty/incomplete; 'range' = the end is not after the start, compared as the
  *  instants that would be written (all-day events may end on their start date —
- *  the end is inclusive in the editor). */
-export function editorProblem(ed: Editor, timezone: string): 'parse' | 'range' | null {
+ *  the end is inclusive in the editor). A whole-series edit is checked on the
+ *  series' own date, where it is written, not on the occurrence that was opened. */
+export function editorProblem(
+    ed: Editor, timezone: string, baseEventById: BaseEventLookup = () => undefined
+): 'parse' | 'range' | null {
     if (ed.allDay) {
         if (ed.start.length < 10 || ed.end.length < 10) {
             return 'parse';
@@ -99,7 +113,8 @@ export function editorProblem(ed: Editor, timezone: string): 'parse' | 'range' |
     if (toEpochMs(ed.start, timezone) === null || toEpochMs(ed.end, timezone) === null) {
         return 'parse';
     }
-    return resolvesForward(ed.start, ed.end, timezone) ? null : 'range';
+    const w = writtenWalls(ed, timezone, baseEventById);
+    return resolvesForward(w.start, w.end, timezone) ? null : 'range';
 }
 
 /** The editor patch for flipping the all-day toggle: trim to dates, or restore
@@ -146,7 +161,8 @@ export function buildRRule(ed: Editor, baseEventById: BaseEventLookup): RRule | 
 /**
  * Decide what saving the editor should fire:
  *  (1) one occurrence of a series -> a detached standalone override (the series gets an EXDATE);
- *  (2) the whole series -> the base event, re-anchored, with the (possibly removed) rule;
+ *  (2) the whole series -> the base event, re-anchored on its own date keeping the
+ *      edited span in days, with the (possibly removed) rule;
  *  (3) a plain create / edit of a standalone event.
  */
 export function editorSaveSpec(
@@ -179,14 +195,14 @@ export function editorSaveSpec(
     const rr = buildRRule(ed, baseEventById);
 
     if (ed.seriesId && ed.scope === 'series') {
-        const base = baseEventById(ed.seriesId);
+        const w = writtenWalls({ ...ed, start: norm(ed.start), end: norm(ed.end) }, timezone, baseEventById);
         return {
             action: 'edit',
             event: {
                 id: ed.seriesId,
                 ...common,
-                start: emitWall(reanchorSeries(base && base.start, norm(ed.start), ed.allDay, timezone), ed.allDay, timezone),
-                end: emitWall(reanchorSeries(base && (base.end || base.start), norm(ed.end), ed.allDay, timezone), ed.allDay, timezone),
+                start: emitWall(w.start, ed.allDay, timezone),
+                end: emitWall(w.end, ed.allDay, timezone),
                 rrule: rr || null   // null = recurrence removed from the series
             },
             extra: { scope: 'series', seriesId: ed.seriesId }

@@ -56,7 +56,7 @@ import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
-    editorSaveSpec, editorDeleteSpec, gestureKeepsOrder, moveResizeSpec, resolvesForward
+    editorProblem, editorSaveSpec, editorDeleteSpec, gestureKeepsOrder, moveResizeSpec, resolvesForward
 } from './calendarEditorLogic';
 import { Legend } from './Legend';
 import { HoverPopover } from './HoverPopover';
@@ -375,6 +375,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return [...(p.events || []), ...(p.recurringEvents || [])].find((e) => e && e.id === id);
     }
 
+    private lookupBase = (id: string): CalEvent | undefined => this.baseEventById(id);
+
     /** Open the built-in editor pre-filled from an existing event, to edit it in place. */
     private openEditorForEvent(ev: CalEvent): void {
         this.hideHover();
@@ -403,7 +405,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!ed) {
             return;
         }
-        this.fireSpec(editorSaveSpec(ed, this.props.props.timezone, (id) => this.baseEventById(id)));
+        if (editorProblem(ed, this.props.props.timezone, this.lookupBase)) {
+            return;   // Save is disabled then; never write a range that ends before it starts
+        }
+        this.fireSpec(editorSaveSpec(ed, this.props.props.timezone, this.lookupBase));
         this.setState({ editor: null });
     };
 
@@ -854,6 +859,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editor={ed}
                 categories={this.props.props.categories || []}
                 timezone={this.props.props.timezone}
+                baseEventById={this.lookupBase}
                 locale={this.props.props.locale}
                 labels={this.props.props.labels}
                 onUpdate={(patch) => this.updateEditor(patch)}

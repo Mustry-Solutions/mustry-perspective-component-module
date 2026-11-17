@@ -6,7 +6,7 @@
 // occurrence detaches it into a standalone override (id "base-x-date") plus an
 // EXDATE on the series; the editor's apply-to choice can target the whole series
 // instead, which re-anchors on the base's date and keeps its rule.
-import { msToZonedIso, msToWallInput, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
+import { msToZonedIso, msToWallInput, seriesEditWalls, toEpochMs } from '../../shared/dateUtils';
 import { occurrenceOf, RRule } from '../../shared/recurrence';
 import { TimelineEvent } from './timelineLogic';
 
@@ -144,15 +144,31 @@ export function tlEditorForEvent(ev: TimelineEvent, timezone: string, baseEventB
     };
 }
 
+/** The start and end walls saving the editor writes: a whole-series edit moves
+ *  the editor's times onto the series' own date (see seriesEditWalls); anything
+ *  else writes the editor's walls as they are. */
+function tlWrittenWalls(ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup): { start: string; end: string } {
+    if (ed.seriesId && ed.scope === 'series') {
+        const base = baseEventById(ed.seriesId);
+        return seriesEditWalls(base && base.start, ed.start, ed.end, false, timezone);
+    }
+    return { start: ed.start, end: ed.end };
+}
+
 /** Why the editor can't save, or null when it can: 'parse' = a time field doesn't
- *  parse; 'range' = end is not after start. */
-export function tlEditorProblem(ed: TlEditor, timezone: string): 'parse' | 'range' | null {
-    const s = toEpochMs(ed.start, timezone);
-    const e = toEpochMs(ed.end, timezone);
-    if (s === null || e === null) {
+ *  parse; 'range' = end is not after start, compared as the instants that would
+ *  be written. A whole-series edit is checked on the series' own date, where it
+ *  is written, not on the occurrence that was opened. */
+export function tlEditorProblem(
+    ed: TlEditor, timezone: string, baseEventById: TlBaseEventLookup = () => undefined
+): 'parse' | 'range' | null {
+    if (toEpochMs(ed.start, timezone) === null || toEpochMs(ed.end, timezone) === null) {
         return 'parse';
     }
-    return e > s ? null : 'range';
+    const w = tlWrittenWalls(ed, timezone, baseEventById);
+    const s = toEpochMs(w.start, timezone);
+    const e = toEpochMs(w.end, timezone);
+    return s !== null && e !== null && e > s ? null : 'range';
 }
 
 /** The emitted form of an editor time field: offset-bearing ISO in the display zone. */
@@ -165,8 +181,9 @@ function emitWallInput(v: string, timezone: string): string {
  * Decide what saving the editor should fire:
  *  (1) one occurrence of a series -> a detached standalone override (the series gets
  *      an EXDATE from the write-back; the override must NOT carry the rule);
- *  (2) the whole series -> the base event, re-anchored on its own date, with the
- *      (possibly edited or removed) rule — prior exdates are preserved;
+ *  (2) the whole series -> the base event, re-anchored on its own date keeping the
+ *      edited span in days, with the (possibly edited or removed) rule — prior
+ *      exdates are preserved;
  *  (3) a plain create / edit of a standalone bar, which may add a rule.
  *  Carries the fields the editor doesn't edit (color/status/display) so a
  *  verbatim write-back never strips them.
@@ -201,14 +218,14 @@ export function tlSaveSpec(
     const rr = tlBuildRRule(ed, baseEventById);
 
     if (ed.seriesId && ed.scope === 'series') {
-        const base = baseEventById(ed.seriesId);
+        const w = tlWrittenWalls(ed, timezone, baseEventById);
         return {
             action: 'edit',
             event: {
                 id: ed.seriesId,
                 ...common,
-                start: emitWallInput(reanchorSeries(base && base.start, ed.start, false, timezone), timezone),
-                end: emitWallInput(reanchorSeries(base && (base.end || base.start), ed.end, false, timezone), timezone),
+                start: emitWallInput(w.start, timezone),
+                end: emitWallInput(w.end, timezone),
                 rrule: rr || null   // null = recurrence removed from the series
             },
             extra: { scope: 'series', seriesId: ed.seriesId }

@@ -95,8 +95,8 @@ and all three are kept as they were:
 - The browser's own daylight-saving gap no longer moves a picked time or a
   write-back resolved in another `config.timezone`: picking 02:30 on 2026-03-29 in
   a Brussels browser with `America/New_York` now gives 02:30 New York time, not
-  03:30. Known limit: picker presets and the realtime window can still shift
-  inside the browser's gap (#247).
+  03:30. Picker presets and the realtime window are fixed the same way, below
+  (#247).
 - The calendar no longer writes an event that a daylight-saving gap leaves ending
   at or before its start, in any zone: 02:30 to 03:00 on New York's spring-forward
   day is really 03:30 to 03:00. The event editor now blocks Save with its
@@ -116,6 +116,14 @@ and all three are kept as they were:
 - Admin managers: a row's ⋯ menu now opens above the rest of the page. A component
   placed below the manager could paint over the menu of a low row and take its
   clicks (#254).
+- Calendar and Resource Timeline: editing a recurring event with "All events"
+  could save the series with its end before its start. The save keeps the
+  series on its own date and takes the edited times, but the end went back onto
+  the series' old end date and the check ran on the occurrence that was opened.
+  An overnight edit (22:00 to 02:00 the next day) was written as 22:00 to 02:00
+  the same day, and on a daylight-saving day the check could pass a reversed
+  range or block a valid one. A series edit now keeps the edited length in days,
+  and the editor checks the range on the date it is written to (#248).
 - Date/Time Range Picker: with `config.timezone` set to another zone than the
   browser's, a preset, the realtime window or the trigger text could be an hour
   off on a day the browser's own zone changes its clocks. The picker held those

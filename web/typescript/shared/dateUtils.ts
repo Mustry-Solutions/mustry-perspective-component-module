@@ -428,6 +428,28 @@ export function reanchorSeries(baseRaw: string | undefined, editedWall: string, 
 }
 
 /**
+ * The start and end walls a whole-series edit writes. The series keeps its own
+ * start date and takes the edited times; the end keeps the edited span in days,
+ * so a range the editor ends on the next day still ends the day after the
+ * series' start. Without a base start (the series isn't bound) the edited walls
+ * are returned unchanged. Both the editor's check and its save use this, so the
+ * check validates exactly what is written.
+ */
+export function seriesEditWalls(
+    baseStartRaw: string | undefined, editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string
+): { start: string; end: string } {
+    const s = parseDate(editedStart);
+    const e = parseDate(editedEnd);
+    if (!baseStartRaw || !parseDate(instantToZonedIso(baseStartRaw, timeZone)) || !s || !e) {
+        return { start: editedStart, end: editedEnd };
+    }
+    return {
+        start: reanchorSeries(baseStartRaw, editedStart, dateOnly, timeZone),
+        end: shiftWallDays(reanchorSeries(baseStartRaw, editedEnd, dateOnly, timeZone), daysBetween(s, e))
+    };
+}
+
+/**
  * Convert an internal zone-local wall-clock string to the emitted form: an
  * offset-bearing instant ("YYYY-MM-DDTHH:mm:ss±HH:mm") for timed values, or a
  * date-only string for all-day. Unparseable input is returned unchanged.

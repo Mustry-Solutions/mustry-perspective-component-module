@@ -9,13 +9,14 @@ import { intlFormat, wallInputStep } from '../../shared/dateUtils';
 import { TimelineLabels } from '../../shared/labelPacks';
 import { UNCATEGORIZED_COLOR, categoryColor } from '../../shared/eventStyle';
 import { TimelineResource } from './timelineLogic';
-import { TlEditor, tlEditorProblem } from './timelineEditorLogic';
+import { TlBaseEventLookup, TlEditor, tlEditorProblem } from './timelineEditorLogic';
 
 interface TimelineEditorProps {
     editor: TlEditor;
     resources: TimelineResource[];
     categories: Category[];
     timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
+    baseEventById: TlBaseEventLookup;   // a whole-series edit is checked on the series' own date
     locale: string;     // for the weekly weekday initials
     labels: TimelineLabels;
     onUpdate: (patch: Partial<TlEditor>) => void;
@@ -25,9 +26,9 @@ interface TimelineEditorProps {
 }
 
 export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
-    const { editor: ed, resources, categories, timezone, locale, labels, onUpdate, onCancel, onSave, onDelete } = props;
+    const { editor: ed, resources, categories, timezone, baseEventById, locale, labels, onUpdate, onCancel, onSave, onDelete } = props;
     const isEdit = ed.id !== null;
-    const problem = tlEditorProblem(ed, timezone);   // non-null blocks Save
+    const problem = tlEditorProblem(ed, timezone, baseEventById);   // non-null blocks Save
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
 
