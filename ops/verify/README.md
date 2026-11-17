@@ -25,6 +25,7 @@ behave** in a browser, instead of only checking that the gateway served the bund
 | `/calendar-db` | CalendarDbDemo | Windowed-fetch recipe: `data.events` driven by `output.visibleStart/End` over a 114-event source + always-loaded `recurringEvents`. |
 | `/calendar-empty` | CalendarEmpty | Empty-state badge/tooltip behaviour. |
 | `/calendar-day-keys` | CalendarDayKeys | Month-view keyboard path: a read-only calendar that echoes every `onDateClick` date. |
+| `/calendar-gap-drag` | CalendarGapDrag | Drags on a DST gap day: New York, day view, 15-minute slots, selectable and editable without the editor; logs every `onSelect` and `onChange`. |
 | `/timeline` | TimelineDemo | Evergreen editable Resource Timeline (seeded relative to today): groups, icons, state/background bands, shifts, export, Live toggle, and the full write-back script (drag/reassign/resize/create/editor, recurring detach + series scope). |
 | `/timeline-db` | TimelineDbDemo | Timeline windowed-fetch recipe (window-scoped transform on `output.visibleEnd`). |
 | `/timeline-empty` | TimelineEmpty | Empty-state badge/tooltip behaviour. |

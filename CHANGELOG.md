@@ -111,6 +111,14 @@ and all three are kept as they were:
   between days and Enter or Space activates it. A screen reader hears the full date,
   or, when the button opens the built-in editor, the new label
   `config.labels.newEventOn` (translated in every bundled locale) (#90).
+- **Calendar:** the same keyboard path in week and day view. Each day head is a
+  button in one Tab stop that Left/Right move between days; Enter or Space does what
+  a plain click on that column's empty time does: the built-in editor on a
+  09:00-10:00 slot, or `onDateClick` with the date. A pointer on a day head behaves
+  as before (#250).
+- Calendar: browser tests now cover `onSelect`, and moves, resizes and drag-selects
+  that a daylight-saving gap would reverse, on a new verify view
+  `/calendar-gap-drag` (#249).
 - Resource Timeline: an unknown or mistyped `config.timezone` no longer throws when
   the component mounts. It reads as the browser's zone, as the calendar, the
   managers and the mini month navigator already did (#255).

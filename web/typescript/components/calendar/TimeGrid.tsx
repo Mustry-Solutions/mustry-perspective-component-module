@@ -3,8 +3,10 @@
 import * as React from 'react';
 import { intlFormat } from '../../shared/dateUtils';
 import {
-    CalEvent, DayCol, hhmm, isOccurrence, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments
+    CalEvent, DayCol, hhmm, isOccurrence, layoutDayEvents, backgroundBandsForDay, layoutWeekSegments,
+    colArrowTarget, colTabStop
 } from './calendarLogic';
+import { onCreateButtonKey } from './DayCreateButton';
 import { ResizeEdge, visibleSpan } from './calendarGestureLogic';
 import { CalLabels, Category, CalView, Preview, DEFAULT_DUR_MIN, hourHeightPx } from './calendarTypes';
 import { EventIcon, resolveColor, statusClass } from '../../shared/eventStyle';
@@ -33,13 +35,20 @@ interface TimeGridProps {
     onStartMove: (ev: CalEvent, e: React.PointerEvent) => void;
     onStartResize: (ev: CalEvent, edge: ResizeEdge, e: React.PointerEvent) => void;
     onScroll: () => void;
+    opensEditor: boolean;               // a column's key opens the built-in editor (vs onDateClick)
+    dayStopIso: string;                 // the last focused day, for the one Tab stop
+    onDayStop: (iso: string) => void;
+    onColumnKey: (iso: string) => void; // Enter/Space on a column's day head (#250)
 }
 
 export function TimeGrid(props: TimeGridProps): React.ReactElement {
     const {
         cols, events, locale, view, editable, dayStartHour, dayEndHour, slotMinutes, shifts, nowMinutes, preview, categories,
-        labels, scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll
+        labels, scrollRef, enterClass, hoverProps, onEventClick, onStartCreate, onStartMove, onStartResize, onScroll,
+        opensEditor, dayStopIso, onDayStop, onColumnKey
     } = props;
+    const tabStop = colTabStop(cols, dayStopIso);
+    const fullFmt = intlFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     const hourPx = hourHeightPx(slotMinutes);
     const slotPx = (hourPx * slotMinutes) / 60;   // pixels per sub-slot gridline
@@ -99,11 +108,35 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
         <div className="mustry-cal-tg mustry-cal-anim-view" key={view}>
             <div className="mustry-cal-tg-head" style={colStyle}>
                 <div className="mustry-cal-tg-gutter-cell" />
-                {cols.map((c) => (
-                    <div className={`mustry-cal-tg-dayhead${c.isToday ? ' mustry-cal-tg-dayhead--today' : ''}`} key={c.iso}>
-                        {headFmt.format(c.date)}
-                    </div>
-                ))}
+                {cols.map((c) => {
+                    const fullDate = fullFmt.format(c.date);
+                    // The keyboard path to a plain click on the column's empty time (#250). It
+                    // carries the day head's text, and CSS makes it pointer-transparent, so the
+                    // head still looks and behaves the same for a pointer.
+                    return (
+                        <div className={`mustry-cal-tg-dayhead${c.isToday ? ' mustry-cal-tg-dayhead--today' : ''}`} key={c.iso}>
+                            <button
+                                type="button" className="mustry-cal-tg-daycreate" data-head-day={c.iso}
+                                tabIndex={c.iso === tabStop ? 0 : -1}
+                                aria-label={opensEditor ? labels.newEventOn.replace('{date}', fullDate) : fullDate}
+                                onFocus={() => onDayStop(c.iso)}
+                                onClick={() => onColumnKey(c.iso)}
+                                onKeyDown={(e) => {
+                                    const head = (e.currentTarget as HTMLElement).closest('.mustry-cal-tg-head');
+                                    onCreateButtonKey(e, (key) => colArrowTarget(cols, c.iso, key), (target) => {
+                                        const next = head ? head.querySelector(`[data-head-day="${target}"]`) as HTMLElement | null : null;
+                                        if (next) {
+                                            next.focus();
+                                        }
+                                    });
+                                }}
+                            >
+                                {headFmt.format(c.date)}
+                                {opensEditor && <span className="mustry-cal-tg-daycreate-plus" aria-hidden="true">+</span>}
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
             <div className="mustry-cal-tg-allday" style={colStyle}>
                 <div className="mustry-cal-tg-gutter-cell mustry-cal-tg-allday-label">{labels.allDayTime}</div>

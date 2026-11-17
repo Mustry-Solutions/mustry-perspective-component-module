@@ -2,7 +2,7 @@ import {
     buildMonthGrid, eventDays, groupEventsByDay, layoutWeekSegments, clampWeekLanes,
     weekDays, timeMinutes, isTimed, layoutDayEvents,
     snapMinutes, minuteFromOffset, isoDateTime, eventsToCsv, isOccurrence,
-    backgroundBandsForDay, followTickMs, followDisarms, followCursorStale, cursorAfterZoneChange,
+    backgroundBandsForDay, followTickMs, followDisarms, followCursorStale, colArrowTarget, colTabStop, cursorAfterZoneChange,
     toggleHiddenCategory, filterHiddenCategories,
     visibleRangeMs, monthTabStop, monthArrowTarget, CalEvent
 } from '../calendar/calendarLogic';
@@ -745,5 +745,23 @@ describe('cursorAfterZoneChange (a bound config.timezone arriving after mount)',
     });
     it('leaves any other date where it is', () => {
         expect(cursorAfterZoneChange(d('2026-10-20'), d('2026-10-31'), d('2026-11-01'))).toEqual(d('2026-10-20'));
+    });
+});
+
+describe('week/day column create buttons (#250)', () => {
+    const col = (iso: string, isToday = false) => ({ iso, date: new Date(iso), isToday, isWeekend: false });
+    const cols = [col('2026-06-15'), col('2026-06-16'), col('2026-06-17', true), col('2026-06-18')];
+    it('colTabStop: the last focused column, else today, else the first', () => {
+        expect(colTabStop(cols, '2026-06-16')).toBe('2026-06-16');
+        expect(colTabStop(cols, '2026-06-30')).toBe('2026-06-17');
+        expect(colTabStop([col('2026-06-15'), col('2026-06-16')], '')).toBe('2026-06-15');
+    });
+    it('colArrowTarget: Left/Right move a column and stop at the ends; other keys are not ours', () => {
+        expect(colArrowTarget(cols, '2026-06-16', 'ArrowRight')).toBe('2026-06-17');
+        expect(colArrowTarget(cols, '2026-06-16', 'ArrowLeft')).toBe('2026-06-15');
+        expect(colArrowTarget(cols, '2026-06-15', 'ArrowLeft')).toBe('2026-06-15');
+        expect(colArrowTarget(cols, '2026-06-18', 'ArrowRight')).toBe('2026-06-18');
+        expect(colArrowTarget(cols, '2026-06-16', 'ArrowDown')).toBeNull();
+        expect(colArrowTarget(cols, '2026-06-16', 'Enter')).toBeNull();
     });
 });

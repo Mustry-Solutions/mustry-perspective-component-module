@@ -340,6 +340,10 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
       opens the editor / fires `onDateClick` for that day; closing the editor returns
       focus to it. A screen reader reads "New event on" and the full date with the editor,
       the full date alone without it.
+- [ ] **Week and day view, Tab to a day head** (one Tab stop, a ring round the head, and
+      a "+" when it opens the editor): Left/Right move it between days; Enter/Space opens
+      the editor on 09:00-10:00 / fires `onDateClick` for that day; closing the editor
+      returns focus to it. A mouse click on a day head still does nothing.
 
 ## Theming & i18n
 
