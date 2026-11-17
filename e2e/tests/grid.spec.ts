@@ -306,3 +306,26 @@ test('grid: after a body cell has focus, Tab still reaches a resize handle and i
     await page.keyboard.press('Enter');
     await expect(qty).toHaveAttribute('aria-sort', 'ascending');
 });
+
+test('grid: pinned columns stay put when the grid scrolls sideways (#296)', async ({ page }) => {
+    await page.setViewportSize({ width: 700, height: 800 });
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    await expect(page.getByText('WO-10000', { exact: true })).toBeVisible();
+    const pinnedHead = page.locator('.mustry-dg-head .mustry-dg-cell--pinned').first();
+    const pinnedBody = page.locator('.mustry-dg-row .mustry-dg-cell--pinned', { hasText: 'WO-10000' });
+    const pinnedFoot = page.locator('.mustry-dg-foot .mustry-dg-cell--pinned').first();
+    const scrolling = page.locator('.mustry-dg-head .mustry-dg-head-cell:not(.mustry-dg-cell--pinned)').first();
+    const x = async (l: typeof pinnedHead) => (await l.boundingBox())!.x;
+    const before = { head: await x(pinnedHead), body: await x(pinnedBody), foot: await x(pinnedFoot), scrolling: await x(scrolling) };
+
+    const scrolled = await page.locator('.mustry-dg-scroll').evaluate((el) => { el.scrollLeft = 300; return el.scrollLeft; });
+    expect(scrolled).toBeGreaterThan(100);
+    // The scrolling columns move by what was scrolled...
+    await expect.poll(() => x(scrolling)).toBeCloseTo(before.scrolling - scrolled, 0);
+    // ...the pinned ones don't.
+    expect(await x(pinnedHead)).toBeCloseTo(before.head, 0);
+    expect(await x(pinnedBody)).toBeCloseTo(before.body, 0);
+    expect(await x(pinnedFoot)).toBeCloseTo(before.foot, 0);
+    await expect(pinnedBody).toHaveCSS('position', 'sticky');
+    await expect(pinnedHead).toHaveCSS('position', 'sticky');
+});
