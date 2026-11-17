@@ -275,3 +275,34 @@ test('grid: clicking the resize handle does not sort (#91)', async ({ page }) =>
     await headCell(page, 'Qty').locator('.mustry-dg-resize').click();
     await expect(qty).not.toHaveAttribute('aria-sort', /.+/);
 });
+
+test('grid: quick key presses on a resize handle all count (#91)', async ({ page }) => {
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    const w0 = await cellWidth(page, 'Qty');
+    await page.getByRole('separator', { name: 'Resize column Qty' }).focus();
+    for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('ArrowRight');   // no waiting between presses
+    }
+    await expect.poll(() => cellWidth(page, 'Qty')).toBe(w0 + 50);
+});
+
+test('grid: after a body cell has focus, Tab still reaches a resize handle and its keys stay there (#91)', async ({ page }) => {
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    const firstRow = page.locator('.mustry-dg-row').first();
+    await firstRow.locator('.mustry-dg-cell').nth(2).click();
+    await expect(page.locator('.mustry-dg-cell--focus')).toHaveCount(1);
+    const qty = page.getByRole('button', { name: 'Qty', exact: true });
+    await qty.focus();
+    await page.keyboard.press('Tab');
+    const handle = page.getByRole('separator', { name: 'Resize column Qty' });
+    await expect(handle).toBeFocused();
+    const before = (await firstRow.textContent()) || '';
+    await page.keyboard.press('Enter');   // not a resize key: must not open a body cell editor
+    await page.keyboard.press('x');
+    await expect(page.locator('.mustry-dg-editor')).toHaveCount(0);
+    await expect(firstRow).toHaveText(before);
+    // And Enter on a header button sorts, as it does before any cell has focus.
+    await qty.focus();
+    await page.keyboard.press('Enter');
+    await expect(qty).toHaveAttribute('aria-sort', 'ascending');
+});

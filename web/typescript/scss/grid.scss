@@ -130,7 +130,12 @@
     line-height: 27px;
     height: 28px;
     background: var(--dg-head-bg);
-    padding: 0;   // the button inside carries the cell padding
+}
+
+// The button inside carries the cell padding. Two classes, so this beats the
+// .mustry-dg-cell padding defined further down.
+.mustry-dg-cell.mustry-dg-head-cell {
+    padding: 0;
 }
 
 // The header's sort/drag control fills its cell (the cell also holds the resize handle).

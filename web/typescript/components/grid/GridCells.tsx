@@ -13,6 +13,7 @@ interface GridHeadCellProps {
     onDragStart: (e: React.PointerEvent) => void;
     onResizeStart: (e: React.PointerEvent) => void;
     onResizeKey: (e: React.KeyboardEvent) => void;
+    onResizeBlur: () => void;
     resizeLabel: string;
 }
 
@@ -53,6 +54,7 @@ export function GridHeadCell(p: GridHeadCellProps): React.ReactElement {
                 tabIndex={0}
                 onPointerDown={p.onResizeStart}
                 onKeyDown={p.onResizeKey}
+                onBlur={p.onResizeBlur}
             />
         </div>
     );
