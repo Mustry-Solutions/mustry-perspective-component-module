@@ -196,6 +196,21 @@ export function containingAnchorMs(ms: number, zoom: TimelineZoom, timeZone: str
 }
 
 /**
+ * The anchor after config.timezone changes (a bound zone usually arrives just
+ * after mount). The old anchor is a midnight in the OLD zone, so keeping it would
+ * pair it with an end computed in the new one: Brussels to UTC left a one-hour
+ * "day". Re-anchor on the window holding the same moment instead: now, when the
+ * old window showed it, else the middle of the old window.
+ */
+export function anchorAfterZoneChange(
+    prevAnchorMs: number, zoom: TimelineZoom, prevTimeZone: string, timeZone: string, nowMs: number
+): number {
+    const old = windowFor(prevAnchorMs, zoom, prevTimeZone);
+    const focusMs = nowMs >= old.startMs && nowMs < old.endMs ? nowMs : old.startMs + (old.endMs - old.startMs) / 2;
+    return containingAnchorMs(focusMs, zoom, timeZone);
+}
+
+/**
  * The moment a zoom change must keep in view, measured on the OLD window and
  * scroll position: "now" if the now-line was actually on screen (inside the
  * window isn't enough, the window is wider than the viewport), else the moment at

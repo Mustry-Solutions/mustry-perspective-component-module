@@ -18,7 +18,7 @@ import { DocDismiss } from '../../shared/dismiss';
 import { MiniMonthNav, MiniNav } from '../../shared/MiniMonthNav';
 import { addMonths, startOfMonth, weekStartDay } from '../../shared/dateUtils';
 import {
-    BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom,
+    BarLayout, CustomWindow, RowItem, TickRows, TimeScale, TimelineEvent, TimelineNav, TimelineZoom, anchorAfterZoneChange,
     buildRows, buildTicks, containingAnchorMs, containingCustomWindow, customScale, customTickStepMs, customWindow,
     customWindowOnDate, customZoom, focusScrollLeft, followAnchorMs, followDisarms, followScrollLeft, followTickMs,
     KeptFocus, barMinPx, isConfiguredEmpty, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs,
@@ -164,7 +164,7 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         return { focusMs, onNow: focusMs === nowMs };
     }
 
-    componentDidUpdate(prevProps: ComponentProps<TimelineProps>, _prevState: ResourceTimelineState, rezoom?: RezoomSnapshot | null): void {
+    componentDidUpdate(prevProps: ComponentProps<TimelineProps>, prevState: ResourceTimelineState, rezoom?: RezoomSnapshot | null): void {
         this.syncOutput();
         // Skipped mid-drag so a gesture's re-renders can't start animating anything;
         // fresh ids are picked up on the post-commit update instead.
@@ -191,6 +191,16 @@ export class ResourceTimeline extends Component<ComponentProps<TimelineProps>, R
         }
         if (rezoom) {
             this.rezoomTo(rezoom);
+        } else if (!this.props.props.followNow && !custom
+                && prevProps.props.timezone !== this.props.props.timezone
+                && prevProps.props.zoom === this.props.props.zoom) {
+            // Follow-now re-anchors above; a zoom change re-anchors in rezoomTo.
+            const anchorMs = anchorAfterZoneChange(
+                prevState.anchorMs, this.props.props.zoom, prevProps.props.timezone, this.props.props.timezone, Date.now());
+            if (anchorMs !== this.state.anchorMs) {
+                this.keptFocus = null;
+                this.setState({ anchorMs }, () => this.scrollNowIntoView());
+            }
         }
         if (this.scrollNowOnUpdate && custom
                 && (!prevCustom || prevCustom.startMs !== custom.startMs || prevCustom.endMs !== custom.endMs)) {

@@ -1,7 +1,7 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_BAR_PX_READONLY, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent,
     CUSTOM_WINDOW_PX, MAX_CUSTOM_SPAN_MS, containingCustomWindow, customScale, customTickStepMs, customWindow,
-    customWindowOnDate, customZoom, pageCustomWindow,
+    anchorAfterZoneChange, customWindowOnDate, customZoom, pageCustomWindow,
     ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, focusScrollLeft, followAnchorMs, followDisarms, followTickMs,
     isConfiguredEmpty, isSubDayZoom, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
     resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
@@ -996,5 +996,25 @@ describe('custom window (state.windowStart / windowEnd)', () => {
         expect(followTickMs(0, 'second', 45000)).toBe(11250);
         expect(followTickMs(5, 'hour', 8 * H)).toBe(5000);
         expect(followTickMs(0, 'week', 3 * 24 * H)).toBe(60000);
+    });
+});
+
+describe('anchorAfterZoneChange (a bound config.timezone arriving after mount)', () => {
+    const BX = 'Europe/Brussels';
+    const now = Date.UTC(2026, 10, 17, 14, 0);   // Tue Nov 17 14:00Z, 15:00 in Brussels
+    it('re-anchors today on the new zone\'s midnight when the old window showed now', () => {
+        const bxMidnight = Date.UTC(2026, 10, 16, 23);   // Nov 17 00:00 in Brussels
+        const a = anchorAfterZoneChange(bxMidnight, 'day', BX, 'UTC', now);
+        expect(new Date(a).toISOString()).toBe('2026-11-17T00:00:00.000Z');
+        expect(windowFor(a, 'day', 'UTC').endMs - a).toBe(24 * 3600000);   // a whole day, not one hour
+    });
+    it('keeps a day that is not today on the same calendar day', () => {
+        const bxMidnight = Date.UTC(2026, 10, 19, 23);   // Nov 20 00:00 in Brussels
+        expect(new Date(anchorAfterZoneChange(bxMidnight, 'day', BX, 'Asia/Tokyo', now)).toISOString())
+            .toBe('2026-11-19T15:00:00.000Z');           // Nov 20 00:00 in Tokyo
+    });
+    it('keeps the current stride at a sub-day zoom', () => {
+        const a = anchorAfterZoneChange(containingAnchorMs(now, 'hour', BX), 'hour', BX, 'America/New_York', now);
+        expect(a).toBe(containingAnchorMs(now, 'hour', 'America/New_York'));
     });
 });
