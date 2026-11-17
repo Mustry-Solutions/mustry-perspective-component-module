@@ -534,6 +534,32 @@ export function msToWallInput(ms: number, timeZone: string): string {
     return `${base}:${pad2(w.s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
 }
 
+/**
+ * An event time as a datetime-local value in `timeZone`, or null when it doesn't
+ * parse. A naive wall string keeps the wall time written in it: a time a DST gap
+ * skips (02:30 on New York's spring-forward day) stays 02:30, as the calendar's
+ * editor shows it, instead of the 03:30 it resolves to, so saving the editor
+ * unchanged writes back what was there. An instant (offset/Z/epoch) is read in
+ * the zone, as msToWallInput does.
+ */
+export function wallInputOf(raw: string, timeZone: string): string | null {
+    const ms = toEpochMs(raw, timeZone);
+    if (ms === null) {
+        return null;
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(String(raw));
+    if (!m) {
+        return msToWallInput(ms, timeZone);
+    }
+    const base = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
+    const s = +(m[6] || 0);
+    const frac = m[7] ? Math.round(+`0.${m[7]}` * 1000) : 0;
+    if (!s && !frac) {
+        return base;
+    }
+    return `${base}:${pad2(s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
+}
+
 /** The `step` a datetime-local input needs to ACCEPT the precision in `value`
  *  (a browser silently rounds a value finer than its step to it, and only shows
  *  the seconds/ms field when the step asks for one). '' = leave it unset. */
