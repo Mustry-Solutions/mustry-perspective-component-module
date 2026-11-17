@@ -466,6 +466,13 @@ describe('editing an occurrence on a DST gap day (#290)', () => {
     it('a "This event" save on the gap day is refused, as in the calendar: both ends are 03:30', () => {
         expect(tlEditorProblem(tlEditorForEvent(gapOcc, NY, lookup), NY, lookup)).toBe('range');
     });
+    it('a one-off event in the gap shows as written and is refused the same way', () => {
+        const ev: TimelineEvent = { id: 'o', resourceId: 'crew-a', title: 'O', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00' };
+        const e = tlEditorForEvent(ev, NY);
+        expect(e).toMatchObject({ start: '2026-03-08T02:30', end: '2026-03-08T03:30' });
+        expect(tlEditorProblem(e, NY)).toBe('range');
+        expect(tlEditorProblem({ ...e, end: '2026-03-08T04:30' }, NY)).toBeNull();   // moving a time gets out
+    });
     it('an instant is still read in the display zone, with its precision kept', () => {
         const ev: TimelineEvent = { id: 'i', resourceId: 'crew-a', title: 'I', start: '2026-07-03T13:00:07.250Z', end: '2026-07-03T14:00:00Z' };
         expect(tlEditorForEvent(ev, NY)).toMatchObject({ start: '2026-07-03T09:00:07.250', end: '2026-07-03T10:00' });

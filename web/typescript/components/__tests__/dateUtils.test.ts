@@ -424,4 +424,11 @@ describe('wallInputOf (#290)', () => {
     it('is null for a value that does not parse', () => {
         expect(wallInputOf('soon', 'UTC')).toBeNull();
     });
+    it('reads a wall time no clock shows as the instant it rolls over to', () => {
+        expect(wallInputOf('2026-07-03T24:00:00', 'UTC')).toBe('2026-07-04T00:00');
+        expect(wallInputOf('2026-02-30T09:00', 'UTC')).toBe('2026-03-02T09:00');
+        expect(wallInputOf('2026-07-03T09:00:60', 'UTC')).toBe('2026-07-03T09:01');
+        expect(wallInputOf('2026-07-03T09:61', 'UTC')).toBe('2026-07-03T10:01');
+        expect(wallInputOf('2028-02-29T09:00', 'UTC')).toBe('2028-02-29T09:00');   // a leap day exists
+    });
 });
