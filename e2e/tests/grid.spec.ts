@@ -221,3 +221,57 @@ test('grid: cell mode fires onCellEdit exactly once per committed edit', async (
     ]);
     await expect(runs).toHaveText('onCellEdit runs: 3');
 });
+
+// #91: the resize handle sits beside the header button, as a focusable separator.
+const headCell = (page: Page, name: string) =>
+    page.locator('.mustry-dg-head-cell').filter({ hasText: new RegExp(`^${name}`) });
+const cellWidth = async (page: Page, name: string): Promise<number> =>
+    Math.round((await headCell(page, name).boundingBox())!.width);
+
+test('grid: a column resizes from the keyboard (#91)', async ({ page }) => {
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    const qty = page.getByRole('button', { name: 'Qty', exact: true });
+    await qty.focus();
+    await page.keyboard.press('Tab');
+    const handle = page.getByRole('separator', { name: 'Resize column Qty' });
+    await expect(handle).toBeFocused();
+    const w0 = await cellWidth(page, 'Qty');
+    await expect(handle).toHaveAttribute('aria-valuenow', String(w0));
+
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => cellWidth(page, 'Qty')).toBe(w0 + 10);
+    await page.keyboard.press('Shift+ArrowRight');
+    await expect.poll(() => cellWidth(page, 'Qty')).toBe(w0 + 60);
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => cellWidth(page, 'Qty')).toBe(w0 + 50);
+    await expect(handle).toHaveAttribute('aria-valuenow', String(w0 + 50));
+    await page.keyboard.press('Home');
+    await expect.poll(() => cellWidth(page, 'Qty')).toBe(40);
+    // The keys resized the column, not sorted it or moved the body's cell focus.
+    await expect(qty).not.toHaveAttribute('aria-sort', /.+/);
+    await expect(page.locator('.mustry-dg-cell--focus')).toHaveCount(0);
+    await expect(handle).toBeFocused();
+});
+
+test('grid: a pointer resize still works and the next header click still sorts (#91)', async ({ page }) => {
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    const qty = page.getByRole('button', { name: 'Qty', exact: true });
+    const w0 = await cellWidth(page, 'Qty');
+    const box = (await headCell(page, 'Qty').locator('.mustry-dg-resize').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(() => cellWidth(page, 'Qty')).toBeGreaterThan(w0 + 40);
+    await expect(qty).not.toHaveAttribute('aria-sort', /.+/);
+    // The resize must not leave a flag behind that swallows this click.
+    await qty.click();
+    await expect(qty).toHaveAttribute('aria-sort', 'ascending');
+});
+
+test('grid: clicking the resize handle does not sort (#91)', async ({ page }) => {
+    await openRoute(page, '/grid', '.mustry-datagrid');
+    const qty = page.getByRole('button', { name: 'Qty', exact: true });
+    await headCell(page, 'Qty').locator('.mustry-dg-resize').click();
+    await expect(qty).not.toHaveAttribute('aria-sort', /.+/);
+});

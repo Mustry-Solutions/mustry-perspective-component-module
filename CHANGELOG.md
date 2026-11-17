@@ -144,6 +144,12 @@ and all three are kept as they were:
 - Calendar: a `config.timezone` the browser doesn't recognize, such as a
   Java-only gateway id like `GMT+01:00`, now reads browser-local in every view.
   Week and day view used to fail to render (#292).
+- Data Grid: columns can be resized from the keyboard. Each header's resize
+  handle is now a focusable separator beside the sort button: Tab to it, then
+  ←/→ resize by 10 px (50 with Shift) and Home goes to the minimum. Its name
+  comes from the new label `resizeColumn`, in all seven locale packs (#91).
+- Data Grid: after resizing a column with the mouse, the next click on a header
+  no longer gets swallowed instead of sorting.
 - Sales demo: the Schedule board, Maintenance calendar and Quality picker now
   read the gateway's zone, the same clock that seeds the demo and dates an
   escalated work order. A browser on another date, such as a presenter near

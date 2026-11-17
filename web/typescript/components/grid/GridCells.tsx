@@ -3,7 +3,7 @@
 // node). Pure presentation — edit state, focus, pending tracking and gestures
 // live in DataGrid and arrive precomputed.
 import * as React from 'react';
-import { GridSort, LaidColumn } from './gridLogic';
+import { GridSort, LaidColumn, MAX_KEY_COL_PX, MIN_COL_PX } from './gridLogic';
 
 interface GridHeadCellProps {
     lc: LaidColumn;
@@ -12,6 +12,8 @@ interface GridHeadCellProps {
     onSort: () => void;
     onDragStart: (e: React.PointerEvent) => void;
     onResizeStart: (e: React.PointerEvent) => void;
+    onResizeKey: (e: React.KeyboardEvent) => void;
+    resizeLabel: string;
 }
 
 export function GridHeadCell(p: GridHeadCellProps): React.ReactElement {
@@ -20,21 +22,39 @@ export function GridHeadCell(p: GridHeadCellProps): React.ReactElement {
     const dir = p.sort.field === col.field ? p.sort.dir : '';
     const dragCls = p.dragState === 'dragging' ? ' mustry-dg-head-cell--dragging'
         : p.dragState === 'dragover' ? ' mustry-dg-head-cell--dragover' : '';
+    // The cell is a wrapper: the sort/drag button and, BESIDE it, the resize
+    // handle. The handle is a focusable separator (arrow keys resize), and
+    // interactive content can't nest inside a button (#91).
     return (
-        <button
-            type="button"
+        <div
             data-field={col.field}
             className={`mustry-dg-cell mustry-dg-head-cell mustry-dg-cell--${col.align}${pinned ? ' mustry-dg-cell--pinned' : ''}${dragCls}`}
             style={{ width: p.lc.width, minWidth: p.lc.width, ...(pinned ? { left: p.lc.left } : null) }}
-            title={col.header || col.field}
-            aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}
-            onClick={p.onSort}
-            onPointerDown={p.onDragStart}
         >
-            {col.header || col.field}
-            {dir && <span className="mustry-dg-sort-arrow" aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>}
-            <span className="mustry-dg-resize" onPointerDown={p.onResizeStart} onClick={(e) => e.stopPropagation()} />
-        </button>
+            <button
+                type="button"
+                className="mustry-dg-head-btn"
+                title={col.header || col.field}
+                aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}
+                onClick={p.onSort}
+                onPointerDown={p.onDragStart}
+            >
+                {col.header || col.field}
+                {dir && <span className="mustry-dg-sort-arrow" aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>}
+            </button>
+            <span
+                className="mustry-dg-resize"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={p.resizeLabel}
+                aria-valuenow={p.lc.width}
+                aria-valuemin={MIN_COL_PX}
+                aria-valuemax={Math.max(p.lc.width, MAX_KEY_COL_PX)}
+                tabIndex={0}
+                onPointerDown={p.onResizeStart}
+                onKeyDown={p.onResizeKey}
+            />
+        </div>
     );
 }
 

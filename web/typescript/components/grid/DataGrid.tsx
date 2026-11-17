@@ -13,11 +13,12 @@ import { DocDismiss } from '../../shared/dismiss';
 import {
     CellPos, ColumnLayout, EditError, GridColumn, GridSort, LaidColumn, MIN_COL_PX, RowRange,
     aggregateValue, batchPayload, cellText, columnLayout, editDraft, editErrorText, effectiveColumns,
-    formatCell, gridIsEmpty, gridToCsv, locateCell, matchStyle, nextCell, nextSelection, nextSort,
+    formatCell, gridIsEmpty, gridToCsv, keyResizeWidth, locateCell, matchStyle, nextCell, nextSelection, nextSort,
     parsePasteMatrix, pastePlan, pendingKey, quickFilterRows, reorderFields, rowWithPending,
     settlePending, sortRows, unusableIdWarning, unusableRowIds, validateCell, visibleRowRange
 } from './gridLogic';
 import { GridProps, mapGridProps } from './gridProps';
+import { fillLabel } from '../../shared/labels/common';
 import { GridCell, GridHeadCell } from './GridCells';
 import { GridToolbar } from './GridToolbar';
 
@@ -570,16 +571,35 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
             el.removeEventListener('pointercancel', up);
             const rz = this.state.resize;
             if (rz) {
-                const widths = { ...this.props.props.columnLayout.widths, [rz.field]: rz.width };
-                this.props.store.props.write('state.columnLayout.widths',
-                    Object.keys(widths).map((f) => ({ field: f, width: widths[f] })));
+                this.writeWidth(rz.field, rz.width);
             }
-            this.suppressSort = true;
+            // No suppressSort: the handle sits beside the header button, so this
+            // gesture's click never reaches the sort.
             this.setState({ resize: null });
         };
         el.addEventListener('pointermove', move);
         el.addEventListener('pointerup', up);
         el.addEventListener('pointercancel', up);
+    }
+
+    /** Keyboard resize on a column's handle (#91): writes the width at once. */
+    private resizeByKey(col: GridColumn, e: React.KeyboardEvent): void {
+        const w = keyResizeWidth(col.width, e.key, { shift: e.shiftKey, alt: e.altKey, ctrl: e.ctrlKey, meta: e.metaKey });
+        if (w === null) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();   // not a cell-navigation key for the grid body
+        if (w !== col.width) {
+            this.writeWidth(col.field, w);
+        }
+    }
+
+    /** Persist one column's width into the two-way state.columnLayout.widths. */
+    private writeWidth(field: string, width: number): void {
+        const widths = { ...this.props.props.columnLayout.widths, [field]: width };
+        this.props.store.props.write('state.columnLayout.widths',
+            Object.keys(widths).map((f) => ({ field: f, width: widths[f] })));
     }
 
     private startHeaderDrag(col: GridColumn, e: React.PointerEvent): void {
@@ -695,6 +715,8 @@ export class DataGrid extends Component<ComponentProps<GridProps>, DataGridState
                 onSort={() => this.setSort(col.field)}
                 onDragStart={(e) => this.startHeaderDrag(col, e)}
                 onResizeStart={(e) => this.startResize(col, e)}
+                onResizeKey={(e) => this.resizeByKey(col, e)}
+                resizeLabel={fillLabel(this.props.props.labels.resizeColumn, { column: col.header || col.field })}
             />
         );
     }

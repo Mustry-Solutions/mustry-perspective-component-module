@@ -237,6 +237,10 @@
             "discard": {
               "type": "string",
               "description": "Batch mode: discard button tooltip."
+            },
+            "resizeColumn": {
+              "type": "string",
+              "description": "Accessible name of a column's resize handle; {column} is the column header."
             }
           }
         },

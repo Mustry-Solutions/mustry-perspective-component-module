@@ -40,6 +40,28 @@ export interface GridColumn {
 }
 
 export const MIN_COL_PX = 40;
+/** The widest a column gets from the keyboard; a pointer drag has no limit. */
+export const MAX_KEY_COL_PX = 2000;
+
+/** The width a key on a column's resize handle asks for, or null when the key
+ *  isn't a resize key. Left/Right step 10 px (50 with Shift); Home goes to the
+ *  minimum. Modified keys (Alt, Ctrl, Cmd) are left to the browser. */
+export function keyResizeWidth(
+    width: number, key: string, mods: { shift: boolean; alt: boolean; ctrl: boolean; meta: boolean }
+): number | null {
+    if (mods.alt || mods.ctrl || mods.meta) {
+        return null;
+    }
+    const step = mods.shift ? 50 : 10;
+    const next = key === 'ArrowRight' ? width + step
+        : key === 'ArrowLeft' ? width - step
+            : key === 'Home' ? MIN_COL_PX
+                : null;
+    if (next === null) {
+        return null;
+    }
+    return Math.min(Math.max(width, MAX_KEY_COL_PX), Math.max(MIN_COL_PX, next));
+}
 export const ROW_H_MIN = 20;
 export const ROW_H_MAX = 80;
 
