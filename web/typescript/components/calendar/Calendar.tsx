@@ -759,6 +759,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
      *  column's empty time does. The editor opens on the same default 09:00-10:00 slot
      *  (commitGesture 'createEditor'); otherwise onDateClick carries the date alone. */
     private onColumnKey = (iso: string): void => {
+        this.hideHover();   // a pointer press on empty time hides it too (startCreate)
         this.closeDayPop();
         this.closeMini();
         if (this.useEditor()) {

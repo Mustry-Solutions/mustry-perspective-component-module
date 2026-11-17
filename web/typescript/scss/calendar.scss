@@ -559,9 +559,13 @@
         }
     }
 
+    // Out of the flow, so showing it on focus moves no text and can't wrap the head.
     .mustry-cal-tg-daycreate-plus {
         display: none;
-        margin-left: 4px;
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
         color: var(--cal-accent);
     }
 

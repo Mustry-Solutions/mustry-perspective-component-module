@@ -456,10 +456,12 @@ test('calendar: the week column buttons are one Tab stop, and Left/Right move it
 });
 
 test('calendar: a week column button names the date, or says it creates with the editor (#250)', async ({ page }) => {
+    // The name starts with the head's visible text, then the full date (WCAG 2.5.3).
     await openPinnedView(page, DAY_KEYS, 'Week');
-    await expect(page.getByRole('button', { name: TODAY_LONG, exact: true })).toHaveCount(1);
+    const shown = (await page.locator(`${colButton}[data-head-day="${TODAY}"]`).innerText()).trim();
+    await expect(page.getByRole('button', { name: `${shown}, ${TODAY_LONG}`, exact: true })).toHaveCount(1);
     await openPinnedView(page, WITH_EDITOR, 'Week');
-    await expect(page.getByRole('button', { name: `New event on ${TODAY_LONG}`, exact: true })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: `${shown}, New event on ${TODAY_LONG}`, exact: true })).toHaveCount(1);
 });
 
 test('calendar: with the editor, a week column key opens a 09:00-10:00 slot and focus comes back (#250)', async ({ page }) => {
@@ -495,7 +497,7 @@ test('calendar: a pointer on a week day head still does nothing (#250)', async (
 
 // --- #249: drags on a DST gap day, in a real browser --------------------------------
 // New York skips 02:00-03:00 on 2026-03-08, so 02:30-03:00 is really 03:30-03:00.
-const GAP_NOW = new Date('2026-03-08T17:00:00Z');   // noon in New York
+const GAP_NOW = new Date('2026-03-08T17:00:00Z');   // 13:00 EDT in New York
 const HOUR_PX = 56;                                  // hourHeightPx(15)
 
 async function openGap(page: Page) {
@@ -552,4 +554,21 @@ test('calendar: a resize the DST gap reverses fires no onChange; a normal one do
     await expect(gapLog(page)).toHaveText('log: ');
     await drag(page, from, from.y - 1.5 * HOUR_PX);   // start -> 01:30 EST
     await expect(gapLog(page)).toHaveText('log: resize resizeProbe 2026-03-08T01:30:00-05:00 2026-03-08T03:30:00-04:00;');
+});
+
+test('calendar: focusing a week column button moves no text and keeps the head row height (#250)', async ({ page }) => {
+    await openPinnedView(page, WITH_EDITOR, 'Week');
+    const head = page.locator('.mustry-cal-tg-head');
+    const label = page.locator(`${colButton}[data-head-day="${TODAY}"]`);
+    // Where the date text itself sits: the button is full width, so its box can't tell.
+    const textX = () => label.evaluate((el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el.firstChild as Node);
+        return r.getBoundingClientRect().x;
+    });
+    const before = { head: (await head.boundingBox())!.height, text: await textX() };
+    await label.focus();
+    await expect(label.locator('.mustry-cal-tg-daycreate-plus')).toBeVisible();
+    expect((await head.boundingBox())!.height).toBeCloseTo(before.head, 1);
+    expect(await textX()).toBeCloseTo(before.text, 1);
 });

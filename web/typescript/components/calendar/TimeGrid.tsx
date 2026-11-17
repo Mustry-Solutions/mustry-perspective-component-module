@@ -110,6 +110,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                 <div className="mustry-cal-tg-gutter-cell" />
                 {cols.map((c) => {
                     const fullDate = fullFmt.format(c.date);
+                    const shown = headFmt.format(c.date);
                     // The keyboard path to a plain click on the column's empty time (#250). It
                     // carries the day head's text, and CSS makes it pointer-transparent, so the
                     // head still looks and behaves the same for a pointer.
@@ -118,7 +119,9 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                             <button
                                 type="button" className="mustry-cal-tg-daycreate" data-head-day={c.iso}
                                 tabIndex={c.iso === tabStop ? 0 : -1}
-                                aria-label={opensEditor ? labels.newEventOn.replace('{date}', fullDate) : fullDate}
+                                // The name starts with the text on screen ("17 Wed"), so a voice-
+                                // control user can say what they see (WCAG 2.5.3).
+                                aria-label={`${shown}, ${opensEditor ? labels.newEventOn.replace('{date}', fullDate) : fullDate}`}
                                 onFocus={() => onDayStop(c.iso)}
                                 onClick={() => onColumnKey(c.iso)}
                                 onKeyDown={(e) => {
@@ -131,7 +134,7 @@ export function TimeGrid(props: TimeGridProps): React.ReactElement {
                                     });
                                 }}
                             >
-                                {headFmt.format(c.date)}
+                                {shown}
                                 {opensEditor && <span className="mustry-cal-tg-daycreate-plus" aria-hidden="true">+</span>}
                             </button>
                         </div>
