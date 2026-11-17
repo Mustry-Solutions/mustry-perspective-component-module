@@ -56,8 +56,14 @@ tags, named queries or historian and this is your project."
 
 ## How it works (for maintainers)
 
-- **Data seeds itself relative to *today*** on session start, in the browser's
-  timezone, so the demo never goes stale. The seeder is a property-change
+- **Data seeds itself relative to *today*** on session start, in the gateway's
+  timezone (`ops/demo.sh` pins that to the host's), so the demo never goes
+  stale. The demo runs on one plant clock: the Schedule board, the Maintenance
+  calendar and the Quality picker bind `config.timezone` to
+  `session.props.gateway.timezone.id`, and the Schedule and Holiday managers
+  read the gateway's zone by default, so a presenter whose laptop is in another
+  zone, or on another date near midnight, still sees the seeded data and
+  escalated work orders on the right day. The seeder is a property-change
   script on a hidden label in the docked `Nav` view, keyed on
   `session.custom.demo.seeded` (declared in the project's `session-props`).
 - All page views bind their `data.*` to `session.custom.demo.*`; the

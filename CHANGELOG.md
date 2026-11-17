@@ -131,6 +131,19 @@ and all three are kept as they were:
   browser "Today" in a Brussels picker started at 01:00 on 2026-03-08, and a
   Brussels browser showed a New York 02:30 as 03:30 on 2026-03-29. It now keeps
   them as plain dates and times in `config.timezone` (#247).
+- Resource Timeline: changing `config.timezone` after the timeline is on screen,
+  such as a zone binding that arrives just after mount, left the day window
+  with a start from the old zone and an end from the new one: from Brussels to
+  UTC, a one-hour "day" with no bars. It now re-anchors on the window holding
+  the same moment (today, if it was showing today).
+- Schedule Manager: the docs now say that `output.isActiveNow`, the active dots
+  and the preview strip read the weekly hours only. Holidays aren't evaluated,
+  so a schedule that observes holidays reads active during its hours on a
+  holiday, where Ignition treats it as inactive (#256).
+- Sales demo: the Schedule board, Maintenance calendar and Quality picker now
+  read the gateway's zone, the same clock that seeds the demo and dates an
+  escalated work order. A browser on another date, such as a presenter near
+  midnight, saw the board on the wrong day (#259).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

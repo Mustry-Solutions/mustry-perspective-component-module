@@ -82,14 +82,24 @@ test('demo handover: editor and display instance share the seeded note', async (
     await expect(page.locator('.mustry-kbd--numpad').first()).toBeVisible();
 });
 
-test('demo triage: escalate creates a WO on the schedule board (cross-component)', async ({ page }) => {
-    await openDemo(page, '/triage', '.mustry-branching');
-    await page.getByRole('button', { name: 'Escalate → create work order' }).click();
-    await expect(page.getByText('created - now on the Schedule board', { exact: false })).toBeVisible();
-    // Same session, other page: the WO must be on the timeline's Maintenance row.
-    await openDemo(page, '/schedule', '.mustry-timeline');
-    await expect(page.getByText('Downtime escalation', { exact: false }).first()).toBeVisible();
-});
+// The escalate script dates the WO on the gateway's clock, so the board must show
+// the gateway's day, whatever the browser's (#259). The browser runs once at
+// UTC+14 and once at UTC-11: at any hour, one of them is on another date than a
+// UTC gateway, so a board on browser time fails one of the two.
+for (const timezoneId of ['Pacific/Kiritimati', 'Pacific/Pago_Pago']) {
+    test.describe(`demo triage from a ${timezoneId} browser`, () => {
+        test.use({ timezoneId });
+
+        test('demo triage: escalate creates a WO on the schedule board (cross-component)', async ({ page }) => {
+            await openDemo(page, '/triage', '.mustry-branching');
+            await page.getByRole('button', { name: 'Escalate → create work order' }).click();
+            await expect(page.getByText('created - now on the Schedule board', { exact: false })).toBeVisible();
+            // Same session, other page: the WO must be on the timeline's Maintenance row.
+            await openDemo(page, '/schedule', '.mustry-timeline');
+            await expect(page.getByText('Downtime escalation', { exact: false }).first()).toBeVisible();
+        });
+    });
+}
 
 test('demo nav: language switcher relocalizes the components', async ({ page }) => {
     await openDemo(page, '/maintenance', '.mustry-calendar');
