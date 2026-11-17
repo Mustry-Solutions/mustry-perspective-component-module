@@ -4,13 +4,14 @@ import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { intlFormat } from '../../shared/dateUtils';
 import { CalLabels, Category, Editor } from './calendarTypes';
-import { editorProblem } from './calendarEditorLogic';
+import { BaseEventLookup, editorProblem } from './calendarEditorLogic';
 import { UNCATEGORIZED_COLOR } from '../../shared/eventStyle';
 
 interface EventEditorProps {
     editor: Editor;
     categories: Category[];
     timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
+    baseEventById: BaseEventLookup;   // a whole-series edit is checked on the series' own date
     locale: string;     // for the weekly weekday initials
     labels: CalLabels;
     onUpdate: (patch: Partial<Editor>) => void;
@@ -21,10 +22,10 @@ interface EventEditorProps {
 }
 
 export function EventEditor(props: EventEditorProps): React.ReactElement {
-    const { editor: ed, categories, timezone, locale, labels, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
+    const { editor: ed, categories, timezone, baseEventById, locale, labels, onUpdate, onToggleAllDay, onCancel, onSave, onDelete } = props;
     const dtType = ed.allDay ? 'date' : 'datetime-local';
     const isEdit = ed.id !== null;
-    const problem = editorProblem(ed, timezone);   // non-null blocks Save
+    const problem = editorProblem(ed, timezone, baseEventById);   // non-null blocks Save
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
 

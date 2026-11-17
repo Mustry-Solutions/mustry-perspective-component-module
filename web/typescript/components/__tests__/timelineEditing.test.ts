@@ -396,3 +396,37 @@ describe('recurring occurrences (detach / series scope, calendar parity)', () =>
         expect(spec.fromResourceId).toBe('crew-a');
     });
 });
+
+describe('whole-series edits are checked where they are written (#248)', () => {
+    const NY = 'America/New_York';
+    const series = (start: string, end: string): TimelineEvent =>
+        ({ id: 's', resourceId: 'crew-a', title: 'S', start, end, rrule: { freq: 'daily' } });
+    const occ = (date: string, start: string, end: string): TimelineEvent =>
+        ({ id: `s::${date}`, resourceId: 'crew-a', title: 'S', start, end, __seriesId: 's', __occDate: date });
+    const allEvents = (base: TimelineEvent, o: TimelineEvent, start: string, end: string) =>
+        ({ ...tlEditorForEvent(o, NY, () => base), scope: 'series' as const, start, end });
+
+    it('an overnight edit stays overnight on the series date', () => {
+        const base = series('2026-03-02T22:00:00', '2026-03-02T23:00:00');
+        const e = allEvents(base, occ('2026-03-15', '2026-03-15T22:00:00', '2026-03-15T23:00:00'), '2026-03-15T22:00', '2026-03-16T02:00');
+        expect(tlEditorProblem(e, NY, () => base)).toBeNull();
+        expect(tlSaveSpec(e, NY, () => base).event).toMatchObject({
+            start: '2026-03-02T22:00:00-05:00', end: '2026-03-03T02:00:00-05:00'
+        });
+    });
+    it('blocks an edit that a DST gap on the series date would reverse', () => {
+        const base = series('2026-03-08T09:00:00', '2026-03-08T10:00:00');
+        const e = allEvents(base, occ('2026-03-15', '2026-03-15T09:00:00', '2026-03-15T10:00:00'), '2026-03-15T02:30', '2026-03-15T03:00');
+        expect(tlEditorProblem(e, NY)).toBeNull();
+        expect(tlEditorProblem(e, NY, () => base)).toBe('range');
+    });
+    it('allows an edit opened on a gap day when the series date has no gap', () => {
+        const base = series('2026-03-01T09:00:00', '2026-03-01T10:00:00');
+        const e = allEvents(base, occ('2026-03-08', '2026-03-08T09:00:00', '2026-03-08T10:00:00'), '2026-03-08T02:30', '2026-03-08T03:00');
+        expect(tlEditorProblem(e, NY)).toBe('range');
+        expect(tlEditorProblem(e, NY, () => base)).toBeNull();
+        expect(tlSaveSpec(e, NY, () => base).event).toMatchObject({
+            start: '2026-03-01T02:30:00-05:00', end: '2026-03-01T03:00:00-05:00'
+        });
+    });
+});
