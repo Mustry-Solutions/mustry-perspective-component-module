@@ -181,6 +181,9 @@ and all three are kept as they were:
   comes from the new label `resizeColumn`, in all seven locale packs (#91).
 - Data Grid: after resizing a column with the mouse, the next click on a header
   no longer gets swallowed instead of sorting.
+- Data Grid: pinned columns scrolled away with the rest of the grid instead of
+  staying put. A later style rule that anchors the cell editor overrode their
+  sticky position (#296).
 - Sales demo: the Schedule board, Maintenance calendar and Quality picker now
   read the gateway's zone, the same clock that seeds the demo and dates an
   escalated work order. A browser on another date, such as a presenter near

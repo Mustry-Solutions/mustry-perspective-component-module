@@ -296,8 +296,10 @@
 }
 
 // Frozen columns: sticky against the shared scroll container; rows and header
-// inherit their background so scrolled content passes underneath.
-.mustry-dg-cell--pinned {
+// inherit their background so scrolled content passes underneath. Two classes so
+// the later `.mustry-dg-cell { position: relative }` can't override it (#296);
+// sticky still anchors the pending dot and the editor.
+.mustry-dg-cell.mustry-dg-cell--pinned {
     position: sticky;
     z-index: 1;
     background: inherit;
