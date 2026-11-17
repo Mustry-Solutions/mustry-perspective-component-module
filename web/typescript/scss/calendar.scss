@@ -526,6 +526,7 @@
     }
 
     .mustry-cal-tg-dayhead {
+        position: relative;   // anchors the focus ring of .mustry-cal-tg-daycreate
         padding: 5px 6px;
         text-align: center;
         font-size: 12px;
@@ -533,6 +534,43 @@
         color: var(--cal-muted);
         border-left: 1px solid var(--cal-line);
         border-bottom: 1px solid var(--cal-border);
+    }
+
+    // Keyboard path to a plain click on the column's empty time (#250). It carries the
+    // head's text and looks like it; pointer-transparent, so a pointer sees the head as
+    // before. Focused, it rings the whole head and shows "+" when it opens the editor.
+    .mustry-cal-tg-daycreate {
+        all: unset;
+        display: block;
+        width: 100%;
+        text-align: inherit;
+        pointer-events: none;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+        }
+
+        // :focus, not :focus-visible, as in month view: a pointer never focuses it.
+        &:focus::after {
+            outline: 2px solid var(--cal-accent);
+            outline-offset: -2px;
+        }
+    }
+
+    // Out of the flow, so showing it on focus moves no text and can't wrap the head.
+    .mustry-cal-tg-daycreate-plus {
+        display: none;
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--cal-accent);
+    }
+
+    .mustry-cal-tg-daycreate:focus .mustry-cal-tg-daycreate-plus {
+        display: inline;
     }
 
     .mustry-cal-tg-dayhead--today {

@@ -20,6 +20,10 @@
    "viewPath": "CalendarDayKeys",
    "viewParams": {}
   },
+  "/calendar-gap-drag": {
+   "viewPath": "CalendarGapDrag",
+   "viewParams": {}
+  },
   "/grid": {
    "viewPath": "GridDemo",
    "viewParams": {}
