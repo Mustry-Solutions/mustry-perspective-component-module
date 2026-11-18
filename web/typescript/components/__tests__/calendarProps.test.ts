@@ -8,6 +8,7 @@ describe('mapCalendarProps (calendar reducer)', () => {
         expect(p.showToolbar).toBe(true);
         expect(p.showMiniNav).toBe(true);
         expect(p.showExport).toBe(false);
+        expect(p.showExportIcs).toBe(false);
         expect(p.showLegend).toBe(true);
         expect(p.editable).toBe(false);
         expect(p.selectable).toBe(false);

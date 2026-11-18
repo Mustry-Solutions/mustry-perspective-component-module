@@ -17,6 +17,7 @@ export interface CalLabels {
     today: string;
     followNow: string;            // toolbar live-follow toggle ('Live')
     exportCsv: string;            // export button tooltip / accessible label
+    exportIcs: string;            // .ics export button tooltip / accessible label
     previous: string; next: string;   // nav arrows (accessible labels)
     // grids, list, popovers
     allDayTime: string;           // the 'all-day' time-cell/gutter label
@@ -53,6 +54,7 @@ export const EN_CALENDAR_LABELS: CalLabels = {
     today: 'Today',
     followNow: 'Live',
     exportCsv: 'Export events to CSV',
+    exportIcs: 'Export events to iCalendar (.ics)',
     previous: 'Previous', next: 'Next',
     allDayTime: 'all-day',
     statusTentative: 'Tentative', statusCancelled: 'Cancelled', statusDone: 'Done',
@@ -87,6 +89,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: "Aujourd'hui",
         followNow: 'En direct',
         exportCsv: 'Exporter les événements en CSV',
+        exportIcs: 'Exporter les événements en iCalendar (.ics)',
         previous: 'Précédent', next: 'Suivant',
         allDayTime: 'journée',
         statusTentative: 'Provisoire', statusCancelled: 'Annulé', statusDone: 'Terminé',
@@ -119,6 +122,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: 'Heute',
         followNow: 'Live',
         exportCsv: 'Ereignisse als CSV exportieren',
+        exportIcs: 'Ereignisse als iCalendar (.ics) exportieren',
         previous: 'Zurück', next: 'Weiter',
         allDayTime: 'ganztägig',
         statusTentative: 'Vorläufig', statusCancelled: 'Abgesagt', statusDone: 'Erledigt',
@@ -151,6 +155,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: 'Hoy',
         followNow: 'En vivo',
         exportCsv: 'Exportar eventos a CSV',
+        exportIcs: 'Exportar eventos a iCalendar (.ics)',
         previous: 'Anterior', next: 'Siguiente',
         allDayTime: 'todo el día',
         statusTentative: 'Provisional', statusCancelled: 'Cancelado', statusDone: 'Completado',
@@ -183,6 +188,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: 'Vandaag',
         followNow: 'Live',
         exportCsv: 'Evenementen exporteren als CSV',
+        exportIcs: 'Evenementen exporteren als iCalendar (.ics)',
         previous: 'Vorige', next: 'Volgende',
         allDayTime: 'hele dag',
         statusTentative: 'Voorlopig', statusCancelled: 'Geannuleerd', statusDone: 'Afgerond',
@@ -215,6 +221,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: 'Oggi',
         followNow: 'In diretta',
         exportCsv: 'Esporta eventi in CSV',
+        exportIcs: 'Esporta eventi in iCalendar (.ics)',
         previous: 'Precedente', next: 'Successivo',
         allDayTime: 'tutto il giorno',
         statusTentative: 'Provvisorio', statusCancelled: 'Annullato', statusDone: 'Completato',
@@ -247,6 +254,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         today: 'Hoje',
         followNow: 'Ao vivo',
         exportCsv: 'Exportar eventos para CSV',
+        exportIcs: 'Exportar eventos para iCalendar (.ics)',
         previous: 'Anterior', next: 'Seguinte',
         allDayTime: 'dia inteiro',
         statusTentative: 'Provisório', statusCancelled: 'Cancelado', statusDone: 'Concluído',
