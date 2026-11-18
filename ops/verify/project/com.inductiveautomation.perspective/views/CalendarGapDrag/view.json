@@ -1,0 +1,141 @@
+{
+ "custom": {
+  "log": ""
+ },
+ "params": {},
+ "props": {
+  "defaultSize": {
+   "width": 700,
+   "height": 760
+  }
+ },
+ "root": {
+  "type": "ia.container.coord",
+  "version": 0,
+  "props": {},
+  "meta": {
+   "name": "root"
+  },
+  "children": [
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "text": "Drag fixture on a DST gap day (#249): America/New_York, day view, 15-minute slots, selectable and editable, no built-in editor. Every onSelect and onChange appends to the line below. The e2e suite pins the browser clock to 2026-03-08, when New York skips 02:00-03:00. A drag the gap would reverse (02:30-03:00 is really 03:30-03:00) must fire nothing.",
+     "style": {
+      "fontSize": "13px"
+     }
+    },
+    "meta": {
+     "name": "help"
+    },
+    "position": {
+     "x": 16,
+     "y": 10,
+     "width": 660,
+     "height": 56
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "13px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "log",
+     "domId": "gap-log"
+    },
+    "position": {
+     "x": 16,
+     "y": 68,
+     "width": 660,
+     "height": 40
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'log: ' + {view.custom.log}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.calendar",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/New_York",
+      "locale": "en-US",
+      "editable": true,
+      "selectable": true,
+      "builtInEditor": false,
+      "slotMinutes": 15,
+      "dayStartHour": 0,
+      "dayEndHour": 24,
+      "scrollToHour": 0,
+      "showMiniNav": false
+     },
+     "data": {
+      "events": [
+       {
+        "id": "moveProbe",
+        "title": "Move probe",
+        "start": "2026-03-08T01:00:00",
+        "end": "2026-03-08T01:30:00"
+       },
+       {
+        "id": "resizeProbe",
+        "title": "Resize probe",
+        "start": "2026-03-08T03:00:00",
+        "end": "2026-03-08T03:30:00"
+       }
+      ]
+     },
+     "state": {
+      "view": "day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "calendar",
+     "domId": "gap-calendar"
+    },
+    "position": {
+     "x": 16,
+     "y": 112,
+     "width": 660,
+     "height": 640
+    },
+    "events": {
+     "component": {
+      "onSelect": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.log = self.view.custom.log + 'select ' + event.start + ' ' + event.end + ';'\n"
+        }
+       }
+      ],
+      "onChange": [
+       {
+        "type": "script",
+        "scope": "G",
+        "config": {
+         "script": "\tself.view.custom.log = self.view.custom.log + event.action + ' ' + event.event['id'] + ' ' + event.event['start'] + ' ' + event.event['end'] + ';'\n"
+        }
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

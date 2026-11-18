@@ -1,7 +1,7 @@
 import {
     BAR_HANDLES_MIN_PX, MIN_BAR_PX, MIN_BAR_PX_READONLY, MIN_SNAP_MINUTES, MS_PER_HOUR, TimeScale, TimelineEvent,
     CUSTOM_WINDOW_PX, MAX_CUSTOM_SPAN_MS, containingCustomWindow, customScale, customTickStepMs, customWindow,
-    customWindowOnDate, customZoom, pageCustomWindow,
+    anchorAfterZoneChange, customWindowOnDate, customZoom, pageCustomWindow,
     ZOOM_PRESETS, barGeom, barMinPx, buildRows, buildTicks, containingAnchorMs, focusScrollLeft, followAnchorMs, followDisarms, followTickMs,
     isConfiguredEmpty, isSubDayZoom, isSubHourZoom, keptFocusMs, layoutRowBands, layoutRowBars, msToPx, nowTickMs, pageAnchorMs, pxToMs,
     resolveSnapMinutes, rezoomFocusMs, scaleWidth, timelineEventsToCsv, windowFor, windowOutputs, zoomSpanMs
@@ -703,6 +703,16 @@ describe('mapTimelineProps', () => {
         expect(q.labels.followNow).toBe('En direct');
     });
 
+    it('reads an unknown config.timezone as browser-local, so mounting cannot throw (#255)', () => {
+        const p = mapTimelineProps(stubReader({ config: { timezone: 'Not/AZone' }, state: { windowStart: '2026-03-08T00:00:00' } }));
+        expect(p.timezone).toBe('');
+        expect(p.windowStart).toBe(new Date(2026, 2, 8).getTime());
+        // Every call the constructor and first render make with the mapped zone.
+        expect(() => containingAnchorMs(Date.now(), 'day', p.timezone)).not.toThrow();
+        expect(() => windowFor(containingAnchorMs(Date.now(), 'hour', p.timezone), 'hour', p.timezone)).not.toThrow();
+        expect(mapTimelineProps(stubReader({ config: { timezone: 'America/New_York' } })).timezone).toBe('America/New_York');
+    });
+
     it('applies defaults (day zoom, clamped rowHeight, empty arrays, English labels)', () => {
         const p = mapTimelineProps(stubReader({}));
         expect(p.zoom).toBe('day');
@@ -986,5 +996,44 @@ describe('custom window (state.windowStart / windowEnd)', () => {
         expect(followTickMs(0, 'second', 45000)).toBe(11250);
         expect(followTickMs(5, 'hour', 8 * H)).toBe(5000);
         expect(followTickMs(0, 'week', 3 * 24 * H)).toBe(60000);
+    });
+});
+
+describe('anchorAfterZoneChange (a bound config.timezone arriving after mount)', () => {
+    const BX = 'Europe/Brussels';
+    const now = Date.UTC(2026, 10, 17, 14, 0);   // Tue Nov 17 14:00Z, 15:00 in Brussels
+    it('re-anchors today on the new zone\'s midnight when the old window showed now', () => {
+        const bxMidnight = Date.UTC(2026, 10, 16, 23);   // Nov 17 00:00 in Brussels
+        const a = anchorAfterZoneChange(bxMidnight, 'day', BX, 'UTC', now);
+        expect(new Date(a).toISOString()).toBe('2026-11-17T00:00:00.000Z');
+        expect(windowFor(a, 'day', 'UTC').endMs - a).toBe(24 * 3600000);   // a whole day, not one hour
+    });
+    it('keeps a day that is not today on the same calendar day', () => {
+        const bxMidnight = Date.UTC(2026, 10, 19, 23);   // Nov 20 00:00 in Brussels
+        expect(new Date(anchorAfterZoneChange(bxMidnight, 'day', BX, 'Asia/Tokyo', now)).toISOString())
+            .toBe('2026-11-19T15:00:00.000Z');           // Nov 20 00:00 in Tokyo
+    });
+    it('keeps the calendar day even between zones more than 12 hours apart', () => {
+        const ppMidnight = Date.UTC(2026, 10, 20, 11);   // Nov 20 00:00 in Pago Pago (UTC-11)
+        expect(new Date(anchorAfterZoneChange(ppMidnight, 'day', 'Pacific/Pago_Pago', 'Pacific/Kiritimati', now)).toISOString())
+            .toBe('2026-11-19T10:00:00.000Z');           // Nov 20 00:00 in Kiritimati (UTC+14)
+    });
+    it('keeps a week on its start date instead of moving it to the middle of the week', () => {
+        const nov24 = Date.UTC(2026, 10, 23, 23);        // Nov 24 00:00 in Brussels, a paged week
+        expect(new Date(anchorAfterZoneChange(nov24, 'week', BX, 'UTC', now)).toISOString()).toBe('2026-11-24T00:00:00.000Z');
+        const nov14 = Date.UTC(2026, 10, 13, 23);        // a week picked from Nov 14 that holds now
+        expect(new Date(anchorAfterZoneChange(nov14, 'week', BX, 'UTC', now)).toISOString()).toBe('2026-11-14T00:00:00.000Z');
+    });
+    it('the same zone under another name changes nothing', () => {
+        const nov24 = Date.UTC(2026, 10, 23, 23);
+        expect(anchorAfterZoneChange(nov24, 'week', BX, 'Europe/Brussels', now)).toBe(nov24);
+    });
+    it('keeps a sub-day window that is not now on its wall time', () => {
+        const bx8 = Date.UTC(2026, 10, 20, 7);           // Nov 20 08:00 in Brussels, an hour window
+        expect(new Date(anchorAfterZoneChange(bx8, 'hour', BX, 'UTC', now)).toISOString()).toBe('2026-11-20T08:00:00.000Z');
+    });
+    it('keeps the current stride at a sub-day zoom', () => {
+        const a = anchorAfterZoneChange(containingAnchorMs(now, 'hour', BX), 'hour', BX, 'America/New_York', now);
+        expect(a).toBe(containingAnchorMs(now, 'hour', 'America/New_York'));
     });
 });

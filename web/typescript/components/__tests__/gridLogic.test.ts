@@ -1,5 +1,5 @@
 import {
-    GridColumn, OVERSCAN_ROWS,
+    GridColumn, MIN_COL_PX, OVERSCAN_ROWS, keyResizeWidth,
     cellText, columnLayout, gridIsEmpty, visibleRowRange
 } from '../grid/gridLogic';
 import { mapGridProps } from '../grid/gridProps';
@@ -631,5 +631,27 @@ describe('aggregateValue (footer)', () => {
         expect(aggregateValue(rows, col('q', { aggregate: 'count' }))).toBe(3);
         expect(aggregateValue(rows, col('q'))).toBeNull();
         expect(aggregateValue([], col('q', { aggregate: 'sum' }))).toBeNull();
+    });
+});
+
+describe('keyResizeWidth (#91)', () => {
+    const none = { shift: false, alt: false, ctrl: false, meta: false };
+    it('steps 10 px, or 50 with Shift, and Home goes to the minimum', () => {
+        expect(keyResizeWidth(120, 'ArrowRight', none)).toBe(130);
+        expect(keyResizeWidth(120, 'ArrowLeft', none)).toBe(110);
+        expect(keyResizeWidth(120, 'ArrowRight', { ...none, shift: true })).toBe(170);
+        expect(keyResizeWidth(120, 'Home', none)).toBe(MIN_COL_PX);
+    });
+    it('clamps to the minimum and to the keyboard maximum, without shrinking a wider drag', () => {
+        expect(keyResizeWidth(45, 'ArrowLeft', none)).toBe(MIN_COL_PX);
+        expect(keyResizeWidth(1995, 'ArrowRight', none)).toBe(2000);
+        expect(keyResizeWidth(2500, 'ArrowRight', none)).toBe(2500);
+        expect(keyResizeWidth(2500, 'ArrowLeft', none)).toBe(2490);
+    });
+    it('leaves other and modified keys to the browser', () => {
+        expect(keyResizeWidth(120, 'Enter', none)).toBeNull();
+        expect(keyResizeWidth(120, 'ArrowLeft', { ...none, alt: true })).toBeNull();
+        expect(keyResizeWidth(120, 'ArrowRight', { ...none, ctrl: true })).toBeNull();
+        expect(keyResizeWidth(120, 'ArrowRight', { ...none, meta: true })).toBeNull();
     });
 });

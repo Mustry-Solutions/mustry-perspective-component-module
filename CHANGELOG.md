@@ -44,6 +44,22 @@ real project deletes, and **anyone who can reach those views can take over the g
 users, so don't expose them**. Their read bindings also still seed demo data, including users
 with a known password, for any session; that code is marked `DEMO ONLY` and must not be copied.
 
+### Security: Rich Text Editor moves to TipTap 3
+TipTap 2 has an open advisory, GHSA-cp6q-959q-f8rh (`@tiptap/core` < 3.30.4:
+`mergeAttributes()` turns an own `__proto__` key into inherited DOM attributes), and no
+2.x release fixes it. The editor now runs on TipTap 3.34. Nothing changes for authors: same props, same
+markup, same events. TipTap 3 changes three defaults that would have changed the editor,
+and all three are kept as they were:
+- Its StarterKit now bundles links and underline. Both still follow
+  `config.features.link` and `config.features.underline`, and links still go through
+  the editor's own URL policy, not TipTap's wider allowlist.
+- Its character count now cuts the start of a bound document that is already over
+  `config.charLimit` on load. The limit stays a typing limit: bound content is never
+  shortened.
+- It now appends an empty paragraph after a document that ends in a table, list or
+  image. The editor no longer adds one, so the HTML it holds still matches
+  `data.content`.
+
 ### Changed
 - The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
   read "now" and "today" in the gateway's zone when it's empty, instead of the
@@ -51,8 +67,34 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   `output.isActiveNow`, the active dots, the now-line, the preview strip and the
   *past* badge were wrong for an operator in another zone. Set `config.timezone`
   to read them in a different zone.
+- Schedule Manager: the docs now say that `output.isActiveNow`, the active dots
+  and the preview strip read the weekly hours only. Holidays aren't evaluated,
+  so a schedule that observes holidays reads active during its hours on a
+  holiday, where Ignition treats it as inactive (#256).
+- Calendar and Resource Timeline: an "All events" edit that changes the start
+  date now moves the whole series by that many days. The series' start, its
+  removed occurrences (`rrule.exdate`) and, for a weekly rule whose weekdays
+  you didn't change, its weekdays all move with it, so moving Monday's
+  occurrence to Tuesday turns a Mon/Wed series into Tue/Thu. The date change
+  used to be dropped without a word. `until` and `count` stay as the editor
+  shows them, so a move can add or drop an occurrence at the series' end. A
+  monthly or yearly series moves to the new day of the month, so a series on
+  the 31st moved one day runs on the 1st of every month. An edit that only
+  changes times keeps the series on its own dates as before (#291).
 
 ### Fixed
+- Admin reference scripts: non-ASCII names and text, such as a role `rôle` or a
+  first name `Zoë`, were garbled, because the event scripts and the views' read
+  bindings passed them through `str()`. A garbled read was written back on the next
+  save, and a renamed-looking schedule, holiday or roster was saved as a second
+  record. Both now use `unicode()`. Projects that copied the scripts or bindings
+  should copy them again (#258).
+- Admin reference scripts: the save scripts refuse a new user, role, schedule,
+  holiday or roster name that is empty, starts or ends with a space, contains a line
+  break, a control character or an invisible formatting character, or is only dots,
+  such as `..`. The managers only checked names in the browser, so a crafted event
+  could create one. The check is `adminAuth.nameProblem()`; existing records keep
+  their names (#260).
 - The timeline's sub-day zooms stay on their grid across a daylight-saving change:
   from the midnight after it, `hour` pages start at 00:00/08:00/16:00 again without
   pressing Today, instead of 07:00/15:00/23:00. On the change day itself the windows
@@ -75,8 +117,8 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
 - The browser's own daylight-saving gap no longer moves a picked time or a
   write-back resolved in another `config.timezone`: picking 02:30 on 2026-03-29 in
   a Brussels browser with `America/New_York` now gives 02:30 New York time, not
-  03:30. Known limit: picker presets and the realtime window can still shift
-  inside the browser's gap (#247).
+  03:30. Picker presets and the realtime window are fixed the same way, below
+  (#247).
 - The calendar no longer writes an event that a daylight-saving gap leaves ending
   at or before its start, in any zone: 02:30 to 03:00 on New York's spring-forward
   day is really 03:30 to 03:00. The event editor now blocks Save with its
@@ -87,6 +129,73 @@ with a known password, for any session; that code is marked `DEMO ONLY` and must
   between days and Enter or Space activates it. A screen reader hears the full date,
   or, when the button opens the built-in editor, the new label
   `config.labels.newEventOn` (translated in every bundled locale) (#90).
+- **Calendar:** the same keyboard path in week and day view. Each day head is a
+  button in one Tab stop that Left/Right move between days; Enter or Space does what
+  a plain click on that column's empty time does: the built-in editor on a
+  09:00-10:00 slot, or `onDateClick` with the date. A pointer on a day head behaves
+  as before (#250).
+- Calendar: browser tests now cover `onSelect`, and moves, resizes and drag-selects
+  that a daylight-saving gap would reverse, on a new verify view
+  `/calendar-gap-drag` (#249).
+- Resource Timeline: an unknown or mistyped `config.timezone` no longer throws when
+  the component mounts. It reads as the browser's zone, as the calendar, the
+  managers and the mini month navigator already did (#255).
+- Holiday Manager: on a page left open past midnight, "today", the order of the
+  list and the *past* badge now move on when the day turns in the manager's zone,
+  instead of waiting for something else to re-render it (#257).
+- Admin managers: a row's ⋯ menu now opens above the rest of the page. A component
+  placed below the manager could paint over the menu of a low row and take its
+  clicks (#254).
+- Calendar and Resource Timeline: editing a recurring event with "All events"
+  could save the series with its end before its start. The save keeps the
+  series on its own date and takes the edited times, but the end went back onto
+  the series' old end date and the check ran on the occurrence that was opened.
+  An overnight edit (22:00 to 02:00 the next day) was written as 22:00 to 02:00
+  the same day, and on a daylight-saving day the check could pass a reversed
+  range or block a valid one. A series edit now keeps the edited length in days,
+  and the editor checks the range on the date it is written to (#248).
+- Date/Time Range Picker: with `config.timezone` set to another zone than the
+  browser's, a preset, the realtime window or the trigger text could be an hour
+  off on a day the browser's own zone changes its clocks. The picker held those
+  times in the browser's zone, which moved a time that zone skips: in a Havana
+  browser "Today" in a Brussels picker started at 01:00 on 2026-03-08, and a
+  Brussels browser showed a New York 02:30 as 03:30 on 2026-03-29. It now keeps
+  them as plain dates and times in `config.timezone` (#247).
+- Resource Timeline and Calendar: changing `config.timezone` after the
+  component is on screen, such as a zone binding that arrives just after
+  mount, now moves a view on today to today in the new zone and keeps any
+  other date. The timeline used to pair a start from the old zone with an end
+  from the new one (from Brussels to UTC, a one-hour "day" with no bars), and
+  the calendar stayed on the browser's date (#292).
+- Calendar: a `config.timezone` the browser doesn't recognize, such as a
+  Java-only gateway id like `GMT+01:00`, now reads browser-local in every view.
+  Week and day view used to fail to render (#292).
+- Resource Timeline: opening a recurring occurrence on a daylight-saving gap day
+  pre-filled the editor with the time the gap moves it to (02:30 became 03:30 on
+  New York's spring-forward day), so saving it unchanged with "All events"
+  moved the whole series an hour. The editor now shows the wall time as
+  written, as the calendar's does (#290).
+- Calendar and Resource Timeline: a recurring series that starts in a
+  daylight-saving gap (02:30 on New York's spring-forward day) couldn't be
+  saved with "All events" at all, not even to rename it. A series save that
+  keeps the times now goes through and writes the stored times back as they
+  are. When a gap is what blocks a save, the editor now says so, with the new
+  label `timeInGap` ("02:30 doesn't exist on Mar 8 in America/New_York: the
+  clocks skip it") in all seven locale packs, instead of "End must be after
+  start" (#297).
+- Data Grid: columns can be resized from the keyboard. Each header's resize
+  handle is now a focusable separator beside the sort button: Tab to it, then
+  ←/→ resize by 10 px (50 with Shift) and Home goes to the minimum. Its name
+  comes from the new label `resizeColumn`, in all seven locale packs (#91).
+- Data Grid: after resizing a column with the mouse, the next click on a header
+  no longer gets swallowed instead of sorting.
+- Data Grid: pinned columns scrolled away with the rest of the grid instead of
+  staying put. A later style rule that anchors the cell editor overrode their
+  sticky position (#296).
+- Sales demo: the Schedule board, Maintenance calendar and Quality picker now
+  read the gateway's zone, the same clock that seeds the demo and dates an
+  escalated work order. A browser on another date, such as a presenter near
+  midnight, saw the board on the wrong day (#259).
 
 ### Fixed: On-Screen Keyboard numpad `output.isValid` was always true with `enforceRange`
 `output.isValid` checked the value after clamping, so it could never fail: a

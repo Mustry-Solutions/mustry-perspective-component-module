@@ -3,38 +3,16 @@
 // the sanitization model: unknown markup is dropped on parse, scripts and
 // event-handler attributes can never enter), and exposes the small imperative
 // surface the class component drives. DOM-facing, hence untested; anything
-// with logic lives in richTextLogic.ts.
+// with logic lives in richTextLogic.ts, and the extension set (which decides
+// the schema) in richTextExtensions.ts.
 import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
-import TableCell from '@tiptap/extension-table-cell';
-import CharacterCount from '@tiptap/extension-character-count';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
 import { Node as PMNode } from '@tiptap/pm/model';
-import TextStyle from '@tiptap/extension-text-style';
-import FontFamily from '@tiptap/extension-font-family';
-import { RteFeatures, countChars, imageSrcWithinPolicy, sanitizeUrl } from './richTextLogic';
-import { pasteTrimToLimit, policyImage } from './richTextExtensions';
+import { imageSrcWithinPolicy, sanitizeUrl } from './richTextLogic';
+import { RteSchemaOpts, rteExtensions } from './richTextExtensions';
 
-export interface RteControllerOpts {
+export interface RteControllerOpts extends RteSchemaOpts {
     element: HTMLElement;
     content: string;
-    editable: boolean;
-    placeholder: string;
-    features: RteFeatures;
-    /** 0 = unlimited. Enforced by the CharacterCount extension. */
-    charLimit: number;
-    /** Max embedded (data URI) image size in KB; larger images are dropped
-     *  wherever they come from: bound content, paste, or the toolbar. */
-    maxImageKb: number;
-    /** Font families operators may pick; empty = font feature off. */
-    fonts: string[];
     /** Document changed by user input (typing, toolbar commands) — in a
      *  read-only editor this only happens via checklist toggles. */
     onUpdate: () => void;
@@ -53,84 +31,7 @@ export class RichTextController {
             element: opts.element,
             editable: opts.editable,
             content: opts.content,
-            extensions: [
-                StarterKit.configure({
-                    // Lean M0 schema: what the features allow, nothing else.
-                    bold: f.bold ? undefined : false,
-                    italic: f.italic ? undefined : false,
-                    strike: f.strike ? undefined : false,
-                    heading: f.headings ? { levels: [1, 2, 3] } : false,
-                    bulletList: f.bulletList ? undefined : false,
-                    orderedList: f.orderedList ? undefined : false,
-                    code: false,
-                    codeBlock: false,
-                    blockquote: false,
-                    horizontalRule: false
-                }),
-                ...(f.underline ? [Underline] : []),
-                ...(f.link ? [Link.configure({
-                    // Display mode navigates; edit mode keeps clicks for editing.
-                    openOnClick: !opts.editable,
-                    autolink: true,
-                    linkOnPaste: true,
-                    HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' },
-                    // `isAllowedUri`, NOT the older `validate`. This is the
-                    // gate parseHTML, setLink and the autolink plugin all
-                    // consult. `validate` was worse than merely deprecated
-                    // here: extension-link only forwards it to shouldAutoLink
-                    // when that option is unset, and it defaults to a
-                    // function, so the branch never runs — our sanitizeUrl was
-                    // wired to nothing at all and links fell back to TipTap's
-                    // own allowlist (ftp, ftps, callto, sms, cid, xmpp beyond
-                    // ours).
-                    isAllowedUri: (href: string) => sanitizeUrl(href) !== null
-                })] : []),
-                ...(f.table ? [
-                    Table.configure({ resizable: false }),
-                    TableRow, TableHeader, TableCell
-                ] : []),
-                ...(f.image ? [policyImage(opts.maxImageKb)] : []),
-                ...(f.checklist ? [
-                    TaskList,
-                    TaskItem.configure({
-                        nested: false,
-                        // Display mode keeps checkboxes interactive. TipTap only
-                        // flips the checkbox VISUALLY in read-only mode — it never
-                        // touches the document — so apply the attribute change
-                        // ourselves; the dispatched transaction fires onUpdate and
-                        // the component turns that into onTaskToggle.
-                        onReadOnlyChecked: (node: PMNode, checked: boolean) => {
-                            const { state, view } = this.editor;
-                            let done = false;
-                            state.doc.descendants((n, pos) => {
-                                if (done) {
-                                    return false;
-                                }
-                                if (n === node) {
-                                    view.dispatch(state.tr.setNodeMarkup(pos, undefined, { ...n.attrs, checked }));
-                                    done = true;
-                                    return false;
-                                }
-                                return true;
-                            });
-                            return done;
-                        }
-                    })
-                ] : []),
-                // The font allowlist is an EDITING constraint; a read-only
-                // display renders whatever fonts the saved document carries.
-                ...((opts.fonts.length || !opts.editable) ? [TextStyle, FontFamily] : []),
-                // CharacterCount is only for limit enforcement while typing.
-                // output.charCount is derived from plainTextOf in the component —
-                // this extension is absent when unlimited, and even when present
-                // it reads the live draft, not the bound/saved doc outputs track.
-                ...(opts.charLimit > 0 ? [
-                    pasteTrimToLimit(opts.charLimit),
-                    CharacterCount.configure({ limit: opts.charLimit, textCounter: countChars })
-                ] : []),
-                ...(opts.editable && opts.placeholder
-                    ? [Placeholder.configure({ placeholder: opts.placeholder })] : [])
-            ],
+            extensions: rteExtensions(opts, (node, checked) => this.applyReadOnlyCheck(node, checked)),
             editorProps: {
                 // Pasted image FILES embed as size-capped data URIs; oversized
                 // or non-image pastes fall through to default handling.
@@ -167,6 +68,26 @@ export class RichTextController {
         this.editor.destroy();
     }
 
+    /** A display-mode checklist toggle. Applies the attribute change TipTap
+     *  only shows visually; the dispatched transaction fires onUpdate, and the
+     *  component turns that into onTaskToggle. */
+    private applyReadOnlyCheck(node: PMNode, checked: boolean): boolean {
+        const { state, view } = this.editor;
+        let done = false;
+        state.doc.descendants((n, pos) => {
+            if (done) {
+                return false;
+            }
+            if (n === node) {
+                view.dispatch(state.tr.setNodeMarkup(pos, undefined, { ...n.attrs, checked }));
+                done = true;
+                return false;
+            }
+            return true;
+        });
+        return done;
+    }
+
     getHTML(): string {
         return this.editor.getHTML();
     }
@@ -180,7 +101,7 @@ export class RichTextController {
                 tr.setMeta('addToHistory', false);
                 return true;
             })
-            .setContent(html, false)
+            .setContent(html, { emitUpdate: false })
             .run();
     }
 

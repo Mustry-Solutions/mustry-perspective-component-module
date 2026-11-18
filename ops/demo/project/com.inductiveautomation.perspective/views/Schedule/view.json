@@ -232,6 +232,14 @@
         },
         "custom": {},
         "propConfig": {
+          "props.config.timezone": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "session.props.gateway.timezone.id"
+              }
+            }
+          },
           "props.data.events": {
             "binding": {
               "type": "property",

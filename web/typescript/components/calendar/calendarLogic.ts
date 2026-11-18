@@ -248,6 +248,13 @@ export function followCursorStale(cursor: Date, todayZone: Date): boolean {
     return fmtDate(cursor) !== fmtDate(todayZone);
 }
 
+/** The cursor after config.timezone changes (a bound zone usually arrives just
+ *  after mount): a cursor on today in the old zone moves to today in the new
+ *  one; any other date is a wall date and stays. */
+export function cursorAfterZoneChange(cursor: Date, todayOldZone: Date, todayNewZone: Date): Date {
+    return fmtDate(cursor) === fmtDate(todayOldZone) ? todayNewZone : cursor;
+}
+
 // --- legend category filter (state.hiddenCategories, two-way) ------------------
 
 /** The next hidden-category array after a legend click. The `state.hiddenCategories`
@@ -486,6 +493,23 @@ export function monthTabStop(grid: MonthGrid, lastIso: string): string {
         || cells.find((c) => c.inMonth)
         || cells[0];
     return stop.iso;
+}
+
+/** The one week/day column whose create button is in the Tab order: the last one
+ *  focused, else today, else the first column (#250). */
+export function colTabStop(cols: DayCol[], lastIso: string): string {
+    return (cols.find((c) => c.iso === lastIso) || cols.find((c) => c.isToday) || cols[0]).iso;
+}
+
+/** Where Left/Right move from a week/day column's create button: the neighbouring
+ *  column, or `iso` itself at either end (no paging); null for any other key. */
+export function colArrowTarget(cols: DayCol[], iso: string, key: string): string | null {
+    const step = key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0;
+    if (!step) {
+        return null;
+    }
+    const target = cols[cols.findIndex((c) => c.iso === iso) + step];
+    return target ? target.iso : iso;
 }
 
 /** Where an arrow key moves from `iso`: `iso` itself at the edge of the grid (no paging),

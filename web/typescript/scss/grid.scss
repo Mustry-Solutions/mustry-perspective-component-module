@@ -130,15 +130,41 @@
     line-height: 27px;
     height: 28px;
     background: var(--dg-head-bg);
-    text-align: left;
-    font-family: inherit;
-    border-top: none;
-    border-bottom: none;
-    border-left: none;
+}
+
+// The button inside carries the cell padding. Two classes, so this beats the
+// .mustry-dg-cell padding defined further down.
+.mustry-dg-cell.mustry-dg-head-cell {
+    padding: 0;
+}
+
+// The header's sort/drag control fills its cell (the cell also holds the resize handle).
+.mustry-dg-head-btn {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 8px;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    line-height: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     cursor: pointer;
 
     &:hover {
         color: var(--dg-text);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--dg-accent);
+        outline-offset: -2px;   // inside the cell, which clips overflow
     }
 }
 
@@ -160,6 +186,14 @@
 
     &:hover {
         background: color-mix(in srgb, var(--dg-accent) 30%, transparent);
+    }
+
+    // Keyboard focus (#91): a solid bar on the cell's right edge, fully inside the cell.
+    &:focus-visible {
+        right: 0;
+        width: 4px;
+        background: var(--dg-accent);
+        outline: none;
     }
 }
 
@@ -262,8 +296,10 @@
 }
 
 // Frozen columns: sticky against the shared scroll container; rows and header
-// inherit their background so scrolled content passes underneath.
-.mustry-dg-cell--pinned {
+// inherit their background so scrolled content passes underneath. Two classes so
+// the later `.mustry-dg-cell { position: relative }` can't override it (#296);
+// sticky still anchors the pending dot and the editor.
+.mustry-dg-cell.mustry-dg-cell--pinned {
     position: sticky;
     z-index: 1;
     background: inherit;

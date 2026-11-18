@@ -18,30 +18,39 @@ interface DayCreateButtonProps {
     onFocusDay: (iso: string) => void;
 }
 
-export function DayCreateButton({ iso, grid, weeksRef, isTabStop, label, showPlus, onFocusDay }: DayCreateButtonProps): React.ReactElement {
-    const onKeyDown = (e: React.KeyboardEvent): void => {
-        // Enter clicks on every auto-repeat, so a held key would fire the action again and
-        // again, and would reopen the editor once closing it hands focus back to this button.
-        if (e.repeat && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            return;
-        }
-        // Alt+Left is browser back, Cmd+Left is line start: those aren't ours to take.
-        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
-            return;
-        }
-        const target = monthArrowTarget(grid, iso, e.key);
-        if (target === null) {
-            return;
-        }
+/** Keys on a create button (month day or week/day column): held Enter/Space fire once,
+ *  modified keys stay with the browser, and an arrow moves focus to the day that
+ *  `targetFor` names (null = not an arrow this grid uses). */
+export function onCreateButtonKey(
+    e: React.KeyboardEvent, targetFor: (key: string) => string | null, focusDay: (iso: string) => void
+): void {
+    // Enter clicks on every auto-repeat, so a held key would fire the action again and
+    // again, and would reopen the editor once closing it hands focus back to this button.
+    if (e.repeat && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
+        return;
+    }
+    // Alt+Left is browser back, Cmd+Left is line start: those aren't ours to take.
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+        return;
+    }
+    const target = targetFor(e.key);
+    if (target === null) {
+        return;
+    }
+    e.preventDefault();
+    focusDay(target);
+}
+
+export function DayCreateButton({ iso, grid, weeksRef, isTabStop, label, showPlus, onFocusDay }: DayCreateButtonProps): React.ReactElement {
+    const onKeyDown = (e: React.KeyboardEvent): void => onCreateButtonKey(e, (key) => monthArrowTarget(grid, iso, key), (target) => {
         const next = weeksRef.current
             ? weeksRef.current.querySelector(`[data-day="${target}"] .mustry-cal-daycreate`) as HTMLElement | null
             : null;
         if (next) {
             next.focus();
         }
-    };
+    });
     return (
         <button
             type="button" className="mustry-cal-daycreate" tabIndex={isTabStop ? 0 : -1} aria-label={label}

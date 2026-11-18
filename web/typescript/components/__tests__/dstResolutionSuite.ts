@@ -268,13 +268,13 @@ export function dstResolutionSuite(processZone: string): void {
             const local = COLLAPSED.filter((c) => c[0] === processZone);
 
             it.each(COLLAPSED)('%s %s to %s is refused', (zone, start, end) => {
-                expect(editorProblem(editor(start, end), zone)).toBe('range');
+                expect(editorProblem(editor(start, end), zone)).toBe('gap');
                 expect(resolvesForward(start, end, zone)).toBe(false);
                 expect(gestureKeepsOrder({ id: 'a', title: 'A', start: '2026-06-15T09:00:00', end: '2026-06-15T10:00:00' }, { start, end }, zone)).toBe(false);
             });
             it('the browser-local path refuses the same ranges in its own gap', () => {
                 for (const [, start, end] of local) {
-                    expect(editorProblem(editor(start, end), '')).toBe('range');
+                    expect(editorProblem(editor(start, end), '')).toBe('gap');
                 }
             });
             it('the same times in a zone without that gap stay valid', () => {
@@ -285,7 +285,7 @@ export function dstResolutionSuite(processZone: string): void {
             it('a range that survives the gap stays valid east and west', () => {
                 expect(editorProblem(editor('2026-03-08T02:00', '2026-03-08T02:30'), 'America/New_York')).toBeNull();
                 expect(editorProblem(editor('2026-03-08T01:30', '2026-03-08T02:30'), 'America/New_York')).toBeNull();
-                expect(editorProblem(editor('2026-03-08T02:30', '2026-03-08T03:30'), 'America/Chicago')).toBe('range');
+                expect(editorProblem(editor('2026-03-08T02:30', '2026-03-08T03:30'), 'America/Chicago')).toBe('gap');
                 expect(editorProblem(editor('2026-03-08T02:30', '2026-03-08T03:31'), 'America/Chicago')).toBeNull();
                 expect(editorProblem(editor('2026-03-29T02:00', '2026-03-29T02:30'), 'Europe/Brussels')).toBeNull();
                 expect(editorProblem(editor('2026-03-29T01:30', '2026-03-29T02:30'), 'Europe/Brussels')).toBeNull();

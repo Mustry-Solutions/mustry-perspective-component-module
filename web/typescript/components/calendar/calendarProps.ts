@@ -1,7 +1,7 @@
 // Pure mapping from the component's PropertyTree to typed CalendarProps. Extracted from
 // CalendarMeta.getPropsReducer so it can be unit-tested without perspective-client.
 import { PropReader } from '../../shared/propReader';
-import { toWeekStart } from '../../shared/dateUtils';
+import { knownTimeZone, toWeekStart } from '../../shared/dateUtils';
 import { CalendarProps, CalLabels, CalView, Category } from './calendarTypes';
 import { CalEvent } from './calendarLogic';
 import { calendarLabelBase, EN_CALENDAR_LABELS } from '../../shared/labelPacks';
@@ -66,7 +66,9 @@ export function mapCalendarProps(tree: PropReader): CalendarProps {
         builtInEditor: tree.readBoolean('config.builtInEditor', false),
         weekStart: toWeekStart(tree.readString('config.weekStart', 'monday')),
         locale,
-        timezone: tree.readString('config.timezone', ''),
+        // An unknown id (a Java-only gateway zone like GMT+01:00) reads browser-local:
+        // every zone call would otherwise throw, and week/day view would not render.
+        timezone: knownTimeZone(tree.readString('config.timezone', '')),
         showWeekends: tree.readBoolean('config.showWeekends', true),
         dayStartHour: tree.readNumber('config.dayStartHour', 0),
         dayEndHour: tree.readNumber('config.dayEndHour', 24),

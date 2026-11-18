@@ -57,11 +57,36 @@ def refusal(component, flags, roles=WRITE_ROLES):
 		if auth.authenticated == True:
 			if set([unicode(r) for r in auth.user.roles or []]) & set(roles):
 				return None
-		elif str(component.view.id).split('@')[0] in DEMO_ANONYMOUS_VIEWS.get(system.project.getProjectName(), []):
+		elif unicode(component.view.id).split('@')[0] in DEMO_ANONYMOUS_VIEWS.get(system.project.getProjectName(), []):
 			return None
 		return _refuse('requires one of the roles ' + ', '.join(roles))
 	except:
 		return _refuse('the authorization check failed')
+
+
+# Characters that break a name across lines or hide in it: C0 and C1 controls, the line and
+# paragraph separators, zero-width and bidi formatting marks, and the byte-order mark.
+_INVISIBLE = set([unichr(c) for c in range(0, 32) + range(127, 160) + range(0x200b, 0x2010)
+	+ range(0x202a, 0x202f) + range(0x2066, 0x206a) + [0x2028, 0x2029, 0xfeff]])
+
+
+def nameProblem(name):
+	"""Why name can't be the name of a new user, role, schedule, holiday or roster, or None.
+
+	The managers check a name only in the browser, so a crafted event skips that. The gateway
+	itself accepts an empty name, one with a line break, and '..'. A slash is allowed: names
+	like "24/7" are real.
+	"""
+	name = unicode(name or '')
+	if not name.strip():
+		return 'the name is empty'
+	if name != name.strip():
+		return 'the name starts or ends with a space'
+	if [c for c in name if c in _INVISIBLE]:
+		return 'the name contains a line break or an invisible character'
+	if not name.strip('.'):
+		return 'the name is only dots'
+	return None
 
 
 def _refuse(reason):

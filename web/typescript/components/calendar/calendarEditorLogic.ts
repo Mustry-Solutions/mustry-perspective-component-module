@@ -4,8 +4,10 @@
 // and DOM-free so it can be unit-tested under node jest; the component fires the
 // returned ChangeSpec and closes the editor.
 import { CalEvent, RRule } from './calendarLogic';
-import { emitWall, reanchorSeries, toEpochMs } from '../../shared/dateUtils';
-import { occurrenceOf } from '../../shared/recurrence';
+import {
+    emitWall, firstGapWall, reanchorSeries, seriesShiftDays, SeriesWrite, seriesWrite, toEpochMs, wallInGap, writtenRangeProblem
+} from '../../shared/dateUtils';
+import { occurrenceOf, shiftRule } from '../../shared/recurrence';
 import { Editor } from './calendarTypes';
 
 export { reanchorSeries };   // shared with the timeline; re-exported for callers/tests
@@ -82,11 +84,29 @@ export function resolvesForward(start: string, end: string, timezone: string): b
     return s !== null && e !== null && e > s;
 }
 
+/** The start and end walls saving the editor writes: a whole-series edit moves
+ *  the series by the days the opened occurrence moved and takes the editor's
+ *  times (see seriesWrite); anything else writes the editor's walls as they are. */
+function writtenWalls(ed: Editor, timezone: string, baseEventById: BaseEventLookup): SeriesWrite {
+    if (ed.seriesId && ed.scope === 'series') {
+        const w = seriesWrite(baseEventById(ed.seriesId), ed.occurrenceDate, ed.start, ed.end, ed.allDay, timezone);
+        // A save that drops the rule makes a one-off, which is checked like any other.
+        return { ...w, unchanged: w.unchanged && !!ed.repeatFreq };
+    }
+    return { start: ed.start, end: ed.end, unchanged: false };
+}
+
 /** Why the editor can't save, or null when it can: 'parse' = a time field is
  *  empty/incomplete; 'range' = the end is not after the start, compared as the
  *  instants that would be written (all-day events may end on their start date —
- *  the end is inclusive in the editor). */
-export function editorProblem(ed: Editor, timezone: string): 'parse' | 'range' | null {
+ *  the end is inclusive in the editor); 'gap' = the same, because a DST gap
+ *  skips one of the times (see editorGapWall). A whole-series edit is checked
+ *  where it is written, on the series' own (possibly moved) date, not on the
+ *  occurrence that was opened; one that keeps the series' stored times is
+ *  always allowed, so a series created in a gap can still be renamed. */
+export function editorProblem(
+    ed: Editor, timezone: string, baseEventById: BaseEventLookup = () => undefined
+): 'parse' | 'range' | 'gap' | null {
     if (ed.allDay) {
         if (ed.start.length < 10 || ed.end.length < 10) {
             return 'parse';
@@ -99,7 +119,18 @@ export function editorProblem(ed: Editor, timezone: string): 'parse' | 'range' |
     if (toEpochMs(ed.start, timezone) === null || toEpochMs(ed.end, timezone) === null) {
         return 'parse';
     }
-    return resolvesForward(ed.start, ed.end, timezone) ? null : 'range';
+    const w = writtenWalls(ed, timezone, baseEventById);
+    return writtenRangeProblem(w.start, w.end, timezone, w.unchanged);
+}
+
+/** The time a save would write that a DST gap skips, as 'YYYY-MM-DDTHH:mm…'
+ *  (for the 'gap' message), or null. */
+export function editorGapWall(ed: Editor, timezone: string, baseEventById: BaseEventLookup = () => undefined): string | null {
+    if (ed.allDay) {
+        return null;
+    }
+    const w = writtenWalls(ed, timezone, baseEventById);
+    return firstGapWall([w.start, w.end], timezone);
 }
 
 /** The editor patch for flipping the all-day toggle: trim to dates, or restore
@@ -140,13 +171,19 @@ export function buildRRule(ed: Editor, baseEventById: BaseEventLookup): RRule | 
     if (base && base.rrule && base.rrule.exdate && base.rrule.exdate.length) {
         rr.exdate = base.rrule.exdate.slice();   // keep prior exceptions across a series edit
     }
-    return rr;
+    // A whole-series edit that moved the start date moves the rule with it.
+    const shift = base && ed.scope === 'series' ? seriesShiftDays(ed.occurrenceDate, ed.start) : 0;
+    return shiftRule(rr, shift, base && base.rrule);
 }
 
 /**
  * Decide what saving the editor should fire:
  *  (1) one occurrence of a series -> a detached standalone override (the series gets an EXDATE);
- *  (2) the whole series -> the base event, re-anchored, with the (possibly removed) rule;
+ *  (2) the whole series -> the base event, moved by the days the opened
+ *      occurrence's start date moved (0 when only times changed), keeping the
+ *      edited span in days, with the (possibly removed) rule, whose exdates
+ *      move with it. A save that keeps the series' times writes its stored
+ *      start/end back where a DST gap skips them, instead of resolving them;
  *  (3) a plain create / edit of a standalone event.
  */
 export function editorSaveSpec(
@@ -179,14 +216,18 @@ export function editorSaveSpec(
     const rr = buildRRule(ed, baseEventById);
 
     if (ed.seriesId && ed.scope === 'series') {
+        const w = writtenWalls({ ...ed, start: norm(ed.start), end: norm(ed.end) }, timezone, baseEventById);
         const base = baseEventById(ed.seriesId);
+        // Unchanged times: a stored time a gap skips stays as written, not resolved.
+        const keep = (wall: string, raw: string | undefined): string =>
+            (w.unchanged && raw && !ed.allDay && wallInGap(wall, timezone) ? raw : emitWall(wall, ed.allDay, timezone));
         return {
             action: 'edit',
             event: {
                 id: ed.seriesId,
                 ...common,
-                start: emitWall(reanchorSeries(base && base.start, norm(ed.start), ed.allDay, timezone), ed.allDay, timezone),
-                end: emitWall(reanchorSeries(base && (base.end || base.start), norm(ed.end), ed.allDay, timezone), ed.allDay, timezone),
+                start: keep(w.start, base && base.start),
+                end: keep(w.end, base && base.end),
                 rrule: rr || null   // null = recurrence removed from the series
             },
             extra: { scope: 'series', seriesId: ed.seriesId }
