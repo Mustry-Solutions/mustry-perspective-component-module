@@ -8,6 +8,13 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
+### Added: iCalendar (.ics) export for the calendar and timeline
+`config.showExportIcs` adds a toolbar button that downloads the loaded events as
+an `.ics` file, so they can be opened in Outlook, Google Calendar or Apple
+Calendar. Recurring series stay series and keep their local time across DST
+changes, and UIDs come from event ids so re-importing updates instead of
+duplicating. Off by default.
+
 ### Fixed: 2027 beta builds no longer outrank the final release
 A beta build was stamped `X.Y.Z.<beta number>`, which sorts above the final
 `X.Y.Z`, so moving a gateway from the beta build to the final 2027 build would

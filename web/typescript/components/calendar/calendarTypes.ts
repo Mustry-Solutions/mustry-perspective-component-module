@@ -33,6 +33,7 @@ export interface CalendarProps {
     showToolbar: boolean;
     showMiniNav: boolean;
     showExport: boolean;
+    showExportIcs: boolean;
     categories: Category[];
     showLegend: boolean;
     emptyMessage: string;   // shown in the header (and list) when no events are configured; '' = hidden

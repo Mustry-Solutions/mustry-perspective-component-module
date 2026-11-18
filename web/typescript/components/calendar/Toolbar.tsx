@@ -11,6 +11,7 @@ interface ToolbarProps {
     showMiniNav: boolean;
     miniOpen: boolean;
     showExport: boolean;
+    showExportIcs: boolean;
     emptyLabel: string;   // shown as a muted badge by the title when no events are configured ('' = hidden)
     emptyHint: string;    // tooltip on that badge — a nutshell of how to use / add events
     followNow: boolean;   // live follow mode armed (state.followNow, two-way)
@@ -18,6 +19,7 @@ interface ToolbarProps {
     onToggleMini: (e: React.MouseEvent) => void;
     onSetView: (v: CalView) => void;
     onExport: () => void;
+    onExportIcs: () => void;
     onToggleFollow: () => void;
     onPrev: () => void;
     onToday: () => void;
@@ -26,8 +28,8 @@ interface ToolbarProps {
 
 export function Toolbar(props: ToolbarProps): React.ReactElement {
     const {
-        title, view, showMiniNav, miniOpen, showExport, emptyLabel, emptyHint, followNow, labels,
-        onToggleMini, onSetView, onExport, onToggleFollow, onPrev, onToday, onNext
+        title, view, showMiniNav, miniOpen, showExport, showExportIcs, emptyLabel, emptyHint, followNow, labels,
+        onToggleMini, onSetView, onExport, onExportIcs, onToggleFollow, onPrev, onToday, onNext
     } = props;
     return (
         <div className="mustry-cal-toolbar">
@@ -62,6 +64,11 @@ export function Toolbar(props: ToolbarProps): React.ReactElement {
                 {showExport && (
                     <button type="button" className="mustry-cal-nav-btn mustry-cal-export-btn" onClick={onExport} title={labels.exportCsv} aria-label={labels.exportCsv}>
                         <IconRenderer path="material/get_app" color="var(--cal-accent)" />
+                    </button>
+                )}
+                {showExportIcs && (
+                    <button type="button" className="mustry-cal-nav-btn mustry-cal-export-btn mustry-cal-export-ics-btn" onClick={onExportIcs} title={labels.exportIcs} aria-label={labels.exportIcs}>
+                        <IconRenderer path="material/event" color="var(--cal-accent)" />
                     </button>
                 )}
                 <button
