@@ -116,7 +116,8 @@ rendering, interaction and the binding contract. The committed demo at `/timelin
       keep recurring.
 - [ ] **Click a recurring occurrence** — the editor opens with a
       "This event / All events" choice: *This event* saves a detached override;
-      *All events* edits the base series (re-anchored on its own start date).
+      *All events* edits the base series (on its own start date; changing the
+      start date moves the whole series by that many days).
       Delete honours the same scope.
 - [ ] **Repeat controls** — under *All events* (or on any non-occurrence event) the
       editor shows the calendar's Repeat block: frequency, every-N, weekly weekday

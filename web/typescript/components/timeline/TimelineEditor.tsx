@@ -5,17 +5,19 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { IconRenderer } from '@inductiveautomation/perspective-client';
 import { Category } from '../../shared/types';
-import { intlFormat, wallInputStep } from '../../shared/dateUtils';
+import { gapHintVars, intlFormat, wallInputStep } from '../../shared/dateUtils';
+import { fillLabel } from '../../shared/labels/common';
 import { TimelineLabels } from '../../shared/labelPacks';
 import { UNCATEGORIZED_COLOR, categoryColor } from '../../shared/eventStyle';
 import { TimelineResource } from './timelineLogic';
-import { TlEditor, tlEditorProblem } from './timelineEditorLogic';
+import { TlBaseEventLookup, TlEditor, tlEditorGapWall, tlEditorProblem } from './timelineEditorLogic';
 
 interface TimelineEditorProps {
     editor: TlEditor;
     resources: TimelineResource[];
     categories: Category[];
     timezone: string;   // display zone; shown as a hint since datetime-local is browser-local
+    baseEventById: TlBaseEventLookup;   // a whole-series edit is checked on the series' own date
     locale: string;     // for the weekly weekday initials
     labels: TimelineLabels;
     onUpdate: (patch: Partial<TlEditor>) => void;
@@ -25,9 +27,10 @@ interface TimelineEditorProps {
 }
 
 export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
-    const { editor: ed, resources, categories, timezone, locale, labels, onUpdate, onCancel, onSave, onDelete } = props;
+    const { editor: ed, resources, categories, timezone, baseEventById, locale, labels, onUpdate, onCancel, onSave, onDelete } = props;
     const isEdit = ed.id !== null;
-    const problem = tlEditorProblem(ed, timezone);   // non-null blocks Save
+    const problem = tlEditorProblem(ed, timezone, baseEventById);   // non-null blocks Save
+    const gapWall = problem === 'gap' ? tlEditorGapWall(ed, timezone, baseEventById) : null;
     const selCat = (categories || []).find((c) => c.id === ed.category);
     const catColor = (selCat && selCat.color) || UNCATEGORIZED_COLOR;
 
@@ -113,6 +116,11 @@ export function TimelineEditor(props: TimelineEditorProps): React.ReactElement {
                 )}
                 {problem === 'range' && (
                     <div className="mustry-cal-editor-problem">{labels.invalidRange}</div>
+                )}
+                {problem === 'gap' && (
+                    <div className="mustry-cal-editor-problem">
+                        {gapWall ? fillLabel(labels.timeInGap, gapHintVars(gapWall, timezone, locale)) : labels.invalidRange}
+                    </div>
                 )}
                 {showRepeat && (
                     <label className="mustry-cal-editor-field">

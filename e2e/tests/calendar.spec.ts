@@ -395,3 +395,261 @@ test('calendar: the .ics button downloads a calendar file', async ({ page }) => 
     expect(text).toContain('BEGIN:VEVENT\r\n');
     expect(text.endsWith('END:VCALENDAR\r\n')).toBe(true);
 });
+
+// --- #250: week/day view keyboard path to a column's empty-time click ---------------
+const colButton = '.mustry-cal-tg-daycreate';
+
+async function openPinnedView(page: Page, route: string, view: 'Week' | 'Day') {
+    await openPinned(page, route);
+    await page.getByRole('button', { name: view, exact: true }).click();
+    await expect(page.locator(colButton).first()).toBeVisible();
+}
+
+/** Tab from the view switcher until a column create button has focus; returns its day. */
+async function tabToColButton(page: Page): Promise<string> {
+    await page.getByRole('button', { name: 'Day', exact: true }).focus();
+    for (let i = 0; i < 40; i++) {
+        await page.keyboard.press('Tab');
+        const day = await page.evaluate((sel) => {
+            const a = document.activeElement as HTMLElement | null;
+            return a && a.matches(sel) ? a.dataset.headDay! : '';
+        }, colButton);
+        if (day) {
+            return day;
+        }
+    }
+    throw new Error('Tab never reached a column create button');
+}
+
+const focusedCol = (page: Page) => page.evaluate(() => (document.activeElement as HTMLElement).dataset.headDay || '');
+
+for (const [name, key] of [['Enter', 'Enter'], ['Space', ' ']]) {
+    test(`calendar: ${name} on a week column fires onDateClick once, with that date (#250)`, async ({ page }) => {
+        await openPinnedView(page, DAY_KEYS, 'Week');
+        expect(await tabToColButton(page)).toBe(TODAY);
+        await page.keyboard.press(key);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+        await page.waitForTimeout(500);
+        await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+    });
+}
+
+test('calendar: holding Enter on a week column fires onDateClick once (#250)', async ({ page }) => {
+    await openPinnedView(page, DAY_KEYS, 'Week');
+    await tabToColButton(page);
+    for (let i = 0; i < 4; i++) {
+        await page.keyboard.down('Enter');
+    }
+    await page.keyboard.up('Enter');
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+    await page.waitForTimeout(500);
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+});
+
+test('calendar: the week column buttons are one Tab stop, and Left/Right move it (#250)', async ({ page }) => {
+    await openPinnedView(page, DAY_KEYS, 'Week');
+    await expect(page.locator(`${colButton}[tabindex="0"]`)).toHaveCount(1);
+    await tabToColButton(page);
+    await page.keyboard.press('ArrowRight');
+    expect(await focusedCol(page)).toBe('2026-06-18');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    expect(await focusedCol(page)).toBe('2026-06-16');
+    await page.keyboard.press('ArrowDown');   // not a column key: focus stays
+    expect(await focusedCol(page)).toBe('2026-06-16');
+    await page.keyboard.press('Alt+ArrowLeft');   // the browser's, not ours
+    expect(await focusedCol(page)).toBe('2026-06-16');
+    // The last focused column is the Tab stop now; Shift+Tab out and back returns to it.
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    expect(await focusedCol(page)).toBe('2026-06-16');
+    await expect(page.locator(`${colButton}[tabindex="0"]`)).toHaveCount(1);
+    await page.keyboard.press('Enter');
+    await expect(echoed(page)).toHaveText('onDateClick: 2026-06-16;');
+});
+
+test('calendar: a week column button names the date, or says it creates with the editor (#250)', async ({ page }) => {
+    // The name starts with the head's visible text, then the full date (WCAG 2.5.3).
+    await openPinnedView(page, DAY_KEYS, 'Week');
+    const shown = (await page.locator(`${colButton}[data-head-day="${TODAY}"]`).innerText()).trim();
+    await expect(page.getByRole('button', { name: `${shown}, ${TODAY_LONG}`, exact: true })).toHaveCount(1);
+    await openPinnedView(page, WITH_EDITOR, 'Week');
+    await expect(page.getByRole('button', { name: `${shown}, New event on ${TODAY_LONG}`, exact: true })).toHaveCount(1);
+});
+
+test('calendar: with the editor, a week column key opens a 09:00-10:00 slot and focus comes back (#250)', async ({ page }) => {
+    await openPinnedView(page, WITH_EDITOR, 'Week');
+    await tabToColButton(page);
+    await page.keyboard.press('Enter');
+    const editor = page.locator('.mustry-cal-editor');
+    await expect(editor).toBeVisible();
+    const times = editor.locator('input[type="datetime-local"]');
+    await expect(times.nth(0)).toHaveValue(`${TODAY}T09:00`);
+    await expect(times.nth(1)).toHaveValue(`${TODAY}T10:00`);
+    await page.keyboard.press('Escape');
+    await expect(editor).toHaveCount(0);
+    await expect(page.locator(`${colButton}[data-head-day="${TODAY}"]`)).toBeFocused();
+});
+
+test('calendar: the day view has its one column button too (#250)', async ({ page }) => {
+    await openPinnedView(page, DAY_KEYS, 'Day');
+    await expect(page.locator(colButton)).toHaveCount(1);
+    expect(await tabToColButton(page)).toBe(TODAY);
+    await page.keyboard.press('Enter');
+    await expect(echoed(page)).toHaveText(`onDateClick: ${TODAY};`);
+});
+
+test('calendar: a pointer on a week day head still does nothing (#250)', async ({ page }) => {
+    // A guard: it holds with and without the column buttons, so it doesn't wait for one.
+    await openPinned(page, DAY_KEYS);
+    await page.getByRole('button', { name: 'Week', exact: true }).click();
+    await page.locator('.mustry-cal-tg-dayhead').nth(2).click();
+    await page.waitForTimeout(500);
+    await expect(echoed(page)).toHaveText('onDateClick: ');
+});
+
+// --- #249: drags on a DST gap day, in a real browser --------------------------------
+// New York skips 02:00-03:00 on 2026-03-08, so 02:30-03:00 is really 03:30-03:00.
+const GAP_NOW = new Date('2026-03-08T17:00:00Z');   // 13:00 EDT in New York
+const HOUR_PX = 56;                                  // hourHeightPx(15)
+
+async function openGap(page: Page) {
+    await page.clock.setFixedTime(GAP_NOW);
+    const root = await openRoute(page, '/calendar-gap-drag', '.mustry-calendar');
+    await expect(root.locator('.mustry-cal-tg-col')).toHaveCount(1);
+    return root;
+}
+const gapLog = (page: Page) => page.locator('#gap-log');
+
+/** The viewport y of a wall time in the day column. */
+async function yAt(page: Page, minutes: number): Promise<{ x: number; y: number }> {
+    const box = (await page.locator('.mustry-cal-tg-col').boundingBox())!;
+    return { x: box.x + box.width * 0.75, y: box.y + (minutes / 60) * HOUR_PX };
+}
+
+async function drag(page: Page, from: { x: number; y: number }, toY: number) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x, toY, { steps: 8 });
+    await page.mouse.up();
+}
+
+test('calendar: a selection the DST gap reverses fires no onSelect; a normal one does (#249)', async ({ page }) => {
+    await openGap(page);
+    const a = await yAt(page, 150);   // 02:30
+    await drag(page, a, (await yAt(page, 180)).y);   // to 03:00
+    await page.waitForTimeout(500);
+    await expect(gapLog(page)).toHaveText('log: ');
+    const b = await yAt(page, 240);   // 04:00
+    await drag(page, b, (await yAt(page, 300)).y);   // to 05:00
+    await expect(gapLog(page)).toHaveText('log: select 2026-03-08T04:00:00-04:00 2026-03-08T05:00:00-04:00;');
+});
+
+test('calendar: a move the DST gap reverses fires no onChange; a normal one does (#249)', async ({ page }) => {
+    await openGap(page);
+    const probe = page.locator('.mustry-cal-tg-event', { hasText: 'Move probe' });
+    const box = (await probe.boundingBox())!;
+    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await drag(page, from, from.y + 1.5 * HOUR_PX);   // 01:00-01:30 -> 02:30-03:00
+    await page.waitForTimeout(500);
+    await expect(gapLog(page)).toHaveText('log: ');
+    await drag(page, from, from.y + 3 * HOUR_PX);     // -> 04:00-04:30
+    await expect(gapLog(page)).toHaveText('log: move moveProbe 2026-03-08T04:00:00-04:00 2026-03-08T04:30:00-04:00;');
+});
+
+test('calendar: a resize the DST gap reverses fires no onChange; a normal one does (#249)', async ({ page }) => {
+    await openGap(page);
+    const handle = page.locator('.mustry-cal-tg-event', { hasText: 'Resize probe' }).locator('.mustry-cal-tg-resize--start');
+    const box = (await handle.boundingBox())!;
+    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await drag(page, from, from.y - 0.5 * HOUR_PX);   // start 03:00 -> 02:30, which is 03:30: the end
+    await page.waitForTimeout(500);
+    await expect(gapLog(page)).toHaveText('log: ');
+    await drag(page, from, from.y - 1.5 * HOUR_PX);   // start -> 01:30 EST
+    await expect(gapLog(page)).toHaveText('log: resize resizeProbe 2026-03-08T01:30:00-05:00 2026-03-08T03:30:00-04:00;');
+});
+
+test('calendar: focusing a week column button moves no text and keeps the head row height (#250)', async ({ page }) => {
+    await openPinnedView(page, WITH_EDITOR, 'Week');
+    const head = page.locator('.mustry-cal-tg-head');
+    const label = page.locator(`${colButton}[data-head-day="${TODAY}"]`);
+    // Where the date text itself sits: the button is full width, so its box can't tell.
+    const textX = () => label.evaluate((el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el.firstChild as Node);
+        return r.getBoundingClientRect().x;
+    });
+    const before = { head: (await head.boundingBox())!.height, text: await textX() };
+    await label.focus();
+    await expect(label.locator('.mustry-cal-tg-daycreate-plus')).toBeVisible();
+    expect((await head.boundingBox())!.height).toBeCloseTo(before.head, 1);
+    expect(await textX()).toBeCloseTo(before.text, 1);
+});
+
+// --- #291 / #297: whole-series edits in the built-in editor, New York gap week -----------
+// The fixture doesn't persist, so each test starts from the bound data.
+async function openSeries(page: Page) {
+    await page.clock.setFixedTime(GAP_NOW);
+    const root = await openRoute(page, '/calendar-gap-series', '.mustry-calendar');
+    await expect(root.locator('.mustry-cal-tg-col')).toHaveCount(7);
+    return root;
+}
+const seriesLog = (page: Page) => page.locator('#series-log');
+
+/** Open the editor on one occurrence of a series. */
+async function openOccurrence(page: Page, day: string, title: string) {
+    await page.locator(`.mustry-cal-tg-col[data-day="${day}"] .mustry-cal-tg-event`, { hasText: title }).click();
+    const editor = page.locator('.mustry-cal-editor');
+    await expect(editor).toBeVisible();
+    return editor;
+}
+
+test('calendar: a series that starts in the DST gap can be renamed with "All events" (#297)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-09', 'Gap series');
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    await editor.getByRole('textbox').first().fill('Renamed');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveCount(0);
+    await editor.getByRole('button', { name: 'Save' }).click();
+    // The stored 02:30 goes back as written; 03:30 exists and is written as an instant.
+    await expect(seriesLog(page)).toHaveText('log: edit gapSeries Renamed 2026-03-08T02:30:00 2026-03-08T03:30:00-04:00 ex=;');
+});
+
+test('calendar: a time the DST gap skips is named in the editor (#297)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-09', 'Gap series');
+    const [start, end] = [editor.locator('input[type="datetime-local"]').nth(0), editor.locator('input[type="datetime-local"]').nth(1)];
+    const message = "02:30 doesn't exist on Mar 8 in America/New_York: the clocks skip it";
+
+    // "This event", moved onto the gap day: 02:30-03:00 is really 03:30-03:00.
+    await start.fill('2026-03-08T02:30');
+    await end.fill('2026-03-08T03:00');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText(message);
+    await expect(editor.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    // "All events" with a changed time is checked on the series' own date, the gap day.
+    await start.fill('2026-03-09T02:30');
+    await end.fill('2026-03-09T03:15');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveCount(0);
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText(message);
+    await expect(editor.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    // A range typed backwards keeps the plain message.
+    await editor.getByRole('radio', { name: 'This event' }).check();
+    await start.fill('2026-03-09T04:00');
+    await expect(editor.locator('.mustry-cal-editor-problem')).toHaveText('End must be after start');
+});
+
+test('calendar: moving an occurrence by days with "All events" moves the series and its exdates (#291)', async ({ page }) => {
+    await openSeries(page);
+    const editor = await openOccurrence(page, '2026-03-10', 'Shift series');
+    await editor.getByRole('radio', { name: 'All events' }).check();
+    const inputs = editor.locator('input[type="datetime-local"]');
+    await inputs.nth(0).fill('2026-03-11T10:00');
+    await inputs.nth(1).fill('2026-03-11T11:00');
+    await editor.getByRole('button', { name: 'Save' }).click();
+    await expect(seriesLog(page)).toHaveText(
+        'log: edit shiftSeries Shift series 2026-03-03T10:00:00-05:00 2026-03-03T11:00:00-05:00 ex=2026-03-06;'
+    );
+});

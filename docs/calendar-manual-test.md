@@ -241,7 +241,7 @@ self.props.data.events = events
 - [ ] **Create:** the editor's **Repeat** control offers Daily/Weekly/Monthly/Yearly + "every N" + (weekly) a weekday picker + Ends Never/On-date/After-N. Saving produces an event with an `rrule`; the occurrences appear.
 - [ ] **Open an occurrence:** the editor shows an **apply-to** choice (*This event* / *All events*) and recovers the series' rule (visible under *All events*).
 - [ ] **This event** (edit): only the opened day changes; it detaches into a standalone override and the series skips that date (via `rrule.exdate`). Others are unchanged.
-- [ ] **All events** (edit): every occurrence updates (title/time/category/rule); the series keeps its anchor date; previously-detached overrides are left alone.
+- [ ] **All events** (edit): every occurrence updates (title/time/category/rule); the series keeps its anchor date unless the start date was changed, which moves the whole series (and its removed dates) by that many days; previously-detached overrides are left alone.
 - [ ] **Delete → This event:** only that occurrence disappears (exdate); the rest remain.
 - [ ] **Delete → All events:** the whole series goes.
 - [ ] **Drag/resize one occurrence:** detaches it (override + exdate), like "This event".
@@ -348,6 +348,10 @@ Gestures use Pointer Events + `touch-action`, so mouse and touch share one path.
       opens the editor / fires `onDateClick` for that day; closing the editor returns
       focus to it. A screen reader reads "New event on" and the full date with the editor,
       the full date alone without it.
+- [ ] **Week and day view, Tab to a day head** (one Tab stop, a ring round the head, and
+      a "+" when it opens the editor): Left/Right move it between days; Enter/Space opens
+      the editor on 09:00-10:00 / fires `onDateClick` for that day; closing the editor
+      returns focus to it. A mouse click on a day head still does nothing.
 
 ## Theming & i18n
 

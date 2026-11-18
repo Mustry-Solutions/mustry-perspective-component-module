@@ -9,22 +9,23 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    formatPattern,
     addDays,
     addMonths,
-    combine,
     daysBetween,
     fmtDate,
+    fmtWallDate,
+    formatWallPattern,
     hmsToSec,
     maxDate,
     minDate,
     parseDate,
     sameDay,
-    secondsOfDay,
     secToHms,
-    startOfDay,
     startOfMonth,
     todayInZone,
+    WallClock,
+    wallOfDay,
+    wallSeconds,
     weekStartDay
 } from '../../shared/dateUtils';
 import * as logic from './pickerLogic';
@@ -502,7 +503,7 @@ export class DateTimeRangePicker
     // The (datetime) endpoints a preset would set. Direction follows the disableDates
     // mode — forward in 'past' (forward-booking) mode so the range lands on selectable
     // days, backward otherwise (the historical/historian case).
-    private presetRange(p: PresetDef): { start: Date; end: Date } {
+    private presetRange(p: PresetDef): logic.WallRange {
         return logic.presetRange(p, this.presetCtx());
     }
 
@@ -528,17 +529,17 @@ export class DateTimeRangePicker
         }
         const { start, end } = this.presetRange(p);
         const w = this.props.store.props;
-        w.write('selection.startDate', fmtDate(startOfDay(start)));
-        w.write('selection.startTimeSec', secondsOfDay(start));
-        w.write('selection.endDate', fmtDate(startOfDay(end)));
-        w.write('selection.endTimeSec', secondsOfDay(end));
+        w.write('selection.startDate', fmtWallDate(start));
+        w.write('selection.startTimeSec', wallSeconds(start));
+        w.write('selection.endDate', fmtWallDate(end));
+        w.write('selection.endTimeSec', wallSeconds(end));
         if (this.props.props.realtimeEnabled && p.type === 'rolling' && p.amount > 0) {
             w.write('selection.rollingAmount', p.amount);
             w.write('selection.rollingUnit', p.unit);
         } else {
             this.disarmRealtime();
         }
-        this.setState({ anchor: null, hover: null, viewMonth: startOfMonth(start) });
+        this.setState({ anchor: null, hover: null, viewMonth: new Date(start.y, start.mo - 1, 1) });
         this.fireEvent('onPresetSelected', {
             label: p.label, type: p.type, amount: p.amount, unit: p.unit, period: p.period
         });
@@ -936,8 +937,9 @@ export class DateTimeRangePicker
             : granularity === 'second' ? ' HH:mm:ss'
                 : ' HH:mm';
         const pattern = popoverDateFormat + timeSuffix;
-        const fmt = (d: Date) => formatPattern(d, pattern);
-        return `${fmt(combine(s, this.effStartSec()))} – ${fmt(combine(e, this.effEndSec()))}`;
+        // Formatted from wall fields: a Date would move a time the browser's zone skips.
+        const fmt = (w: WallClock) => formatWallPattern(w, pattern);
+        return `${fmt(wallOfDay(s, this.effStartSec()))} – ${fmt(wallOfDay(e, this.effEndSec()))}`;
     }
 
     render() {

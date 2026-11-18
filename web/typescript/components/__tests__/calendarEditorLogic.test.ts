@@ -1,10 +1,11 @@
 import {
-    buildRRule, editorDefaults, editorForCreate, editorForEvent, editorProblem,
+    buildRRule, editorDefaults, editorForCreate, editorForEvent, editorGapWall, editorProblem,
     editorDeleteSpec, editorSaveSpec, gestureKeepsOrder, moveResizeSpec, reanchorSeries, toggleAllDayPatch
 } from '../calendar/calendarEditorLogic';
 import { Editor } from '../calendar/calendarTypes';
 import { CalEvent } from '../calendar/calendarLogic';
 import { emitWall } from '../../shared/dateUtils';
+import { expandEvents, RRule } from '../../shared/recurrence';
 
 // All specs are computed in UTC so the emitted offsets are machine-independent.
 const TZ = 'UTC';
@@ -219,17 +220,17 @@ describe('a range that a DST gap collapses', () => {
         const saved = editorSaveSpec(reversed, NY, none).event as { start: string; end: string };
         expect(saved.start).toBe('2026-03-08T03:30:00-04:00');
         expect(saved.end).toBe('2026-03-08T03:00:00-04:00');
-        expect(editorProblem(reversed, NY)).toBe('range');
+        expect(editorProblem(reversed, NY)).toBe('gap');
     });
     it('editor: blocks what would otherwise be written with zero length', () => {
         const empty = ed({ start: '2026-03-08T02:00', end: '2026-03-08T03:00' });
         const saved = editorSaveSpec(empty, NY, none).event as { start: string; end: string };
         expect(saved.start).toBe(saved.end);
-        expect(editorProblem(empty, NY)).toBe('range');
+        expect(editorProblem(empty, NY)).toBe('gap');
     });
     it('editor: the same check east of UTC', () => {
-        expect(editorProblem(ed({ start: '2026-03-29T02:30', end: '2026-03-29T03:00' }), BX)).toBe('range');
-        expect(editorProblem(ed({ start: '2026-03-29T02:00', end: '2026-03-29T03:00' }), BX)).toBe('range');
+        expect(editorProblem(ed({ start: '2026-03-29T02:30', end: '2026-03-29T03:00' }), BX)).toBe('gap');
+        expect(editorProblem(ed({ start: '2026-03-29T02:00', end: '2026-03-29T03:00' }), BX)).toBe('gap');
     });
     it('editor: a wall-reversed range that resolves forward saves, as in the timeline', () => {
         // 02:30 is 03:30 EDT, after the 03:00 start: what is written is a real 30 minutes.
@@ -355,5 +356,183 @@ describe('moveResizeSpec', () => {
         const spec = moveResizeSpec('move', occOf('line::A', '2026-06-17', ev), { start: '2026-06-17T11:00:00' }, TZ);
         expect((spec.event as { id: string }).id).toBe('line::A-x-2026-06-17');
         expect(spec.extra).toEqual({ scope: 'occurrence', seriesId: 'line::A', occurrenceDate: '2026-06-17' });
+    });
+});
+
+describe('whole-series edits are checked where they are written (#248)', () => {
+    const NY = 'America/New_York';
+    const series = (start: string, end: string): CalEvent => ({ id: 's', title: 'S', start, end, rrule: { freq: 'daily' } });
+    const allEvents = (start: string, end: string, occDate: string, allDay = false): Editor =>
+        ed({ id: `s::${occDate}`, seriesId: 's', occurrenceDate: occDate, scope: 'series', repeatFreq: 'daily', start, end, allDay });
+    const written = (e: Editor, base: CalEvent, tz: string) =>
+        editorSaveSpec(e, tz, (id) => (id === 's' ? base : undefined)).event as { start: string; end: string };
+
+    it('an overnight edit stays overnight on the series date instead of ending before it starts', () => {
+        const base = series('2026-03-02T22:00:00', '2026-03-02T23:00:00');
+        const e = allEvents('2026-03-15T22:00', '2026-03-16T02:00', '2026-03-15');
+        expect(editorProblem(e, NY, () => base)).toBeNull();
+        expect(written(e, base, NY)).toMatchObject({ start: '2026-03-02T22:00:00-05:00', end: '2026-03-03T02:00:00-05:00' });
+    });
+    it('an overnight series edited to end the same day ends the same day', () => {
+        const base = series('2026-06-01T22:00:00', '2026-06-02T02:00:00');
+        const e = allEvents('2026-06-15T21:00', '2026-06-15T23:00', '2026-06-15');
+        expect(written(e, base, TZ)).toMatchObject({ start: '2026-06-01T21:00:00+00:00', end: '2026-06-01T23:00:00+00:00' });
+    });
+    it('blocks an edit that a DST gap on the series date would reverse', () => {
+        const base = series('2026-03-08T09:00:00', '2026-03-08T10:00:00');   // a gap day in New York
+        const e = allEvents('2026-03-15T02:30', '2026-03-15T03:00', '2026-03-15');
+        expect(editorProblem(e, NY)).toBeNull();                  // fine on the opened date...
+        expect(editorProblem(e, NY, () => base)).toBe('gap');   // ...but written on the gap day
+    });
+    it('allows an edit opened on a gap day when the series date has no gap', () => {
+        const base = series('2026-03-01T09:00:00', '2026-03-01T10:00:00');
+        const e = allEvents('2026-03-08T02:30', '2026-03-08T03:00', '2026-03-08');
+        expect(editorProblem(e, NY)).toBe('gap');               // on the opened date it would reverse
+        expect(editorProblem(e, NY, () => base)).toBeNull();
+        expect(written(e, base, NY)).toMatchObject({ start: '2026-03-01T02:30:00-05:00', end: '2026-03-01T03:00:00-05:00' });
+    });
+    it('an all-day series keeps the edited span in days', () => {
+        const base: CalEvent = { id: 's', title: 'S', start: '2026-06-01', end: '2026-06-03', allDay: true, rrule: { freq: 'weekly' } };
+        const e = allEvents('2026-06-15', '2026-06-16', '2026-06-15', true);
+        expect(editorProblem(e, TZ, () => base)).toBeNull();
+        expect(written(e, base, TZ)).toMatchObject({ start: '2026-06-01', end: '2026-06-02' });
+    });
+    it('without the base event bound, saves and checks the editor walls as they are', () => {
+        const e = allEvents('2026-06-15T09:00', '2026-06-15T10:00', '2026-06-15');
+        expect(editorProblem(e, TZ, none)).toBeNull();
+        expect(editorSaveSpec(e, TZ, none).event).toMatchObject({ start: '2026-06-15T09:00:00+00:00', end: '2026-06-15T10:00:00+00:00' });
+    });
+    it('an occurrence-only edit is still checked on its own date', () => {
+        const base = series('2026-03-08T09:00:00', '2026-03-08T10:00:00');
+        const e = { ...allEvents('2026-03-15T02:30', '2026-03-15T03:00', '2026-03-15'), scope: 'occurrence' as const };
+        expect(editorProblem(e, NY, () => base)).toBeNull();
+    });
+});
+
+describe('a whole-series edit that moves the start date moves the series (#291)', () => {
+    const daily = (start: string, end: string, rrule: RRule = { freq: 'daily' }): CalEvent =>
+        ({ id: 's', title: 'S', start, end, rrule });
+    const allEvents = (start: string, end: string, occDate: string, o: Partial<Editor> = {}): Editor =>
+        ed({ id: `s::${occDate}`, seriesId: 's', occurrenceDate: occDate, scope: 'series', repeatFreq: 'daily', start, end, ...o });
+    const save = (e: Editor, base: CalEvent) =>
+        editorSaveSpec(e, TZ, (id) => (id === 's' ? base : undefined)).event as { start: string; end: string; rrule: RRule };
+
+    it('moves the series start by the days the opened occurrence moved', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00');
+        const out = save(allEvents('2026-06-14T09:00', '2026-06-14T10:00', '2026-06-15'), base);
+        expect(out).toMatchObject({ start: '2026-05-31T09:00:00+00:00', end: '2026-05-31T10:00:00+00:00' });
+    });
+    it('keeps the edited span in days when only the start date moved (the case in the issue)', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00');
+        const out = save(allEvents('2026-06-14T09:00', '2026-06-15T10:00', '2026-06-15'), base);
+        expect(out).toMatchObject({ start: '2026-05-31T09:00:00+00:00', end: '2026-06-01T10:00:00+00:00' });
+    });
+    it('a time-only edit still keeps the series on its own date', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00');
+        const out = save(allEvents('2026-06-15T11:00', '2026-06-15T12:00', '2026-06-15'), base);
+        expect(out).toMatchObject({ start: '2026-06-01T11:00:00+00:00', end: '2026-06-01T12:00:00+00:00' });
+    });
+    it('moves the exdates with the series, so removed occurrences stay removed', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'daily', exdate: ['2026-06-03', '2026-06-10'] });
+        const out = save(allEvents('2026-06-17T09:00', '2026-06-17T10:00', '2026-06-15'), base);
+        expect(out.rrule.exdate).toEqual(['2026-06-05', '2026-06-12']);
+    });
+    it('turns a weekly rule\'s weekdays with the start, and the expansion follows', () => {
+        // Mon/Wed from Mon 2026-06-01, Wed 06-10 removed; Mon 06-15 is moved to Tue 06-16.
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'weekly', byweekday: [1, 3], exdate: ['2026-06-10'] });
+        const e = allEvents('2026-06-16T09:00', '2026-06-16T10:00', '2026-06-15', { repeatFreq: 'weekly', repeatByweekday: [1, 3] });
+        const out = save(e, base);
+        expect(out.rrule).toMatchObject({ byweekday: [2, 4], exdate: ['2026-06-11'] });
+        expect(out.start).toBe('2026-06-02T09:00:00+00:00');
+        const dates = expandEvents([{ ...base, ...out } as CalEvent], new Date(2026, 5, 1), new Date(2026, 6, 1), TZ)
+            .map((o) => o.start.slice(0, 10));
+        expect(dates).toEqual(['2026-06-02', '2026-06-04', '2026-06-09', '2026-06-16', '2026-06-18', '2026-06-23', '2026-06-25', '2026-06-30']);
+    });
+    it('keeps weekdays the user changed in the same save', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'weekly', byweekday: [1, 3] });
+        const e = allEvents('2026-06-16T09:00', '2026-06-16T10:00', '2026-06-15', { repeatFreq: 'weekly', repeatByweekday: [2, 5] });
+        expect(save(e, base).rrule.byweekday).toEqual([2, 5]);
+    });
+    it('a move by whole weeks keeps the weekdays', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'weekly', byweekday: [1, 3] });
+        const e = allEvents('2026-06-22T09:00', '2026-06-22T10:00', '2026-06-15', { repeatFreq: 'weekly', repeatByweekday: [1, 3] });
+        const out = save(e, base);
+        expect(out.rrule.byweekday).toEqual([1, 3]);
+        expect(out.start).toBe('2026-06-08T09:00:00+00:00');
+    });
+    it('keeps until and count as the editor shows them', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'daily', until: '2026-06-30' });
+        const e = allEvents('2026-06-16T09:00', '2026-06-16T10:00', '2026-06-15', { repeatEndMode: 'until', repeatUntil: '2026-06-30' });
+        expect(save(e, base).rrule.until).toBe('2026-06-30');
+    });
+    it('moves an all-day series by days', () => {
+        const base: CalEvent = { id: 's', title: 'S', start: '2026-06-01', end: '2026-06-02', allDay: true, rrule: { freq: 'daily', exdate: ['2026-06-05'] } };
+        const out = save(allEvents('2026-06-13', '2026-06-14', '2026-06-15', { allDay: true }), base);
+        expect(out).toMatchObject({ start: '2026-05-30', end: '2026-05-31' });
+        expect(out.rrule.exdate).toEqual(['2026-06-03']);
+    });
+    it('the check runs on the moved date', () => {
+        // Moved from 03-15 to 03-14 while the base is on 03-09: written on 03-08, the New York gap day.
+        const base = daily('2026-03-09T09:00:00', '2026-03-09T10:00:00');
+        const e = allEvents('2026-03-14T02:30', '2026-03-14T03:00', '2026-03-15');
+        expect(editorProblem(e, 'America/New_York', () => base)).toBe('gap');
+        expect(editorGapWall(e, 'America/New_York', () => base)).toBe('2026-03-08T02:30');
+    });
+    it('a "This event" save never moves the series', () => {
+        const base = daily('2026-06-01T09:00:00', '2026-06-01T10:00:00', { freq: 'daily', exdate: ['2026-06-03'] });
+        const spec = editorSaveSpec({ ...allEvents('2026-06-17T09:00', '2026-06-17T10:00', '2026-06-15'), scope: 'occurrence' }, TZ, () => base);
+        expect(spec.extra).toMatchObject({ scope: 'occurrence', occurrenceDate: '2026-06-15' });
+        expect(spec.event).not.toHaveProperty('rrule');
+    });
+});
+
+describe('a series that starts in a DST gap (#297)', () => {
+    const NY = 'America/New_York';
+    const base: CalEvent = { id: 's', title: 'S', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00', rrule: { freq: 'daily' } };
+    const lookup = (id: string): CalEvent | undefined => (id === 's' ? base : undefined);
+    const opened = (date: string): Editor =>
+        editorForEvent(occOf('s', date, { title: 'S', start: `${date}T02:30:00`, end: `${date}T03:30:00` }), lookup);
+
+    it('an "All events" save that keeps the times is allowed, from any occurrence', () => {
+        for (const date of ['2026-03-08', '2026-03-09', '2026-04-01']) {
+            const e = { ...opened(date), scope: 'series' as const, title: 'Renamed' };
+            expect(editorProblem(e, NY, lookup)).toBeNull();
+        }
+    });
+    it('writes the stored gap time back as it is, not resolved to 03:30', () => {
+        const e = { ...opened('2026-03-09'), scope: 'series' as const, title: 'Renamed' };
+        const out = editorSaveSpec(e, NY, lookup).event as { start: string; end: string; title: string };
+        expect(out).toMatchObject({ title: 'Renamed', start: '2026-03-08T02:30:00', end: '2026-03-08T03:30:00-04:00' });
+    });
+    it('a rule-only change goes through too', () => {
+        const e = { ...opened('2026-03-09'), scope: 'series' as const, repeatFreq: 'weekly' as const };
+        expect(editorProblem(e, NY, lookup)).toBeNull();
+    });
+    it('changing a time is still checked, and the message names the skipped time', () => {
+        const e = { ...opened('2026-03-09'), scope: 'series' as const, end: '2026-03-09T03:15' };
+        expect(editorProblem(e, NY, lookup)).toBe('gap');
+        expect(editorGapWall(e, NY, lookup)).toBe('2026-03-08T02:30');
+    });
+    it('a "This event" save on the gap day gets the gap message', () => {
+        const e = opened('2026-03-08');
+        expect(editorProblem(e, NY, lookup)).toBe('gap');
+        expect(editorGapWall(e, NY, lookup)).toBe('2026-03-08T02:30');
+    });
+    it('a range typed backwards keeps the plain message, even with a time in the gap', () => {
+        expect(editorProblem(ed({ start: '2026-03-08T04:00', end: '2026-03-08T02:30' }), NY)).toBe('range');
+    });
+    it('the exemption never passes a range stored backwards', () => {
+        const back: CalEvent = { id: 's', title: 'S', start: '2026-06-01T10:00:00', end: '2026-06-01T09:00:00', rrule: { freq: 'daily' } };
+        const e = { ...editorForEvent(occOf('s', '2026-06-15', { title: 'S', start: '2026-06-15T10:00:00', end: '2026-06-15T09:00:00' }), () => back), scope: 'series' as const };
+        expect(editorProblem(e, NY, () => back)).toBe('range');
+    });
+    it('dropping the rule makes a one-off, which is checked as one', () => {
+        const e = { ...opened('2026-03-09'), scope: 'series' as const, repeatFreq: '' as const };
+        expect(editorProblem(e, NY, lookup)).toBe('gap');
+    });
+    it('a series with no stored end has nothing to keep and is checked as usual', () => {
+        const noEnd: CalEvent = { ...base, end: undefined };
+        const e = { ...opened('2026-03-09'), scope: 'series' as const };
+        expect(editorProblem(e, NY, () => noEnd)).toBe('gap');
     });
 });

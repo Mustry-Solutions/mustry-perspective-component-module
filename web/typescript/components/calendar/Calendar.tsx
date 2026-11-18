@@ -32,6 +32,7 @@ import {
     isoDateTime,
     followTickMs,
     followDisarms,
+    cursorAfterZoneChange,
     followCursorStale,
     followScrollStale,
     toggleHiddenCategory,
@@ -58,7 +59,7 @@ import { EnterTracker } from '../../shared/enterAnimation';
 import { emptyMessageText } from '../../shared/labelPacks';
 import {
     ChangeSpec, editorForCreate, editorForEvent, toggleAllDayPatch,
-    editorSaveSpec, editorDeleteSpec, gestureKeepsOrder, moveResizeSpec, resolvesForward
+    editorProblem, editorSaveSpec, editorDeleteSpec, gestureKeepsOrder, moveResizeSpec, resolvesForward
 } from './calendarEditorLogic';
 import { Legend } from './Legend';
 import { HoverPopover } from './HoverPopover';
@@ -144,7 +145,14 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
     }
 
     componentDidUpdate(prevProps: ComponentProps<CalendarProps>, prevState: CalendarState): void {
-        this.syncOutput();
+        const zoneCursor = this.zoneChangeCursor(prevProps.props);
+        if (zoneCursor) {
+            // Not following now: today moves with the zone, any other date stays. The
+            // re-render publishes the window, so the old zone's is never written.
+            this.setState({ cursor: zoneCursor }, () => this.scrollTimeGrid());
+        } else {
+            this.syncOutput();
+        }
         if (prevState.editor && !this.state.editor && this.editorOpener) {
             this.editorOpener.focus();   // a keyboard user continues from the day they started on
             this.editorOpener = null;
@@ -166,6 +174,18 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
             // waiting out the next tick.
             this.tickFollow();
         }
+    }
+
+    /** The cursor a config.timezone change moves to, or null when it stays (or
+     *  follow-now re-anchors it on its own tick). */
+    private zoneChangeCursor(prev: CalendarProps): Date | null {
+        const p = this.props.props;
+        if (p.followNow || prev.timezone === p.timezone) {
+            return null;
+        }
+        const now = new Date();
+        const next = cursorAfterZoneChange(this.state.cursor, todayInZone(prev.timezone, now), todayInZone(p.timezone, now));
+        return fmtDate(next) === fmtDate(this.state.cursor) ? null : next;
     }
 
     componentWillUnmount(): void {
@@ -377,6 +397,8 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         return [...(p.events || []), ...(p.recurringEvents || [])].find((e) => e && e.id === id);
     }
 
+    private lookupBase = (id: string): CalEvent | undefined => this.baseEventById(id);
+
     /** Open the built-in editor pre-filled from an existing event, to edit it in place. */
     private openEditorForEvent(ev: CalEvent): void {
         this.hideHover();
@@ -405,7 +427,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         if (!ed) {
             return;
         }
-        this.fireSpec(editorSaveSpec(ed, this.props.props.timezone, (id) => this.baseEventById(id)));
+        if (editorProblem(ed, this.props.props.timezone, this.lookupBase)) {
+            return;   // Save is disabled then; never write a range that ends before it starts
+        }
+        this.fireSpec(editorSaveSpec(ed, this.props.props.timezone, this.lookupBase));
         this.setState({ editor: null });
     };
 
@@ -733,6 +758,22 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
         }
     };
 
+    /** Enter/Space on a week/day column's day head (#250): what a plain click on that
+     *  column's empty time does. The editor opens on the same default 09:00-10:00 slot
+     *  (commitGesture 'createEditor'); otherwise onDateClick carries the date alone. */
+    private onColumnKey = (iso: string): void => {
+        this.hideHover();   // a pointer press on empty time hides it too (startCreate)
+        this.closeDayPop();
+        this.closeMini();
+        if (this.useEditor()) {
+            const focused = document.activeElement as HTMLElement | null;
+            this.editorOpener = focused && focused.classList.contains('mustry-cal-tg-daycreate') ? focused : null;
+            this.openEditor(isoDateTime(iso, 9 * 60), isoDateTime(iso, 10 * 60), false);
+        } else {
+            this.fireEvent('onDateClick', { date: iso });
+        }
+    };
+
     // --- toolbar -----------------------------------------------------------
     private title(): string {
         const { locale } = this.props.props;
@@ -859,6 +900,7 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 editor={ed}
                 categories={this.props.props.categories || []}
                 timezone={this.props.props.timezone}
+                baseEventById={this.lookupBase}
                 locale={this.props.props.locale}
                 labels={this.props.props.labels}
                 onUpdate={(patch) => this.updateEditor(patch)}
@@ -930,6 +972,10 @@ export class Calendar extends Component<ComponentProps<CalendarProps>, CalendarS
                 onStartMove={(ev, e) => this.gestures.startMove(ev, e)}
                 onStartResize={(ev, edge, e) => this.gestures.startResize(ev, edge, e)}
                 onScroll={() => this.hideHover()}
+                opensEditor={this.useEditor()}
+                dayStopIso={this.state.dayStopIso}
+                onDayStop={(iso) => this.setState({ dayStopIso: iso })}
+                onColumnKey={this.onColumnKey}
             />
         );
     }

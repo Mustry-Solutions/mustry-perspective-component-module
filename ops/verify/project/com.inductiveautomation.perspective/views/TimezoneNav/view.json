@@ -4,7 +4,7 @@
  "props": {
   "defaultSize": {
    "width": 1290,
-   "height": 520
+   "height": 1160
   }
  },
  "root": {
@@ -23,7 +23,7 @@
       "fontSize": "12px",
       "fontFamily": "monospace"
      },
-     "text": "Timezone fixture (#148). The mini month navigator's today follows config.timezone (Pacific/Kiritimati, UTC+14), and the Chicago timeline pages sub-day zooms across DST on its wall clock. See e2e/tests/timezone.spec.ts."
+     "text": "Timezone fixture (#148). The mini month navigator's today follows config.timezone (Pacific/Kiritimati, UTC+14), and the Chicago timeline pages sub-day zooms across DST on its wall clock. See e2e/tests/timezone.spec.ts. The bottom-left timeline has an unknown config.timezone (#255) and must render browser-local."
     },
     "meta": {
      "name": "help"
@@ -185,6 +185,159 @@
        }
       }
      }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.display.resourcetimeline",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "Not/AZone",
+      "locale": "en-US",
+      "resources": [
+       {
+        "id": "a",
+        "label": "Line A"
+       }
+      ]
+     },
+     "data": {
+      "events": []
+     },
+     "state": {
+      "zoom": "day"
+     }
+    },
+    "custom": {},
+    "meta": {
+     "name": "timelineBadZone",
+     "domId": "tz-timeline-badzone"
+    },
+    "position": {
+     "x": 16,
+     "y": 490,
+     "width": 620,
+     "height": 200
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readBadZone",
+     "domId": "tz-badzone-visible"
+    },
+    "position": {
+     "x": 16,
+     "y": 692,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'visibleStart=' + {../timelineBadZone.props.output.visibleStart}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.input.datetimerangepicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "Europe/Brussels",
+      "layout": "compact",
+      "granularity": "minute",
+      "presets": [
+       {
+        "label": "Today",
+        "type": "calendar",
+        "calendar": {
+         "period": "today"
+        }
+       }
+      ]
+     }
+    },
+    "meta": {
+     "name": "pickerBrussels",
+     "domId": "tz-picker-brussels"
+    },
+    "position": {
+     "x": 16,
+     "y": 740,
+     "width": 620,
+     "height": 380
+    }
+   },
+   {
+    "type": "ia.display.label",
+    "version": 0,
+    "props": {
+     "style": {
+      "fontSize": "12px",
+      "fontFamily": "monospace"
+     }
+    },
+    "meta": {
+     "name": "readPickerBrussels",
+     "domId": "tz-picker-brussels-start"
+    },
+    "position": {
+     "x": 16,
+     "y": 1122,
+     "width": 620,
+     "height": 22
+    },
+    "propConfig": {
+     "props.text": {
+      "binding": {
+       "type": "expr",
+       "config": {
+        "expression": "'startDateTime=' + {../pickerBrussels.props.output.startDateTime}"
+       }
+      }
+     }
+    }
+   },
+   {
+    "type": "mustrysolutions.perspective.input.datetimerangepicker",
+    "version": 0,
+    "props": {
+     "config": {
+      "timezone": "America/New_York",
+      "display": "popover",
+      "granularity": "minute",
+      "popover": {
+       "dateFormat": "YYYY-MM-DD"
+      }
+     },
+     "selection": {
+      "startDate": "2026-03-29",
+      "startTimeSec": 9000,
+      "endDate": "2026-03-29",
+      "endTimeSec": 14400
+     }
+    },
+    "meta": {
+     "name": "pickerNewYork",
+     "domId": "tz-picker-newyork"
+    },
+    "position": {
+     "x": 650,
+     "y": 740,
+     "width": 400,
+     "height": 40
     }
    }
   ]

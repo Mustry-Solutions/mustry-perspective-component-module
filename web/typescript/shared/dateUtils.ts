@@ -128,16 +128,24 @@ export function combine(dateOnly: Date, sec: number): Date {
 
 /** Format a date with a token pattern (YYYY, YY, MM, M, DD, D, HH, mm, ss). */
 export function formatPattern(d: Date, pattern: string): string {
+    return formatWallPattern({
+        y: d.getFullYear(), mo: d.getMonth() + 1, d: d.getDate(), h: d.getHours(), mi: d.getMinutes(), s: d.getSeconds()
+    }, pattern);
+}
+
+/** formatPattern for wall-clock fields: no Date is built, so a time the browser's
+ *  own zone skips (a DST gap) is shown as it is, not moved an hour on. */
+export function formatWallPattern(w: WallClock, pattern: string): string {
     const map: { [k: string]: string } = {
-        YYYY: String(d.getFullYear()),
-        YY: pad2(d.getFullYear() % 100),
-        MM: pad2(d.getMonth() + 1),
-        M: String(d.getMonth() + 1),
-        DD: pad2(d.getDate()),
-        D: String(d.getDate()),
-        HH: pad2(d.getHours()),
-        mm: pad2(d.getMinutes()),
-        ss: pad2(d.getSeconds())
+        YYYY: String(w.y),
+        YY: pad2(w.y % 100),
+        MM: pad2(w.mo),
+        M: String(w.mo),
+        DD: pad2(w.d),
+        D: String(w.d),
+        HH: pad2(w.h),
+        mm: pad2(w.mi),
+        ss: pad2(w.s)
     };
     // Longer tokens first in the alternation so YYYY beats YY, MM beats M, DD beats D.
     return pattern.replace(/YYYY|YY|MM|DD|HH|mm|ss|M|D/g, (t) => map[t]);
@@ -184,6 +192,44 @@ export interface WallClock extends WallFields {
     h: number;
     mi: number;
     s: number;
+}
+
+/** "YYYY-MM-DD" of wall-clock fields. */
+export function fmtWallDate(w: WallFields): string {
+    return `${w.y}-${pad2(w.mo)}-${pad2(w.d)}`;
+}
+
+/** Seconds since midnight of a wall clock. */
+export function wallSeconds(w: WallClock): number {
+    return w.h * 3600 + w.mi * 60 + w.s;
+}
+
+/** The wall clock at seconds-since-midnight on a wall day. */
+export function wallAt(day: WallFields, sec: number): WallClock {
+    const t = clampSec(sec);
+    return { y: day.y, mo: day.mo, d: day.d, h: Math.floor(t / 3600), mi: Math.floor((t % 3600) / 60), s: t % 60 };
+}
+
+/** A wall clock moved by whole calendar days, keeping its time of day. Field
+ *  arithmetic in UTC, so no zone's DST can move the time. */
+export function addWallClockDays(w: WallClock, days: number): WallClock {
+    const t = new Date(Date.UTC(w.y, w.mo - 1, w.d + days));
+    return { y: t.getUTCFullYear(), mo: t.getUTCMonth() + 1, d: t.getUTCDate(), h: w.h, mi: w.mi, s: w.s };
+}
+
+/** A wall clock moved by whole months, keeping its time of day. A day the target
+ *  month lacks clamps to its last day (Mar 31 minus a month is Feb 28, not Mar 3). */
+export function addWallClockMonths(w: WallClock, months: number): WallClock {
+    const first = new Date(Date.UTC(w.y, w.mo - 1 + months, 1));
+    const y = first.getUTCFullYear();
+    const mo = first.getUTCMonth() + 1;
+    const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return { y, mo, d: Math.min(w.d, last), h: w.h, mi: w.mi, s: w.s };
+}
+
+/** Day of the week of a wall day, 0 = Sunday. */
+export function wallWeekday(w: WallFields): number {
+    return new Date(Date.UTC(w.y, w.mo - 1, w.d)).getUTCDay();
 }
 
 /** The wall clock at seconds-since-midnight on a date-only value's calendar day.
@@ -297,6 +343,30 @@ export function resolveZoned(wall: WallFields, timeZone: string): ZonedResult {
     return { epochMs, iso: msToZonedIso(epochMs, zone) };
 }
 
+/** `timeZone` if Intl knows it, else '' (browser-local): a mistyped or unknown
+ *  config.timezone must degrade to the browser's zone, as `resolveZoned` and
+ *  `wallClockOrLocal` do, instead of throwing a RangeError on every zone call. */
+export function knownTimeZone(timeZone: string): string {
+    if (!timeZone) {
+        return '';
+    }
+    try {
+        offsetFormatter(timeZone);
+        return timeZone;
+    } catch (e) {
+        return '';
+    }
+}
+
+/** Ms from `nowMs` to the next midnight in `timeZone` (browser-local if empty or
+ *  unknown): when "today" next changes there. Always > 0. A midnight that falls
+ *  in a DST gap resolves to the first instant after it, as resolveZoned does. */
+export function msUntilNextZoneDay(nowMs: number, timeZone: string): number {
+    const zone = knownTimeZone(timeZone);
+    const w = zoneWallClock(new Date(nowMs), zone);
+    return resolveZoned({ y: w.y, mo: w.mo, d: w.d + 1 }, zone).epochMs - nowMs;
+}
+
 /** Wall-clock parts of an absolute instant as seen in `timeZone` (browser-local if empty). */
 export function zoneWallClock(instant: Date, timeZone: string): WallClock {
     if (!timeZone) {
@@ -355,6 +425,140 @@ export function reanchorSeries(baseRaw: string | undefined, editedWall: string, 
         return baseDate;
     }
     return baseDate + (editedWall.length >= 11 ? editedWall.slice(10) : 'T00:00:00');
+}
+
+/**
+ * How many days a whole-series edit moves the series: the days from the opened
+ * occurrence's date to the start date the editor now holds. 0 when either is
+ * missing or unparseable.
+ */
+export function seriesShiftDays(occurrenceDate: string | null | undefined, editedStart: string): number {
+    const occ = occurrenceDate ? parseDate(occurrenceDate) : null;
+    const s = parseDate(editedStart);
+    return occ && s ? daysBetween(occ, s) : 0;
+}
+
+/**
+ * The start and end walls a whole-series edit writes. The series' start date
+ * moves by `shiftDays` (see seriesShiftDays: moving the opened occurrence by N
+ * days moves every occurrence by N days) and takes the edited times; the end
+ * keeps the edited span in days, so a range the editor ends on the next day
+ * still ends the day after the series' start. Without a base start (the series
+ * isn't bound) the edited walls are returned unchanged. Both the editor's check
+ * and its save use this, so the check validates exactly what is written.
+ */
+export function seriesEditWalls(
+    baseStartRaw: string | undefined, editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string,
+    shiftDays = 0
+): { start: string; end: string } {
+    const s = parseDate(editedStart);
+    const e = parseDate(editedEnd);
+    if (!baseStartRaw || !parseDate(instantToZonedIso(baseStartRaw, timeZone)) || !s || !e) {
+        return { start: editedStart, end: editedEnd };
+    }
+    return {
+        start: shiftWallDays(reanchorSeries(baseStartRaw, editedStart, dateOnly, timeZone), shiftDays),
+        end: shiftWallDays(reanchorSeries(baseStartRaw, editedEnd, dateOnly, timeZone), shiftDays + daysBetween(s, e))
+    };
+}
+
+/** A wall string with whole seconds ('YYYY-MM-DDTHH:mm' gets ':00'); dates and
+ *  anything else are returned as they are. */
+function wallToSeconds(wall: string): string {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(wall) ? `${wall}:00` : wall;
+}
+
+/** What a whole-series edit writes, and whether it leaves the series' times
+ *  exactly as they are (same date, same start and end walls). */
+export interface SeriesWrite {
+    start: string;
+    end: string;
+    unchanged: boolean;
+}
+
+/**
+ * The walls a whole-series edit writes (see seriesEditWalls, moved by
+ * seriesShiftDays), plus `unchanged`: true when they are the base's own walls in
+ * the zone, so the edit changes the title, rule or other fields but no time.
+ * The editors let such a save through even when the times don't resolve forward
+ * (a series created at 02:30 on a DST-gap day) and write the base's stored
+ * times back as they are.
+ */
+export function seriesWrite(
+    base: { start?: string; end?: string } | undefined, occurrenceDate: string | null | undefined,
+    editedStart: string, editedEnd: string, dateOnly: boolean, timeZone: string
+): SeriesWrite {
+    const w = seriesEditWalls(
+        base && base.start, editedStart, editedEnd, dateOnly, timeZone, seriesShiftDays(occurrenceDate, editedStart)
+    );
+    const zoned = (raw: string | undefined): string => {
+        const v = instantToZonedIso(raw || '', timeZone);
+        return dateOnly ? v.slice(0, 10) : wallToSeconds(v.slice(0, 19));
+    };
+    const unchanged = !!base && !!base.start && !!base.end
+        && zoned(base.start) === (dateOnly ? w.start.slice(0, 10) : wallToSeconds(w.start.slice(0, 19)))
+        && zoned(base.end) === (dateOnly ? w.end.slice(0, 10) : wallToSeconds(w.end.slice(0, 19)));
+    return { start: w.start, end: w.end, unchanged };
+}
+
+/** Why a timed range the editor would write can't be saved, or null when it
+ *  can: 'gap' = it runs forward as written but not as instants, because a DST
+ *  gap skips one of its times (say so, the generic message doesn't explain it); 'range' = the end
+ *  is not after the start. `unchanged` (a series save that keeps its stored
+ *  times) lets the gap case through, never a range stored backwards. */
+export function writtenRangeProblem(
+    start: string, end: string, timeZone: string, unchanged = false
+): 'gap' | 'range' | null {
+    const s = toEpochMs(start, timeZone);
+    const e = toEpochMs(end, timeZone);
+    if (s !== null && e !== null && e > s) {
+        return null;
+    }
+    // Only a range that runs forward as written is collapsed by the gap; one
+    // typed backwards gets the plain message.
+    const forwardAsWritten = wallToSeconds(start.slice(0, 19)) < wallToSeconds(end.slice(0, 19));
+    if (!forwardAsWritten || !(wallInGap(start, timeZone) || wallInGap(end, timeZone))) {
+        return 'range';
+    }
+    return unchanged ? null : 'gap';
+}
+
+/** The placeholders of the editors' gap message for a skipped wall time: the
+ *  time as written ('02:30'), its date in `locale` ('Mar 8'), and the zone
+ *  (the browser's own when `timeZone` is '' or unknown). */
+export function gapHintVars(wall: string, timeZone: string, locale: string): { time: string; date: string; tz: string } {
+    const d = parseDate(wall.slice(0, 10));
+    const zone = knownTimeZone(timeZone) || intlFormat('', {}).resolvedOptions().timeZone || '';
+    return {
+        time: wall.slice(11, 16),
+        date: d ? intlFormat(locale, { month: 'short', day: 'numeric' }).format(d) : wall.slice(0, 10),
+        tz: zone
+    };
+}
+
+/** The first of `walls` that a DST gap skips in `timeZone`, or null. */
+export function firstGapWall(walls: string[], timeZone: string): string | null {
+    for (const w of walls) {
+        if (wallInGap(w, timeZone)) {
+            return w;
+        }
+    }
+    return null;
+}
+
+/**
+ * Whether a naive wall time doesn't exist in `timeZone` because a DST gap skips
+ * it (New York 02:30 on spring-forward day). Absolute instants, date-only and
+ * unparseable strings are never in a gap.
+ */
+export function wallInGap(wall: string, timeZone: string): boolean {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(String(wall || '').slice(0, 19));
+    if (!m || /(Z|[+-]\d\d:?\d\d)$/.test(wall)) {
+        return false;
+    }
+    const f = { y: +m[1], mo: +m[2], d: +m[3], h: +m[4], mi: +m[5], s: +(m[6] || 0) };
+    const w = zoneWallClock(new Date(resolveZoned(f, knownTimeZone(timeZone)).epochMs), knownTimeZone(timeZone));
+    return w.y !== f.y || w.mo !== f.mo || w.d !== f.d || w.h !== f.h || w.mi !== f.mi || w.s !== f.s;
 }
 
 /**
@@ -442,6 +646,38 @@ export function msToWallInput(ms: number, timeZone: string): string {
     return `${base}:${pad2(w.s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
 }
 
+/**
+ * An event time as a datetime-local value in `timeZone`, or null when it doesn't
+ * parse. A naive wall string keeps the wall time written in it: a time a DST gap
+ * skips (02:30 on New York's spring-forward day) stays 02:30, as the calendar's
+ * editor shows it, instead of the 03:30 it resolves to, so saving the editor
+ * unchanged writes back what was there. An instant (offset/Z/epoch) is read in
+ * the zone, as msToWallInput does. Seconds and milliseconds are kept (the calendar
+ * trims to minutes; the timeline's input carries them, see wallInputStep).
+ */
+export function wallInputOf(raw: string, timeZone: string): string | null {
+    const ms = toEpochMs(raw, timeZone);
+    if (ms === null) {
+        return null;
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(String(raw));
+    // Only a wall time that exists on a clock is kept as written: 24:00, Feb 30 or
+    // :60 isn't a datetime-local value (the input would show it blank), so those
+    // read as the instant they roll over to, as before.
+    const fieldsExist = (f: RegExpExecArray): boolean => +f[4] < 24 && +f[5] < 60 && +(f[6] || 0) < 60
+        && +f[2] >= 1 && +f[2] <= 12 && +f[3] >= 1 && +f[3] <= new Date(Date.UTC(+f[1], +f[2], 0)).getUTCDate();
+    if (!m || !fieldsExist(m)) {
+        return msToWallInput(ms, timeZone);
+    }
+    const base = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
+    const s = +(m[6] || 0);
+    const frac = m[7] ? Math.round(+`0.${m[7]}` * 1000) : 0;
+    if (!s && !frac) {
+        return base;
+    }
+    return `${base}:${pad2(s)}${frac ? `.${String(frac).padStart(3, '0')}` : ''}`;
+}
+
 /** The `step` a datetime-local input needs to ACCEPT the precision in `value`
  *  (a browser silently rounds a value finer than its step to it, and only shows
  *  the seconds/ms field when the step asks for one). '' = leave it unset. */
@@ -452,22 +688,21 @@ export function wallInputStep(value: string): string {
     return /T\d\d:\d\d:\d\d/.test(value) ? '1' : '';
 }
 
-/** Local Date whose fields are the wall clock of `instant` in `timeZone` (browser-local
- *  if empty), so field-based day math matches what an operator in that zone sees. An
- *  unknown zone reads as browser-local, as `resolveZoned` does, instead of throwing. */
-export function wallClockInZone(instant: Date, timeZone: string): Date {
-    let w: ReturnType<typeof zoneWallClock>;
+/** The wall-clock fields of `instant` in `timeZone` (browser-local if empty). An
+ *  unknown zone reads as browser-local instead of throwing. No Date is
+ *  built, so a time the browser's own zone skips stays as it is. */
+export function wallClockOrLocal(instant: Date, timeZone: string): WallClock {
     try {
-        w = zoneWallClock(instant, timeZone);
+        return zoneWallClock(instant, timeZone);
     } catch (e) {
-        w = zoneWallClock(instant, '');
+        return zoneWallClock(instant, '');
     }
-    return new Date(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
 }
 
 /** Local Date whose Y/M/D equals "today" in `timeZone` (for grid / isToday checks). */
 export function todayInZone(timeZone: string, instant: Date = new Date()): Date {
-    return startOfDay(wallClockInZone(instant, timeZone));
+    const w = wallClockOrLocal(instant, timeZone);
+    return new Date(w.y, w.mo - 1, w.d);
 }
 
 /** Minutes-from-midnight of "now" in `timeZone`. */

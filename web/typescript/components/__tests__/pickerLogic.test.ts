@@ -1,4 +1,4 @@
-import { fmtDate, secondsOfDay, todayInZone } from '../../shared/dateUtils';
+import { fmtDate, fmtWallDate, secondsOfDay, todayInZone, WallClock, wallSeconds } from '../../shared/dateUtils';
 import {
     resolveLayout, effMin, effMax, rollingRange, calendarRange, presetRange,
     presetConflict, stepSeconds, snapSec, effStartSec, effEndSec, durationLabel,
@@ -48,29 +48,31 @@ describe('effMin / effMax', () => {
 describe('rollingRange', () => {
     const now = new Date(2026, 5, 17, 10, 30, 0); // Wed 2026-06-17 10:30
 
+    const wallNow: WallClock = { y: 2026, mo: 6, d: 17, h: 10, mi: 30, s: 0 };
+
     it('rolls forward (start = now)', () => {
         const r = rollingRange(7, 'days', now, true, '');
-        expect(r.start).toEqual(now);
-        expect(fmtDate(r.end)).toBe('2026-06-24');
+        expect(r.start).toEqual(wallNow);
+        expect(fmtWallDate(r.end)).toBe('2026-06-24');
     });
 
     it('rolls backward (end = now)', () => {
         const r = rollingRange(7, 'days', now, false, '');
-        expect(r.end).toEqual(now);
-        expect(fmtDate(r.start)).toBe('2026-06-10');
+        expect(r.end).toEqual(wallNow);
+        expect(fmtWallDate(r.start)).toBe('2026-06-10');
     });
 
     it('supports hours / weeks / months', () => {
-        expect(fmtDate(rollingRange(24, 'hours', now, true, '').end)).toBe('2026-06-18');
-        expect(fmtDate(rollingRange(2, 'weeks', now, false, '').start)).toBe('2026-06-03');
-        expect(fmtDate(rollingRange(1, 'months', now, true, '').end)).toBe('2026-07-17');
+        expect(fmtWallDate(rollingRange(24, 'hours', now, true, '').end)).toBe('2026-06-18');
+        expect(fmtWallDate(rollingRange(2, 'weeks', now, false, '').start)).toBe('2026-06-03');
+        expect(fmtWallDate(rollingRange(1, 'months', now, true, '').end)).toBe('2026-07-17');
     });
 });
 
 // #140: days, weeks and months are calendar steps on the zone wall clock; only
 // hours are elapsed time. Each case pins the instant and the zone (process-TZ free).
 describe('rollingRange calendar arithmetic (#140)', () => {
-    const wall = (d: Date) => `${fmtDate(d)} ${secondsOfDay(d) / 3600}h`;
+    const wall = (w: WallClock) => `${fmtWallDate(w)} ${wallSeconds(w) / 3600}h`;
     const back = (amount: number, unit: PresetUnit, iso: string, tz = 'UTC') =>
         wall(rollingRange(amount, unit, new Date(iso), false, tz).start);
     const fwd = (amount: number, unit: PresetUnit, iso: string, tz = 'UTC') =>
@@ -158,11 +160,11 @@ describe('realtime (live rolling window)', () => {
 });
 
 describe('calendarRange', () => {
-    const now = new Date(2026, 5, 17, 10, 30, 0); // Wed 2026-06-17; Jun 1 2026 is a Monday
+    const now: WallClock = { y: 2026, mo: 6, d: 17, h: 10, mi: 30, s: 0 }; // Wed; Jun 1 2026 is a Monday
     const range = (period: any, firstDay = 1) => calendarRange(period, now, firstDay);
     const span = (p: any, mf = 1) => {
         const r = range(p, mf);
-        return [fmtDate(r.start), fmtDate(r.end), secondsOfDay(r.start), secondsOfDay(r.end)];
+        return [fmtWallDate(r.start), fmtWallDate(r.end), wallSeconds(r.start), wallSeconds(r.end)];
     };
 
     it('today / yesterday are full single days', () => {
@@ -192,8 +194,8 @@ describe('presetRange dispatch', () => {
     const calendar: PresetDef = { label: 'This month', type: 'calendar', amount: 1, unit: 'days', period: 'thisMonth' };
 
     it('routes to rolling vs calendar by type', () => {
-        expect(fmtDate(presetRange(rolling, ctx).start)).toBe('2026-06-10');
-        expect(fmtDate(presetRange(calendar, ctx).start)).toBe('2026-06-01');
+        expect(fmtWallDate(presetRange(rolling, ctx).start)).toBe('2026-06-10');
+        expect(fmtWallDate(presetRange(calendar, ctx).start)).toBe('2026-06-01');
     });
 });
 
@@ -398,7 +400,7 @@ describe('now and today in config.timezone (#139)', () => {
         // 03:00Z on Jun 26 is still Jun 25 (22:00) in Chicago, already Jun 26 in Tokyo.
         const now = new Date('2026-06-26T03:00:00Z');
         const today: PresetDef = { label: 'Today', type: 'calendar', amount: 1, unit: 'days', period: 'today' };
-        const day = (timeZone: string) => fmtDate(presetRange(today, { now, timeZone, forward: false, firstDay: 1 }).start);
+        const day = (timeZone: string) => fmtWallDate(presetRange(today, { now, timeZone, forward: false, firstDay: 1 }).start);
         expect(day('America/Chicago')).toBe('2026-06-25');
         expect(day('Asia/Tokyo')).toBe('2026-06-26');
     });
@@ -408,8 +410,8 @@ describe('now and today in config.timezone (#139)', () => {
         const now = new Date('2026-06-29T03:00:00Z');
         const week: PresetDef = { label: 'This week', type: 'calendar', amount: 1, unit: 'days', period: 'thisWeek' };
         const r = (timeZone: string) => presetRange(week, { now, timeZone, forward: false, firstDay: 1 });
-        expect([fmtDate(r('America/Chicago').start), fmtDate(r('America/Chicago').end)]).toEqual(['2026-06-22', '2026-06-28']);
-        expect(fmtDate(r('UTC').start)).toBe('2026-06-29');
+        expect([fmtWallDate(r('America/Chicago').start), fmtWallDate(r('America/Chicago').end)]).toEqual(['2026-06-22', '2026-06-28']);
+        expect(fmtWallDate(r('UTC').start)).toBe('2026-06-29');
     });
 
     it('a rolling preset ends on the zone today, so a muted future does not block it', () => {

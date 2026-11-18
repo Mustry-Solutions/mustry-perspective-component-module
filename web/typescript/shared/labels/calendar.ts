@@ -25,7 +25,7 @@ export interface CalLabels {
     noEvents: string;             // list / day-popover empty text (emptyMessage wins in the list)
     more: string;                 // month-cell overflow, '{n}' = hidden count
     showDayEvents: string;        // date-number tooltip (opens the day popover)
-    newEventOn: string;           // month day button's accessible name when it opens the editor, '{date}' = the full date
+    newEventOn: string;           // accessible name of a create button (month day, week/day head) when it opens the editor, '{date}' = the full date
     previousMonth: string; nextMonth: string;   // mini-nav arrows (accessible labels)
     // empty-state badge tooltip (Calendar.emptyHint)
     emptyHintIntro: string;
@@ -39,6 +39,7 @@ export interface CalLabels {
     start: string; end: string;
     timesIn: string;              // timezone hint, '{tz}' = the configured zone
     invalidRange: string;         // save-blocking hint when the end is not after the start
+    timeInGap: string;   // save-blocking hint when a DST gap skips a time: '{time}', '{date}', '{tz}'
     repeat: string; doesNotRepeat: string;
     daily: string; weekly: string; monthly: string; yearly: string;
     every: string;
@@ -72,6 +73,7 @@ export const EN_CALENDAR_LABELS: CalLabels = {
     start: 'Start', end: 'End',
     timesIn: 'Times in {tz}',
     invalidRange: 'End must be after start',
+    timeInGap: "{time} doesn't exist on {date} in {tz}: the clocks skip it",
     repeat: 'Repeat', doesNotRepeat: 'Does not repeat',
     daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly',
     every: 'Every',
@@ -106,6 +108,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Début', end: 'Fin',
         timesIn: 'Heures en {tz}',
         invalidRange: 'La fin doit être après le début',
+        timeInGap: "{time} n'existe pas le {date} en {tz} : l'heure est avancée",
         repeat: 'Répéter', doesNotRepeat: 'Ne se répète pas',
         daily: 'Quotidien', weekly: 'Hebdomadaire', monthly: 'Mensuel', yearly: 'Annuel',
         every: 'Tous les',
@@ -138,6 +141,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Beginn', end: 'Ende',
         timesIn: 'Zeiten in {tz}',
         invalidRange: 'Das Ende muss nach dem Beginn liegen',
+        timeInGap: '{time} gibt es am {date} in {tz} nicht: die Uhr springt vor',
         repeat: 'Wiederholen', doesNotRepeat: 'Wiederholt sich nicht',
         daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich', yearly: 'Jährlich',
         every: 'Alle',
@@ -170,6 +174,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Inicio', end: 'Fin',
         timesIn: 'Horas en {tz}',
         invalidRange: 'El fin debe ser posterior al inicio',
+        timeInGap: '{time} no existe el {date} en {tz}: el reloj se adelanta',
         repeat: 'Repetir', doesNotRepeat: 'No se repite',
         daily: 'Diario', weekly: 'Semanal', monthly: 'Mensual', yearly: 'Anual',
         every: 'Cada',
@@ -202,6 +207,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Begin', end: 'Einde',
         timesIn: 'Tijden in {tz}',
         invalidRange: 'Het einde moet na het begin liggen',
+        timeInGap: '{time} bestaat niet op {date} in {tz}: de klok springt vooruit',
         repeat: 'Herhalen', doesNotRepeat: 'Wordt niet herhaald',
         daily: 'Dagelijks', weekly: 'Wekelijks', monthly: 'Maandelijks', yearly: 'Jaarlijks',
         every: 'Elke',
@@ -234,6 +240,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Inizio', end: 'Fine',
         timesIn: 'Orari in {tz}',
         invalidRange: "La fine deve essere successiva all'inizio",
+        timeInGap: "{time} non esiste il {date} in {tz}: l'orologio va avanti",
         repeat: 'Ripeti', doesNotRepeat: 'Non si ripete',
         daily: 'Giornaliero', weekly: 'Settimanale', monthly: 'Mensile', yearly: 'Annuale',
         every: 'Ogni',
@@ -266,6 +273,7 @@ const CALENDAR_PACKS: { [lang: string]: CalLabels } = {
         start: 'Início', end: 'Fim',
         timesIn: 'Horas em {tz}',
         invalidRange: 'O fim deve ser posterior ao início',
+        timeInGap: '{time} não existe em {date} em {tz}: o relógio adianta',
         repeat: 'Repetir', doesNotRepeat: 'Não se repete',
         daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual',
         every: 'A cada',

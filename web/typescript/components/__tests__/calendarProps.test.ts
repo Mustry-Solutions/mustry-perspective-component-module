@@ -187,3 +187,12 @@ describe('emptyMessageText (empty-badge localization guard)', () => {
         expect(emptyMessageText('', 'Aucun événement')).toBe('');   // '' hides the badge
     });
 });
+
+describe('mapCalendarProps config.timezone', () => {
+    it('keeps a zone the browser knows', () => {
+        expect(mapCalendarProps(stubReader({ config: { timezone: 'America/Chicago' } })).timezone).toBe('America/Chicago');
+    });
+    it('reads an id the browser does not know (a Java-only gateway zone) as browser-local', () => {
+        expect(mapCalendarProps(stubReader({ config: { timezone: 'GMT+01:00' } })).timezone).toBe('');
+    });
+});
