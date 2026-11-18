@@ -4,7 +4,7 @@ name: Release
 # then publishes a GitHub Release with the signed .modl attached and the
 # matching CHANGELOG section as the notes. The tag drives the module version.
 #
-# A tag `vX.Y.Z-ignition<sdk>`, such as v0.9.1-ignition2027.2.0-beta1, instead
+# A tag `vX.Y.Z-ignition<sdk>`, such as v0.9.2-ignition2027.2.0-beta1, instead
 # publishes a build for that Ignition beta as a GitHub PRERELEASE: built on that
 # SDK and Java 25, labelled BETA in its file and module names, and never marked
 # as the latest release. See RELEASING.md.
@@ -84,8 +84,10 @@ jobs:
           # Ignition's module.xml version parser is numeric-only: a prerelease
           # suffix (v0.4.0-beta.1) reaching it produces a .modl the gateway
           # rejects at install (a class of failure the observability module
-          # shipped once), so a beta build maps to the numeric x.y.z.<beta>
-          # through -PreleaseVersion=x.y.z-beta.<beta> (build.gradle.kts).
+          # shipped once), so a beta build is stamped plain x.y.z. Not
+          # x.y.z.<beta>: a fourth field sorts above the final x.y.z, so moving
+          # a gateway from the beta build to the final 2027 build of the same
+          # release would be a downgrade. The file and module names say BETA.
           # A bash match covers the whole string, so a typed value with a
           # newline cannot slip an extra line into $GITHUB_OUTPUT (a line-based
           # grep would pass it as long as one line looked valid).
@@ -94,8 +96,8 @@ jobs:
             sdk=""
             java="17"
             prerelease=false
-          elif [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-ignition([0-9]{4}\.[0-9]+\.[0-9]+-beta([0-9]+))$ ]]; then
-            release_version="${BASH_REMATCH[1]}-beta.${BASH_REMATCH[3]}"
+          elif [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-ignition([0-9]{4}\.[0-9]+\.[0-9]+-beta[0-9]+)$ ]]; then
+            release_version="${BASH_REMATCH[1]}"
             sdk="${BASH_REMATCH[2]}"
             java="25"
             prerelease=true
@@ -120,7 +122,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SDK: ${{ steps.ver.outputs.sdk }}
           PUBLISH: ${{ steps.ver.outputs.publish }}
-        run: ops/check-beta-release.sh "$SDK" "$GITHUB_SHA" "$PUBLISH"
+          RELEASE_VERSION: ${{ steps.ver.outputs.release_version }}
+        run: ops/check-beta-release.sh "$SDK" "$GITHUB_SHA" "$PUBLISH" "$RELEASE_VERSION"
 
       - name: Build the user-manual PDF
         # Branded manual (docs/user_manual.md -> build/user_manual.pdf) via
