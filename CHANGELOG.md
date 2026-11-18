@@ -8,28 +8,7 @@ deliberate decision, never an accident.
 
 ## [Unreleased]
 
-### Added: iCalendar (.ics) export for the calendar and timeline
-`config.showExportIcs` adds a toolbar button that downloads the loaded events as
-an `.ics` file, so they can be opened in Outlook, Google Calendar or Apple
-Calendar. Recurring series stay series and keep their local time across DST
-changes, and UIDs come from event ids so re-importing updates instead of
-duplicating. Off by default.
-
-### Fixed: 2027 beta builds no longer outrank the final release
-A beta build was stamped `X.Y.Z.<beta number>`, which sorts above the final
-`X.Y.Z`, so moving a gateway from the beta build to the final 2027 build would
-have been a downgrade. Beta builds are now stamped plain `X.Y.Z`. The beta
-already published installs as `0.9.1.1`, so every later 2027 build is `0.9.2`
-or higher, and the dev version moves to `0.9.2-SNAPSHOT`. The release gate now
-refuses a beta build that isn't numbered above every published one.
-
-### Added: build and test against the Ignition 2027 beta
-8.3 builds don't load on Ignition 2027, which gates modules on the year version
-and moves to Java 25. `ops/ignition-2027.env` now runs a 2027 gateway beside the
-8.3 one and builds the module from the 2027 SDK; CI runs the browser suite on it
-as an advisory job. A `vX.Y.Z-ignition<sdk>` tag publishes a signed build as a
-GitHub prerelease, labelled BETA in its file and module names (`RELEASING.md`).
-8.3 builds are unchanged.
+## [0.10.0] - 2026-11-18
 
 ### Security: the admin reference scripts authorize their writes
 The admin managers' capability flags (`editable`, `allowCreate`, `allowDelete`,
@@ -66,6 +45,29 @@ and all three are kept as they were:
 - It now appends an empty paragraph after a document that ends in a table, list or
   image. The editor no longer adds one, so the HTML it holds still matches
   `data.content`.
+
+### Added: iCalendar (.ics) export for the calendar and timeline
+`config.showExportIcs` adds a toolbar button that downloads the loaded events as
+an `.ics` file, so they can be opened in Outlook, Google Calendar or Apple
+Calendar. Recurring series stay series and keep their local time across DST
+changes, and UIDs come from event ids so re-importing updates instead of
+duplicating. Off by default.
+
+### Fixed: 2027 beta builds no longer outrank the final release
+A beta build was stamped `X.Y.Z.<beta number>`, which sorts above the final
+`X.Y.Z`, so moving a gateway from the beta build to the final 2027 build would
+have been a downgrade. Beta builds are now stamped plain `X.Y.Z`. The beta
+already published installs as `0.9.1.1`, so every later 2027 build is `0.9.2`
+or higher, and the dev version moves to `0.9.2-SNAPSHOT`. The release gate now
+refuses a beta build that isn't numbered above every published one.
+
+### Added: build and test against the Ignition 2027 beta
+8.3 builds don't load on Ignition 2027, which gates modules on the year version
+and moves to Java 25. `ops/ignition-2027.env` now runs a 2027 gateway beside the
+8.3 one and builds the module from the 2027 SDK; CI runs the browser suite on it
+as an advisory job. A `vX.Y.Z-ignition<sdk>` tag publishes a signed build as a
+GitHub prerelease, labelled BETA in its file and module names (`RELEASING.md`).
+8.3 builds are unchanged.
 
 ### Changed
 - The Schedule Manager and Holiday Manager have a new `config.timezone`, and now
