@@ -301,6 +301,12 @@ describe('timelineEventsToIcs', () => {
         expect(timelineEventsToIcs([ev({ start: '2026-07-01' })], [], resources, BRUSSELS)).toContain('DTSTART:20260630T220000Z');
     });
 
+    it('gives a bar with no end the length the timeline draws it, and a state band none', () => {
+        expect(timelineEventsToIcs([ev({})], [], resources, BRUSSELS)).toContain('DURATION:PT60M');
+        expect(timelineEventsToIcs([ev({ display: 'state' })], [], resources, BRUSSELS)).not.toContain('DURATION');
+        expect(timelineEventsToIcs([ev({ end: '2026-07-01T09:30:00' })], [], resources, BRUSSELS)).not.toContain('DURATION');
+    });
+
     it('marks state and background bands as not blocking time', () => {
         expect(timelineEventsToIcs([ev({ display: 'state' })], [], resources, BRUSSELS)).toContain('TRANSP:TRANSPARENT');
         expect(timelineEventsToIcs([ev({ display: 'background' })], [], resources, BRUSSELS)).toContain('TRANSP:TRANSPARENT');

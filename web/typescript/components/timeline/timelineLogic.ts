@@ -645,6 +645,9 @@ export function timelineEventsToIcs(
         category: ev.category ? categoryLabel.get(ev.category) || ev.category : undefined,
         location: resourceLabel.get(ev.resourceId) || ev.resourceId,
         transparent: ev.display === 'state' || ev.display === 'background',
+        // A bar with no end is drawn DEFAULT_BAR_MIN long; a state or background
+        // band runs until the next one, which an .ics event can't say.
+        durationMin: ev.display === 'state' || ev.display === 'background' ? undefined : DEFAULT_BAR_MIN,
         rrule: ev.rrule
     }));
     return buildIcs(items, opts);

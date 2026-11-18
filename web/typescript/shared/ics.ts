@@ -19,6 +19,7 @@ export interface IcsItem {
     category?: string;      // display label, not the category id
     location?: string;
     transparent?: boolean;  // doesn't block time (TRANSP:TRANSPARENT), e.g. background bands
+    durationMin?: number;   // length when there's no usable end; overrides opts.defaultDurationMin
     rrule?: RRule;
 }
 
@@ -111,7 +112,9 @@ function namedZone(timezone: string): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
-function durationLines(minutes: number | undefined): string[] {
+/** DURATION for a timed event with no usable end: the item's own length, else the default. */
+function durationLines(item: IcsItem, opts: IcsOptions): string[] {
+    const minutes = item.durationMin !== undefined ? item.durationMin : opts.defaultDurationMin;
     return minutes && minutes > 0 ? [`DURATION:PT${Math.round(minutes)}M`] : [];
 }
 
@@ -133,7 +136,7 @@ function singleTimeLines(item: IcsItem, zone: string, opts: IcsOptions): string[
     }
     const endMs = item.end ? toEpochMs(item.end, zone) : null;
     const end = endMs !== null && endMs > startMs ? utcStamp(endMs) : null;
-    return [`DTSTART:${start}`, ...(end ? [`DTEND:${end}`] : durationLines(opts.defaultDurationMin))];
+    return [`DTSTART:${start}`, ...(end ? [`DTEND:${end}`] : durationLines(item, opts))];
 }
 
 /** The RRULE value, picking COUNT or UNTIL when the data has both (RFC 5545 allows only one). */
@@ -217,7 +220,7 @@ function seriesTimeLines(item: IcsItem, zone: string, opts: IcsOptions): SeriesL
         firstMs: first.getTime(),
         lines: [
             `DTSTART;TZID=${zone}:${dtStart}`,
-            ...(dtEnd > dtStart ? [`DTEND;TZID=${zone}:${dtEnd}`] : durationLines(opts.defaultDurationMin)),
+            ...(dtEnd > dtStart ? [`DTEND;TZID=${zone}:${dtEnd}`] : durationLines(item, opts)),
             rule,
             ...(excluded.length
                 ? [`EXDATE;TZID=${zone}:${excluded.map((d) => icsLocal(d, startTime)).join(',')}`]
